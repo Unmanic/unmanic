@@ -89,8 +89,10 @@ class TaskHandler(threading.Thread):
             while not self.abort_flag.is_set() and not self.scheduledtasks.empty():
                 try:
                     pathname = self.scheduledtasks.get_nowait()
-                    common._logger("Adding job to queue - {}".format(pathname))
-                    self.job_queue.addItem(pathname)
+                    if self.job_queue.addItem(pathname):
+                        common._logger("Adding job to queue - {}".format(pathname))
+                    else:
+                        common._logger("Skipping job already in the queue - {}".format(pathname))
                 except queue.Empty:
                     continue
                 except Exception as e:
@@ -140,6 +142,7 @@ class LibraryScanner(threading.Thread):
 
                 # Then loop and wait for the schedule
                 while not self.abort_flag.is_set():
+                    # TODO: Dont run scheduler if we already have a full queue
                     schedule.run_pending()
                     time.sleep(60)
                     if int(self.settings.SCHEDULE_FULL_SCAN_MINS) != self.interval:

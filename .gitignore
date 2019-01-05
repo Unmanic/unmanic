@@ -1,4 +1,7 @@
 .vscode
 **/__pycache__
 
+config
+cache
+library
 tests/videos/*.mkv

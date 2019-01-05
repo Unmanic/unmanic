@@ -1,0 +1,14 @@
+.vscode
+**/__pycache__
+.git
+.gitignore
+.github
+.gitattributes
+README.md
+
+
+config
+cache
+library
+tests
+videos

@@ -1,0 +1,10 @@
+
+.worker-subtitle {
+    word-wrap: break-word;
+    /* overflow-wrap: break-word; */
+    height:100px;
+    display: block;
+    overflow: hidden;
+}
+
+

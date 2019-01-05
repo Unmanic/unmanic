@@ -1,0 +1,17 @@
+#!/usr/bin/with-contenv bash
+
+CWD=${PWD};
+
+permissions_config() {
+    echo "**** (permissions_config) Settings permissions ****";
+    mkdir -p \
+        /tmp/unmanic
+    chown -R $PUID:$PGID \
+        /tmp/unmanic \
+        /app
+    chmod -R a+w \
+        /tmp/unmanic \
+        /app
+}
+
+permissions_config;

@@ -1,0 +1,4 @@
+.vscode
+**/__pycache__
+
+tests/videos/*.mkv

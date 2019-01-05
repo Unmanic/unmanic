@@ -1,0 +1,39 @@
+
+
+<ul class="feeds">
+    {% for historical_item in handler.getHistoricalTasks() %}
+    <li>
+        <div class="col1">
+            <div class="cont">
+                <div class="cont-col1">
+                    {% if 'success' in historical_item and historical_item['success'] %}
+                        <div class="label label-sm label-info">
+                                <i class="fa fa-check"></i>
+                        </div>
+                    {% else %}
+                        <div class="label label-sm label-danger">
+                                <i class="fa fa-times"></i>
+                        </div>
+                    {%end%}
+                </div>
+                <div class="cont-col2">
+                    <div class="desc"> {{ escape(historical_item['description']) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col2">
+            <div class="date">
+                {% import time %}
+                {% import common %}
+                {% if ((int(historical_item['time_complete']) + 60) > int(time.time())) %}
+                    Just Now
+                {% else %}
+                    {{ escape(common.makeTimestampHumanReadable( int( historical_item['time_complete'] ) )) }} 
+                {%end%}
+                    
+            </div>
+        </div>
+    </li>
+    {% end %}
+</ul>

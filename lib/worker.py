@@ -44,27 +44,55 @@ from lib import ffmpeg
 
 class JobQueue(object):
     def __init__(self, settings, data_queues):
+        self.name           = 'JobQueue'
         self.all_jobs       = collections.deque()
+        self.in_progress    = collections.deque()
         self.ffmpeg         = ffmpeg.FFMPEGHandle(settings, data_queues['messages'])
+        self.messages       = data_queues['messages']
+
+    def _log(self, message, message2 = '', level = "info"):
+        message = "[{}] {}".format(self.name, message)
+        self.messages.put({
+              "message":message
+            , "message2":message2
+            , "level":level
+        })
 
     def isEmpty(self):
         if self.all_jobs:
             return False
         return True
 
+    def removeCompletedItem(self, file_info):
+        self.in_progress.remove(file_info['abspath'])
+
     def getNextItem(self):
-        return self.all_jobs.popleft()
+        item = self.all_jobs.popleft()
+        self.in_progress.append(item['abspath'])
+        return item
 
     def addItem(self, pathname):
+        # Check if this path is already in the job queue
+        for item in self.listAllItems():
+            if item['abspath'] == os.path.abspath(pathname):
+                return False
+        # Check if this path is already in progress of being coverted
+        for item in self.listInProgressItems():
+            if item == os.path.abspath(pathname):
+                return False
         # Get info on the file from ffmpeg
         file_info                   = self.ffmpeg.fileProbe(pathname)
         file_info['video_codecs']   = ','.join(self.ffmpeg.getCurrentVideoCodecs(file_info))
         file_info['abspath']        = os.path.abspath(pathname)
         file_info['basename']       = os.path.basename(pathname)
         self.all_jobs.append(file_info)
+        return True
 
     def listAllItems(self):
         return list(self.all_jobs)
+
+    def listInProgressItems(self):
+        return list(self.in_progress)
 
 
 class WorkerThread(threading.Thread):
@@ -203,6 +231,7 @@ class Worker(threading.Thread):
             while not self.abort_flag.is_set() and not self.complete_queue.empty():
                 try:
                     file_info       = self.complete_queue.get_nowait()
+                    self.job_queue.removeCompletedItem(file_info)
                     historical_log  = self.getAllHistoricalTasks()
                     historical_log.append({
                           'description':file_info['basename']

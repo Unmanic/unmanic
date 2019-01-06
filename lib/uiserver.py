@@ -86,10 +86,18 @@ class UIServer(threading.Thread):
 
     def makeApp(self):
         return tornado.web.Application([
-            (r"/assets/(.*)", tornado.web.StaticFileHandler,
-                dict(path=settings['static_path'])),
-            (r"/settings/(.*)", SettingsUIRequestHandler, dict(data_queues=self.data_queues, settings=self.settings)),
-            (r"/(.*)", MainUIRequestHandler, dict(data_queues=self.data_queues, workerHandle=self.workerHandle)),
+            (r"/assets/(.*)", tornado.web.StaticFileHandler, dict(
+                    path=settings['static_path']
+                )),
+            (r"/settings/(.*)", SettingsUIRequestHandler, dict(
+                    data_queues=self.data_queues, 
+                    settings=self.settings
+                )),
+            (r"/(.*)", MainUIRequestHandler, dict(
+                    data_queues=self.data_queues, 
+                    workerHandle=self.workerHandle, 
+                    settings=self.settings
+                )),
         ], **settings)
 
 

@@ -39,10 +39,13 @@ except ImportError:
     JSONDecodeError = ValueError
 
 HOME_DIR = os.path.expanduser("~")
+APP_DIR  = os.path.dirname(os.path.abspath(__file__))
 
 class CONFIG(object):
     def __init__(self):
         common._logger("Importing configuration")
+
+        self.readVersion()
 
         ### Set defaults
         # TODO: Set these back to defaults
@@ -242,4 +245,10 @@ class CONFIG(object):
                 json.dump(data, outfile, sort_keys = True, indent = 4)
         except Exception as e:
             common._logger("Exception in writing history to file:", message2=str(e), level="exception")
+
+    def readVersion(self):
+        version_file = os.path.join(APP_DIR,'version')
+        with open(version_file,'r') as f:
+            version = f.read()
+        self.VERSION = version
 

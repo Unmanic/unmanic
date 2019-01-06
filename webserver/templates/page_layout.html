@@ -47,9 +47,8 @@ License: You must have a valid license purchased only from themeforest(the above
         <!-- END THEME GLOBAL STYLES -->
         <!-- BEGIN THEME LAYOUT STYLES -->
         <link href="/assets/layouts/layout5/css/layout.min.css" rel="stylesheet" type="text/css" />
-        <link href="/assets/layouts/layout5/css/custom.min.css" rel="stylesheet" type="text/css" />
         <!-- END THEME LAYOUT STYLES -->
-        <link rel="shortcut icon" href="favicon.ico" />
+        <link rel="shortcut icon" href="/assets/favicon.ico" />
 
         <!-- CUSTOM HEAD ELEMENTS -->
         {% block head %}{% end %}
@@ -125,7 +124,11 @@ License: You must have a valid license purchased only from themeforest(the above
                     <!-- END PAGE BASE CONTENT -->
                 </div>
                 <!-- BEGIN FOOTER -->
-                <p class="copyright">2018 © Unmanic by Josh Sunnex.</p>
+                <p class="copyright">
+                    Version - {{ escape(handler.config.VERSION) }}
+                    <br>
+                    2018 © Unmanic by Josh Sunnex.
+                </p>
                 <a href="#index" class="go2top">
                     <i class="icon-arrow-up"></i>
                 </a>

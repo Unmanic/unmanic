@@ -36,11 +36,12 @@ import json
 
 
 class MainUIRequestHandler(tornado.web.RequestHandler):
-    def initialize(self, data_queues, workerHandle):
+    def initialize(self, data_queues, workerHandle, settings):
         self.name           = 'main'
         self.data_queues    = data_queues
         self.workerHandle   = workerHandle
         self.components     = []
+        self.config         = settings
 
     def get(self, path):
         if self.get_query_arguments('ajax'):

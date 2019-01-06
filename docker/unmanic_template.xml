@@ -15,7 +15,7 @@ Unmanic is a simple tool for converting your video library to a single format. <
   <Category>MediaApp:Video Status:Beta</Category>
   <WebUI>http://[IP]:[PORT:8888]/</WebUI>
   <TemplateURL/>
-  <Icon>https://github.com/Josh5/unmanic/raw/master/logo.png</Icon>
+  <Icon>https://github.com/Josh5/unmanic/raw/master/webserver/assets/icon-clear_bg.png</Icon>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>

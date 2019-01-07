@@ -36,12 +36,12 @@ Unmanic is a simple tool for converting your video library to a single format. <
   </Networking>
   <Data>
     <Volume>
-      <HostDir>/library</HostDir>
+      <HostDir/>
       <ContainerDir>/library</ContainerDir>
       <Mode>rw</Mode>
     </Volume>
     <Volume>
-      <HostDir>/mnt/user/transcodercache/unmanic</HostDir>
+      <HostDir/>
       <ContainerDir>/tmp/unmanic</ContainerDir>
       <Mode>rw</Mode>
     </Volume>
@@ -71,9 +71,9 @@ Unmanic is a simple tool for converting your video library to a single format. <
   <Labels/>
   <Config Name="Key 1" Target="PUID" Default="99" Mode="" Description="Container Variable: PUID" Type="Variable" Display="always" Required="false" Mask="false">99</Config>
   <Config Name="Key 2" Target="PGID" Default="100" Mode="" Description="Container Variable: PGID" Type="Variable" Display="always" Required="false" Mask="false">100</Config>
-  <Config Name="Library" Target="/library" Default="" Mode="rw" Description="Container Path: /library" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/TVShows/Kids/Paw Patrol/</Config>
-  <Config Name="Encoding Cache" Target="/tmp/unmanic" Default="" Mode="rw" Description="Container Path: /tmp/unmanic" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/transcodercache/libraryoptimise</Config>
+  <Config Name="Library" Target="/library" Default="" Mode="rw" Description="Container Path: /library" Type="Path" Display="always" Required="true" Mask="false"/>
+  <Config Name="Encoding Cache" Target="/tmp/unmanic" Default="" Mode="rw" Description="Container Path: /tmp/unmanic" Type="Path" Display="always" Required="true" Mask="false"/>
   <Config Name="Port" Target="8888" Default="8888" Mode="tcp" Description="WebUI" Type="Port" Display="always" Required="true" Mask="false">8888</Config>
   <Config Name="Debugging" Target="DEBUGGING" Default="false" Mode="" Description="Enable debugging: true/false" Type="Variable" Display="always-hide" Required="false" Mask="false">false</Config>
-  <Config Name="Config" Target="/config" Default="/mnt/user/appdata/unmanic" Mode="rw" Description="Container Path: /config&#13;&#10;Location where all settings are saved" Type="Path" Display="always-hide" Required="true" Mask="false">/mnt/user/appdata/unmanic</Config>
+  <Config Name="AppData Config Path" Target="/config" Default="/mnt/user/appdata/unmanic" Mode="rw" Description="Container Path: /config&#13;&#10;Location where all settings are saved" Type="Path" Display="advanced-hide" Required="true" Mask="false">/mnt/user/appdata/unmanic</Config>
 </Container>

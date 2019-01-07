@@ -4,4 +4,4 @@
 config
 cache
 library
-tests/videos/*.mkv
+tests/videos/*

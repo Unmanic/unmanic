@@ -1,14 +1,16 @@
 # Unmanic - Library Optimiser
 
-Unmanic is a simple tool for optimising your video library to a single format. Unmanic is developed in such a way that it takes the complexity out of converting your media library. The idea is simply to point Unmanic at your library and let it manage it.
+Unmanic is a simple tool for optimising your video library to a single format. The ultimate goal of Unmanic is to take the complexity out of converting your whole media library. The idea is to simply point Unmanic at your library and let it manage it.
 
-Unmanic carries provides you with 3 services:
+Unmanic provides you with the following main functions:
 
-First, Unmanic has a scheduler built in to scan your whole library for files that do not conform to your video presets. Videos found with incorrect formats are then queued for conversion.
+ - A scheduler built in to scan your whole library for files that do not conform to your configured video presets. Videos found with incorrect formats are then queued for conversion.
 
-Second, Unmanic provides a folder watchdog. When a video file is modified or a new file is added in your library, Unmanic is able to check that video against your configured video presets. Like the first service, if this video is not formatted correctly it is added to a queue for conversion.
+ - A folder watchdog. When a video file is modified or a new file is added in your library, Unmanic is able to check that video against your configured video presets. Like the first function, if this video is not formatted correctly it is added to a queue for conversion.
 
-Finally, Unmanic provides you with a Web UI to easily configure and monitor the progress of your library conversion.
+ - A handler to manage multiple file conversion tasks at a time using ffmpeg
+
+ - A Web UI to easily configure your preferred video presets and monitor the progress of your library conversion.
 
 
 ![UNMANIC - Library Optimiser](https://github.com/Josh5/unmanic/raw/master/logo.png)
@@ -28,8 +30,8 @@ Finally, Unmanic provides you with a Web UI to easily configure and monitor the 
 
 ## Dependencies
 
- - Python 3.x
- - FFMPEG
+ - Python 3.x ([Install](https://www.python.org/downloads/))
+ - FFMPEG ([Install](https://www.ffmpeg.org/))
  - To install requirements run 'python3 -m pip install -r requirements.txt' from the project root
 
 ## Screen-shots

@@ -81,8 +81,8 @@ class JobQueue(object):
             if item == os.path.abspath(pathname):
                 return False
         # Get info on the file from ffmpeg
-        file_info                   = self.ffmpeg.fileProbe(pathname)
-        file_info['video_codecs']   = ','.join(self.ffmpeg.getCurrentVideoCodecs(file_info))
+        file_info                   = self.ffmpeg.file_probe(pathname)
+        file_info['video_codecs']   = ','.join(self.ffmpeg.get_current_video_codecs(file_info))
         file_info['abspath']        = os.path.abspath(pathname)
         file_info['basename']       = os.path.basename(pathname)
         self.all_jobs.append(file_info)
@@ -135,7 +135,7 @@ class WorkerThread(threading.Thread):
         #if (number > 14):
         #    return True
         #return False
-        return self.ffmpeg.processFile(pathname)
+        return self.ffmpeg.process_file(pathname)
 
     def run(self):
         self._log("Starting {}".format(self.name))

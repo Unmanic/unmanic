@@ -108,29 +108,25 @@ class CONFIG(object):
         self.readSettingsFromFile()
 
     def importSettingsFromEnv(self):
-        # TODO: Shorten this into a function if possible
-        if "LIBRARY_PATH" in os.environ:
-            self.LIBRARY_PATH = os.environ.get("LIBRARY_PATH")
-        if "CACHE_PATH" in os.environ:
-            self.CACHE_PATH = os.environ.get("CACHE_PATH")
-        if "VIDEO_CODEC" in os.environ:
-            self.VIDEO_CODEC = os.environ.get("VIDEO_CODEC")
-        if "AUDIO_CODEC" in os.environ:
-            self.AUDIO_CODEC = os.environ.get("AUDIO_CODEC")
-        if "OUT_CONTAINER" in os.environ:
-            self.OUT_CONTAINER = os.environ.get("OUT_CONTAINER")
-        if "SUPPORTED_CONTAINERS" in os.environ:
-            self.SUPPORTED_CONTAINERS = tuple(os.environ.get("SUPPORTED_CONTAINERS").split(","))
-        if "REMOVE_SUBTITLE_STREAMS" in os.environ:
-            self.REMOVE_SUBTITLE_STREAMS = True if os.environ.get("REMOVE_SUBTITLE_STREAMS").lower() in ['t','true','1'] else False
-        if "DEBUGGING" in os.environ:
-            self.DEBUGGING = True if os.environ.get("DEBUGGING").lower() in ['t','true','1'] else False
-        if "SCHEDULE_FULL_SCAN_MINS" in os.environ:
-            value = os.environ.get("SCHEDULE_FULL_SCAN_MINS")
-            if value.isdigit():
-                self.SCHEDULE_FULL_SCAN_MINS = value
-        if "AUDIO_STEREO_STREAM_BITRATE" in os.environ:
-            self.AUDIO_STEREO_STREAM_BITRATE = os.environ.get("AUDIO_STEREO_STREAM_BITRATE")
+        ENV_SETTINGS = [
+              'AUDIO_CODEC'
+            , 'AUDIO_STEREO_STREAM_BITRATE'
+            , 'CACHE_PATH'
+            , 'CONFIG_PATH'
+            , 'DEBUGGING'
+            , 'LIBRARY_PATH'
+            , 'NUMBER_OF_WORKERS'
+            , 'OUT_CONTAINER'
+            , 'REMOVE_SUBTITLE_STREAMS'
+            , 'RUN_FULL_SCAN_ON_START'
+            , 'SCHEDULE_FULL_SCAN_MINS'
+            , 'SUPPORTED_CONTAINERS'
+            , 'VIDEO_CODEC'
+
+        ]
+        for setting in ENV_SETTINGS:
+            if setting in os.environ:
+                self.setConfigItem(setting, os.environ.get(setting), save_to_file=False)
 
 
     def readSettingsFromFile(self):
@@ -168,6 +164,8 @@ class CONFIG(object):
 
     def setConfigItem(self, key, value, save_to_file=True):
         ### Import env variables and overide defaults
+        if "CONFIG_PATH" in key:
+            self.CONFIG_PATH = value
         if "NUMBER_OF_WORKERS" in key:
             self.NUMBER_OF_WORKERS = value
         if "LIBRARY_PATH" in key:

@@ -33,12 +33,19 @@
 
 
 ### CONFIGURE:
-TEST_VIDEOS=" \
+SMALL_TEST_VIDEOS=" \
         https://sample-videos.com/video123/mkv/720/big_buck_bunny_720p_1mb.mkv \
         https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4 \
         https://sample-videos.com/video123/flv/720/big_buck_bunny_720p_1mb.flv \
+        https://sample-videos.com/video123/3gp/144/big_buck_bunny_144p_1mb.3gp \
     "
-
+# http://www.engr.colostate.edu/me/facil/dynamics/files/flame.avi <- single stream (not supporeted yet)
+MED_TEST_VIDEOS=" \
+        https://sample-videos.com/video123/mkv/720/big_buck_bunny_720p_10mb.mkv \
+        https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_10mb.mp4 \
+        https://sample-videos.com/video123/flv/720/big_buck_bunny_720p_10mb.flv \
+        https://sample-videos.com/video123/3gp/240/big_buck_bunny_240p_10mb.3gp \
+    "
 
 
 
@@ -73,14 +80,6 @@ APT_INSTALL_CMD="sudo apt-get install -y ";
 
 
 
-
-### Create missing folders
-mkdir -p \
-    ${SCRIPT_DIR}/videos
-
-
-
-
 ### FUNCTIONS
 # Install script dependencies:
 setup_script_dependencies() {
@@ -91,14 +90,25 @@ setup_script_dependencies() {
         sudo apt-get update;
         ${APT_INSTALL_CMD} ${APT_TO_INSTALL};
     fi
+    python3 -m pip install --upgrade -r ${SCRIPT_DIR}/../requirements.txt
 }
 # Fetch test media:
 fetch_test_videos() {
-    for url in ${TEST_VIDEOS}; do
+    mkdir -p \
+        ${SCRIPT_DIR}/videos/small \
+        ${SCRIPT_DIR}/videos/med
+    for url in ${SMALL_TEST_VIDEOS}; do
         FILE="${url##*/}";
-        if [[ ! -e ${SCRIPT_DIR}/videos/${FILE} ]]; then
-            echo "Downloading ${url} -> ${SCRIPT_DIR}/videos/${FILE}"
-            curl -L ${url} --output ${SCRIPT_DIR}/videos/${FILE};
+        if [[ ! -e ${SCRIPT_DIR}/videos/small/${FILE} ]]; then
+            echo "Downloading ${url} -> ${SCRIPT_DIR}/videos/small/${FILE}"
+            curl -L ${url} --output ${SCRIPT_DIR}/videos/small/${FILE};
+        fi
+    done
+    for url in ${MED_TEST_VIDEOS}; do
+        FILE="${url##*/}";
+        if [[ ! -e ${SCRIPT_DIR}/videos/med/${FILE} ]]; then
+            echo "Downloading ${url} -> ${SCRIPT_DIR}/videos/med/${FILE}"
+            curl -L ${url} --output ${SCRIPT_DIR}/videos/med/${FILE};
         fi
     done
 }

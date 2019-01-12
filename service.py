@@ -97,6 +97,17 @@ class TaskHandler(threading.Thread):
                     continue
                 except Exception as e:
                     common._logger("Exception in processing scheduledtasks:", message2=str(e), level="exception")
+            while not self.abort_flag.is_set() and not self.inotifytasks.empty():
+                try:
+                    pathname = self.inotifytasks.get_nowait()
+                    if self.job_queue.addItem(pathname):
+                        common._logger("Adding job to queue - {}".format(pathname))
+                    else:
+                        common._logger("Skipping job already in the queue - {}".format(pathname))
+                except queue.Empty:
+                    continue
+                except Exception as e:
+                    common._logger("Exception in processing inotifytasks:", message2=str(e), level="exception")
             time.sleep(.2)
         common._logger("Leaving TaskHandler Monitor loop...")
 

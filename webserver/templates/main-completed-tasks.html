@@ -17,7 +17,12 @@
                     {%end%}
                 </div>
                 <div class="cont-col2">
-                    <div class="desc"> {{ historical_item['description'] }}
+                    <div class="desc"> 
+                    {% try %}
+                        {{ historical_item['description'] }}
+                    {% except %}
+                        <span class="error">(Error fetching historical item information - Please report this as a bug)</span>
+                    {% end %}
                     </div>
                 </div>
             </div>

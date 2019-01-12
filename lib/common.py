@@ -36,6 +36,14 @@ import datetime
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
+class TESTLOGGERHANDLE(object):
+    ''' 
+    A simple test object to receive put() functions meant for a queue object and 
+    pass them straight to our _logger() function
+    '''
+    def put(self,message_dict):
+        _logger(message_dict['message'], message_dict['message2'], message_dict['level'])
+
 def _logger(message, message2 = '', level="info"):
     message  = str(message)
     if message2:
@@ -75,7 +83,30 @@ def timestringToSeconds(timestring):
     return pt.second+pt.minute*60+pt.hour*3600
 
 
+def tail(f, n, offset=0):
+    """Reads a n lines from f with an offset of offset lines."""
+    avg_line_length = 153
+    to_read = n + offset
+    while 1:
+        try:
+            f.seek(-(avg_line_length * to_read), 2)
+            while f.read(1) != b'\n':
+                f.seek(-2, os.SEEK_CUR)
+        except IOError:
+            f.seek(0)
+        pos = f.tell()
+        lines = f.read().splitlines()
+        if len(lines) >= to_read or pos == 0:
+            return lines
+        avg_line_length *= 1.3
 
+
+def touch(fname, mode=0o666, dir_fd=None, **kwargs):
+    """Touch a file. If it does not exist, create it."""
+    flags = os.O_CREAT | os.O_APPEND
+    with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
+        os.utime(f.fileno() if os.utime in os.supports_fd else fname,
+            dir_fd=None if os.supports_fd else dir_fd, **kwargs)
 
 
 def test_logging():

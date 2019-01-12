@@ -1,7 +1,10 @@
 .vscode
 **/__pycache__
 
+# Files used for testing
 config
 cache
 library
 tests/videos/*
+tests/tmp/*
+tests/.vstats_file

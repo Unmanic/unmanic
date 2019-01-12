@@ -159,7 +159,7 @@ class LibraryScanner(threading.Thread):
         self.scheduledtasks.put(pathname)
 
     def fileNotTargetFormat(self,pathname):
-        if not self.ffmpeg.checkFileToBeProcessed(pathname):
+        if not self.ffmpeg.check_file_to_be_processed(pathname):
             if self.settings.DEBUGGING:
                 self._log("File does not need to be processed - {}".format(pathname))
             return False
@@ -212,13 +212,22 @@ class EventProcessor(pyinotify.ProcessEvent):
             if self.settings.DEBUGGING:
                 self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
 
+    def process_IN_MOVED_TO(self, event):
+        self._log("MOVED_TO event detected:", event.pathname)
+        if event.pathname.lower().endswith(self.settings.SUPPORTED_CONTAINERS):
+            # Add it to the queue
+            self.addPathToQueue(event.pathname)
+        else:
+            if self.settings.DEBUGGING:
+                self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
+
     def process_IN_DELETE(self, event):
         self._log("DELETE event detected:", event.pathname)
         self._log("Nothing to do for this event")
 
-    def process_IN_MOVED_FROM(self, event):
-        self._log("MOVED_FROM event detected:", event.pathname)
-        self._log("Nothing to do for this event")
+    def process_default(self, event):
+        if self.settings.DEBUGGING:
+            self._log("NON MONITORED event detected:", event)
 
 
 def start_handler(data_queues, settings, job_queue):

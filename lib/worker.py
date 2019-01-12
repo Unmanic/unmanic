@@ -81,8 +81,8 @@ class JobQueue(object):
             if item == os.path.abspath(pathname):
                 return False
         # Get info on the file from ffmpeg
-        file_info                   = self.ffmpeg.fileProbe(pathname)
-        file_info['video_codecs']   = ','.join(self.ffmpeg.getCurrentVideoCodecs(file_info))
+        file_info                   = self.ffmpeg.file_probe(pathname)
+        file_info['video_codecs']   = ','.join(self.ffmpeg.get_current_video_codecs(file_info))
         file_info['abspath']        = os.path.abspath(pathname)
         file_info['basename']       = os.path.basename(pathname)
         self.all_jobs.append(file_info)
@@ -135,7 +135,7 @@ class WorkerThread(threading.Thread):
         #if (number > 14):
         #    return True
         #return False
-        return self.ffmpeg.processFile(pathname)
+        return self.ffmpeg.process_file(pathname)
 
     def run(self):
         self._log("Starting {}".format(self.name))
@@ -227,6 +227,7 @@ class Worker(threading.Thread):
             # Check if there are any free workers
             if not self.checkForIdleWorkers():
                 # All workers are currently busy
+                time.sleep(5)
                 continue
             while not self.abort_flag.is_set() and not self.complete_queue.empty():
                 try:
@@ -246,6 +247,7 @@ class Worker(threading.Thread):
                     continue
                 except Exception as e:
                     self._log("Exception when fetching completed task report from worker", message2=str(e), level="exception")
+                time.sleep(.2)
             while not self.abort_flag.is_set() and not self.job_queue.isEmpty():
                 # Ensure we have the correct number of workers running
                 self.initWorkerThreads()
@@ -256,8 +258,8 @@ class Worker(threading.Thread):
                 if next_item_to_process:
                     self._log("Processing item - {}".format(next_item_to_process['abspath']))
                     self.addToTaskQueue(next_item_to_process)
-            # Add abort flag to terminate all workers
-            time.sleep(1)
+                time.sleep(.2)
+            # TODO: Add abort flag to terminate all workers
         self._log("Leaving Worker Monitor loop...")
 
     def getAllWorkerStatus(self):

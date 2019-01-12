@@ -122,5 +122,6 @@ def clean_files_in_dir(directory):
 
 def test_logging():
     logging.info("Check that these characters display correctly")
-    logging.info("\u251c – € ’ “ ” « » — à á ã ç ê é í ó õ ú")
+    logging.info("Success: \u251c – € ’ “ ” « » — à á ã ç ê é í ó õ ú")
+    logging.info("Fails: \udce2\udc80\udc98")
 

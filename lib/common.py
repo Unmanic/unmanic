@@ -44,6 +44,7 @@ class TESTLOGGERHANDLE(object):
     def put(self,message_dict):
         _logger(message_dict['message'], message_dict['message2'], message_dict['level'])
 
+# TODO: Move logger to it's own class
 def _logger(message, message2 = '', level="info"):
     message  = str(message)
     if message2:
@@ -107,6 +108,16 @@ def touch(fname, mode=0o666, dir_fd=None, **kwargs):
     with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
         os.utime(f.fileno() if os.utime in os.supports_fd else fname,
             dir_fd=None if os.supports_fd else dir_fd, **kwargs)
+
+def clean_files_in_dir(directory):
+    """This will completely wipe all contents from a directory"""
+    if os.path.exists(directory):
+        for root, subFolders, files in os.walk(directory):
+            # Add all files in this path that match our container filter
+            for file_path in files:
+                pathname = os.path.join(root,file_path)
+                if os.path.isfile(pathname):
+                    os.remove(pathname)
 
 
 def test_logging():

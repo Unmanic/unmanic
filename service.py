@@ -237,8 +237,7 @@ class EventProcessor(pyinotify.ProcessEvent):
         self._log("Nothing to do for this event")
 
     def process_default(self, event):
-        if self.settings.DEBUGGING:
-            self._log("NON MONITORED event detected:", event)
+        pass
 
 
 def start_handler(data_queues, settings, job_queue):

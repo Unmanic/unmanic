@@ -100,9 +100,16 @@ def tail(f, n, offset=0):
             return lines
         avg_line_length *= 1.3
 
+
 def touch(fname, mode=0o666, dir_fd=None, **kwargs):
     """Touch a file. If it does not exist, create it."""
     flags = os.O_CREAT | os.O_APPEND
     with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
         os.utime(f.fileno() if os.utime in os.supports_fd else fname,
             dir_fd=None if os.supports_fd else dir_fd, **kwargs)
+
+
+def test_logging():
+    logging.info("Check that these characters display correctly")
+    logging.info("\u251c – € ’ “ ” « » — à á ã ç ê é í ó õ ú")
+

@@ -1,4 +1,4 @@
-FROM josh5/base-alpine:3.7
+FROM josh5/base-alpine:3.8
 LABEL maintainer="Josh.5 <jsunnex@gmail.com>"
 
 

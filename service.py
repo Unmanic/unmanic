@@ -159,7 +159,7 @@ class LibraryScanner(threading.Thread):
         self.scheduledtasks.put(pathname)
 
     def fileNotTargetFormat(self,pathname):
-        if not self.ffmpeg.checkFileToBeProcessed(pathname):
+        if not self.ffmpeg.check_file_to_be_processed(pathname):
             if self.settings.DEBUGGING:
                 self._log("File does not need to be processed - {}".format(pathname))
             return False

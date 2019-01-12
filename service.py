@@ -292,8 +292,12 @@ def main():
         , "progress_reports":   queue.Queue()
     }
 
+    # Read settings
     settings  = config.CONFIG()
     job_queue = JobQueue(settings, data_queues)
+
+    # Clear cache directroy
+    common.clean_files_in_dir(settings.CACHE_PATH)
 
     # Start the worker threads
     workerHandle = start_workers(data_queues, settings, job_queue)

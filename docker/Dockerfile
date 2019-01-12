@@ -1,4 +1,4 @@
-FROM josh5/base-ubuntu:16.04
+FROM josh5/base-alpine:3.7
 LABEL maintainer="Josh.5 <jsunnex@gmail.com>"
 
 
@@ -20,31 +20,23 @@ COPY /requirements.txt /tmp/requirements.txt
 ### Install pyinotify service.
 RUN \
     echo "**** Update sources ****" \
-        && apt-get update \
+        && apk update \
     && \
     echo "**** Install python ****" \
-        && apt-get install python3 -y --no-install-recommends \
+        && apk add --no-cache \
             python3 \
     && \
-    echo "**** Install package build tools ****" \
-        && apt-get install -y --no-install-recommends \
-            ${BUILD_DEPENDENCIES} \
-    && \
     echo "**** Install ffmpeg ****" \
-        && apt-get install -y \
+        && apk add --no-cache \
             ffmpeg \
     && \
     echo "**** Install pip packages ****" \
         && python3 -m pip install --no-cache-dir -r /tmp/requirements.txt  \
     && \
-    echo "**** cleanup ****" \
-        && apt-get purge -y --auto-remove \
-	        ${BUILD_DEPENDENCIES} \
-        && apt-get clean \
-        && echo rm -rf \
+    echo "**** Cleanup ****" \
+        && rm -rf \
             /tmp/* \
-            /var/tmp/* \
-            /var/lib/apt/lists/*
+            /var/tmp/*
 
 
 ### Add local files
@@ -52,8 +44,10 @@ COPY /docker/root   /
 COPY /              /app/
 
 
-### Intended ports and volumes
-VOLUME \
-    /library \
-    /cache
+### Environment variables
+ENV \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    LC_CTYPE=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8
 

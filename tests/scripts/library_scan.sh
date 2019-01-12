@@ -50,9 +50,15 @@ cp -r ${PROJECT_BASE}/tests/videos/med/* ${PROJECT_BASE}/tests/tmp/library/path2
 
 # Set the config for the application so that it scans for files right away
 DEBUGGING=${DEBUGGING:-true}
-NUMBER_OF_WORKERS=${RUN_FULL_SCAN_ON_START:-1}
+NUMBER_OF_WORKERS=${NUMBER_OF_WORKERS:-1}
 SCHEDULE_FULL_SCAN_MINS=${SCHEDULE_FULL_SCAN_MINS:-10}
 RUN_FULL_SCAN_ON_START=${RUN_FULL_SCAN_ON_START:-true}
+
+for arg in ${@}; do
+    if [[ ${arg} =~ '--clean' ]]; then
+        rm -rf ${PROJECT_BASE}/tests/tmp/config;
+    fi
+done
 
 
 # Run container
@@ -62,6 +68,7 @@ docker run -ti --rm \
     -v ${PROJECT_BASE}/cache:/tmp/unmanic \
     -v ${PROJECT_BASE}/tests/tmp/library/path1:/library/path1 \
     -v ${PROJECT_BASE}/tests/tmp/library/path2:/library/path2 \
+    -v ${PROJECT_BASE}/tests/tmp/config:/config/.unmanic/config \
     -e PUID=${PUID} \
     -e PGID=${PGID} \
     -e DEBUGGING=${DEBUGGING} \

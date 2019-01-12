@@ -4,7 +4,7 @@
     {% for pending_task in handler.getPendingTasks() %}
     <li>
         <div class="task-title">
-            <span class="task-title-sp"> {{ escape(pending_task['basename']) }} </span>
+            <span class="task-title-sp" title="{{ pending_task['abspath'] }}"> {{ pending_task['basename'] }} </span>
             <span class="label label-sm label-success">{{ escape(pending_task['video_codecs']) }}</span>
         </div>
         <div class="task-config">

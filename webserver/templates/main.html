@@ -66,7 +66,7 @@
                                             {% for worker_id in range(range_start, range_end) %}
                                                 {% try %}
                                                 {% set worker_info = all_worker_info[worker_id] %}
-                                                    <div class="col-md-2 col-sm-4 col-xs-6" id="worker_pie_chart_{{ worker_info['id'] }}" >
+                                                    <div class="col-md-2 col-sm-4 col-xs-6" id="worker_pie_chart_{{ escape(worker_info['id']) }}" >
                                                         <div class="easy-pie-chart worker-pie-chart" >
                                                             <div class="number idle" data-percent="100">
                                                                 <span style="margin-left:-7px;"> - </span>

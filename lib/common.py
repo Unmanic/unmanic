@@ -75,3 +75,10 @@ def timestringToSeconds(timestring):
     return pt.second+pt.minute*60+pt.hour*3600
 
 
+
+
+
+def test_logging():
+    logging.info("Check that these characters display correctly")
+    logging.info("\u251c – € ’ “ ” « » — à á ã ç ê é í ó õ ú")
+

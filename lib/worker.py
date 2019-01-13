@@ -124,7 +124,16 @@ class WorkerThread(threading.Thread):
 
     def getJobProgress(self):
         progress = {}
-        progress['percent'] = str(self.ffmpeg.percent)
+        progress['duration']    = str(self.ffmpeg.duration)
+        progress['src_fps']     = str(self.ffmpeg.src_fps)
+        progress['elapsed']     = str(self.ffmpeg.elapsed)
+        progress['time']        = str(self.ffmpeg.time)
+        progress['percent']     = str(self.ffmpeg.percent)
+        progress['frame']       = str(self.ffmpeg.frame)
+        progress['fps']         = str(self.ffmpeg.fps)
+        progress['speed']       = str(self.ffmpeg.speed)
+        progress['bitrate']     = str(self.ffmpeg.bitrate)
+        progress['file_size']   = str(self.ffmpeg.file_size)
         return progress
 
     def processItem(self, pathname):
@@ -271,6 +280,5 @@ class Worker(threading.Thread):
     def getAllHistoricalTasks(self):
         return self.settings.readHistoryLog()
 
-    
 
 

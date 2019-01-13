@@ -1431,8 +1431,8 @@ var updateWorkerPieCharts = function() {
                     $('span', this).text('IDLE');
                     // Set subtitle text
                     $(group_id + ' .worker-subtitle').each(function() {
-                        $(this).text(current_file)
-                        $(this).prop('title', '')
+                        $(this).text(current_file);
+                        $(this).prop('title', '');
                     });
                 } else {
                     // Set graph
@@ -1441,8 +1441,8 @@ var updateWorkerPieCharts = function() {
                     $('span', this).text(element.progress.percent + '%');
                     // Set subtitle text
                     $(group_id + ' .worker-subtitle').each(function() {
-                        $(this).text(element.current_file)
-                        $(this).prop('title', element.current_file)
+                        $(this).text(element.current_file);
+                        $(this).prop('title', element.current_file);
                     });
                 }
             });

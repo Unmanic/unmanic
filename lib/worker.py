@@ -230,6 +230,8 @@ class Worker(threading.Thread):
     def run(self):
         self._log("Starting Worker Monitor loop...")
         while not self.abort_flag.is_set():
+            time.sleep(1)
+
             # First setup the correct number of workers
             self.initWorkerThreads()
 
@@ -238,7 +240,9 @@ class Worker(threading.Thread):
                 # All workers are currently busy
                 time.sleep(5)
                 continue
+
             while not self.abort_flag.is_set() and not self.complete_queue.empty():
+                time.sleep(.2)
                 try:
                     file_info       = self.complete_queue.get_nowait()
                     self.job_queue.removeCompletedItem(file_info)
@@ -256,8 +260,9 @@ class Worker(threading.Thread):
                     continue
                 except Exception as e:
                     self._log("Exception when fetching completed task report from worker", message2=str(e), level="exception")
-                time.sleep(.2)
+
             while not self.abort_flag.is_set() and not self.job_queue.isEmpty():
+                time.sleep(.2)
                 # Ensure we have the correct number of workers running
                 self.initWorkerThreads()
                 # Check if we are able to start up a worker for another encoding job
@@ -267,8 +272,9 @@ class Worker(threading.Thread):
                 if next_item_to_process:
                     self._log("Processing item - {}".format(next_item_to_process['abspath']))
                     self.addToTaskQueue(next_item_to_process)
-                time.sleep(.2)
+
             # TODO: Add abort flag to terminate all workers
+
         self._log("Leaving Worker Monitor loop...")
 
     def getAllWorkerStatus(self):

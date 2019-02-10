@@ -37,6 +37,7 @@ import queue
 import socket
 import ssl
 import tornado.ioloop
+import tornado.log as tornado_log
 import tornado.web
 import tornado.template
 from tornado.httpserver import HTTPServer
@@ -45,6 +46,8 @@ import asyncio
 
 from webserver.main import MainUIRequestHandler
 from webserver.settings import SettingsUIRequestHandler
+
+from lib import common
 
 # TODO Move these settings parsing to their own file
 settings = {}
@@ -58,19 +61,32 @@ class UIServer(threading.Thread):
         self.settings       = settings
         self.app            = None
         self.data_queues    = data_queues
-        self.messages       = data_queues["messages"]
+        self.logger         = data_queues["logging"].get_logger(self.name)
         self.inotifytasks   = data_queues["inotifytasks"]
         self.workerHandle   = workerHandle
         self.abort_flag     = threading.Event()
         self.abort_flag.clear()
+        self.set_logging()
 
     def _log(self, message, message2 = '', level = "info"):
-        message = "[{}] {}".format(self.name, message)
-        self.messages.put({
-              "message":message
-            , "message2":message2
-            , "level":level
-        })
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
+
+    def set_logging(self):
+        # TODO: This is not logging to a file correctly
+        if self.settings and self.settings.LOG_PATH:
+            # Create directory if not exists
+            if not os.path.exists(self.settings.LOG_PATH):
+                os.makedirs(self.settings.LOG_PATH)
+            import logging
+            # Create file handler
+            log_file        = os.path.join(self.settings.LOG_PATH, 'tornado.log')
+            file_handler    = logging.FileHandler(log_file)
+            torando_logger  = logging.getLogger("tornado.application")
+            file_handler.setLevel(logging.INFO)
+            torando_logger.setLevel(logging.INFO)
+            torando_logger.addHandler(file_handler)
+            tornado_log.enable_pretty_logging()
 
     def run(self):
         self._log("Settings up UIServer event loop...")
@@ -107,7 +123,6 @@ if __name__ == "__main__":
     data_queues = {
           "scheduledtasks": queue.Queue()
         , "inotifytasks":   queue.Queue()
-        , "messages":       queue.Queue()
     }
     settings = None
     uiserver = UIServer(data_queues, settings)

@@ -2,7 +2,7 @@
 **/__pycache__
 
 # Files used for testing
-config
+config/**
 cache
 library
 tests/videos/*

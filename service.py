@@ -43,12 +43,16 @@ sys.path.append('lib')
 sys.path.append('webserver')
 
 import config
+from lib import unlogger
 from lib import common
 from lib.uiserver import UIServer
 from lib.worker import JobQueue
 from lib.worker import Worker
 from lib import ffmpeg
 
+
+unmanic_logging = unlogger.UnmanicLogger.__call__()
+main_logger = unmanic_logging.get_logger()
 
 
 threads   = []
@@ -60,56 +64,38 @@ class TaskHandler(threading.Thread):
         super(TaskHandler, self).__init__(name='TaskHandler')
         self.settings       = settings
         self.job_queue      = job_queue
-        self.messages       = data_queues["messages"]
         self.inotifytasks   = data_queues["inotifytasks"]
         self.scheduledtasks = data_queues["scheduledtasks"]
         self.abort_flag     = threading.Event()
         self.abort_flag.clear()
 
     def run(self):
-        common._logger("Starting TaskHandler Monitor loop...")
+        main_logger.info("Starting TaskHandler Monitor loop...")
         while not self.abort_flag.is_set():
-            while not self.abort_flag.is_set() and not self.messages.empty():
-                try:
-                    log      = self.messages.get_nowait()
-                    message  = None
-                    message2 = None
-                    level    = "info"
-                    if "message" in log:
-                        message = log["message"]
-                    if "message2" in log:
-                        message2 = log["message2"]
-                    if "level" in log:
-                        level = log["level"]
-                    common._logger(message=message, message2=message2, level=level)
-                except queue.Empty:
-                    continue
-                except Exception as e:
-                    common._logger("Exception in logging:", message2=str(e), level="exception")
             while not self.abort_flag.is_set() and not self.scheduledtasks.empty():
                 try:
                     pathname = self.scheduledtasks.get_nowait()
                     if self.job_queue.addItem(pathname):
-                        common._logger("Adding job to queue - {}".format(pathname))
+                        main_logger.info("Adding job to queue - {}".format(pathname))
                     else:
-                        common._logger("Skipping job already in the queue - {}".format(pathname))
+                        main_logger.info("Skipping job already in the queue - {}".format(pathname))
                 except queue.Empty:
                     continue
                 except Exception as e:
-                    common._logger("Exception in processing scheduledtasks:", message2=str(e), level="exception")
+                    main_logger.error("Exception in processing scheduledtasks:", message2=str(e), level="exception")
             while not self.abort_flag.is_set() and not self.inotifytasks.empty():
                 try:
                     pathname = self.inotifytasks.get_nowait()
                     if self.job_queue.addItem(pathname):
-                        common._logger("Adding job to queue - {}".format(pathname))
+                        main_logger.info("Adding job to queue - {}".format(pathname))
                     else:
-                        common._logger("Skipping job already in the queue - {}".format(pathname))
+                        main_logger.info("Skipping job already in the queue - {}".format(pathname))
                 except queue.Empty:
                     continue
                 except Exception as e:
-                    common._logger("Exception in processing inotifytasks:", message2=str(e), level="exception")
+                    main_logger.error("Exception in processing inotifytasks:", message2=str(e), level="exception")
             time.sleep(.2)
-        common._logger("Leaving TaskHandler Monitor loop...")
+        main_logger.info("Leaving TaskHandler Monitor loop...")
 
 
 
@@ -119,19 +105,15 @@ class LibraryScanner(threading.Thread):
         self.interval       = 0
         self.firstrun       = True
         self.settings       = settings
-        self.messages       = data_queues["messages"]
+        self.logger         = data_queues["logging"].get_logger(self.name)
         self.scheduledtasks = data_queues["scheduledtasks"]
         self.abort_flag     = threading.Event()
         self.abort_flag.clear()
-        self.ffmpeg         = ffmpeg.FFMPEGHandle(settings, data_queues['messages'])
+        self.ffmpeg         = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
 
     def _log(self, message, message2 = '', level = "info"):
-        message = "[{}] {}".format(self.name, message)
-        self.messages.put({
-              "message":message
-            , "message2":message2
-            , "level":level
-        })
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
 
     def run(self):
         # If we have a config set to run a schedule, then start the process.
@@ -198,18 +180,14 @@ class EventProcessor(pyinotify.ProcessEvent):
     def __init__(self, data_queues, settings):
         self.name           = "EventProcessor"
         self.settings       = settings
-        self.messages       = data_queues["messages"]
+        self.logger         = data_queues["logging"].get_logger(self.name)
         self.inotifytasks   = data_queues["inotifytasks"]
         self.abort_flag     = threading.Event()
         self.abort_flag.clear()
 
     def _log(self, message, message2 = '', level = "info"):
-        message = "[{}] {}".format(self.name, message)
-        self.messages.put({
-              "message":message
-            , "message2":message2
-            , "level":level
-        })
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
 
     def addPathToQueue(self,pathname):
         self.inotifytasks.put(pathname)
@@ -241,7 +219,7 @@ class EventProcessor(pyinotify.ProcessEvent):
 
 
 def start_handler(data_queues, settings, job_queue):
-    common._logger("Starting TaskHandler")
+    main_logger.info("Starting TaskHandler")
     handler = TaskHandler(data_queues, settings, job_queue)
     handler.daemon=True
     handler.start()
@@ -249,7 +227,7 @@ def start_handler(data_queues, settings, job_queue):
 
 
 def start_workers(data_queues, settings, job_queue):
-    common._logger("Starting Workers")
+    main_logger.info("Starting Workers")
     worker = Worker(data_queues, settings, job_queue)
     worker.daemon=True
     worker.start()
@@ -257,7 +235,7 @@ def start_workers(data_queues, settings, job_queue):
 
 
 def start_library_scanner_manager(data_queues, settings):
-    common._logger("Starting LibraryScanner")
+    main_logger.info("Starting LibraryScanner")
     scheduler = LibraryScanner(data_queues, settings)
     scheduler.daemon=True
     scheduler.start()
@@ -265,7 +243,7 @@ def start_library_scanner_manager(data_queues, settings):
 
 
 def start_inotify_watch_manager(data_queues, settings):
-    common._logger("Starting EventProcessor")
+    main_logger.info("Starting EventProcessor")
     wm = pyinotify.WatchManager()
     wm.add_watch(settings.LIBRARY_PATH, pyinotify.ALL_EVENTS, rec=True)
     # event processor
@@ -276,7 +254,7 @@ def start_inotify_watch_manager(data_queues, settings):
 
 
 def start_ui_server(data_queues, settings, workerHandle):
-    common._logger("Starting UI Server")
+    main_logger.info("Starting UI Server")
     uiserver = UIServer(data_queues, settings, workerHandle)
     uiserver.daemon=True
     uiserver.start()
@@ -284,15 +262,21 @@ def start_ui_server(data_queues, settings, workerHandle):
 
 
 def main():
+    # Read settings
+    settings  = config.CONFIG(main_logger)
+
+    # Apply settings to logging
+    unmanic_logging.setup_logger(settings)
+
+    # Create our data queues
     data_queues = {
           "scheduledtasks":     queue.Queue()
         , "inotifytasks":       queue.Queue()
-        , "messages":           queue.Queue()
         , "progress_reports":   queue.Queue()
+        , "logging":            unmanic_logging
     }
 
-    # Read settings
-    settings  = config.CONFIG()
+    # Setup job queue
     job_queue = JobQueue(settings, data_queues)
 
     # Clear cache directroy
@@ -317,12 +301,12 @@ def main():
         time.sleep(5)
 
     # stop everything
-    common._logger("Stopping all processes")
+    main_logger.info("Stopping all processes")
     scheduler.abort_flag.set()
     handler.abort_flag.set()
     scheduler.join()
     handler.join()
-    common._logger("Exit")
+    main_logger.info("Exit")
 
 if (__name__ == "__main__"):
     main()

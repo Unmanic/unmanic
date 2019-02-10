@@ -37,6 +37,7 @@ import collections
 import os
 
 from lib import ffmpeg
+from lib import common
 
 
 # An object to contain all details of the job queue in such a way that it is presented in a synchronus list
@@ -47,16 +48,12 @@ class JobQueue(object):
         self.name           = 'JobQueue'
         self.all_jobs       = collections.deque()
         self.in_progress    = collections.deque()
-        self.ffmpeg         = ffmpeg.FFMPEGHandle(settings, data_queues['messages'])
-        self.messages       = data_queues['messages']
+        self.ffmpeg         = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
+        self.logger         = data_queues["logging"].get_logger(self.name)
 
     def _log(self, message, message2 = '', level = "info"):
-        message = "[{}] {}".format(self.name, message)
-        self.messages.put({
-              "message":message
-            , "message2":message2
-            , "level":level
-        })
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
 
     def isEmpty(self):
         if self.all_jobs:
@@ -99,16 +96,20 @@ class WorkerThread(threading.Thread):
     def __init__(self, threadID, name, logger, settings, data_queues, task_queue, complete_queue):
         super(WorkerThread, self).__init__(name=name)
         self.threadID           = threadID
-        self._log               = logger
         self.data_queues        = data_queues
         self.progress_reports   = data_queues['progress_reports']
         self.task_queue         = task_queue
         self.complete_queue     = complete_queue
         self.idle               = True
         self.current_file_info  = {}
-        self.ffmpeg             = ffmpeg.FFMPEGHandle(settings, data_queues['messages'])
+        self.ffmpeg             = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
         self.redundant_flag     = threading.Event()
         self.redundant_flag.clear()
+        self.logger             = data_queues["logging"].get_logger(self.name)
+
+    def _log(self, message, message2 = '', level = "info"):
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
 
     def getStatus(self):
         status = {}
@@ -174,7 +175,7 @@ class Worker(threading.Thread):
         self.settings       = settings
         self.job_queue      = job_queue
         self.data_queues    = data_queues
-        self.messages       = data_queues["messages"]
+        self.logger         = data_queues["logging"].get_logger(self.name)
         self.task_queue     = queue.Queue(maxsize=1)
         self.complete_queue = queue.Queue()
         self.worker_threads = {}
@@ -183,12 +184,8 @@ class Worker(threading.Thread):
         self.abort_flag.clear()
 
     def _log(self, message, message2 = '', level = "info"):
-        message = "[{}] {}".format(self.name, message)
-        self.messages.put({
-              "message":message
-            , "message2":message2
-            , "level":level
-        })
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
 
     def initWorkerThreads(self):
         # Remove any redundant idle workers from our list

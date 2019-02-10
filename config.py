@@ -42,14 +42,17 @@ HOME_DIR = os.path.expanduser("~")
 APP_DIR  = os.path.dirname(os.path.abspath(__file__))
 
 class CONFIG(object):
-    def __init__(self):
-        common._logger("Importing configuration")
+    def __init__(self, logger = None):
+        self.name   = "Config"
+        self.logger = logger
 
+        ### Get application version
         self.readVersion()
 
         ### Set defaults
         # TODO: Set these back to defaults
         self.CONFIG_PATH=os.path.join(HOME_DIR, '.unmanic', 'config')
+        self.LOG_PATH=os.path.join(HOME_DIR, '.unmanic', 'logs')
         self.LIBRARY_PATH='/library'
         self.CACHE_PATH='/tmp/unmanic'
         self.VIDEO_CODEC='hevc'
@@ -107,12 +110,18 @@ class CONFIG(object):
         ### Finally, read config from file and override all above settings.
         self.readSettingsFromFile()
 
+    def _log(self, message, message2 = '', level = "info"):
+        if self.logger:
+            message = common.format_message(message, message2)
+            getattr(self.logger, level)(message)
+
     def importSettingsFromEnv(self):
         ENV_SETTINGS = [
               'AUDIO_CODEC'
             , 'AUDIO_STEREO_STREAM_BITRATE'
             , 'CACHE_PATH'
             , 'CONFIG_PATH'
+            , 'LOG_PATH'
             , 'DEBUGGING'
             , 'LIBRARY_PATH'
             , 'NUMBER_OF_WORKERS'
@@ -139,7 +148,7 @@ class CONFIG(object):
                 with open(settings_file) as infile:
                     data = json.load(infile)
             except Exception as e:
-                common._logger("Exception in reading saved settings from file:", message2=str(e), level="exception")
+                self._log("Exception in reading saved settings from file:", message2=str(e), level="exception")
             current_config = self.getConfigAsDict()
             for item in current_config:
                 if item in data:
@@ -154,7 +163,7 @@ class CONFIG(object):
             with open(settings_file, 'w') as outfile:
                 json.dump(data, outfile, sort_keys = True, indent = 4)
         except Exception as e:
-            common._logger("Exception in writing settings to file:", message2=str(e), level="exception")
+            self._log("Exception in writing settings to file:", message2=str(e), level="exception")
 
     def getConfigAsDict(self):
         return self.__dict__
@@ -166,6 +175,8 @@ class CONFIG(object):
         ### Import env variables and overide defaults
         if "CONFIG_PATH" in key:
             self.CONFIG_PATH = value
+        if "LOG_PATH" in key:
+            self.LOG_PATH = value
         if "NUMBER_OF_WORKERS" in key:
             self.NUMBER_OF_WORKERS = value
         if "LIBRARY_PATH" in key:
@@ -227,14 +238,14 @@ class CONFIG(object):
                 with open(history_file) as infile:
                     data = json.load(infile)
             except JSONDecodeError:
-                common._logger("ValueError in reading history from file:", level="exception")
+                self._log("ValueError in reading history from file:", level="exception")
             except Exception as e:
-                common._logger("Exception in reading history from file:", message2=str(e), level="exception")
+                self._log("Exception in reading history from file:", message2=str(e), level="exception")
         data.reverse()
         return data
 
     def writeHistoryLog(self, data):
-        common._logger("Writing to history file", message2=data)
+        self._log("Writing to history file", message2=data)
         if not os.path.exists(self.CONFIG_PATH):
             os.makedirs(self.CONFIG_PATH)
         history_file = os.path.join(self.CONFIG_PATH, 'history.json')
@@ -242,7 +253,7 @@ class CONFIG(object):
             with open(history_file, 'w') as outfile:
                 json.dump(data, outfile, sort_keys = True, indent = 4)
         except Exception as e:
-            common._logger("Exception in writing history to file:", message2=str(e), level="exception")
+            self._log("Exception in writing history to file:", message2=str(e), level="exception")
 
     def readVersion(self):
         version_file = os.path.join(APP_DIR,'version')

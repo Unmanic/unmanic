@@ -91,10 +91,10 @@ class FFMPEGHandleConversionError(Exception):
 #
 #
 class FFMPEGHandle(object):
-    def __init__(self, settings, messages):
+    def __init__(self, settings, logging):
         self.name           = 'FFMPEGHandle'
+        self.logger         = logging.get_logger(self.name)
         self.settings       = settings
-        self.messages       = messages
         self.set_info_defaults()
 
     def set_info_defaults(self):
@@ -117,12 +117,8 @@ class FFMPEGHandle(object):
         self.file_size      = None
 
     def _log(self, message, message2 = '', level = "info"):
-        message = "[{}] {}".format(self.name, message)
-        self.messages.put({
-              "message":message
-            , "message2":message2
-            , "level":level
-        })
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
 
     def file_probe(self, vid_file_path):
         ''' Give a json from ffprobe command line
@@ -458,17 +454,16 @@ class FFMPEGHandle(object):
                 _percent       = int(int(self.time) / int(self.duration) * 100)
             if _percent and _percent > self.percent:
                 self.percent   = _percent
-
-        #if self.settings.DEBUGGING:
-        #    self._log("TOTAL: frames", self.total_frames, level='debug')
-        #    self._log("TOTAL: duration", self.duration, level='debug')
-        #    self._log("PROGRESS: elapsed time", self.elapsed, level='debug')
-        #    self._log("PROGRESS: seconds converted", self.time, level='debug')
-        #    self._log("PROGRESS: percent converted", self.percent, level='debug')
-        #    self._log("PROGRESS: frames converted", self.frame, level='debug')
-        #    self._log("PROGRESS: speed: {}x".format(self.speed), level='debug')
-        #    self._log("PROGRESS: bitrate", self.bitrate, level='debug')
-        #    self._log("PROGRESS: file size", self.file_size, level='debug')
+                
+        self._log("TOTAL: frames", self.total_frames, level='debug')
+        self._log("TOTAL: duration", self.duration, level='debug')
+        self._log("PROGRESS: elapsed time", self.elapsed, level='debug')
+        self._log("PROGRESS: seconds converted", self.time, level='debug')
+        self._log("PROGRESS: percent converted", self.percent, level='debug')
+        self._log("PROGRESS: frames converted", self.frame, level='debug')
+        self._log("PROGRESS: speed: {}x".format(self.speed), level='debug')
+        self._log("PROGRESS: bitrate", self.bitrate, level='debug')
+        self._log("PROGRESS: file size", self.file_size, level='debug')
 
     def get_progress_from_regex_of_string(self,line,regex_string,default=0):
         return_value = default
@@ -506,8 +501,15 @@ class TestClass(object):
         import config
         self.settings = config.CONFIG()
         self.settings.DEBUGGING = True
-        self.messages = common.TESTLOGGERHANDLE()
-        self.ffmpeg   = FFMPEGHandle(self.settings, self.messages)
+        import unlogger
+        self.logging = unlogger.UnmanicLogger.__call__()
+        self.logging.setup_logger(self.settings)
+        self.logger  = self.logging.get_logger()
+        self.ffmpeg  = FFMPEGHandle(self.settings, self.logging)
+
+    def _log(self, message, message2 = '', level = "info"):
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
 
     def build_ffmpeg_args(self,test_for_failure=False):
         configured_vencoder = self.settings.CODEC_CONFIG[self.settings.VIDEO_CODEC]['encoder']
@@ -518,10 +520,10 @@ class TestClass(object):
                 break
         if test_for_failure:
             vencoder = failure_vencoder
-            common._logger("Using encoder {} to setup failure condition".format(vencoder))
+            self._log("Using encoder {} to setup failure condition".format(vencoder))
         else:
             vencoder = configured_vencoder
-            common._logger("Using encoder {} to setup success condition".format(vencoder))
+            self._log("Using encoder {} to setup success condition".format(vencoder))
         # Setup default args
         args = [
             '-hide_banner',
@@ -546,7 +548,7 @@ class TestClass(object):
 
     def convert_single_file(self,infile,outfile,test_for_failure=False):
         if not os.path.exists(infile):
-            common._logger("No such file: {}".format(infile))
+            self._log("No such file: {}".format(infile))
             sys.exit(1)
         # Ensure the directory exists
         common.ensureDir(outfile)
@@ -556,7 +558,7 @@ class TestClass(object):
         # Setup ffmpeg args
         built_args = self.build_ffmpeg_args(test_for_failure)
         # Run conversion process
-        common._logger("Converting {} -> {}".format(infile, outfile))
+        self._log("Converting {} -> {}".format(infile, outfile))
         assert self.ffmpeg.convert_file_and_fetch_progress(infile, outfile, built_args)
         if not test_for_failure:
             assert self.ffmpeg.post_process_file(outfile)
@@ -611,7 +613,7 @@ class TestClass(object):
             infile   = os.path.join(tests_dir, 'videos', 'med', video_file)
             # Copy the file to a tmp location (it will be replaced)
             testfile = os.path.join(tmp_dir, filename + file_extension)
-            common._logger(infile, testfile)
+            self._log(infile, testfile)
             shutil.copy(infile, testfile)
             assert self.ffmpeg.process_file(testfile)
             break

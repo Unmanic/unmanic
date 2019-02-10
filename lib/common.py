@@ -33,19 +33,9 @@ import os
 import ago
 import time
 import datetime
-import logging
-logging.basicConfig(level=logging.DEBUG)
 
-class TESTLOGGERHANDLE(object):
-    ''' 
-    A simple test object to receive put() functions meant for a queue object and 
-    pass them straight to our _logger() function
-    '''
-    def put(self,message_dict):
-        _logger(message_dict['message'], message_dict['message2'], message_dict['level'])
 
-# TODO: Move logger to it's own class
-def _logger(message, message2 = '', level="info"):
+def format_message(message, message2 = ''):
     message  = str(message)
     if message2:
         # Message2 can support other objects:
@@ -57,17 +47,8 @@ def _logger(message, message2 = '', level="info"):
             message = "%s \n%s" % (message,str(message2))
         else:
             message = "%s - %s" % (message,str(message2))
-    message = "LibraryOptimiser - %s" % message
-    if level == "debug":
-        logging.debug(message);
-    elif level == "info":
-        logging.info(message);
-    elif level == "warning":
-        logging.warning(message);
-    elif level == "exception":
-        logging.exception(message);
-    # TODO: Also output all logs to logfile. Then have a function read this to display on the web UI
-
+    message = "[FORMATTED] - %s" % message
+    return message
 
 def makeTimestampHumanReadable(ts):
     return ago.human(ts, precision=1)
@@ -118,10 +99,4 @@ def clean_files_in_dir(directory):
                 pathname = os.path.join(root,file_path)
                 if os.path.isfile(pathname):
                     os.remove(pathname)
-
-
-def test_logging():
-    logging.info("Check that these characters display correctly")
-    logging.info("Success: \u251c – € ’ “ ” « » — à á ã ç ê é í ó õ ú")
-    logging.info("Fails: \udce2\udc80\udc98")
 

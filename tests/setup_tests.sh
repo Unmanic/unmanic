@@ -90,7 +90,7 @@ setup_script_dependencies() {
         sudo apt-get update;
         ${APT_INSTALL_CMD} ${APT_TO_INSTALL};
     fi
-    python3 -m pip install --upgrade -r ${SCRIPT_DIR}/../requirements.txt
+    python3 -m pip install --user --upgrade -r ${SCRIPT_DIR}/../requirements.txt
 }
 # Fetch test media:
 fetch_test_videos() {

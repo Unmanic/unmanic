@@ -166,10 +166,15 @@ class CONFIG(object):
             self._log("Exception in writing settings to file:", message2=str(e), level="exception")
 
     def getConfigAsDict(self):
-        return self.__dict__
+        # Create a copy of this class's dict
+        config_dict = self.__dict__.copy()
+        # Remove the logger element
+        config_dict.pop('logger', None)
+        # Return the remaining keys
+        return config_dict
 
     def getConfigKeys(self):
-        return self.__dict__.keys()
+        return self.getConfigAsDict().keys()
 
     def setConfigItem(self, key, value, save_to_file=True):
         ### Import env variables and overide defaults

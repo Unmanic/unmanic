@@ -31,6 +31,8 @@
 
 # This script is to setup a series of tests for the application
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
+
 
 ### CONFIGURE:
 SMALL_TEST_VIDEOS=" \
@@ -49,46 +51,14 @@ MED_TEST_VIDEOS=" \
 
 
 
-### CHECK IF WE CAN RUN...
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-RELEASE=$(lsb_release -sr);
-RELEASE_MAJOR=$(lsb_release -sr | awk -F '.' '{print $1}');
-CODENAME=$(lsb_release -sc);
-if [[ ${OS_ID} =~ "linuxmint" ]]; then
-    # Running Linux Mint...
-    # Get Ubuntu codename for this release
-    CODENAME=$(cat /etc/os-release | grep UBUNTU_CODENAME | awk -F'=' '{print $2}');
-    if [[ ! "${RELEASE_MAJOR}" -ge "18" ]]; then
-        echo "You need to run Linux Mint 18 or higher";
-        exit 1;
-    fi
-else
-    if [[ ! "${RELEASE_MAJOR}" -ge "16" ]]; then
-        echo "You need to run Ubuntu 16 or higher"
-        exit 1;
-    fi
-fi
-DATE_STAMP=$(date +"%Y-%m-%d_%H-%M-%S");
-
-# Setup apt install command
-APT_ARGS="-y";
-if [[ "${RELEASE_MAJOR}" -ge "18" ]]; then
-    APT_ARGS+=" -n";
-fi
-APT_PACKAGES="";
-APT_INSTALL_CMD="sudo apt-get install -y ";
-
-
-
 ### FUNCTIONS
 # Install script dependencies:
 setup_script_dependencies() {
-    APT_TO_INSTALL="";
-    [[ ! -x $(which curl) ]] && APT_TO_INSTALL="${APT_TO_INSTALL} curl";
-    if [[ "${APT_TO_INSTALL}" != "" ]]; then
-        stage_header "Installing script dependencies collection...";
-        sudo apt-get update;
-        ${APT_INSTALL_CMD} ${APT_TO_INSTALL};
+    TO_INSTALL="";
+    [[ ! -x $(command -v curl) ]] && TO_INSTALL="${TO_INSTALL} curl";
+    if [[ "${TO_INSTALL}" != "" ]]; then
+        echo "Missing dependencies - ${TO_INSTALL}";
+        exit 0;
     fi
     python3 -m pip install --user --upgrade -r ${SCRIPT_DIR}/../requirements.txt
 }

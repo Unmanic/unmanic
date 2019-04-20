@@ -68,7 +68,7 @@ docker run -ti --rm \
     -v ${PROJECT_BASE}/cache:/tmp/unmanic \
     -v ${PROJECT_BASE}/tests/tmp/library/path1:/library/path1 \
     -v ${PROJECT_BASE}/tests/tmp/library/path2:/library/path2 \
-    -v ${PROJECT_BASE}/tests/tmp/config:/config/.unmanic/config \
+    -v ${PROJECT_BASE}/tests/tmp/config:/config \
     -e PUID=${PUID} \
     -e PGID=${PGID} \
     -e DEBUGGING=${DEBUGGING} \

@@ -102,6 +102,10 @@ class CONFIG(object):
                 "extension":"mkv",
                 "description":"Matroska",
             },
+            "mpeg-4": {
+                "extension":"mp4",
+                "description":"MP4 (MPEG-4 Part 14)",
+            },
         }
 
         ### Import env variables and override defaults

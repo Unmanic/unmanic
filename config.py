@@ -94,17 +94,53 @@ class CONFIG(object):
         ### Set the supported muxers (for destination)
         # TODO: Read this from ffmpeg
         self.MUXER_CONFIG = {
+            "3g2": {
+                "extension":"3g2",
+                "description":"3GP2 (3GPP2 file format)",
+            },
+            "3gp": {
+                "extension":"3gp",
+                "description":"3GP (3GPP file format)",
+            },
             "avi": {
                 "extension":"avi",
                 "description":"AVI (Audio Video Interleaved)",
+            },
+            "flv": {
+                "extension":"flv",
+                "description":"FLV (Flash Video)",
             },
             "matroska": {
                 "extension":"mkv",
                 "description":"Matroska",
             },
-            "mpeg-4": {
+            "mov": {
+                "extension":"mov",
+                "description":"QuickTime / MOV",
+            },
+            "mp4": {
                 "extension":"mp4",
                 "description":"MP4 (MPEG-4 Part 14)",
+            },
+            "mpeg": {
+                "extension":"mpeg",
+                "description":"MPEG-1 Systems / MPEG program stream",
+            },
+            "mpegts": {
+                "extension":"ts",
+                "description":"MPEG-TS (MPEG-2 Transport Stream)",
+            },
+            "ogv": {
+                "extension":"ogv",
+                "description":"Ogg Video",
+            },
+            "psp": {
+                "extension":"psp",
+                "description":"PSP MP4 (MPEG-4 Part 14)",
+            },
+            "vob": {
+                "extension":"vob",
+                "description":"MPEG-2 PS (VOB)",
             },
         }
 

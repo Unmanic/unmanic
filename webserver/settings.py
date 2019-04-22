@@ -54,9 +54,9 @@ class SettingsUIRequestHandler(tornado.web.RequestHandler):
             self.render("settings.html", title="My title", config=self.config, items=items)
 
     def post(self, path):
-        current_config_dict = self.config.getConfigAsDict()
+        current_config_dict = self.config.get_config_as_dict()
         for config_item in current_config_dict.keys():
             value = self.get_arguments(config_item)
             if value:
-                self.config.setConfigItem(config_item, value[0])
+                self.config.set_config_item(config_item, value[0])
         self.get(path)

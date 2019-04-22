@@ -30,156 +30,152 @@
 ###################################################################################################
 
 import os
+import time
 from lib import common
 
 import json
+
 try:
     from json.decoder import JSONDecodeError
 except ImportError:
     JSONDecodeError = ValueError
 
 HOME_DIR = os.path.expanduser("~")
-APP_DIR  = os.path.dirname(os.path.abspath(__file__))
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 class CONFIG(object):
-    def __init__(self, logger = None):
-        self.name   = "Config"
+    def __init__(self, logger=None):
+        self.name = "Config"
         self.logger = logger
 
-        ### Get application version
-        self.readVersion()
+        # Set defaults
+        self.CONFIG_PATH = os.path.join(HOME_DIR, '.unmanic', 'config')
+        self.LOG_PATH = os.path.join(HOME_DIR, '.unmanic', 'logs')
+        self.LIBRARY_PATH = '/library'
+        self.CACHE_PATH = '/tmp/unmanic'
+        self.VIDEO_CODEC = 'hevc'
+        self.AUDIO_CODEC = 'aac'
+        self.OUT_CONTAINER = 'mkv'
+        self.SUPPORTED_CONTAINERS = ('mkv', 'avi', 'mov', 'ts', 'rmvb', 'mp4',)
+        self.REMOVE_SUBTITLE_STREAMS = True
+        self.DEBUGGING = False
+        self.AUDIO_STEREO_STREAM_BITRATE = '128k'
+        self.SCHEDULE_FULL_SCAN_MINS = '60'
+        self.RUN_FULL_SCAN_ON_START = False
+        self.NUMBER_OF_WORKERS = '3'
+        self.INOTIFY = True
 
-        ### Set defaults
-        # TODO: Set these back to defaults
-        self.CONFIG_PATH=os.path.join(HOME_DIR, '.unmanic', 'config')
-        self.LOG_PATH=os.path.join(HOME_DIR, '.unmanic', 'logs')
-        self.LIBRARY_PATH='/library'
-        self.CACHE_PATH='/tmp/unmanic'
-        self.VIDEO_CODEC='hevc'
-        self.AUDIO_CODEC='aac'
-        self.OUT_CONTAINER='mkv'
-        self.SUPPORTED_CONTAINERS=('mkv','avi','mov','ts','rmvb','mp4',)
-        self.REMOVE_SUBTITLE_STREAMS=True
-        self.DEBUGGING=True
-        self.AUDIO_STEREO_STREAM_BITRATE='128k'
-        self.SCHEDULE_FULL_SCAN_MINS='60'
-        self.RUN_FULL_SCAN_ON_START=False
-        self.NUMBER_OF_WORKERS='3'
-        self.INOTIFY=True
-
-        ### Set the supported codecs (for destination)
+        # Set the supported codecs (for destination)
         # TODO: Read this from ffmpeg
         self.CODEC_CONFIG = {
             "hevc": {
-                "type":"video",
-                "codec_long_name":"HEVC (High Efficiency Video Coding)",
-                "encoder":"libx265"
+                "type": "video",
+                "codec_long_name": "HEVC (High Efficiency Video Coding)",
+                "encoder": "libx265"
             },
             "h264": {
-                "type":"video",
-                "codec_long_name":"H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
-                "encoder":"libx264"
+                "type": "video",
+                "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+                "encoder": "libx264"
             },
             "aac": {
-                "type":"audio",
-                "codec_long_name":"AAC (Advanced Audio Coding)",
-                "encoder":"aac"
+                "type": "audio",
+                "codec_long_name": "AAC (Advanced Audio Coding)",
+                "encoder": "aac"
             },
             "mp3": {
-                "type":"audio",
-                "codec_long_name":"MP3 (MPEG audio layer 3)",
-                "encoder":"libmp3lame"
+                "type": "audio",
+                "codec_long_name": "MP3 (MPEG audio layer 3)",
+                "encoder": "libmp3lame"
             }
         }
 
-        ### Set the supported muxers (for destination)
-        # TODO: Read this from ffmpeg
+        # Set the supported muxers (for destination)
         self.MUXER_CONFIG = {
             "3g2": {
-                "extension":"3g2",
-                "description":"3GP2 (3GPP2 file format)",
+                "extension": "3g2",
+                "description": "3GP2 (3GPP2 file format)",
             },
             "3gp": {
-                "extension":"3gp",
-                "description":"3GP (3GPP file format)",
+                "extension": "3gp",
+                "description": "3GP (3GPP file format)",
             },
             "avi": {
-                "extension":"avi",
-                "description":"AVI (Audio Video Interleaved)",
+                "extension": "avi",
+                "description": "AVI (Audio Video Interleaved)",
             },
             "flv": {
-                "extension":"flv",
-                "description":"FLV (Flash Video)",
+                "extension": "flv",
+                "description": "FLV (Flash Video)",
             },
             "matroska": {
-                "extension":"mkv",
-                "description":"Matroska",
+                "extension": "mkv",
+                "description": "Matroska",
             },
             "mov": {
-                "extension":"mov",
-                "description":"QuickTime / MOV",
+                "extension": "mov",
+                "description": "QuickTime / MOV",
             },
             "mp4": {
-                "extension":"mp4",
-                "description":"MP4 (MPEG-4 Part 14)",
+                "extension": "mp4",
+                "description": "MP4 (MPEG-4 Part 14)",
             },
             "mpeg": {
-                "extension":"mpeg",
-                "description":"MPEG-1 Systems / MPEG program stream",
+                "extension": "mpeg",
+                "description": "MPEG-1 Systems / MPEG program stream",
             },
             "mpegts": {
-                "extension":"ts",
-                "description":"MPEG-TS (MPEG-2 Transport Stream)",
+                "extension": "ts",
+                "description": "MPEG-TS (MPEG-2 Transport Stream)",
             },
             "ogv": {
-                "extension":"ogv",
-                "description":"Ogg Video",
+                "extension": "ogv",
+                "description": "Ogg Video",
             },
             "psp": {
-                "extension":"psp",
-                "description":"PSP MP4 (MPEG-4 Part 14)",
+                "extension": "psp",
+                "description": "PSP MP4 (MPEG-4 Part 14)",
             },
             "vob": {
-                "extension":"vob",
-                "description":"MPEG-2 PS (VOB)",
+                "extension": "vob",
+                "description": "MPEG-2 PS (VOB)",
             },
         }
 
-        ### Import env variables and override defaults
-        self.importSettingsFromEnv()
+        # Import env variables and override defaults
+        self.import_settings_from_env()
 
-        ### Finally, read config from file and override all above settings.
-        self.readSettingsFromFile()
+        # Finally, read config from file and override all above settings.
+        self.read_settings_from_file()
 
-    def _log(self, message, message2 = '', level = "info"):
+    def _log(self, message, message2='', level="info"):
         if self.logger:
             message = common.format_message(message, message2)
             getattr(self.logger, level)(message)
 
-    def importSettingsFromEnv(self):
-        ENV_SETTINGS = [
-              'AUDIO_CODEC'
-            , 'AUDIO_STEREO_STREAM_BITRATE'
-            , 'CACHE_PATH'
-            , 'CONFIG_PATH'
-            , 'LOG_PATH'
-            , 'DEBUGGING'
-            , 'LIBRARY_PATH'
-            , 'NUMBER_OF_WORKERS'
-            , 'OUT_CONTAINER'
-            , 'REMOVE_SUBTITLE_STREAMS'
-            , 'RUN_FULL_SCAN_ON_START'
-            , 'SCHEDULE_FULL_SCAN_MINS'
-            , 'SUPPORTED_CONTAINERS'
-            , 'VIDEO_CODEC'
-
+    def import_settings_from_env(self):
+        env_settings = [
+            'AUDIO_CODEC',
+            'AUDIO_STEREO_STREAM_BITRATE',
+            'CACHE_PATH',
+            'CONFIG_PATH',
+            'LOG_PATH',
+            'DEBUGGING',
+            'LIBRARY_PATH',
+            'NUMBER_OF_WORKERS',
+            'OUT_CONTAINER',
+            'REMOVE_SUBTITLE_STREAMS',
+            'RUN_FULL_SCAN_ON_START',
+            'SCHEDULE_FULL_SCAN_MINS',
+            'SUPPORTED_CONTAINERS',
+            'VIDEO_CODEC'
         ]
-        for setting in ENV_SETTINGS:
+        for setting in env_settings:
             if setting in os.environ:
-                self.setConfigItem(setting, os.environ.get(setting), save_to_file=False)
+                self.set_config_item(setting, os.environ.get(setting), save_to_file=False)
 
-
-    def readSettingsFromFile(self):
+    def read_settings_from_file(self):
         if not os.path.exists(self.CONFIG_PATH):
             os.makedirs(self.CONFIG_PATH)
         settings_file = os.path.join(self.CONFIG_PATH, 'settings.json')
@@ -190,23 +186,23 @@ class CONFIG(object):
                     data = json.load(infile)
             except Exception as e:
                 self._log("Exception in reading saved settings from file:", message2=str(e), level="exception")
-            current_config = self.getConfigAsDict()
+            current_config = self.get_config_as_dict()
             for item in current_config:
                 if item in data:
-                    self.setConfigItem(item, data[item], save_to_file=False)
+                    self.set_config_item(item, data[item], save_to_file=False)
 
-    def writeSettingsToFile(self):
+    def write_settings_to_file(self):
         if not os.path.exists(self.CONFIG_PATH):
             os.makedirs(self.CONFIG_PATH)
         settings_file = os.path.join(self.CONFIG_PATH, 'settings.json')
-        data = self.getConfigAsDict()
+        data = self.get_config_as_dict()
         try:
             with open(settings_file, 'w') as outfile:
-                json.dump(data, outfile, sort_keys = True, indent = 4)
+                json.dump(data, outfile, sort_keys=True, indent=4)
         except Exception as e:
             self._log("Exception in writing settings to file:", message2=str(e), level="exception")
 
-    def getConfigAsDict(self):
+    def get_config_as_dict(self):
         # Create a copy of this class's dict
         config_dict = self.__dict__.copy()
         # Remove the logger element
@@ -214,11 +210,11 @@ class CONFIG(object):
         # Return the remaining keys
         return config_dict
 
-    def getConfigKeys(self):
-        return self.getConfigAsDict().keys()
+    def get_config_keys(self):
+        return self.get_config_as_dict().keys()
 
-    def setConfigItem(self, key, value, save_to_file=True):
-        ### Import env variables and overide defaults
+    def set_config_item(self, key, value, save_to_file=True):
+        # Import env variables and override defaults
         if "CONFIG_PATH" in key:
             self.CONFIG_PATH = value
         if "LOG_PATH" in key:
@@ -241,44 +237,45 @@ class CONFIG(object):
             self.SUPPORTED_CONTAINERS = tuple(value)
         if "REMOVE_SUBTITLE_STREAMS" in key:
             if isinstance(value, str):
-                value = True if value.lower() in ['t','true','1'] else False
+                value = True if value.lower() in ['t', 'true', '1'] else False
             self.REMOVE_SUBTITLE_STREAMS = value
         if "DEBUGGING" in key:
             if isinstance(value, str):
-                value = True if value.lower() in ['t','true','1'] else False
+                value = True if value.lower() in ['t', 'true', '1'] else False
             self.DEBUGGING = value
         if "SCHEDULE_FULL_SCAN_MINS" in key:
             if value.isdigit():
                 self.SCHEDULE_FULL_SCAN_MINS = value
         if "RUN_FULL_SCAN_ON_START" in key:
             if isinstance(value, str):
-                value = True if value.lower() in ['t','true','1'] else False
+                value = True if value.lower() in ['t', 'true', '1'] else False
             self.RUN_FULL_SCAN_ON_START = value
         if "AUDIO_STEREO_STREAM_BITRATE" in key:
             self.AUDIO_STEREO_STREAM_BITRATE = value
         if "INOTIFY" in key:
             if isinstance(value, str):
-                value = True if value.lower() in ['t','true','1'] else False
+                value = True if value.lower() in ['t', 'true', '1'] else False
             self.INOTIFY = value
-        ### Save to file
-        if save_to_file:
-            self.writeSettingsToFile()
 
-    def getSupportedVideoConfigs(self):
+        # Save to file
+        if save_to_file:
+            self.write_settings_to_file()
+
+    def get_supported_video_configs(self):
         return_list = {}
         for x in self.CODEC_CONFIG:
             if self.CODEC_CONFIG[x]['type'] == 'video':
                 return_list[x] = self.CODEC_CONFIG[x]
         return return_list
 
-    def getSupportedAudioConfigs(self):
+    def get_supported_audio_configs(self):
         return_list = {}
         for x in self.CODEC_CONFIG:
             if self.CODEC_CONFIG[x]['type'] == 'audio':
                 return_list[x] = self.CODEC_CONFIG[x]
         return return_list
 
-    def readHistoryLog(self):
+    def read_history_log(self):
         data = []
         if not os.path.exists(self.CONFIG_PATH):
             os.makedirs(self.CONFIG_PATH)
@@ -294,19 +291,47 @@ class CONFIG(object):
         data.reverse()
         return data
 
-    def writeHistoryLog(self, data):
+    def write_history_log(self, data):
+        # Read the current history log from file
+        historical_log = self.read_history_log()
+
+        # Set the completed timestamp
+        time_completed = time.time()
+
+        # Append the file data to the history log
+        historical_log.append({
+            'description': data['basename'],
+            'time_complete': time_completed,
+            'abspath': data['abspath'],
+            'success': data['success']
+        })
+
+        # Create config path in not exists
         if not os.path.exists(self.CONFIG_PATH):
             os.makedirs(self.CONFIG_PATH)
+
+        # Create completed job details path in not exists
+        completed_job_details_dir = os.path.join(self.CONFIG_PATH, 'completed_job_details')
+        if not os.path.exists(completed_job_details_dir):
+            os.makedirs(completed_job_details_dir)
+
+        # Set path of history json file
         history_file = os.path.join(self.CONFIG_PATH, 'history.json')
+        # Set path of conversion details file
+        job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(time_completed))
+
         try:
+            # Write job details file
+            with open(job_details_file, 'w') as outfile:
+                json.dump(data, outfile, sort_keys=True, indent=4)
+            # Write history file
             with open(history_file, 'w') as outfile:
-                json.dump(data, outfile, sort_keys = True, indent = 4)
+                json.dump(historical_log, outfile, sort_keys=True, indent=4)
         except Exception as e:
             self._log("Exception in writing history to file:", message2=str(e), level="exception")
 
-    def readVersion(self):
-        version_file = os.path.join(APP_DIR,'version')
-        with open(version_file,'r') as f:
+    def read_version(self):
+        version_file = os.path.join(APP_DIR, 'version')
+        with open(version_file, 'r') as f:
             version = f.read()
-        self.VERSION = version
-
+        return version

@@ -65,6 +65,7 @@ class CONFIG(object):
         self.SCHEDULE_FULL_SCAN_MINS='60'
         self.RUN_FULL_SCAN_ON_START=False
         self.NUMBER_OF_WORKERS='3'
+        self.INOTIFY=True
 
         ### Set the supported codecs (for destination)
         # TODO: Read this from ffmpeg
@@ -255,6 +256,10 @@ class CONFIG(object):
             self.RUN_FULL_SCAN_ON_START = value
         if "AUDIO_STEREO_STREAM_BITRATE" in key:
             self.AUDIO_STEREO_STREAM_BITRATE = value
+        if "INOTIFY" in key:
+            if isinstance(value, str):
+                value = True if value.lower() in ['t','true','1'] else False
+            self.INOTIFY = value
         ### Save to file
         if save_to_file:
             self.writeSettingsToFile()
@@ -290,7 +295,6 @@ class CONFIG(object):
         return data
 
     def writeHistoryLog(self, data):
-        self._log("Writing to history file", message2=data)
         if not os.path.exists(self.CONFIG_PATH):
             os.makedirs(self.CONFIG_PATH)
         history_file = os.path.join(self.CONFIG_PATH, 'history.json')

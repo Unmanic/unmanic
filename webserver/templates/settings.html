@@ -12,6 +12,13 @@
             $("#RUN_FULL_SCAN_ON_START").val("false");
         }
     }
+    var toggleInotify = function() {
+        if ($("#inotify_enabled").prop("checked")) {
+            $("#INOTIFY").val("true");
+        } else {
+            $("#INOTIFY").val("false");
+        }
+    }
     var toggleDebugging = function() {
         if ($("#debugging_enabled").prop("checked")) {
             $("#DEBUGGING").val("true");

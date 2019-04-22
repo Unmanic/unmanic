@@ -137,7 +137,7 @@ class FFMPEGHandle(object):
                 vid_file_path
             ]
 
-        
+
         pipe = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
 
@@ -181,7 +181,15 @@ class FFMPEGHandle(object):
         return codecs
 
     def check_file_to_be_processed(self, vid_file_path):
+        """
+        Check if this file is already in the configured destination format.
+
+        :param vid_file_path:
+        :return:
+        """
         # TODO: Add variable to force conversion based on audio config also
+
+        # Read the file's properties
         try:
             file_properties = self.file_in
             if not file_properties:
@@ -193,13 +201,47 @@ class FFMPEGHandle(object):
                 self._log("Failed to fetch properties of file {}".format(vid_file_path), level='debug')
                 self._log("Marking file not to be processed", level='debug')
             return False
-        for stream in file_properties['streams']:
-            if stream['codec_type'] == 'video':
-                # Check if this file is already the right format
-                if stream['codec_name'] == self.settings.VIDEO_CODEC:
+
+        # Check if the file container from it's properties matches the configured container
+        correct_extension = False
+        try:
+            current_possible_extensions = file_properties['format']['format_name'].split(",")
+            for extension in current_possible_extensions:
+                if extension == self.settings.OUT_CONTAINER:
                     if self.settings.DEBUGGING:
-                        self._log("File already {} - {}".format(self.settings.VIDEO_CODEC,vid_file_path), level='debug')
-                    return False
+                        self._log("File already in container format {} - {}".format(self.settings.OUT_CONTAINER,vid_file_path), level='debug')
+                    correct_extension = True
+        except Exception as e: 
+            self._log("Exception - check_file_to_be_processed: {}".format(e), level='exception')
+            # Failed to fetch properties
+            if self.settings.DEBUGGING:
+                self._log("Failed to read format of file {}".format(vid_file_path), level='debug')
+                self._log("Marking file not to be processed", level='debug')
+            return False
+
+        # Check if the file video codec from it's properties matches the configured video codec
+        correct_video_codec = False
+        try:
+            for stream in file_properties['streams']:
+                if stream['codec_type'] == 'video':
+                    # Check if this file is already the right format
+                    if stream['codec_name'] == self.settings.VIDEO_CODEC:
+                        if self.settings.DEBUGGING:
+                            self._log("File already {} - {}".format(self.settings.VIDEO_CODEC,vid_file_path), level='debug')
+                        correct_video_codec = True
+        except Exception as e: 
+            self._log("Exception - check_file_to_be_processed: {}".format(e), level='exception')
+            # Failed to fetch properties
+            if self.settings.DEBUGGING:
+                self._log("Failed to read codec info of file {}".format(vid_file_path), level='debug')
+                self._log("Marking file not to be processed", level='debug')
+            return False
+
+        # Finally ensure that all file properties match the configured values.
+        if correct_extension and correct_video_codec:
+            # This file is already the correct container and codec
+            return False
+        # File did not match, it will need to be added to the queue for processing
         return True
 
     def post_process_file(self, vid_file_path):

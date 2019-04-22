@@ -87,9 +87,9 @@ class TaskHandler(threading.Thread):
                 try:
                     pathname = self.inotifytasks.get_nowait()
                     if self.job_queue.addItem(pathname):
-                        main_logger.info("Adding job to queue - {}".format(pathname))
+                        main_logger.info("Adding inotify job to queue - {}".format(pathname))
                     else:
-                        main_logger.info("Skipping job already in the queue - {}".format(pathname))
+                        main_logger.info("Skipping inotify job already in the queue - {}".format(pathname))
                 except queue.Empty:
                     continue
                 except Exception as e:
@@ -148,10 +148,10 @@ class LibraryScanner(threading.Thread):
         self._log("Running full library scan")
         self.getConvertFiles(self.settings.LIBRARY_PATH)
 
-    def addPathToQueue(self,pathname):
+    def add_path_to_queue(self,pathname):
         self.scheduledtasks.put(pathname)
 
-    def fileNotTargetFormat(self,pathname):
+    def file_not_target_format(self, pathname):
         if not self.ffmpeg.check_file_to_be_processed(pathname):
             if self.settings.DEBUGGING:
                 self._log("File does not need to be processed - {}".format(pathname))
@@ -168,8 +168,8 @@ class LibraryScanner(threading.Thread):
                 if file_path.lower().endswith(self.settings.SUPPORTED_CONTAINERS):
                     pathname = os.path.join(root,file_path)
                     # Check if this file is already the correct format:
-                    if self.fileNotTargetFormat(pathname):
-                        self.addPathToQueue(pathname)
+                    if self.file_not_target_format(pathname):
+                        self.add_path_to_queue(pathname)
                 else:
                     if self.settings.DEBUGGING:
                         self._log("Ignoring file due to incorrect suffix - '{}'".format(file_path))
@@ -184,35 +184,53 @@ class EventProcessor(pyinotify.ProcessEvent):
         self.inotifytasks   = data_queues["inotifytasks"]
         self.abort_flag     = threading.Event()
         self.abort_flag.clear()
+        self.ffmpeg         = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
 
     def _log(self, message, message2 = '', level = "info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
-    def addPathToQueue(self,pathname):
+    def inotify_enabled(self):
+        if self.settings.INOTIFY:
+            return True
+        return False
+
+    def add_path_to_queue(self,pathname):
         self.inotifytasks.put(pathname)
 
-    def process_IN_CLOSE_WRITE(self, event):
-        self._log("CLOSE_WRITE event detected:", event.pathname)
-        if event.pathname.lower().endswith(self.settings.SUPPORTED_CONTAINERS):
-            # Add it to the queue
-            self.addPathToQueue(event.pathname)
-        else:
+    def file_not_target_format(self, pathname):
+        if not self.ffmpeg.check_file_to_be_processed(pathname):
             if self.settings.DEBUGGING:
-                self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
+                self._log("File does not need to be processed - {}".format(pathname))
+            return False
+        return True
+
+    def process_IN_CLOSE_WRITE(self, event):
+        if self.inotify_enabled():
+            self._log("CLOSE_WRITE event detected:", event.pathname)
+            if event.pathname.lower().endswith(self.settings.SUPPORTED_CONTAINERS):
+                # Add it to the queue
+                if self.file_not_target_format(event.pathname):
+                    self.add_path_to_queue(event.pathname)
+            else:
+                if self.settings.DEBUGGING:
+                    self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
 
     def process_IN_MOVED_TO(self, event):
-        self._log("MOVED_TO event detected:", event.pathname)
-        if event.pathname.lower().endswith(self.settings.SUPPORTED_CONTAINERS):
-            # Add it to the queue
-            self.addPathToQueue(event.pathname)
-        else:
-            if self.settings.DEBUGGING:
-                self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
+        if self.inotify_enabled():
+            self._log("MOVED_TO event detected:", event.pathname)
+            if event.pathname.lower().endswith(self.settings.SUPPORTED_CONTAINERS):
+                # Add it to the queue
+                if self.file_not_target_format(event.pathname):
+                    self.add_path_to_queue(event.pathname)
+            else:
+                if self.settings.DEBUGGING:
+                    self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
 
     def process_IN_DELETE(self, event):
-        self._log("DELETE event detected:", event.pathname)
-        self._log("Nothing to do for this event")
+        if self.inotify_enabled():
+            self._log("DELETE event detected:", event.pathname)
+            self._log("Nothing to do for this event")
 
     def process_default(self, event):
         pass
@@ -270,10 +288,10 @@ def main():
 
     # Create our data queues
     data_queues = {
-          "scheduledtasks":     queue.Queue()
-        , "inotifytasks":       queue.Queue()
-        , "progress_reports":   queue.Queue()
-        , "logging":            unmanic_logging
+        "scheduledtasks": queue.Queue(),
+        "inotifytasks": queue.Queue(),
+        "progress_reports": queue.Queue(),
+        "logging": unmanic_logging
     }
 
     # Setup job queue

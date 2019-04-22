@@ -57,6 +57,26 @@
                             </div>
                             <hr />
                             <div class="caption">
+                                <span class="caption-subject font-dark sbold uppercase">Library Watcher</span>
+                                <br>
+                                <span class="help-inline">
+                                </span>
+                            </div>
+                            <br>
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Enable watcher</label>
+                                <div class="col-md-9">
+                                    <div class="checkbox-list">
+                                            <input type="hidden" name="INOTIFY" id="INOTIFY" value="{% if config.INOTIFY %}true{% end %}" >
+                                        <label>
+                                            <input type="checkbox" id="inotify_enabled" onchange="toggleInotify();" {% if config.INOTIFY %} checked {% end %} />
+                                        </label>
+                                            <span class="help-inline"> If enabled, any file modifications or additions to the library will trigger that file to be processed </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr />
+                            <div class="caption">
                                 <span class="caption-subject font-dark sbold uppercase">Library Scanner</span>
                                 <br>
                                 <span class="help-inline">
@@ -74,7 +94,7 @@
                                 <label class="col-md-3 control-label">Run scan on start</label>
                                 <div class="col-md-9">
                                     <div class="checkbox-list">
-                                            <input type="hidden" name="RUN_FULL_SCAN_ON_START" id="RUN_FULL_SCAN_ON_START" value="{% if config.RUN_FULL_SCAN_ON_START %}true{% end %}" > 
+                                            <input type="hidden" name="RUN_FULL_SCAN_ON_START" id="RUN_FULL_SCAN_ON_START" value="{% if config.RUN_FULL_SCAN_ON_START %}true{% end %}" >
                                         <label>
                                             <input type="checkbox" id="run_scan_on_start_enabled" onchange="toggleRunScanOnStart();" {% if config.RUN_FULL_SCAN_ON_START %} checked {% end %} />
                                         </label>

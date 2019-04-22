@@ -1,5 +1,6 @@
 .vscode
 **/__pycache__
+.idea
 
 # Files used for testing
 config/**

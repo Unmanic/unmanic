@@ -78,10 +78,11 @@ class JobQueue(object):
             if item == os.path.abspath(pathname):
                 return False
         # Get info on the file from ffmpeg
-        file_info                   = self.ffmpeg.file_probe(pathname)
-        file_info['video_codecs']   = ','.join(self.ffmpeg.get_current_video_codecs(file_info))
-        file_info['abspath']        = os.path.abspath(pathname)
-        file_info['basename']       = os.path.basename(pathname)
+        file_info = {
+            'abspath': os.path.abspath(pathname),
+            'basename': os.path.basename(pathname),
+            'video_codecs': ','.join(self.ffmpeg.get_current_video_codecs(self.ffmpeg.file_probe(pathname)))
+        }
         self.all_jobs.append(file_info)
         return True
 
@@ -153,14 +154,23 @@ class WorkerThread(threading.Thread):
             self.idle = True
             while not self.redundant_flag.is_set() and not self.task_queue.empty():
                 try:
-                    self.idle               = False
-                    self.current_file_info  = self.task_queue.get_nowait()
+                    self.idle = False
+                    self.current_file_info = self.task_queue.get_nowait()
                     self._log("{} picked up job - {}".format(self.name, self.current_file_info['abspath']))
+
                     # Process the file. Will return true if success, otherwise false
                     self.current_file_info['success'] = self.processItem(self.current_file_info['abspath'])
+
+                    # Set the file probe data for file in and out to the current file info
+                    self.current_file_info['file_in'] = self.ffmpeg.file_in
+                    self.current_file_info['file_out'] = self.ffmpeg.file_out
+
+                    # Log completion of job
                     self._log("{} finished job - {}".format(self.name, self.current_file_info['abspath']))
                     self.complete_queue.put(self.current_file_info)
-                    self.current_file_info  = {}
+
+                    # Reset the current file info for the next task
+                    self.current_file_info = {}
                 except queue.Empty:
                     continue
                 except Exception as e:
@@ -241,18 +251,9 @@ class Worker(threading.Thread):
             while not self.abort_flag.is_set() and not self.complete_queue.empty():
                 time.sleep(.2)
                 try:
-                    file_info       = self.complete_queue.get_nowait()
+                    file_info = self.complete_queue.get_nowait()
                     self.job_queue.removeCompletedItem(file_info)
-                    historical_log  = self.getAllHistoricalTasks()
-                    historical_log.append({
-                          'description':file_info['basename']
-                        , 'time_complete':time.time()
-                        , 'abspath':file_info['abspath']
-                        , 'format':file_info['format']
-                        , 'src_video_codecs':file_info['video_codecs']
-                        , 'success':file_info['success']
-                    })
-                    self.settings.writeHistoryLog(historical_log)
+                    self.settings.write_history_log(file_info)
                 except queue.Empty:
                     continue
                 except Exception as e:
@@ -281,7 +282,7 @@ class Worker(threading.Thread):
         return all_status
 
     def getAllHistoricalTasks(self):
-        return self.settings.readHistoryLog()
+        return self.settings.read_history_log()
 
 
 

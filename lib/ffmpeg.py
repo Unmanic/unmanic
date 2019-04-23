@@ -42,9 +42,6 @@ from datetime import datetime
 import common
 
 
-
-
-
 #      /$$$$$$$$                                           /$$     /$$                            /$$$$$$  /$$
 #     | $$_____/                                          | $$    |__/                           /$$__  $$| $$
 #     | $$       /$$   /$$  /$$$$$$$  /$$$$$$   /$$$$$$  /$$$$$$   /$$  /$$$$$$  /$$$$$$$       | $$  \__/| $$  /$$$$$$   /$$$$$$$ /$$$$$$$  /$$$$$$   /$$$$$$$
@@ -76,9 +73,6 @@ class FFMPEGHandleConversionError(Exception):
         self.command = command
 
 
-
-
-
 #      /$$$$$$$$ /$$$$$$$$ /$$      /$$ /$$$$$$$  /$$$$$$$$  /$$$$$$        /$$   /$$                           /$$ /$$
 #     | $$_____/| $$_____/| $$$    /$$$| $$__  $$| $$_____/ /$$__  $$      | $$  | $$                          | $$| $$
 #     | $$      | $$      | $$$$  /$$$$| $$  \ $$| $$      | $$  \__/      | $$  | $$  /$$$$$$  /$$$$$$$   /$$$$$$$| $$  /$$$$$$   /$$$$$$
@@ -92,29 +86,41 @@ class FFMPEGHandleConversionError(Exception):
 #
 class FFMPEGHandle(object):
     def __init__(self, settings, logging):
-        self.name           = 'FFMPEGHandle'
-        self.logger         = logging.get_logger(self.name)
-        self.settings       = settings
+        self.name = 'FFMPEGHandle'
+        self.logger = logging.get_logger(self.name)
+        self.settings = settings
+        self.file_in = None
+        self.file_out = None
+        self.start_time = None
+        self.total_frames = None
+        self.duration = None
+        self.src_fps = None
+        self.elapsed = None
+        self.time = None
+        self.percent = None
+        self.frame = None
+        self.fps = None
+        self.speed = None
+        self.bitrate = None
+        self.file_size = None
+
         self.set_info_defaults()
 
     def set_info_defaults(self):
-        # File properties
-        self.file_in        = None
-        self.file_out       = None
-
-        # These variables are from the currently processed file (during a encoding task)
-        self.start_time     = time.time()
-        self.total_frames   = None
-        self.duration       = None
-        self.src_fps        = None
-        self.elapsed        = 0
-        self.time           = 0
-        self.percent        = 0
-        self.frame          = 0
-        self.fps            = 0
-        self.speed          = 0
-        self.bitrate        = 0
-        self.file_size      = None
+        self.file_in = {}
+        self.file_out = {}
+        self.start_time = time.time()
+        self.total_frames = None
+        self.duration = None
+        self.src_fps = None
+        self.elapsed = 0
+        self.time = 0
+        self.percent = 0
+        self.frame = 0
+        self.fps = 0
+        self.speed = 0
+        self.bitrate = 0
+        self.file_size = None
 
     def _log(self, message, message2 = '', level = "info"):
         message = common.format_message(message, message2)
@@ -136,7 +142,6 @@ class FFMPEGHandle(object):
                 "-show_error",
                 vid_file_path
             ]
-
 
         pipe = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
@@ -173,6 +178,21 @@ class FFMPEGHandle(object):
 
         return info
 
+    def set_file_in(self, vid_file_path):
+        """
+        Set the file in property
+        :param vid_file_path:
+        :return:
+        """
+        # Fetch file info
+        try:
+            self.file_in['abspath'] = vid_file_path
+            self.file_in['file_probe'] = self.file_probe(vid_file_path)
+            return True
+        except Exception as e:
+            self._log("Exception - process_file: {}".format(e), level='exception')
+            return False
+
     def get_current_video_codecs(self, file_properties):
         codecs = []
         for stream in file_properties['streams']:
@@ -191,9 +211,13 @@ class FFMPEGHandle(object):
 
         # Read the file's properties
         try:
-            file_properties = self.file_in
-            if not file_properties:
-                file_properties = self.file_probe(vid_file_path)
+            if not self.file_in and not self.set_file_in(vid_file_path):
+                # Failed to fetch properties
+                if self.settings.DEBUGGING:
+                    self._log("Failed to fetch properties of file {}".format(vid_file_path), level='debug')
+                    self._log("Marking file not to be processed", level='debug')
+                return False
+            file_probe = self.file_in['file_probe']
         except Exception as e: 
             self._log("Exception - check_file_to_be_processed: {}".format(e), level='exception')
             # Failed to fetch properties
@@ -205,7 +229,7 @@ class FFMPEGHandle(object):
         # Check if the file container from it's properties matches the configured container
         correct_extension = False
         try:
-            current_possible_extensions = file_properties['format']['format_name'].split(",")
+            current_possible_extensions = file_probe['format']['format_name'].split(",")
             for extension in current_possible_extensions:
                 if extension == self.settings.OUT_CONTAINER:
                     if self.settings.DEBUGGING:
@@ -222,7 +246,7 @@ class FFMPEGHandle(object):
         # Check if the file video codec from it's properties matches the configured video codec
         correct_video_codec = False
         try:
-            for stream in file_properties['streams']:
+            for stream in file_probe['streams']:
                 if stream['codec_type'] == 'video':
                     # Check if this file is already the right format
                     if stream['codec_name'] == self.settings.VIDEO_CODEC:
@@ -252,6 +276,8 @@ class FFMPEGHandle(object):
             return False
             # Failed to fetch properties
             raise FFMPEGHandlePostProcessError(self.settings.VIDEO_CODEC,stream['codec_name'])
+
+        # Ensure file is correct format
         result = False
         for stream in self.file_out['streams']:
             if stream['codec_type'] == 'video':
@@ -261,61 +287,62 @@ class FFMPEGHandle(object):
                 elif self.settings.DEBUGGING:
                     self._log("File is the not correct codec {} - {}".format(self.settings.VIDEO_CODEC,vid_file_path))
                     raise FFMPEGHandlePostProcessError(self.settings.VIDEO_CODEC,stream['codec_name'])
-                #TODO: Test duration is the same as src
+                # TODO: Test duration is the same as src
         return result
 
-    def process_file(self, vid_file_path):
+    def process_file_with_configured_settings(self, vid_file_path):
         # Parse input path
-        srcFile     = os.path.basename(vid_file_path)
-        srcPath     = os.path.abspath(vid_file_path)
-        srcFolder   = os.path.dirname(srcPath)
+        src_file = os.path.basename(vid_file_path)
+        src_path = os.path.abspath(vid_file_path)
+        src_folder = os.path.dirname(src_path)
 
         # Parse an output cache path
-        outFile     = "{}.{}".format(os.path.splitext(srcFile)[0], self.settings.OUT_CONTAINER)
-        outPath     = os.path.join(self.settings.CACHE_PATH,outFile)
+        out_folder = "file_conversion-{}".format(time.time())
+        out_file = "{}-{}.{}".format(os.path.splitext(src_file)[0], time.time(), self.settings.OUT_CONTAINER)
+        out_path = os.path.join(self.settings.CACHE_PATH, out_folder, out_file)
+
         # Create output path if not exists 
-        common.ensureDir(outPath)
+        common.ensureDir(out_path)
+
         # Reset all info
         self.set_info_defaults()
+
         # Fetch file info
-        try:
-            self.file_in = self.file_probe(vid_file_path)
-        except Exception as e: 
-            self._log("Exception - process_file: {}".format(e), level='exception')
-            return False
+        self.set_file_in(vid_file_path)
+
         # Convert file
-        success     = False
+        success = False
         ffmpeg_args = self.generate_ffmpeg_args()
         if ffmpeg_args:
-            success = self.convert_file_and_fetch_progress(srcPath,outPath,ffmpeg_args)
+            success = self.convert_file_and_fetch_progress(src_path, out_path, ffmpeg_args)
         if success:
             # Move file back to original folder and remove source
-            success = self.post_process_file(outPath)
+            success = self.post_process_file(out_path)
             if success:
-                destPath    = os.path.join(srcFolder,outFile)
-                self._log("Moving file {} --> {}".format(outPath,destPath))
-                shutil.move(outPath, destPath)
+                destPath = os.path.join(src_folder, out_file)
+                self._log("Moving file {} --> {}".format(out_path, destPath))
+                shutil.move(out_path, destPath)
                 try:
                     self.post_process_file(destPath)
                 except FFMPEGHandlePostProcessError:
                     success = False
                 if success:
                     # If successful move, remove source
-                    #TODO: Add env variable option to keep src
-                    if srcPath != destPath:
-                        self._log("Removing source: {}".format(srcPath))
-                        os.remove(srcPath)
+                    # TODO: Add env variable option to keep src
+                    if src_path != destPath:
+                        self._log("Removing source: {}".format(src_path))
+                        os.remove(src_path)
                 else:
-                    self._log("Copy / Replace failed during post processing '{}'".format(outPath), level='warning')
+                    self._log("Copy / Replace failed during post processing '{}'".format(out_path), level='warning')
                     return False
             else:
-                self._log("Encoded file failed post processing test '{}'".format(outPath), level='warning')
+                self._log("Encoded file failed post processing test '{}'".format(out_path), level='warning')
                 return False
         else:
-            self._log("Failed processing file '{}'".format(srcPath), level='warning')
+            self._log("Failed processing file '{}'".format(src_path), level='warning')
             return False
         # If file conversion was successful, we will get here
-        self._log("Successfully processed file '{}'".format(srcPath))
+        self._log("Successfully processed file '{}'".format(src_path))
         return True
 
     def generate_ffmpeg_args(self,):

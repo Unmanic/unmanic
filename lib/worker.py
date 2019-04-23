@@ -33,64 +33,8 @@
 import threading
 import queue
 import time
-import collections
-import os
 
-from lib import ffmpeg
-from lib import common
-
-
-# An object to contain all details of the job queue in such a way that it is presented in a synchronus list
-# while being able to be accessed by a numbure of threads simultaneously
-
-class JobQueue(object):
-    def __init__(self, settings, data_queues):
-        self.name           = 'JobQueue'
-        self.all_jobs       = collections.deque()
-        self.in_progress    = collections.deque()
-        self.ffmpeg         = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
-        self.logger         = data_queues["logging"].get_logger(self.name)
-
-    def _log(self, message, message2 = '', level = "info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
-
-    def isEmpty(self):
-        if self.all_jobs:
-            return False
-        return True
-
-    def removeCompletedItem(self, file_info):
-        self.in_progress.remove(file_info['abspath'])
-
-    def getNextItem(self):
-        item = self.all_jobs.popleft()
-        self.in_progress.append(item['abspath'])
-        return item
-
-    def addItem(self, pathname):
-        # Check if this path is already in the job queue
-        for item in self.listAllItems():
-            if item['abspath'] == os.path.abspath(pathname):
-                return False
-        # Check if this path is already in progress of being coverted
-        for item in self.listInProgressItems():
-            if item == os.path.abspath(pathname):
-                return False
-        # Get info on the file from ffmpeg
-        file_info = {
-            'abspath': os.path.abspath(pathname),
-            'basename': os.path.basename(pathname),
-            'video_codecs': ','.join(self.ffmpeg.get_current_video_codecs(self.ffmpeg.file_probe(pathname)))
-        }
-        self.all_jobs.append(file_info)
-        return True
-
-    def listAllItems(self):
-        return list(self.all_jobs)
-
-    def listInProgressItems(self):
-        return list(self.in_progress)
+from lib import ffmpeg, common
 
 
 class WorkerThread(threading.Thread):
@@ -252,21 +196,21 @@ class Worker(threading.Thread):
                 time.sleep(.2)
                 try:
                     file_info = self.complete_queue.get_nowait()
-                    self.job_queue.removeCompletedItem(file_info)
+                    self.job_queue.remove_completed_item(file_info)
                     self.settings.write_history_log(file_info)
                 except queue.Empty:
                     continue
                 except Exception as e:
                     self._log("Exception when fetching completed task report from worker", message2=str(e), level="exception")
 
-            while not self.abort_flag.is_set() and not self.job_queue.isEmpty():
+            while not self.abort_flag.is_set() and not self.job_queue.incoming_is_empty():
                 time.sleep(.2)
                 # Ensure we have the correct number of workers running
                 self.initWorkerThreads()
                 # Check if we are able to start up a worker for another encoding job
                 if self.task_queue.full():
                     break
-                next_item_to_process = self.job_queue.getNextItem()
+                next_item_to_process = self.job_queue.get_next_incoming_item()
                 if next_item_to_process:
                     self._log("Processing item - {}".format(next_item_to_process['abspath']))
                     self.addToTaskQueue(next_item_to_process)

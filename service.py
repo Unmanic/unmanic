@@ -30,32 +30,30 @@
 ###################################################################################################
 
 
-
-import os, sys, json, time, shutil, importlib
-
+import os
+import sys
+import json
+import time
 import threading
 import queue
 import pyinotify
 import schedule
 
+import config
+from lib import unlogger, common
+from lib.jobqueue import JobQueue
+from lib.postprocessor import PostProcessor
+from lib.uiserver import UIServer
+from lib.worker import Worker
 
 sys.path.append('lib')
 sys.path.append('webserver')
 
-import config
-from lib import unlogger
-from lib import common
-from lib.uiserver import UIServer
-from lib.worker import JobQueue
-from lib.worker import Worker
-from lib import ffmpeg
-
-
 unmanic_logging = unlogger.UnmanicLogger.__call__()
 main_logger = unmanic_logging.get_logger()
 
+threads = []
 
-threads   = []
 
 # The TaskHandler reads all items in the queues and passes them to the appropriate locations in the application.
 # All messages are passed to the logger and all tasks are added to the job queue
@@ -75,7 +73,7 @@ class TaskHandler(threading.Thread):
             while not self.abort_flag.is_set() and not self.scheduledtasks.empty():
                 try:
                     pathname = self.scheduledtasks.get_nowait()
-                    if self.job_queue.addItem(pathname):
+                    if self.job_queue.add_item(pathname):
                         main_logger.info("Adding job to queue - {}".format(pathname))
                     else:
                         main_logger.info("Skipping job already in the queue - {}".format(pathname))
@@ -86,7 +84,7 @@ class TaskHandler(threading.Thread):
             while not self.abort_flag.is_set() and not self.inotifytasks.empty():
                 try:
                     pathname = self.inotifytasks.get_nowait()
-                    if self.job_queue.addItem(pathname):
+                    if self.job_queue.add_item(pathname):
                         main_logger.info("Adding inotify job to queue - {}".format(pathname))
                     else:
                         main_logger.info("Skipping inotify job already in the queue - {}".format(pathname))
@@ -244,6 +242,14 @@ def start_handler(data_queues, settings, job_queue):
     return handler
 
 
+def start_post_processor(data_queues, settings, job_queue):
+    main_logger.info("Starting PostProcessor")
+    postprocessor = PostProcessor(data_queues, settings, job_queue)
+    postprocessor.daemon=True
+    postprocessor.start()
+    return postprocessor
+
+
 def start_workers(data_queues, settings, job_queue):
     main_logger.info("Starting Workers")
     worker = Worker(data_queues, settings, job_queue)
@@ -281,7 +287,7 @@ def start_ui_server(data_queues, settings, workerHandle):
 
 def main():
     # Read settings
-    settings  = config.CONFIG(main_logger)
+    settings = config.CONFIG(main_logger)
 
     # Apply settings to logging
     unmanic_logging.setup_logger(settings)
@@ -294,23 +300,26 @@ def main():
         "logging": unmanic_logging
     }
 
+    # Clear cache directory
+    common.clean_files_in_dir(settings.CACHE_PATH)
+
     # Setup job queue
     job_queue = JobQueue(settings, data_queues)
 
-    # Clear cache directroy
-    common.clean_files_in_dir(settings.CACHE_PATH)
+    # Setup post-processor thread
+    start_post_processor(data_queues, settings, job_queue)
 
     # Start the worker threads
-    workerHandle = start_workers(data_queues, settings, job_queue)
+    worker_handle = start_workers(data_queues, settings, job_queue)
 
     # Start new thread to handle messages from service
-    handler = start_handler(data_queues, settings, job_queue)
+    start_handler(data_queues, settings, job_queue)
 
     # Start new thread to run the web UI
-    uiserver = start_ui_server(data_queues, settings, workerHandle)
+    start_ui_server(data_queues, settings, worker_handle)
 
     # start scheduled thread
-    scheduler = start_library_scanner_manager(data_queues, settings)
+    start_library_scanner_manager(data_queues, settings)
 
     # start inotify watch manager
     notifier = start_inotify_watch_manager(data_queues, settings)
@@ -325,6 +334,7 @@ def main():
     scheduler.join()
     handler.join()
     main_logger.info("Exit")
+
 
 if (__name__ == "__main__"):
     main()

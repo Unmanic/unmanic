@@ -28,8 +28,7 @@
 #
 #
 ###################################################################################################
-
-
+import os
 import threading
 import queue
 import time
@@ -38,59 +37,70 @@ from lib import ffmpeg, common
 
 
 class WorkerThread(threading.Thread):
-    def __init__(self, threadID, name, logger, settings, data_queues, task_queue, complete_queue):
+    def __init__(self, threadID, name, settings, data_queues, task_queue, complete_queue):
         super(WorkerThread, self).__init__(name=name)
-        self.threadID           = threadID
-        self.data_queues        = data_queues
-        self.progress_reports   = data_queues['progress_reports']
-        self.task_queue         = task_queue
-        self.complete_queue     = complete_queue
-        self.idle               = True
-        self.current_file_info  = {}
-        self.ffmpeg             = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
-        self.redundant_flag     = threading.Event()
+        self.threadID = threadID
+        self.settings = settings
+        self.data_queues = data_queues
+        self.progress_reports = data_queues['progress_reports']
+        self.task_queue = task_queue
+        self.complete_queue = complete_queue
+        self.idle = True
+        self.current_task = None
+        self.redundant_flag = threading.Event()
         self.redundant_flag.clear()
-        self.logger             = data_queues["logging"].get_logger(self.name)
+        self.logger = data_queues["logging"].get_logger(self.name)
 
-    def _log(self, message, message2 = '', level = "info"):
+    def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
-    def getStatus(self):
+    def get_status(self):
         status = {}
-        status['id']                = str(self.threadID)
-        status['name']              = self.name
-        status['idle']              = self.idle
-        status['pid']               = self.ident
-        status['progress']          = self.getJobProgress()
-        status['current_file_info'] = self.current_file_info
-        if 'basename' in self.current_file_info:
-            status['current_file']  = self.current_file_info['basename']
+        status['id'] = str(self.threadID)
+        status['name'] = self.name
+        status['idle'] = self.idle
+        status['pid'] = self.ident
+        status['progress'] = self.getJobProgress()
+        status['current_file'] = ""
+        if self.current_task:
+            status['current_file'] = self.current_task.get_source_basename()
         return status
 
     def getJobProgress(self):
         progress = {}
-        progress['duration']    = str(self.ffmpeg.duration)
-        progress['src_fps']     = str(self.ffmpeg.src_fps)
-        progress['elapsed']     = str(self.ffmpeg.elapsed)
-        progress['time']        = str(self.ffmpeg.time)
-        progress['percent']     = str(self.ffmpeg.percent)
-        progress['frame']       = str(self.ffmpeg.frame)
-        progress['fps']         = str(self.ffmpeg.fps)
-        progress['speed']       = str(self.ffmpeg.speed)
-        progress['bitrate']     = str(self.ffmpeg.bitrate)
-        progress['file_size']   = str(self.ffmpeg.file_size)
+        if self.current_task:
+            progress['duration'] = str(self.current_task.ffmpeg.duration)
+            progress['src_fps'] = str(self.current_task.ffmpeg.src_fps)
+            progress['elapsed'] = str(self.current_task.ffmpeg.elapsed)
+            progress['time'] = str(self.current_task.ffmpeg.time)
+            progress['percent'] = str(self.current_task.ffmpeg.percent)
+            progress['frame'] = str(self.current_task.ffmpeg.frame)
+            progress['fps'] = str(self.current_task.ffmpeg.fps)
+            progress['speed'] = str(self.current_task.ffmpeg.speed)
+            progress['bitrate'] = str(self.current_task.ffmpeg.bitrate)
+            progress['file_size'] = str(self.current_task.ffmpeg.file_size)
         return progress
 
-    def processItem(self, pathname):
-        self._log("{} running job - {}".format(self.name, pathname))
-        #import random
-        #number = random.randint(1,4)
-        #time.sleep(number)
-        #if (number > 14):
-        #    return True
-        #return False
-        return self.ffmpeg.process_file(pathname)
+    def process_item(self):
+        abspath = self.current_task.get_source_abspath()
+        self._log("{} running job - {}".format(self.name, abspath))
+
+        # Create output path if not exists
+        common.ensureDir(self.current_task.cache_path)
+
+        # Convert file
+        success = False
+        ffmpeg_args = self.current_task.ffmpeg.generate_ffmpeg_args()
+        if ffmpeg_args:
+            success = self.current_task.ffmpeg.convert_file_and_fetch_progress(abspath, self.current_task.cache_path, ffmpeg_args)
+
+        if success:
+            # If file conversion was successful, we will get here
+            self._log("Successfully converted file '{}'".format(abspath))
+            return True
+        self._log("Failed to convert file '{}'".format(abspath), level='warning')
+        return False
 
     def run(self):
         self._log("Starting {}".format(self.name))
@@ -99,22 +109,19 @@ class WorkerThread(threading.Thread):
             while not self.redundant_flag.is_set() and not self.task_queue.empty():
                 try:
                     self.idle = False
-                    self.current_file_info = self.task_queue.get_nowait()
-                    self._log("{} picked up job - {}".format(self.name, self.current_file_info['abspath']))
+                    self.current_task = self.task_queue.get_nowait()
+                    abspath = self.current_task.get_source_abspath()
+                    self._log("{} picked up job - {}".format(self.name, abspath))
 
                     # Process the file. Will return true if success, otherwise false
-                    self.current_file_info['success'] = self.processItem(self.current_file_info['abspath'])
-
-                    # Set the file probe data for file in and out to the current file info
-                    self.current_file_info['file_in'] = self.ffmpeg.file_in
-                    self.current_file_info['file_out'] = self.ffmpeg.file_out
+                    self.current_task.success = self.process_item()
 
                     # Log completion of job
-                    self._log("{} finished job - {}".format(self.name, self.current_file_info['abspath']))
-                    self.complete_queue.put(self.current_file_info)
+                    self._log("{} finished job - {}".format(self.name, abspath))
+                    self.complete_queue.put(self.current_task)
 
                     # Reset the current file info for the next task
-                    self.current_file_info = {}
+                    self.current_task = {}
                 except queue.Empty:
                     continue
                 except Exception as e:
@@ -165,7 +172,7 @@ class Worker(threading.Thread):
             time.sleep(2)
 
     def startWorkerThread(self, worker_id):
-        thread = WorkerThread(worker_id, "Worker-{}".format(worker_id), self._log, self.settings, self.data_queues, self.task_queue, self.complete_queue)
+        thread = WorkerThread(worker_id, "Worker-{}".format(worker_id), self.settings, self.data_queues, self.task_queue, self.complete_queue)
         thread.start()
         self.worker_threads[worker_id] = thread
 
@@ -175,7 +182,7 @@ class Worker(threading.Thread):
                 return True
         return False
 
-    def addToTaskQueue(self, item):
+    def add_to_task_queue(self, item):
         self.task_queue.put(item)
 
     def run(self):
@@ -195,13 +202,13 @@ class Worker(threading.Thread):
             while not self.abort_flag.is_set() and not self.complete_queue.empty():
                 time.sleep(.2)
                 try:
-                    file_info = self.complete_queue.get_nowait()
-                    self.job_queue.remove_completed_item(file_info)
-                    self.settings.write_history_log(file_info)
+                    task_item = self.complete_queue.get_nowait()
+                    self.job_queue.mark_item_as_processed(task_item)
                 except queue.Empty:
                     continue
                 except Exception as e:
-                    self._log("Exception when fetching completed task report from worker", message2=str(e), level="exception")
+                    self._log("Exception when fetching completed task report from worker", message2=str(e),
+                              level="exception")
 
             while not self.abort_flag.is_set() and not self.job_queue.incoming_is_empty():
                 time.sleep(.2)
@@ -212,8 +219,8 @@ class Worker(threading.Thread):
                     break
                 next_item_to_process = self.job_queue.get_next_incoming_item()
                 if next_item_to_process:
-                    self._log("Processing item - {}".format(next_item_to_process['abspath']))
-                    self.addToTaskQueue(next_item_to_process)
+                    self._log("Processing item - {}".format(next_item_to_process.get_source_abspath()))
+                    self.add_to_task_queue(next_item_to_process)
 
             # TODO: Add abort flag to terminate all workers
 
@@ -222,7 +229,7 @@ class Worker(threading.Thread):
     def getAllWorkerStatus(self):
         all_status = []
         for thread in self.worker_threads:
-            all_status.append(self.worker_threads[thread].getStatus())
+            all_status.append(self.worker_threads[thread].get_status())
         return all_status
 
     def getAllHistoricalTasks(self):

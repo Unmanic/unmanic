@@ -46,10 +46,10 @@ mkdir -p \
 
 
 # Copy test files to test folders
-cp -r ${PROJECT_BASE}/tests/videos/med/* ${PROJECT_BASE}/tests/tmp/library/path1/
-cp -r ${PROJECT_BASE}/tests/videos/med/* ${PROJECT_BASE}/tests/tmp/library/path2/
-cp -r ${PROJECT_BASE}/tests/videos/med/* ${PROJECT_BASE}/tests/tmp/library/path3/
-cp -r ${PROJECT_BASE}/tests/videos/med/* ${PROJECT_BASE}/tests/tmp/library/path4/
+cp -r ${PROJECT_BASE}/tests/videos/small/* ${PROJECT_BASE}/tests/tmp/library/path1/
+cp -r ${PROJECT_BASE}/tests/videos/small/* ${PROJECT_BASE}/tests/tmp/library/path2/
+cp -r ${PROJECT_BASE}/tests/videos/small/* ${PROJECT_BASE}/tests/tmp/library/path3/
+cp -r ${PROJECT_BASE}/tests/videos/small/* ${PROJECT_BASE}/tests/tmp/library/path4/
 
 
 # Set the config for the application so that it scans for files right away

@@ -40,7 +40,7 @@ import pyinotify
 import schedule
 
 import config
-from lib import unlogger, common
+from lib import unlogger, common, ffmpeg
 from lib.jobqueue import JobQueue
 from lib.postprocessor import PostProcessor
 from lib.uiserver import UIServer
@@ -60,11 +60,11 @@ threads = []
 class TaskHandler(threading.Thread):
     def __init__(self, data_queues, settings, job_queue):
         super(TaskHandler, self).__init__(name='TaskHandler')
-        self.settings       = settings
-        self.job_queue      = job_queue
-        self.inotifytasks   = data_queues["inotifytasks"]
+        self.settings = settings
+        self.job_queue = job_queue
+        self.inotifytasks = data_queues["inotifytasks"]
         self.scheduledtasks = data_queues["scheduledtasks"]
-        self.abort_flag     = threading.Event()
+        self.abort_flag = threading.Event()
         self.abort_flag.clear()
 
     def run(self):
@@ -96,20 +96,19 @@ class TaskHandler(threading.Thread):
         main_logger.info("Leaving TaskHandler Monitor loop...")
 
 
-
 class LibraryScanner(threading.Thread):
     def __init__(self, data_queues, settings):
         super(LibraryScanner, self).__init__(name='LibraryScanner')
-        self.interval       = 0
-        self.firstrun       = True
-        self.settings       = settings
-        self.logger         = data_queues["logging"].get_logger(self.name)
+        self.interval = 0
+        self.firstrun = True
+        self.settings = settings
+        self.logger = data_queues["logging"].get_logger(self.name)
         self.scheduledtasks = data_queues["scheduledtasks"]
-        self.abort_flag     = threading.Event()
+        self.abort_flag = threading.Event()
         self.abort_flag.clear()
-        self.ffmpeg         = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
+        self.ffmpeg = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
 
-    def _log(self, message, message2 = '', level = "info"):
+    def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
@@ -146,7 +145,7 @@ class LibraryScanner(threading.Thread):
         self._log("Running full library scan")
         self.getConvertFiles(self.settings.LIBRARY_PATH)
 
-    def add_path_to_queue(self,pathname):
+    def add_path_to_queue(self, pathname):
         self.scheduledtasks.put(pathname)
 
     def file_not_target_format(self, pathname):
@@ -160,31 +159,30 @@ class LibraryScanner(threading.Thread):
         self._log(search_folder)
         for root, subFolders, files in os.walk(search_folder):
             if self.settings.DEBUGGING:
-                self._log(json.dumps(files,indent=2))
+                self._log(json.dumps(files, indent=2))
             # Add all files in this path that match our container filter
             for file_path in files:
                 if file_path.lower().endswith(self.settings.SUPPORTED_CONTAINERS):
-                    pathname = os.path.join(root,file_path)
+                    pathname = os.path.join(root, file_path)
                     # Check if this file is already the correct format:
                     if self.file_not_target_format(pathname):
                         self.add_path_to_queue(pathname)
                 else:
                     if self.settings.DEBUGGING:
                         self._log("Ignoring file due to incorrect suffix - '{}'".format(file_path))
-                
 
 
 class EventProcessor(pyinotify.ProcessEvent):
     def __init__(self, data_queues, settings):
-        self.name           = "EventProcessor"
-        self.settings       = settings
-        self.logger         = data_queues["logging"].get_logger(self.name)
-        self.inotifytasks   = data_queues["inotifytasks"]
-        self.abort_flag     = threading.Event()
+        self.name = "EventProcessor"
+        self.settings = settings
+        self.logger = data_queues["logging"].get_logger(self.name)
+        self.inotifytasks = data_queues["inotifytasks"]
+        self.abort_flag = threading.Event()
         self.abort_flag.clear()
-        self.ffmpeg         = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
+        self.ffmpeg = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
 
-    def _log(self, message, message2 = '', level = "info"):
+    def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
@@ -193,7 +191,7 @@ class EventProcessor(pyinotify.ProcessEvent):
             return True
         return False
 
-    def add_path_to_queue(self,pathname):
+    def add_path_to_queue(self, pathname):
         self.inotifytasks.put(pathname)
 
     def file_not_target_format(self, pathname):
@@ -237,7 +235,7 @@ class EventProcessor(pyinotify.ProcessEvent):
 def start_handler(data_queues, settings, job_queue):
     main_logger.info("Starting TaskHandler")
     handler = TaskHandler(data_queues, settings, job_queue)
-    handler.daemon=True
+    handler.daemon = True
     handler.start()
     return handler
 
@@ -245,7 +243,7 @@ def start_handler(data_queues, settings, job_queue):
 def start_post_processor(data_queues, settings, job_queue):
     main_logger.info("Starting PostProcessor")
     postprocessor = PostProcessor(data_queues, settings, job_queue)
-    postprocessor.daemon=True
+    postprocessor.daemon = True
     postprocessor.start()
     return postprocessor
 
@@ -253,7 +251,7 @@ def start_post_processor(data_queues, settings, job_queue):
 def start_workers(data_queues, settings, job_queue):
     main_logger.info("Starting Workers")
     worker = Worker(data_queues, settings, job_queue)
-    worker.daemon=True
+    worker.daemon = True
     worker.start()
     return worker
 
@@ -261,7 +259,7 @@ def start_workers(data_queues, settings, job_queue):
 def start_library_scanner_manager(data_queues, settings):
     main_logger.info("Starting LibraryScanner")
     scheduler = LibraryScanner(data_queues, settings)
-    scheduler.daemon=True
+    scheduler.daemon = True
     scheduler.start()
     return scheduler
 
@@ -280,7 +278,7 @@ def start_inotify_watch_manager(data_queues, settings):
 def start_ui_server(data_queues, settings, workerHandle):
     main_logger.info("Starting UI Server")
     uiserver = UIServer(data_queues, settings, workerHandle)
-    uiserver.daemon=True
+    uiserver.daemon = True
     uiserver.start()
     return uiserver
 
@@ -336,5 +334,5 @@ def main():
     main_logger.info("Exit")
 
 
-if (__name__ == "__main__"):
+if __name__ == "__main__":
     main()

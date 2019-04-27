@@ -291,45 +291,6 @@ class CONFIG(object):
         data.reverse()
         return data
 
-    def write_history_log(self, data):
-        # Read the current history log from file
-        historical_log = self.read_history_log()
-
-        # Set the completed timestamp
-        time_completed = time.time()
-
-        # Append the file data to the history log
-        historical_log.append({
-            'description': data['basename'],
-            'time_complete': time_completed,
-            'abspath': data['abspath'],
-            'success': data['success']
-        })
-
-        # Create config path in not exists
-        if not os.path.exists(self.CONFIG_PATH):
-            os.makedirs(self.CONFIG_PATH)
-
-        # Create completed job details path in not exists
-        completed_job_details_dir = os.path.join(self.CONFIG_PATH, 'completed_job_details')
-        if not os.path.exists(completed_job_details_dir):
-            os.makedirs(completed_job_details_dir)
-
-        # Set path of history json file
-        history_file = os.path.join(self.CONFIG_PATH, 'history.json')
-        # Set path of conversion details file
-        job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(time_completed))
-
-        try:
-            # Write job details file
-            with open(job_details_file, 'w') as outfile:
-                json.dump(data, outfile, sort_keys=True, indent=4)
-            # Write history file
-            with open(history_file, 'w') as outfile:
-                json.dump(historical_log, outfile, sort_keys=True, indent=4)
-        except Exception as e:
-            self._log("Exception in writing history to file:", message2=str(e), level="exception")
-
     def read_version(self):
         version_file = os.path.join(APP_DIR, 'version')
         with open(version_file, 'r') as f:

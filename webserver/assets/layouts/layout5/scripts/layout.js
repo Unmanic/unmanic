@@ -140,5 +140,5 @@ var Layout = function() {
 }();
 
 jQuery(document).ready(function() {    
-   Layout.init(); // init metronic core componets
+   Layout.init();
 });

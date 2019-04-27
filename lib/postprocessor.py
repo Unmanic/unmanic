@@ -29,8 +29,9 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
-import queue
+import json
+import os
+import shutil
 import threading
 import time
 
@@ -47,6 +48,14 @@ This prevents conflicting copy operations or deleting a file that is also being 
 """
 
 
+class PostProcessError(Exception):
+    def __init___(self, expected_var, result_var):
+        Exception.__init__(self, "Errors found during post process checks. Expected {}, but instead found {}".format(
+            expected_var, result_var))
+        self.expected_var = expected_var
+        self.result_var = result_var
+
+
 class PostProcessor(threading.Thread):
     """
     PostProcessor
@@ -59,7 +68,7 @@ class PostProcessor(threading.Thread):
         self.settings = settings
         self.job_queue = job_queue
         self.abort_flag = threading.Event()
-        self.current_file = None
+        self.current_task = None
         self.abort_flag.clear()
 
     def _log(self, message, message2='', level="info"):
@@ -73,13 +82,98 @@ class PostProcessor(threading.Thread):
 
             while not self.abort_flag.is_set() and not self.job_queue.processed_is_empty():
                 time.sleep(.2)
-                self.current_file = self.job_queue.get_next_processed_item()
-                if self.current_file:
-                    self._log("Post-processing item - {}".format(self.current_file['abspath']))
+                self.current_task = self.job_queue.get_next_processed_item()
+                if self.current_task:
+                    self._log("Post-processing item - {}".format(self.current_task.get_source_abspath()))
                     self.post_process_file()
+                    self.write_history_log()
 
         self._log("Leaving PostProcessor Monitor loop...")
 
     def post_process_file(self):
-        # TODO: Do stuff with self.current_file
-        pass
+        # Ensure file is correct format
+        self.current_task.success = self.validate_streams(self.current_task.cache_path)
+        # Move file back to original folder and remove source
+        if self.current_task.success:
+            # Move the file
+            self._log(
+                "Moving file {} --> {}".format(self.current_task.cache_path, self.current_task.destination['abspath']))
+            shutil.move(self.current_task.cache_path, self.current_task.destination['abspath'])
+
+            # Set file out
+            self.current_task.ffmpeg.set_file_out(self.current_task.destination['abspath'])
+
+            # Run another validation on the moved file to ensure it is correct
+            self.current_task.success = self.validate_streams(self.current_task.destination['abspath'])
+            if self.current_task.success:
+                # If successfully moved the cached re-encoded copy, remove source
+                # TODO: Add env variable option to keep src
+                if self.current_task.source['abspath'] != self.current_task.destination['abspath']:
+                    self._log("Removing source: {}".format(self.current_task.source['abspath']))
+                    os.remove(self.current_task.source['abspath'])
+            else:
+                self._log("Copy / Replace failed during post processing '{}'".format(self.current_task.cache_path),
+                          level='warning')
+                return False
+        else:
+            self._log("Encoded file failed post processing test '{}'".format(self.current_task.cache_path),
+                      level='warning')
+            return False
+
+    def validate_streams(self, abspath):
+        # Read video information for the input file
+        file_probe = self.current_task.ffmpeg.file_probe(abspath)
+        if not file_probe:
+            return False
+
+        result = False
+        for stream in file_probe['streams']:
+            if stream['codec_type'] == 'video':
+                # Check if this file is the right codec
+                if stream['codec_name'] == self.settings.VIDEO_CODEC:
+                    result = True
+                elif self.settings.DEBUGGING:
+                    self._log("File is the not correct codec {} - {}".format(self.settings.VIDEO_CODEC, abspath))
+                    raise PostProcessError(self.settings.VIDEO_CODEC, stream['codec_name'])
+                # TODO: Test duration is the same as src
+                # TODO: Add file checksum from before and after move
+        return result
+
+    def write_history_log(self):
+        # Read the current history log from file
+        historical_log = self.settings.read_history_log()
+
+        # Set the completed timestamp
+        time_completed = time.time()
+
+        # Append the file data to the history log
+        historical_log.append({
+            'description': self.current_task.source['basename'],
+            'time_complete': time_completed,
+            'abspath': self.current_task.source['abspath'],
+            'success': self.current_task.success
+        })
+
+        # Create config path in not exists
+        if not os.path.exists(self.settings.CONFIG_PATH):
+            os.makedirs(self.settings.CONFIG_PATH)
+
+        # Create completed job details path in not exists
+        completed_job_details_dir = os.path.join(self.settings.CONFIG_PATH, 'completed_job_details')
+        if not os.path.exists(completed_job_details_dir):
+            os.makedirs(completed_job_details_dir)
+
+        # Set path of history json file
+        history_file = os.path.join(self.settings.CONFIG_PATH, 'history.json')
+        # Set path of conversion details file
+        job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(time_completed))
+
+        try:
+            # Write job details file
+            with open(job_details_file, 'w') as outfile:
+                json.dump(self.current_task.task_dump(), outfile, sort_keys=True, indent=4)
+            # Write history file
+            with open(history_file, 'w') as outfile:
+                json.dump(historical_log, outfile, sort_keys=True, indent=4)
+        except Exception as e:
+            self._log("Exception in writing history to file:", message2=str(e), level="exception")

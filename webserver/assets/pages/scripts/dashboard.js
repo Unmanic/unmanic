@@ -1404,7 +1404,7 @@ var Dashboard = function() {
 
 if (App.isAngularJsApp() === false) {
     jQuery(document).ready(function() {
-        Dashboard.init(); // init metronic core componets
+        Dashboard.init();
     });
 }
 
@@ -1437,8 +1437,13 @@ var updateWorkerPieCharts = function() {
                 } else {
                     // Set graph
                     $(this).data('easyPieChart').options.barColor = App.getBrandColor('green');
-                    $(this).data('easyPieChart').update(element.progress.percent);
-                    $('span', this).text(element.progress.percent + '%');
+                    if (typeof element.progress.percent !== 'undefined') {
+                        $(this).data('easyPieChart').update(element.progress.percent);
+                        $('span', this).text(element.progress.percent + '%');
+                    } else {
+                        $(this).data('easyPieChart').update(0);
+                        $('span', this).text('IDLE');
+                    }
                     // Set subtitle text
                     $(group_id + ' .worker-subtitle').each(function() {
                         $(this).text(element.current_file);

@@ -29,7 +29,7 @@
 #
 ###################################################################################################
 
-from lib import ffmpeg
+from lib import ffmpeg, task
 from lib import common
 
 import collections
@@ -59,6 +59,8 @@ class JobQueue(object):
 
     def __init__(self, settings, data_queues):
         self.name = 'JobQueue'
+        self.settings = settings
+        self.data_queues = data_queues
         self.incoming = collections.deque()
         self.in_progress = collections.deque()
         self.processed = collections.deque()
@@ -79,46 +81,48 @@ class JobQueue(object):
             return False
         return True
 
-    def remove_completed_item(self, file_info):
-        self.in_progress.remove(file_info['abspath'])
+    def mark_item_as_processed(self, task_item):
+        self.in_progress.remove(task_item.source['abspath'])
+        self.processed.append(task_item)
+        return task_item
 
     def get_next_incoming_item(self):
-        item = self.incoming.popleft()
-        self.in_progress.append(item['abspath'])
-        return item
+        task_item = self.incoming.popleft()
+        self.in_progress.append(task_item.source['abspath'])
+        return task_item
 
     def get_next_processed_item(self):
         item = self.processed.popleft()
         return item
 
     def add_item(self, pathname):
+        abspath = os.path.abspath(pathname)
         # Check if this path is already in the job queue
         for item in self.list_all_incoming_items():
-            if item['abspath'] == os.path.abspath(pathname):
+            if item.source['abspath'] == abspath:
                 return False
         # Check if this path is already in progress of being converted
-        for item in self.list_all_in_progress_items():
-            if item == os.path.abspath(pathname):
+        for path in self.list_all_in_progress_paths():
+            if path == abspath:
                 return False
         # Check if this path is already processed and waiting to be moved
         for item in self.list_all_processed_items():
-            if item == os.path.abspath(pathname):
+            if item.source['abspath'] == abspath:
                 return False
-        # Get info on the file from ffmpeg
-        file_info = {
-            'abspath': os.path.abspath(pathname),
-            'basename': os.path.basename(pathname),
-            'video_codecs': ','.join(self.ffmpeg.get_current_video_codecs(self.ffmpeg.file_probe(pathname)))
-        }
-        self.incoming.append(file_info)
+        # Create a new task and set the source
+        new_task = task.Task(self.settings, self.data_queues)
+        new_task.set_source_data(pathname)
+        new_task.set_destination_data()
+        new_task.set_cache_path()
+        self.incoming.append(new_task)
         return True
 
     def list_all_incoming_items(self):
         return list(self.incoming)
 
-    def list_all_in_progress_items(self):
-        return list(self.in_progress)
-
     def list_all_processed_items(self):
         return list(self.processed)
+
+    def list_all_in_progress_paths(self):
+        return list(self.in_progress)
 

@@ -1043,5 +1043,5 @@ var App = function() {
 }();
 
 jQuery(document).ready(function() {    
-   App.init(); // init metronic core componets
+   App.init();
 });

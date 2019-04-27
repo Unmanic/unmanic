@@ -8,6 +8,7 @@ permissions_config() {
         /tmp/unmanic
     chown -R $PUID:$PGID \
         /tmp/unmanic \
+        /config/.unmanic \
         /app
     chmod -R a+w \
         /tmp/unmanic \

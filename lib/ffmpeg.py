@@ -37,9 +37,8 @@ import shutil
 import re
 import sys
 import time
-from datetime import datetime
 
-import common
+from lib import common
 
 
 #      /$$$$$$$$                                           /$$     /$$                            /$$$$$$  /$$
@@ -53,6 +52,8 @@ import common
 #                                             | $$
 #                                             | $$
 #                                             |__/
+
+
 class FFMPEGHandlePostProcessError(Exception):
     def __init___(self,expected_var,result_var):
         Exception.__init__(self,"Errors found during post process checks. Expected {}, but instead found {}".format(expected_var,result_var))
@@ -122,7 +123,7 @@ class FFMPEGHandle(object):
         self.bitrate = 0
         self.file_size = None
 
-    def _log(self, message, message2 = '', level = "info"):
+    def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
@@ -188,6 +189,21 @@ class FFMPEGHandle(object):
         try:
             self.file_in['abspath'] = vid_file_path
             self.file_in['file_probe'] = self.file_probe(vid_file_path)
+            return True
+        except Exception as e:
+            self._log("Exception - process_file: {}".format(e), level='exception')
+            return False
+
+    def set_file_out(self, vid_file_path):
+        """
+        Set the file out property
+        :param vid_file_path:
+        :return:
+        """
+        # Fetch file info
+        try:
+            self.file_out['abspath'] = vid_file_path
+            self.file_out['file_probe'] = self.file_probe(vid_file_path)
             return True
         except Exception as e:
             self._log("Exception - process_file: {}".format(e), level='exception')
@@ -355,8 +371,8 @@ class FFMPEGHandle(object):
         # 
 
         # Read video information for the input file
-        file_properties = self.file_in
-        if not file_properties:
+        file_probe = self.file_in['file_probe']
+        if not file_probe:
             return False
 
         # Suppress printing banner. (-hide_banner)
@@ -369,7 +385,7 @@ class FFMPEGHandle(object):
         streams_to_map      = []
         streams_to_create   = []
         audio_tracks_count  = 0
-        for stream in file_properties['streams']:
+        for stream in file_probe['streams']:
             if stream['codec_type'] == 'video':
                 # Map this stream
                 streams_to_map = streams_to_map + [
@@ -445,10 +461,10 @@ class FFMPEGHandle(object):
         return command
 
     def convert_file_and_fetch_progress(self, infile, outfile, args):
-        file_properties = self.file_in
-        if not file_properties:
+        file_probe = self.file_in['file_probe']
+        if not file_probe:
             try:
-                file_properties = self.file_probe(infile)
+                file_probe = self.file_probe(infile)
             except Exception as e: 
                 self._log("Exception - convert_file_and_fetch_progress: {}".format(e), level='exception')
                 return False
@@ -684,7 +700,7 @@ class TestClass(object):
             testfile = os.path.join(tmp_dir, filename + file_extension)
             self._log(infile, testfile)
             shutil.copy(infile, testfile)
-            assert self.ffmpeg.process_file(testfile)
+            assert self.ffmpeg.process_file_with_configured_settings(testfile)
             break
 
 

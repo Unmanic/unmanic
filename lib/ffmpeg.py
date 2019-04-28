@@ -41,55 +41,33 @@ import time
 from lib import common
 
 
-#      /$$$$$$$$                                           /$$     /$$                            /$$$$$$  /$$
-#     | $$_____/                                          | $$    |__/                           /$$__  $$| $$
-#     | $$       /$$   /$$  /$$$$$$$  /$$$$$$   /$$$$$$  /$$$$$$   /$$  /$$$$$$  /$$$$$$$       | $$  \__/| $$  /$$$$$$   /$$$$$$$ /$$$$$$$  /$$$$$$   /$$$$$$$
-#     | $$$$$   |  $$ /$$/ /$$_____/ /$$__  $$ /$$__  $$|_  $$_/  | $$ /$$__  $$| $$__  $$      | $$      | $$ |____  $$ /$$_____//$$_____/ /$$__  $$ /$$_____/
-#     | $$__/    \  $$$$/ | $$      | $$$$$$$$| $$  \ $$  | $$    | $$| $$  \ $$| $$  \ $$      | $$      | $$  /$$$$$$$|  $$$$$$|  $$$$$$ | $$$$$$$$|  $$$$$$
-#     | $$        >$$  $$ | $$      | $$_____/| $$  | $$  | $$ /$$| $$| $$  | $$| $$  | $$      | $$    $$| $$ /$$__  $$ \____  $$\____  $$| $$_____/ \____  $$
-#     | $$$$$$$$ /$$/\  $$|  $$$$$$$|  $$$$$$$| $$$$$$$/  |  $$$$/| $$|  $$$$$$/| $$  | $$      |  $$$$$$/| $$|  $$$$$$$ /$$$$$$$//$$$$$$$/|  $$$$$$$ /$$$$$$$/
-#     |________/|__/  \__/ \_______/ \_______/| $$____/    \___/  |__/ \______/ |__/  |__/       \______/ |__/ \_______/|_______/|_______/  \_______/|_______/
-#                                             | $$
-#                                             | $$
-#                                             |__/
-
-
 class FFMPEGHandlePostProcessError(Exception):
-    def __init___(self,expected_var,result_var):
-        Exception.__init__(self,"Errors found during post process checks. Expected {}, but instead found {}".format(expected_var,result_var))
-        self.expected_var   = expected_var
-        self.result_var     = result_var
+    def __init___(self, expected_var, result_var):
+        Exception.__init__(self, "Errors found during post process checks. Expected {}, but instead found {}".format(
+            expected_var, result_var))
+        self.expected_var = expected_var
+        self.result_var = result_var
 
 
 class FFMPEGHandleFFProbeError(Exception):
-    def __init___(self,path,info):
-        Exception.__init__(self,"Unable to fetch data from file {}. {}".format(path,info))
+    def __init___(self, path, info):
+        Exception.__init__(self, "Unable to fetch data from file {}. {}".format(path, info))
         self.path = path
         self.info = info
 
 
 class FFMPEGHandleConversionError(Exception):
-    def __init___(self,command,info):
-        Exception.__init__(self,"FFMPEG command retunred non 0 status. Command: {}".format(command))
+    def __init___(self, command, info):
+        Exception.__init__(self, "FFMPEG command returned non 0 status. Command: {}".format(command))
         self.command = command
 
 
-#      /$$$$$$$$ /$$$$$$$$ /$$      /$$ /$$$$$$$  /$$$$$$$$  /$$$$$$        /$$   /$$                           /$$ /$$
-#     | $$_____/| $$_____/| $$$    /$$$| $$__  $$| $$_____/ /$$__  $$      | $$  | $$                          | $$| $$
-#     | $$      | $$      | $$$$  /$$$$| $$  \ $$| $$      | $$  \__/      | $$  | $$  /$$$$$$  /$$$$$$$   /$$$$$$$| $$  /$$$$$$   /$$$$$$
-#     | $$$$$   | $$$$$   | $$ $$/$$ $$| $$$$$$$/| $$$$$   | $$ /$$$$      | $$$$$$$$ |____  $$| $$__  $$ /$$__  $$| $$ /$$__  $$ /$$__  $$
-#     | $$__/   | $$__/   | $$  $$$| $$| $$____/ | $$__/   | $$|_  $$      | $$__  $$  /$$$$$$$| $$  \ $$| $$  | $$| $$| $$$$$$$$| $$  \__/
-#     | $$      | $$      | $$\  $ | $$| $$      | $$      | $$  \ $$      | $$  | $$ /$$__  $$| $$  | $$| $$  | $$| $$| $$_____/| $$
-#     | $$      | $$      | $$ \/  | $$| $$      | $$$$$$$$|  $$$$$$/      | $$  | $$|  $$$$$$$| $$  | $$|  $$$$$$$| $$|  $$$$$$$| $$
-#     |__/      |__/      |__/     |__/|__/      |________/ \______/       |__/  |__/ \_______/|__/  |__/ \_______/|__/ \_______/|__/
-#
-#
-#
 class FFMPEGHandle(object):
     def __init__(self, settings, logging):
         self.name = 'FFMPEGHandle'
         self.logger = logging.get_logger(self.name)
         self.settings = settings
+        self.process = None
         self.file_in = None
         self.file_out = None
         self.start_time = None
@@ -128,21 +106,23 @@ class FFMPEGHandle(object):
         getattr(self.logger, level)(message)
 
     def file_probe(self, vid_file_path):
-        ''' Give a json from ffprobe command line
+        """
+        Give a json from ffprobe command line
 
-        @vid_file_path : The absolute (full) path of the video file, string.
-        '''
+        :param vid_file_path: The absolute (full) path of the video file, string.
+        :return:
+        """
         if type(vid_file_path) != str:
             raise Exception('Give ffprobe a full file path of the video')
 
         command = ["ffprobe",
-                "-loglevel",  "quiet",
-                "-print_format", "json",
-                "-show_format",
-                "-show_streams",
-                "-show_error",
-                vid_file_path
-            ]
+                   "-loglevel", "quiet",
+                   "-print_format", "json",
+                   "-show_format",
+                   "-show_streams",
+                   "-show_error",
+                   vid_file_path
+                   ]
 
         pipe = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
@@ -150,9 +130,9 @@ class FFMPEGHandle(object):
         # Check result
         try:
             info = json.loads(out.decode("utf-8"))
-        except Exception as e: 
+        except Exception as e:
             self._log("Exception - file_probe: {}".format(e), level='exception')
-            raise FFMPEGHandleFFProbeError(vid_file_path,str(e))
+            raise FFMPEGHandleFFProbeError(vid_file_path, str(e))
         if pipe.returncode == 1 or 'error' in info:
             raise FFMPEGHandleFFProbeError(vid_file_path, info)
 
@@ -160,7 +140,7 @@ class FFMPEGHandle(object):
         try:
             # TODO: Remove unnecessary logging
             if self.settings.DEBUGGING:
-                self._log('meda', message2=info, level='debug')
+                self._log('media', message2=info, level='debug')
             if info:
                 self.src_fps = eval(info['streams'][0]['avg_frame_rate'])
         except ZeroDivisionError:
@@ -174,7 +154,7 @@ class FFMPEGHandle(object):
         except ZeroDivisionError:
             self._log('Warning, Cannot use input Duration', level='warning')
 
-        if self.src_fps == None and self.duration == None:
+        if self.src_fps is None and self.duration is None:
             raise ValueError('Unable to match against FPS or Duration.')
 
         return info
@@ -182,6 +162,7 @@ class FFMPEGHandle(object):
     def set_file_in(self, vid_file_path):
         """
         Set the file in property
+
         :param vid_file_path:
         :return:
         """
@@ -197,6 +178,7 @@ class FFMPEGHandle(object):
     def set_file_out(self, vid_file_path):
         """
         Set the file out property
+
         :param vid_file_path:
         :return:
         """
@@ -465,21 +447,25 @@ class FFMPEGHandle(object):
         if not file_probe:
             try:
                 file_probe = self.file_probe(infile)
-            except Exception as e: 
+            except Exception as e:
                 self._log("Exception - convert_file_and_fetch_progress: {}".format(e), level='exception')
                 return False
 
         # Create command with infile, outfile and the arguments
-        command = ['ffmpeg', '-y', '-i',infile] + args + ['-y',outfile]
+        command = ['ffmpeg', '-y', '-i', infile] + args + ['-y', outfile]
         if self.settings.DEBUGGING:
-           self._log("Executing: {}".format(' '.join(command)), level='debug')
+            self._log("Executing: {}".format(' '.join(command)), level='debug')
 
         # Log the start time
-        self.start_time     = time.time()
-        self.total_frames   = int(self.duration * self.src_fps)
+        self.start_time = time.time()
+
+        # If we have probed both the source FPS and total duration, then we can calculate the total frames
+        if self.duration and self.src_fps and self.duration > 0 and self.src_fps > 0:
+            self.total_frames = int(self.duration * self.src_fps)
 
         # Execute command
-        self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+        self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                        universal_newlines=True)
 
         # Poll process for new output until finished
         while True:
@@ -493,8 +479,8 @@ class FFMPEGHandle(object):
                 pass
 
         # Get the final output and the exit status
-        output   = self.process.communicate()[0]
-        if (self.process.returncode == 0):
+        output = self.process.communicate()[0]
+        if self.process.returncode == 0:
             return True
         else:
             raise FFMPEGHandleConversionError(command)
@@ -508,47 +494,52 @@ class FFMPEGHandle(object):
         # Calculate elapsed time
         if line_text and 'frame=' in line_text:
             # Update time
-            _time            = self.get_progress_from_regex_of_string(line_text,r"time=(\s+|)(\d+:\d+:\d+\.\d+)",self.time)
+            _time = self.get_progress_from_regex_of_string(line_text, r"time=(\s+|)(\d+:\d+:\d+\.\d+)", self.time)
             if _time:
-                self.time    = common.timestringToSeconds(_time)
+                self.time = common.timestringToSeconds(_time)
 
             # Update frames
-            _frame           = float(self.get_progress_from_regex_of_string(line_text,r"frame=(\s+|)(\d+)",self.frame))
+            _frame = float(self.get_progress_from_regex_of_string(line_text, r"frame=(\s+|)(\d+)", self.frame))
             if _frame and _frame > self.frame:
-                self.frame   = _frame
+                self.frame = _frame
 
             # Update speed
-            _speed             = self.get_progress_from_regex_of_string(line_text,r"speed=(\s+|)(\d+\.\d+)",self.speed)
+            _speed = self.get_progress_from_regex_of_string(line_text, r"speed=(\s+|)(\d+\.\d+)", self.speed)
             if _speed:
-                self.speed     = _speed
+                self.speed = _speed
 
             # Update bitrate
-            _bitrate           = self.get_progress_from_regex_of_string(line_text,r"bitrate=(\s+|)(\d+\.\d+\w+|\d+w)",self.bitrate)
+            _bitrate = self.get_progress_from_regex_of_string(line_text, r"bitrate=(\s+|)(\d+\.\d+\w+|\d+w)",
+                                                              self.bitrate)
             if _bitrate:
-                self.bitrate   = "{}/s".format(_bitrate)
+                self.bitrate = "{}/s".format(_bitrate)
 
             # Update file size
-            _size              = self.get_progress_from_regex_of_string(line_text,r"size=(\s+|)(\d+\w+|\d+.\d+\w+)",self.frame)
+            _size = self.get_progress_from_regex_of_string(line_text, r"size=(\s+|)(\d+\w+|\d+.\d+\w+)", self.frame)
             if _size:
                 self.file_size = _size
 
             # Update percent
-            try:
-                _percent       = int(int(self.frame) / int(self.total_frames) * 100)
-            except:
-                _percent       = int(int(self.time) / int(self.duration) * 100)
+            _percent = None
+            if self.frame and self.total_frames and self.frame > 0 and self.total_frames > 0:
+                # If we have both the current frame and the total number of frames, then we can easily calculate the %
+                _percent = int(int(self.frame) / int(self.total_frames) * 100)
+            if not _percent and self.time and self.duration and self.time > 0 and self.duration > 0:
+                # If that was not successful, we need to resort to assuming the percent by the duration and the time
+                # passed so far
+                _percent = int(int(self.time) / int(self.duration) * 100)
             if _percent and _percent > self.percent:
-                self.percent   = _percent
+                self.percent = _percent
                 
-        self._log("TOTAL: frames", self.total_frames, level='debug')
-        self._log("TOTAL: duration", self.duration, level='debug')
-        self._log("PROGRESS: elapsed time", self.elapsed, level='debug')
-        self._log("PROGRESS: seconds converted", self.time, level='debug')
-        self._log("PROGRESS: percent converted", self.percent, level='debug')
-        self._log("PROGRESS: frames converted", self.frame, level='debug')
-        self._log("PROGRESS: speed: {}x".format(self.speed), level='debug')
-        self._log("PROGRESS: bitrate", self.bitrate, level='debug')
-        self._log("PROGRESS: file size", self.file_size, level='debug')
+        # self._log("TOTAL: frames", self.total_frames, level='debug')
+        # self._log("TOTAL: duration", self.duration, level='debug')
+        # self._log("PROGRESS: elapsed time", self.elapsed, level='debug')
+        # self._log("PROGRESS: seconds converted", self.time, level='debug')
+        # self._log("PROGRESS: percent converted", self.percent, level='debug')
+        # self._log("PROGRESS: frames converted", self.frame, level='debug')
+        # self._log("PROGRESS: speed: {}x".format(self.speed), level='debug')
+        # self._log("PROGRESS: bitrate", self.bitrate, level='debug')
+        # self._log("PROGRESS: file size", self.file_size, level='debug')
 
     def get_progress_from_regex_of_string(self,line,regex_string,default=0):
         return_value = default
@@ -564,41 +555,34 @@ class FFMPEGHandle(object):
         return return_value
 
 
-
-
-
-#      /$$   /$$           /$$   /$$           /$$$$$$$$                    /$$
-#     | $$  | $$          |__/  | $$          |__  $$__/                   | $$
-#     | $$  | $$ /$$$$$$$  /$$ /$$$$$$           | $$  /$$$$$$   /$$$$$$$ /$$$$$$   /$$$$$$$
-#     | $$  | $$| $$__  $$| $$|_  $$_/           | $$ /$$__  $$ /$$_____/|_  $$_/  /$$_____/
-#     | $$  | $$| $$  \ $$| $$  | $$             | $$| $$$$$$$$|  $$$$$$   | $$   |  $$$$$$
-#     | $$  | $$| $$  | $$| $$  | $$ /$$         | $$| $$_____/ \____  $$  | $$ /$$\____  $$
-#     |  $$$$$$/| $$  | $$| $$  |  $$$$/         | $$|  $$$$$$$ /$$$$$$$/  |  $$$$//$$$$$$$/
-#      \______/ |__/  |__/|__/   \___/           |__/ \_______/|_______/    \___/ |_______/
-#
-#
-#
-
 class TestClass(object):
+    """
+    TestClass
+
+    Runs unit tests against the ffmpeg class
+
+    """
+
     def setup_class(self):
         self.project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        sys.path.append(self.project_dir)
+        # sys.path.append(self.project_dir)
+        # import config
         import config
         self.settings = config.CONFIG()
         self.settings.DEBUGGING = True
-        import unlogger
+        from lib import unlogger
         self.logging = unlogger.UnmanicLogger.__call__()
         self.logging.setup_logger(self.settings)
-        self.logger  = self.logging.get_logger()
-        self.ffmpeg  = FFMPEGHandle(self.settings, self.logging)
+        self.logger = self.logging.get_logger()
+        self.ffmpeg = FFMPEGHandle(self.settings, self.logging)
 
-    def _log(self, message, message2 = '', level = "info"):
+    def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
-    def build_ffmpeg_args(self,test_for_failure=False):
+    def build_ffmpeg_args(self, test_for_failure=False):
         configured_vencoder = self.settings.CODEC_CONFIG[self.settings.VIDEO_CODEC]['encoder']
-        failure_vencoder    = None
+        failure_vencoder = None
         for x in self.settings.CODEC_CONFIG:
             if x != self.settings.VIDEO_CODEC:
                 failure_vencoder = self.settings.CODEC_CONFIG[x]['encoder']
@@ -631,19 +615,21 @@ class TestClass(object):
         ]
         return args
 
-    def convert_single_file(self,infile,outfile,test_for_failure=False):
+    def convert_single_file(self, infile, outfile, test_for_failure=False):
         if not os.path.exists(infile):
             self._log("No such file: {}".format(infile))
             sys.exit(1)
         # Ensure the directory exists
         common.ensureDir(outfile)
-        # Remove the ouput file if it already exists
+        # Remove the output file if it already exists
         if os.path.exists(outfile):
             os.remove(outfile)
         # Setup ffmpeg args
         built_args = self.build_ffmpeg_args(test_for_failure)
         # Run conversion process
         self._log("Converting {} -> {}".format(infile, outfile))
+        # Fetch file info
+        self.ffmpeg.set_file_in(infile)
         assert self.ffmpeg.convert_file_and_fetch_progress(infile, outfile, built_args)
         if not test_for_failure:
             assert self.ffmpeg.post_process_file(outfile)
@@ -652,23 +638,21 @@ class TestClass(object):
             with pytest.raises(FFMPEGHandlePostProcessError):
                 self.ffmpeg.post_process_file(outfile)
 
-
     def test_read_file_info_for_success(self):
         self.setup_class()
         # Set project root path
-        tests_dir   = os.path.join(self.project_dir, 'tests')
-        tmp_dir     = os.path.join(tests_dir, 'tmp')
+        tests_dir = os.path.join(self.project_dir, 'tests')
         # Test
         for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'small')):
-            infile  = os.path.join(tests_dir, 'videos', 'small', video_file)
+            infile = os.path.join(tests_dir, 'videos', 'small', video_file)
             assert self.ffmpeg.file_probe(infile)
 
     def test_read_file_info_for_failure(self):
         self.setup_class()
         # Set project root path
-        tests_dir   = os.path.join(self.project_dir, 'tests')
-        tmp_dir     = os.path.join(tests_dir, 'tmp')
-        fail_file   = os.path.join(tmp_dir, 'test_failure.mkv')
+        tests_dir = os.path.join(self.project_dir, 'tests')
+        tmp_dir = os.path.join(tests_dir, 'tmp')
+        fail_file = os.path.join(tmp_dir, 'test_failure.mkv')
         # Test
         common.touch(fail_file)
         import pytest
@@ -678,24 +662,24 @@ class TestClass(object):
     def test_convert_all_files_for_success(self):
         self.setup_class()
         # Set project root path
-        tests_dir   = os.path.join(self.project_dir, 'tests')
-        tmp_dir     = os.path.join(tests_dir, 'tmp')
+        tests_dir = os.path.join(self.project_dir, 'tests')
+        tmp_dir = os.path.join(tests_dir, 'tmp')
         # Test
         for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'small')):
             filename, file_extension = os.path.splitext(os.path.basename(video_file))
-            infile  = os.path.join(tests_dir, 'videos', 'small', video_file)
+            infile = os.path.join(tests_dir, 'videos', 'small', video_file)
             outfile = os.path.join(tmp_dir, filename + '.mkv')
-            self.convert_single_file(infile,outfile)
+            self.convert_single_file(infile, outfile)
 
     def test_process_file_for_success(self):
         self.setup_class()
         # Set project root path
-        tests_dir    = os.path.join(self.project_dir, 'tests')
-        tmp_dir      = os.path.join(tests_dir, 'tmp')
+        tests_dir = os.path.join(self.project_dir, 'tests')
+        tmp_dir = os.path.join(tests_dir, 'tmp')
         # Test
         for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'med')):
             filename, file_extension = os.path.splitext(os.path.basename(video_file))
-            infile   = os.path.join(tests_dir, 'videos', 'med', video_file)
+            infile = os.path.join(tests_dir, 'videos', 'med', video_file)
             # Copy the file to a tmp location (it will be replaced)
             testfile = os.path.join(tmp_dir, filename + file_extension)
             self._log(infile, testfile)
@@ -704,6 +688,7 @@ class TestClass(object):
             break
 
 
-
 if __name__ == "__main__":
-    TestClass().test_process_file_for_success()
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.append(project_dir)
+    TestClass().test_convert_all_files_for_success()

@@ -3,3 +3,4 @@ ago==0.0.93
 tornado==5.1.1
 pyinotify==0.9.6
 pytest>=4.1.0
+teamcity-messages>=1.25

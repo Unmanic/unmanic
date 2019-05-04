@@ -143,7 +143,7 @@ class LibraryScanner(threading.Thread):
 
     def scheduledJob(self):
         self._log("Running full library scan")
-        self.getConvertFiles(self.settings.LIBRARY_PATH)
+        self.get_convert_files(self.settings.LIBRARY_PATH)
 
     def add_path_to_queue(self, pathname):
         self.scheduledtasks.put(pathname)
@@ -155,7 +155,7 @@ class LibraryScanner(threading.Thread):
             return False
         return True
 
-    def getConvertFiles(self, search_folder):
+    def get_convert_files(self, search_folder):
         self._log(search_folder)
         for root, subFolders, files in os.walk(search_folder):
             if self.settings.DEBUGGING:

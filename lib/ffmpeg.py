@@ -216,8 +216,8 @@ class FFMPEGHandle(object):
                     self._log("Marking file not to be processed", level='debug')
                 return False
             file_probe = self.file_in['file_probe']
-        except Exception as e: 
-            self._log("Exception - check_file_to_be_processed: {}".format(e), level='exception')
+        except Exception as e:
+            self._log("Exception - check_file_to_be_processed read file in: {}".format(e), level='exception')
             # Failed to fetch properties
             if self.settings.DEBUGGING:
                 self._log("Failed to fetch properties of file {}".format(vid_file_path), level='debug')
@@ -227,14 +227,24 @@ class FFMPEGHandle(object):
         # Check if the file container from it's properties matches the configured container
         correct_extension = False
         try:
-            current_possible_extensions = file_probe['format']['format_name'].split(",")
-            for extension in current_possible_extensions:
+            current_possible_format_names = file_probe['format']['format_name'].split(",")
+            if self.settings.DEBUGGING:
+                self._log("Current file format names:", current_possible_format_names, level='debug')
+            for format_name in current_possible_format_names:
+                extension = 'NONE SELECTED'
+                if format_name in self.settings.MUXER_CONFIG:
+                    extension = self.settings.MUXER_CONFIG[format_name]['extension']
                 if extension == self.settings.OUT_CONTAINER:
                     if self.settings.DEBUGGING:
-                        self._log("File already in container format {} - {}".format(self.settings.OUT_CONTAINER,vid_file_path), level='debug')
+                        self._log("File already in container format {} - {}".format(self.settings.OUT_CONTAINER,
+                                                                                    vid_file_path), level='debug')
                     correct_extension = True
-        except Exception as e: 
-            self._log("Exception - check_file_to_be_processed: {}".format(e), level='exception')
+            if not correct_extension:
+                if self.settings.DEBUGGING:
+                    self._log("Current file format names do not match the configured extension {}".format(
+                        self.settings.OUT_CONTAINER), level='debug')
+        except Exception as e:
+            self._log("Exception - check_file_to_be_processed check file container: {}".format(e), level='exception')
             # Failed to fetch properties
             if self.settings.DEBUGGING:
                 self._log("Failed to read format of file {}".format(vid_file_path), level='debug')
@@ -244,16 +254,24 @@ class FFMPEGHandle(object):
         # Check if the file video codec from it's properties matches the configured video codec
         correct_video_codec = False
         try:
+            video_streams_codecs = ""
             for stream in file_probe['streams']:
                 if stream['codec_type'] == 'video':
                     # Check if this file is already the right format
+                    video_streams_codecs += "{},{}".format(video_streams_codecs, stream['codec_name'])
                     if stream['codec_name'] == self.settings.VIDEO_CODEC:
                         if self.settings.DEBUGGING:
-                            self._log("File already {} - {}".format(self.settings.VIDEO_CODEC,vid_file_path), level='debug')
+                            self._log("File already has {} codec video stream - {}".format(self.settings.VIDEO_CODEC, vid_file_path),
+                                      level='debug')
                         correct_video_codec = True
-        except Exception as e: 
-            self._log("Exception - check_file_to_be_processed: {}".format(e), level='exception')
+            if not correct_video_codec:
+                if self.settings.DEBUGGING:
+                    self._log(
+                        "The current file's video streams ({}) do not match the configured video codec ({})".format(
+                            video_streams_codecs, self.settings.VIDEO_CODEC), level='debug')
+        except Exception as e:
             # Failed to fetch properties
+            self._log("Exception - check_file_to_be_processed check video codec: {}".format(e), level='exception')
             if self.settings.DEBUGGING:
                 self._log("Failed to read codec info of file {}".format(vid_file_path), level='debug')
                 self._log("Marking file not to be processed", level='debug')

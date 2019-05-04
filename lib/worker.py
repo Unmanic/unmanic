@@ -154,7 +154,7 @@ class Worker(threading.Thread):
         self.abort_flag     = threading.Event()
         self.abort_flag.clear()
 
-    def _log(self, message, message2 = '', level = "info"):
+    def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 

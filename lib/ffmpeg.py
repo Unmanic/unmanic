@@ -38,7 +38,12 @@ import re
 import sys
 import time
 
-from lib import common
+try:
+    from lib import common
+except ImportError:
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.append(project_dir)
+    from lib import common
 
 
 class FFMPEGHandlePostProcessError(Exception):
@@ -57,7 +62,7 @@ class FFMPEGHandleFFProbeError(Exception):
 
 
 class FFMPEGHandleConversionError(Exception):
-    def __init___(self, command, info):
+    def __init___(self, command):
         Exception.__init__(self, "FFMPEG command returned non 0 status. Command: {}".format(command))
         self.command = command
 
@@ -318,7 +323,7 @@ class FFMPEGHandle(object):
         out_path = os.path.join(self.settings.CACHE_PATH, out_folder, out_file)
 
         # Create output path if not exists 
-        common.ensureDir(out_path)
+        common.ensure_dir(out_path)
 
         # Reset all info
         self.set_info_defaults()
@@ -497,7 +502,7 @@ class FFMPEGHandle(object):
                 pass
 
         # Get the final output and the exit status
-        output = self.process.communicate()[0]
+        self.process.communicate()[0]
         if self.process.returncode == 0:
             return True
         else:
@@ -514,7 +519,7 @@ class FFMPEGHandle(object):
             # Update time
             _time = self.get_progress_from_regex_of_string(line_text, r"time=(\s+|)(\d+:\d+:\d+\.\d+)", self.time)
             if _time:
-                self.time = common.timestringToSeconds(_time)
+                self.time = common.time_string_to_seconds(_time)
 
             # Update frames
             _frame = float(self.get_progress_from_regex_of_string(line_text, r"frame=(\s+|)(\d+)", self.frame))
@@ -548,7 +553,7 @@ class FFMPEGHandle(object):
                 _percent = int(int(self.time) / int(self.duration) * 100)
             if _percent and _percent > self.percent:
                 self.percent = _percent
-                
+
         # self._log("TOTAL: frames", self.total_frames, level='debug')
         # self._log("TOTAL: duration", self.duration, level='debug')
         # self._log("PROGRESS: elapsed time", self.elapsed, level='debug')
@@ -559,15 +564,12 @@ class FFMPEGHandle(object):
         # self._log("PROGRESS: bitrate", self.bitrate, level='debug')
         # self._log("PROGRESS: file size", self.file_size, level='debug')
 
-    def get_progress_from_regex_of_string(self,line,regex_string,default=0):
+    def get_progress_from_regex_of_string(self, line, regex_string, default=0):
         return_value = default
-        # Update frame
-        regex   = re.compile(regex_string)
-        #search  = regex.search(line)
-        #if search:
+        regex = re.compile(regex_string)
         findall = re.findall(regex, line)
         if findall:
-            split_list  = findall[-1]
+            split_list = findall[-1]
             if len(split_list) == 2:
                 return_value = split_list[1].strip()
         return return_value
@@ -638,7 +640,7 @@ class TestClass(object):
             self._log("No such file: {}".format(infile))
             sys.exit(1)
         # Ensure the directory exists
-        common.ensureDir(outfile)
+        common.ensure_dir(outfile)
         # Remove the output file if it already exists
         if os.path.exists(outfile):
             os.remove(outfile)
@@ -705,8 +707,30 @@ class TestClass(object):
             assert self.ffmpeg.process_file_with_configured_settings(testfile)
             break
 
+    def test_file_not_target_format_for_success(self):
+        self.setup_class()
+        # Set project root path
+        tests_dir = os.path.join(self.project_dir, 'tests')
+        # Test
+        for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'small')):
+            should_convert = True
+            pathname = os.path.join(tests_dir, 'videos', 'small', video_file)
+            file_probe = self.ffmpeg.file_probe(pathname)
+            # Ensure the file probe was successful
+            assert 'format' in file_probe
+            assert 'streams' in file_probe
+            # Check for our test mkv file (this one should be set not to need a conversion
+            if 'matroska' in file_probe['format']['format_name']:
+                should_convert = False
+                for stream in file_probe['streams']:
+                    if stream['codec_type'] == 'video':
+                        self.settings.VIDEO_CODEC = stream['codec_name']
+            # Reset file in
+            self.ffmpeg.file_in = {}
+            # Check that the check_file_to_be_processed function correctly identifies the file to be converted
+            convert = self.ffmpeg.check_file_to_be_processed(pathname)
+            assert (should_convert == convert)
+
 
 if __name__ == "__main__":
-    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    sys.path.append(project_dir)
-    TestClass().test_convert_all_files_for_success()
+    TestClass().test_file_not_target_format_for_success()

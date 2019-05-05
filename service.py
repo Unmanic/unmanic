@@ -122,12 +122,12 @@ class LibraryScanner(threading.Thread):
             if self.interval and self.interval != 0:
                 self._log("Starting LibraryScanner schedule to scan every {} mins...".format(self.interval))
                 # Configure schedule
-                schedule.every(self.interval).minutes.do(self.scheduledJob)
+                schedule.every(self.interval).minutes.do(self.scheduled_job)
 
                 # First run the task
                 if self.settings.RUN_FULL_SCAN_ON_START and self.firstrun:
                     self._log("Running LibraryScanner on start")
-                    self.scheduledJob()
+                    self.scheduled_job()
                 self.firstrun = False
 
                 # Then loop and wait for the schedule
@@ -141,7 +141,7 @@ class LibraryScanner(threading.Thread):
                 self._log("Stopping LibraryScanner schedule...")
         time.sleep(5)
 
-    def scheduledJob(self):
+    def scheduled_job(self):
         self._log("Running full library scan")
         self.get_convert_files(self.settings.LIBRARY_PATH)
 
@@ -149,6 +149,9 @@ class LibraryScanner(threading.Thread):
         self.scheduledtasks.put(pathname)
 
     def file_not_target_format(self, pathname):
+        # Reset file in
+        self.ffmpeg.file_in = {}
+        # Check if file matches configured codec and format
         if not self.ffmpeg.check_file_to_be_processed(pathname):
             if self.settings.DEBUGGING:
                 self._log("File does not need to be processed - {}".format(pathname))
@@ -195,6 +198,9 @@ class EventProcessor(pyinotify.ProcessEvent):
         self.inotifytasks.put(pathname)
 
     def file_not_target_format(self, pathname):
+        # Reset file in
+        self.ffmpeg.file_in = {}
+        # Check if file matches configured codec and format
         if not self.ffmpeg.check_file_to_be_processed(pathname):
             if self.settings.DEBUGGING:
                 self._log("File does not need to be processed - {}".format(pathname))

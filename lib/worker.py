@@ -93,7 +93,7 @@ class WorkerThread(threading.Thread):
         self._log("{} running job - {}".format(self.name, abspath))
 
         # Create output path if not exists
-        common.ensureDir(self.current_task.cache_path)
+        common.ensure_dir(self.current_task.cache_path)
 
         # Convert file
         success = False

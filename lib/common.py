@@ -31,38 +31,38 @@
 
 import os
 import ago
-import time
 import datetime
 
 
-def format_message(message, message2 = ''):
-    message  = str(message)
+def format_message(message, message2=''):
+    message = str(message)
     if message2:
         # Message2 can support other objects:
         if isinstance(message2, str):
-            message = "%s - %s" % (message,str(message2))
+            message = "%s - %s" % (message, str(message2))
         elif isinstance(message2, dict) or isinstance(message2, list):
             import pprint
             message2 = pprint.pformat(message2, indent=1)
-            message = "%s \n%s" % (message,str(message2))
+            message = "%s \n%s" % (message, str(message2))
         else:
-            message = "%s - %s" % (message,str(message2))
+            message = "%s - %s" % (message, str(message2))
     message = "[FORMATTED] - %s" % message
     return message
 
-def makeTimestampHumanReadable(ts):
+
+def make_timestamp_human_readable(ts):
     return ago.human(ts, precision=1)
 
 
-def ensureDir(file_path):
+def ensure_dir(file_path):
     directory = os.path.dirname(file_path)
     if not os.path.exists(directory):
         os.makedirs(directory)
 
 
-def timestringToSeconds(timestring):
-    pt =datetime.datetime.strptime(timestring,'%H:%M:%S.%f')
-    return pt.second+pt.minute*60+pt.hour*3600
+def time_string_to_seconds(time_string):
+    pt = datetime.datetime.strptime(time_string, '%H:%M:%S.%f')
+    return pt.second + pt.minute * 60 + pt.hour * 3600
 
 
 def tail(f, n, offset=0):
@@ -88,7 +88,8 @@ def touch(fname, mode=0o666, dir_fd=None, **kwargs):
     flags = os.O_CREAT | os.O_APPEND
     with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
         os.utime(f.fileno() if os.utime in os.supports_fd else fname,
-            dir_fd=None if os.supports_fd else dir_fd, **kwargs)
+                 dir_fd=None if os.supports_fd else dir_fd, **kwargs)
+
 
 def clean_files_in_dir(directory):
     """This will completely wipe all contents from a directory"""
@@ -96,7 +97,6 @@ def clean_files_in_dir(directory):
         for root, subFolders, files in os.walk(directory):
             # Add all files in this path that match our container filter
             for file_path in files:
-                pathname = os.path.join(root,file_path)
+                pathname = os.path.join(root, file_path)
                 if os.path.isfile(pathname):
                     os.remove(pathname)
-

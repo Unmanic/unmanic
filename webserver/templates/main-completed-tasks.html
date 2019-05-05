@@ -34,7 +34,7 @@
                 {% if ((int(historical_item['time_complete']) + 60) > int(time.time())) %}
                     Just Now
                 {% else %}
-                    {{ escape(common.makeTimestampHumanReadable( int( historical_item['time_complete'] ) )) }} 
+                    {{ escape(common.make_timestamp_human_readable( int( historical_item['time_complete'] ) )) }}
                 {%end%}
                     
             </div>

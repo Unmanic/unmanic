@@ -42,12 +42,13 @@ class SingletonType(type):
             cls._instances[cls] = super(SingletonType, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
+
 # python 3 style
 class UnmanicLogger(object, metaclass=SingletonType):
     _stream_handler = None
-    _file_handler   = None
-    _settings       = None
-    _logger         = None
+    _file_handler = None
+    _settings = None
+    _logger = None
 
     def __init__(self):
         # Create our default parent logger and set the default level to info

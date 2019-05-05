@@ -40,12 +40,16 @@ PGID=$(id -g);
 rm -rf ${PROJECT_BASE}/tests/tmp/library/path*
 mkdir -p \
     ${PROJECT_BASE}/tests/tmp/library/path1 \
-    ${PROJECT_BASE}/tests/tmp/library/path2
+    ${PROJECT_BASE}/tests/tmp/library/path2 \
+    ${PROJECT_BASE}/tests/tmp/library/path3 \
+    ${PROJECT_BASE}/tests/tmp/library/path4
 
 
 # Copy test files to test folders
-cp -r ${PROJECT_BASE}/tests/videos/med/* ${PROJECT_BASE}/tests/tmp/library/path1/
-cp -r ${PROJECT_BASE}/tests/videos/med/* ${PROJECT_BASE}/tests/tmp/library/path2/
+cp -r ${PROJECT_BASE}/tests/videos/small/* ${PROJECT_BASE}/tests/tmp/library/path1/
+cp -r ${PROJECT_BASE}/tests/videos/small/* ${PROJECT_BASE}/tests/tmp/library/path2/
+cp -r ${PROJECT_BASE}/tests/videos/small/* ${PROJECT_BASE}/tests/tmp/library/path3/
+cp -r ${PROJECT_BASE}/tests/videos/small/* ${PROJECT_BASE}/tests/tmp/library/path4/
 
 
 # Set the config for the application so that it scans for files right away
@@ -66,8 +70,7 @@ docker run -ti --rm \
     -p 8888:8888 \
     -v ${PROJECT_BASE}:/app \
     -v ${PROJECT_BASE}/cache:/tmp/unmanic \
-    -v ${PROJECT_BASE}/tests/tmp/library/path1:/library/path1 \
-    -v ${PROJECT_BASE}/tests/tmp/library/path2:/library/path2 \
+    -v ${PROJECT_BASE}/tests/tmp/library:/library \
     -v ${PROJECT_BASE}/tests/tmp/config:/config \
     -e PUID=${PUID} \
     -e PGID=${PGID} \

@@ -5,12 +5,15 @@ CWD=${PWD};
 permissions_config() {
     echo "**** (permissions_config) Settings permissions ****";
     mkdir -p \
-        /tmp/unmanic
+        /tmp/unmanic \
+        /config/.unmanic
     chown -R $PUID:$PGID \
         /tmp/unmanic \
+        /config/.unmanic \
         /app
     chmod -R a+w \
-        /tmp/unmanic \
+        /tmp/unmanic\
+        /config/.unmanic \
         /app
 }
 

@@ -74,7 +74,7 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
         return len(self.workerHandle.getAllWorkerStatus())
 
     def getPendingTasks(self):
-        return self.workerHandle.job_queue.listAllItems()
+        return self.workerHandle.job_queue.list_all_incoming_items()
 
     def getHistoricalTasks(self):
         return self.workerHandle.getAllHistoricalTasks()

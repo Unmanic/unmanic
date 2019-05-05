@@ -575,5 +575,5 @@ var Index = function () {
 }();
 
 jQuery(document).ready(function() {    
-   Index.init(); // init metronic core componets
+   Index.init();
 });

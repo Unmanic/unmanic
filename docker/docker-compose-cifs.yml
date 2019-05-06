@@ -1,0 +1,40 @@
+################
+# Test environment Docker Compose file
+#
+# Use this compose file when mounting a network drive as your library
+#
+# Variables that will need to be changed:
+#     <PUID>                   -  User id for folder/file permissions
+#     <PGID>                   -  Group id for folder/file permissions
+#     <PATH_TO_CONFIG>         -  Path where unmanic will store config files
+#     <PATH_TO_ENCODE_CACHE>   -  Cache path for in-progress encoding tasks
+#     <REMOTE_IP>              -  Remote IP address of CIFS mount
+#     <PATH_TO_LIBRARY>        -  Path in remote machine to be mounted as your library 
+#     <USERNAME>               -  Remote mount username
+#     <PASSWORD>               -  Remote mount password
+#
+
+
+version: '1'
+
+services:
+  unmanic:
+    container_name: unmanic
+    image: josh5/unmanic:latest
+    ports:
+      - 8888:8888
+    environment:
+      - PUID=<PUID>
+      - PGID=<PGID>
+    volumes:
+      - <PATH_TO_CONFIG>:/config
+      - cifs_mount:/library
+      - <PATH_TO_ENCODE_CACHE>:/tmp/unmanic
+
+volumes:
+  cifs_mount:
+    driver: local
+    driver_opts:
+      type: cifs    
+      device: //<REMOTE_IP>/<PATH_TO_LIBRARY>
+      o: "username=<USERNAME>,password=<PASSWORD>,vers=3.0,uid=<PUID>,gid=<PGID>"

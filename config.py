@@ -74,6 +74,11 @@ class CONFIG(object):
                 "codec_long_name": "HEVC (High Efficiency Video Coding)",
                 "encoder": "libx265"
             },
+            "hevc_nvenc": {
+                "type": "video",
+                "codec_long_name": "HEVC with NVENC (Hardware Encode)",
+                "encoder": "hevc_nvenc"
+            },
             "h264": {
                 "type": "video",
                 "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",

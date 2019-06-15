@@ -384,7 +384,7 @@ class FFMPEGHandle(object):
         # Set loglevel to info ("-loglevel", "info")
         # Allow experimental encoder config ("-strict", "-2")
         # 
-        command = ["-hide_banner", "-loglevel", "info", "-strict", "-2"]
+        command = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "512"]
 
         # Read stream data
         streams_to_map      = []

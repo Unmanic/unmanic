@@ -146,8 +146,12 @@ class PostProcessor(threading.Thread):
         # Set the completed timestamp
         time_completed = time.time()
 
+        # Set the job id
+        job_id = '{}-{}'.format(common.random_string(), time_completed)
+
         # Append the file data to the history log
         historical_log.append({
+            'job_id': job_id,
             'description': self.current_task.source['basename'],
             'time_complete': time_completed,
             'abspath': self.current_task.source['abspath'],
@@ -166,7 +170,7 @@ class PostProcessor(threading.Thread):
         # Set path of history json file
         history_file = os.path.join(self.settings.CONFIG_PATH, 'history.json')
         # Set path of conversion details file
-        job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(time_completed))
+        job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(job_id))
 
         try:
             # Write job details file

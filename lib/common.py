@@ -32,6 +32,8 @@
 import os
 import ago
 import datetime
+import random
+import string
 
 
 def format_message(message, message2=''):
@@ -100,3 +102,9 @@ def clean_files_in_dir(directory):
                 pathname = os.path.join(root, file_path)
                 if os.path.isfile(pathname):
                     os.remove(pathname)
+
+
+def random_string(string_length=5):
+    """Generate a random string of fixed length """
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(string_length))

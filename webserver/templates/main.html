@@ -54,7 +54,7 @@
                                                     break
                                                 print(worker_info)
                                      -->
-                                    {% set all_worker_info = handler.getWorkersInfo() %}
+                                    {% set all_worker_info = handler.get_workers_info() %}
                                     {% set row_count = round( ( len(all_worker_info) / 6 ) + .4) %}
                                     {% if row_count < 1 %}
                                         {% set row_count = 1 %}
@@ -190,7 +190,7 @@
                                 </div>
                                 <div class="portlet-body">
                                     <div class="task-content">
-                                        <div class="scroller" style="height: 312px;" data-always-visible="1" data-rail-visible1="1">
+                                        <div class="scroller" style="height: 330px;" data-always-visible="1" data-rail-visible1="1">
                                             <!-- START TASK LIST -->
                                             <div id="pending_tasks">{% include "main-pending-tasks.html" %}</div>
                                             <!-- END START TASK LIST -->
@@ -213,12 +213,12 @@
                                 <div class="portlet-body">
                                     <div class="scroller" style="height: 300px;" data-always-visible="1" data-rail-visible="0">
                                         <!-- START TASK LIST -->
-                                        <div id="completed_tasks">{% include "main-completed-tasks.html" %}</div>
+                                        <div id="completed_tasks">{% include "main-completed-tasks-list.html" %}</div>
                                         <!-- END START TASK LIST -->
                                     </div>
                                     <div class="scroller-footer">
                                         <div class="btn-arrow-link pull-right">
-                                            <a href="javascript:;">See All Records</a>
+                                            <a href="/history/">See All Records</a>
                                             <i class="icon-arrow-right"></i>
                                         </div>
                                     </div>

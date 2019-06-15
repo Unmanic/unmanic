@@ -53,29 +53,29 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
     def handleAjaxCall(self, query):
         self.set_header("Content-Type", "application/json")
         if query == 'workersInfo':
-            self.write(json.dumps(self.getWorkersInfo()))
+            self.write(json.dumps(self.get_workers_info()))
         if query == 'pendingTasks':
             if self.get_query_arguments('format') and 'html' in self.get_query_arguments('format'):
                 self.set_header("Content-Type", "text/html")
                 self.render("main-pending-tasks.html", time_now=time.time())
             else:
-                self.write(json.dumps(self.getPendingTasks()))
+                self.write(json.dumps(self.get_pending_tasks()))
         if query == 'historicalTasks':
             if self.get_query_arguments('format') and 'html' in self.get_query_arguments('format'):
                 self.set_header("Content-Type", "text/html")
-                self.render("main-completed-tasks.html", time_now=time.time())
+                self.render("main-completed-tasks-list.html", time_now=time.time())
             else:
-                self.write(json.dumps(self.getHistoricalTasks()))
+                self.write(json.dumps(self.get_historical_tasks()))
 
-    def getWorkersInfo(self):
+    def get_workers_info(self):
         return self.workerHandle.getAllWorkerStatus()
 
-    def getWorkersCount(self):
+    def get_workers_count(self):
         return len(self.workerHandle.getAllWorkerStatus())
 
-    def getPendingTasks(self):
+    def get_pending_tasks(self):
         return self.workerHandle.job_queue.list_all_incoming_items()
 
-    def getHistoricalTasks(self):
+    def get_historical_tasks(self):
         return self.workerHandle.getAllHistoricalTasks()
 

@@ -53,7 +53,6 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
         if query == 'conversionDetails':
             if self.get_query_arguments('jobId')[0]:
                 job_data = self.get_historical_job_data(self.get_query_arguments('jobId')[0])
-                print(job_data)
                 self.set_header("Content-Type", "text/html")
                 self.render("history-conversion-details.html", job_data=job_data)
 

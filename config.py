@@ -196,11 +196,10 @@ class CONFIG(object):
             os.makedirs(self.CONFIG_PATH)
         settings_file = os.path.join(self.CONFIG_PATH, 'settings.json')
         data = self.get_config_as_dict()
-        try:
-            with open(settings_file, 'w') as outfile:
-                json.dump(data, outfile, sort_keys=True, indent=4)
-        except Exception as e:
-            self._log("Exception in writing settings to file:", message2=str(e), level="exception")
+        result = common.json_dump_to_file(data, settings_file)
+        if not result['success']:
+            for message in result['errors']:
+                self._log("Exception in writing settings to file:", message2=str(message), level="exception")
 
     def get_config_as_dict(self):
         # Create a copy of this class's dict

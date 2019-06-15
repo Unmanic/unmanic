@@ -29,11 +29,12 @@
 #
 ###################################################################################################
 
-import os
-import ago
 import datetime
+import os
 import random
 import string
+
+import ago
 
 
 def format_message(message, message2=''):
@@ -105,6 +106,56 @@ def clean_files_in_dir(directory):
 
 
 def random_string(string_length=5):
-    """Generate a random string of fixed length """
+    """Generate a random string of fixed length"""
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(string_length))
+
+
+def json_dump_to_file(json_data, out_file, check=True, rollback_on_fail=True):
+    """Dump json data to a file. Optionally checks that the output json data is valid"""
+    import json
+    import time
+    import tempfile
+    import shutil
+
+    result = {
+        'errors':  [],
+        'success': False
+    }
+
+    # If check param is flagged and there already exists a out file, create a temporary backup
+    if check and os.path.exists(out_file):
+        temp_dir = tempfile.gettempdir();
+        temp_path = os.path.join(temp_dir, 'json_dump_to_file_backup-{}'.format(time.time()))
+        try:
+            shutil.copy2(out_file, temp_path)
+            result['temp_path'] = temp_path
+        except Exception as e:
+            result['success'] = False
+            result['errors'].append("Failed to create temporary file - {}".format(str(e)))
+
+    # Write data to out_file
+    try:
+        with open(out_file, 'w') as outfile:
+            json.dump(json_data, outfile, sort_keys=True, indent=4)
+        result['success'] = True
+    except Exception as e:
+        result['success'] = False
+        result['errors'].append("Exception in writing history to file: {}".format(str(e)))
+
+    # If check param is flagged, ensure json data exists in the output file
+    if check:
+        try:
+            with open(out_file) as infile:
+                data = json.load(infile)
+            result['success'] = True
+        except Exception as e:
+            result['success'] = False
+            result['errors'].append("JSON file invalid")
+
+        # If data save was unsuccessful and the rollback_on_fail param is flagged
+        # and there is a temp file set, roll back to old file
+        if not result['success'] and result['temp_path'] and rollback_on_fail:
+            os.remove(out_file)
+            shutil.copy2(result['temp_path'], out_file)
+    return result

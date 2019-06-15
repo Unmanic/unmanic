@@ -172,12 +172,12 @@ class PostProcessor(threading.Thread):
         # Set path of conversion details file
         job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(job_id))
 
-        try:
-            # Write job details file
-            with open(job_details_file, 'w') as outfile:
-                json.dump(self.current_task.task_dump(), outfile, sort_keys=True, indent=4)
-            # Write history file
-            with open(history_file, 'w') as outfile:
-                json.dump(historical_log, outfile, sort_keys=True, indent=4)
-        except Exception as e:
-            self._log("Exception in writing history to file:", message2=str(e), level="exception")
+        result = common.json_dump_to_file(self.current_task.task_dump(), job_details_file)
+        if not result['success']:
+            for message in result['errors']:
+                self._log("Exception in writing history to file:", message2=str(message), level="exception")
+
+        result = common.json_dump_to_file(historical_log, history_file)
+        if not result['success']:
+            for message in result['errors']:
+                self._log("Exception in writing history to file:", message2=str(message), level="exception")

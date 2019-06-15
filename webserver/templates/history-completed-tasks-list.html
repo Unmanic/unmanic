@@ -1,0 +1,99 @@
+<!--<ul class="feeds">
+    {% for historical_item in data['historical_item_list'] %}
+    <li>
+        <div class="col1">
+            <div class="cont">
+                <div class="cont-col1">
+                    {% if 'success' in historical_item and historical_item['success'] %}
+                        <div class="label label-sm label-info">
+                                <i class="fa fa-check"></i>
+                        </div>
+                    {% else %}
+                        <div class="label label-sm label-danger">
+                                <i class="fa fa-times"></i>
+                        </div>
+                    {%end%}
+                </div>
+                <div class="cont-col2">
+                    <div class="desc"> 
+                    {% try %}
+                        {{ historical_item['description'] }}
+                    {% except %}
+                        <span class="error">(Error fetching historical item information - Please report this as a bug)</span>
+                    {% end %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col2">
+            <div class="actions">
+                <a href="javascript:;" class="btn btn-lg green m-icon-big"> View details
+                    <i class="m-icon-big-swapright m-icon-white"></i>
+                </a>
+                &lt;!&ndash;<a class="btn btn-outline btn-icon-only btn-default fullscreen" href="javascript:;"
+                   data-original-title="" title="">View details <i class="fa fa-arrow-circle-right"></i></a>&ndash;&gt;
+            </div>
+        </div>
+        <div class="col3">
+            <div class="actions">
+                <a href="javascript:;" class="btn btn-lg green m-icon-big"> View details
+                    <i class="m-icon-big-swapright m-icon-white"></i>
+                </a>
+                &lt;!&ndash;<a class="btn btn-outline btn-icon-only btn-default fullscreen" href="javascript:;"
+                   data-original-title="" title="">View details <i class="fa fa-arrow-circle-right"></i></a>&ndash;&gt;
+            </div>
+        </div>
+    </li>
+    {% end %}
+</ul>-->
+
+<div class="table-scrollable">
+    <table class="table table-striped table-hover">
+        <tbody>
+        <!--TODO: Set to py enumerate function and remove item id-->
+        {% for historical_item in data['historical_item_list'] %}
+            {% if not 'job_id' in historical_item %}
+                <!-- Legacy item, ignore it -->
+                <!-- TODO: Remove this -->
+                {% continue %}
+            {% end %}
+            {% if historical_item['success'] %}
+                {% set completed_status = 'success' %}
+            {% else %}
+                {% set completed_status = 'failure' %}
+            {% end %}
+            <tr class="completed_task completed_task_{{ completed_status }}">
+                <td>
+                    <div class="md-checkbox has-info">
+                        <input type="checkbox" id="checkbox_{{ historical_item['job_id'] }}" class="md-check">
+                        <label for="checkbox_{{ historical_item['job_id'] }}">
+                            <span class="inc"></span>
+                            <span class="check"></span>
+                            <span class="box"></span>
+                        </label>
+                    </div>
+                </td>
+                <td>
+                    {% try %}
+                    {{ historical_item['description'] }}
+                    {% except %}
+                    <span class="error">(Error fetching historical item information - Please report this as a bug)</span>
+                    {% end %}
+                </td>
+                <td>
+                    {% if 'success' in historical_item and historical_item['success'] %}
+                    <span class="label label-sm label-success"> Success </span>
+                    {% else %}
+                    <span class="label label-sm label-danger"> Blocked </span>
+                    {%end%}
+                </td>
+                <td>
+                    <a href="javascript:; viewConversionDetails('{{ historical_item['job_id'] }}');" class="btn blue m-icon-big"> View details
+                        <i class="m-icon-swapright m-icon-white"></i>
+                    </a>
+                </td>
+            </tr>
+        {% end %}
+        </tbody>
+    </table>
+</div>

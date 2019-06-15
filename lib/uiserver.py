@@ -43,7 +43,7 @@ import tornado.template
 from tornado.httpserver import HTTPServer
 import asyncio
 
-
+from webserver.history import HistoryUIRequestHandler
 from webserver.main import MainUIRequestHandler
 from webserver.settings import SettingsUIRequestHandler
 
@@ -55,20 +55,21 @@ settings['template_loader'] = tornado.template.Loader("webserver/templates")
 settings['static_path'] = os.path.join(os.path.dirname(__file__), "..", "webserver", "assets")
 settings['debug'] = True
 
+
 class UIServer(threading.Thread):
     def __init__(self, data_queues, settings, workerHandle):
         super(UIServer, self).__init__(name='UIServer')
-        self.settings       = settings
-        self.app            = None
-        self.data_queues    = data_queues
-        self.logger         = data_queues["logging"].get_logger(self.name)
-        self.inotifytasks   = data_queues["inotifytasks"]
-        self.workerHandle   = workerHandle
-        self.abort_flag     = threading.Event()
+        self.settings = settings
+        self.app = None
+        self.data_queues = data_queues
+        self.logger = data_queues["logging"].get_logger(self.name)
+        self.inotifytasks = data_queues["inotifytasks"]
+        self.workerHandle = workerHandle
+        self.abort_flag = threading.Event()
         self.abort_flag.clear()
         self.set_logging()
 
-    def _log(self, message, message2 = '', level = "info"):
+    def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
@@ -80,9 +81,9 @@ class UIServer(threading.Thread):
                 os.makedirs(self.settings.LOG_PATH)
             import logging
             # Create file handler
-            log_file        = os.path.join(self.settings.LOG_PATH, 'tornado.log')
-            file_handler    = logging.FileHandler(log_file)
-            torando_logger  = logging.getLogger("tornado.application")
+            log_file = os.path.join(self.settings.LOG_PATH, 'tornado.log')
+            file_handler = logging.FileHandler(log_file)
+            torando_logger = logging.getLogger("tornado.application")
             file_handler.setLevel(logging.INFO)
             torando_logger.setLevel(logging.INFO)
             torando_logger.addHandler(file_handler)
@@ -103,29 +104,33 @@ class UIServer(threading.Thread):
     def makeApp(self):
         return tornado.web.Application([
             (r"/assets/(.*)", tornado.web.StaticFileHandler, dict(
-                    path=settings['static_path']
-                )),
+                path=settings['static_path']
+            )),
+            (r"/history/(.*)", HistoryUIRequestHandler, dict(
+                data_queues=self.data_queues,
+                workerHandle=self.workerHandle,
+                settings=self.settings
+            )),
             (r"/settings/(.*)", SettingsUIRequestHandler, dict(
-                    data_queues=self.data_queues, 
-                    settings=self.settings
-                )),
+                data_queues=self.data_queues,
+                settings=self.settings
+            )),
             (r"/(.*)", MainUIRequestHandler, dict(
-                    data_queues=self.data_queues, 
-                    workerHandle=self.workerHandle, 
-                    settings=self.settings
-                )),
+                data_queues=self.data_queues,
+                workerHandle=self.workerHandle,
+                settings=self.settings
+            )),
         ], **settings)
-
 
 
 if __name__ == "__main__":
     print("Starting UI Server")
     data_queues = {
-          "scheduledtasks": queue.Queue()
-        , "inotifytasks":   queue.Queue()
+        "scheduledtasks": queue.Queue(),
+        "inotifytasks": queue.Queue()
     }
     settings = None
     uiserver = UIServer(data_queues, settings)
-    uiserver.daemon=True
+    uiserver.daemon = True
     uiserver.start()
     uiserver.join()

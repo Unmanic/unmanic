@@ -291,6 +291,24 @@ class CONFIG(object):
         data.reverse()
         return data
 
+    def read_completed_job_data(self, job_id):
+        data = []
+        # Create completed job details path in not exists
+        completed_job_details_dir = os.path.join(self.CONFIG_PATH, 'completed_job_details')
+        if not os.path.exists(completed_job_details_dir):
+            os.makedirs(completed_job_details_dir)
+        # Set path of conversion details file
+        job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(job_id))
+        if os.path.exists(job_details_file):
+            try:
+                with open(job_details_file) as infile:
+                    data = json.load(infile)
+            except JSONDecodeError:
+                self._log("ValueError in reading completed job data from file:", level="exception")
+            except Exception as e:
+                self._log("Exception in reading completed job data from file:", message2=str(e), level="exception")
+        return data
+
     def read_version(self):
         version_file = os.path.join(APP_DIR, 'version')
         with open(version_file, 'r') as f:

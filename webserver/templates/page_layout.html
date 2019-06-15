@@ -118,7 +118,7 @@ License: You must have a valid license purchased only from themeforest(the above
             </header>
             <!-- END HEADER -->
             <div class="container-fluid">
-                <div class="page-content" {% if handler.name == 'main' %}style="padding-top:30px"{% end %} >
+                <div class="page-content" {% if handler.name != 'settings' %}style="padding-top:30px"{% end %} >
                     <!-- BEGIN PAGE BASE CONTENT -->
                     {% block content %}{% end %}
                     <!-- END PAGE BASE CONTENT -->

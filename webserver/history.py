@@ -30,6 +30,9 @@
 
 """
 
+import json
+import time
+import datetime
 import tornado.web
 
 
@@ -53,16 +56,45 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
         if query == 'conversionDetails':
             if self.get_query_arguments('jobId')[0]:
                 job_data = self.get_historical_job_data(self.get_query_arguments('jobId')[0])
+                if self.get_query_arguments('json'):
+                    self.set_header("Content-Type", "application/json")
+                    self.write(json.dumps(job_data))
+                else:
+                    self.set_header("Content-Type", "text/html")
+                    self.render("history-conversion-details.html", job_data=job_data)
+        if query == 'reloadCompletedTaskList':
+            job_id = None
+            if self.get_query_arguments('jobId'):
+                job_id = self.get_query_arguments('jobId')[0]
+            self.set_page_data(job_id)
+            if self.get_query_arguments('json'):
+                self.set_header("Content-Type", "application/json")
+                self.write(json.dumps(self.data))
+            else:
                 self.set_header("Content-Type", "text/html")
-                self.render("history-conversion-details.html", job_data=job_data)
+                self.render("history-completed-tasks-list.html", config=self.config, data=self.data)
 
     def get_historical_tasks(self):
-        return self.workerHandle.getAllHistoricalTasks()
+        return self.workerHandle.get_all_historical_tasks()
 
     def get_historical_job_data(self, job_id):
-        return self.config.read_completed_job_data(job_id)
+        job_data = self.config.read_completed_job_data(job_id)
+        if 'statistics' in job_data:
+            if 'start_time' in job_data['statistics']:
+                job_data['statistics']['start_datetime'] = self.make_pretty_date_string(
+                    job_data['statistics']['start_time'])
+            if 'finish_time' in job_data['statistics']:
+                job_data['statistics']['finish_datetime'] = self.make_pretty_date_string(
+                    job_data['statistics']['finish_time'])
+            if 'start_time' in job_data['statistics'] and 'finish_time' in job_data['statistics']:
+                duration = job_data['statistics']['finish_time'] - job_data['statistics']['start_time']
+                m, s = divmod(duration, 60)
+                h, m = divmod(m, 60)
+                job_data['statistics']['duration'] = '{:d} hours, {:02d} minutes, {:02d} seconds'.format(int(h), int(m), int(s))
+        # TODO: Add audio and video encoder data
+        return job_data
 
-    def set_page_data(self):
+    def set_page_data(self, job_id=None):
         history_list = self.get_historical_tasks()
         self.data['historical_item_list'] = []
         self.data['success_count'] = 0
@@ -71,9 +103,14 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
         count = 0
         for item in history_list:
             # Set this item's ID
-            # TODO: Set to py enumerate function and remove item id
+            # TODO: Set to py enumerate function and remove item id (care that 'id' is now used in the template and js)
             count += 1
             item['id'] = count
+            # Check if this item is meant to be selected
+            if job_id == item['job_id']:
+                item['selected'] = True
+            else:
+                item['selected'] = False
             # Set success status
             if item['success']:
                 self.data['success_count'] += 1
@@ -81,3 +118,9 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
                 self.data['failed_count'] += 1
             self.data['total_count'] += 1
             self.data['historical_item_list'].append(item)
+
+    def make_pretty_date_string(self, date):
+        #return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(date))
+        import locale
+        print(locale.getlocale())
+        return time.strftime('%d %B, %Y - %H:%M:%S', time.gmtime(date))

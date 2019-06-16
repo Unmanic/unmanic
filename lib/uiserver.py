@@ -31,17 +31,14 @@
 
 
 import os
-import time
 import threading
 import queue
-import socket
-import ssl
 import tornado.ioloop
 import tornado.log as tornado_log
 import tornado.web
 import tornado.template
-from tornado.httpserver import HTTPServer
 import asyncio
+import logging
 
 from webserver.history import HistoryUIRequestHandler
 from webserver.main import MainUIRequestHandler
@@ -49,11 +46,11 @@ from webserver.settings import SettingsUIRequestHandler
 
 from lib import common
 
-# TODO Move these settings parsing to their own file
-settings = {}
-settings['template_loader'] = tornado.template.Loader("webserver/templates")
-settings['static_path'] = os.path.join(os.path.dirname(__file__), "..", "webserver", "assets")
-settings['debug'] = True
+tornado_settings = {
+    'template_loader': tornado.template.Loader("webserver/templates"),
+    'static_path':     os.path.join(os.path.dirname(__file__), "..", "webserver", "assets"),
+    'debug':           True
+}
 
 
 class UIServer(threading.Thread):
@@ -74,19 +71,34 @@ class UIServer(threading.Thread):
         getattr(self.logger, level)(message)
 
     def set_logging(self):
-        # TODO: This is not logging to a file correctly
         if self.settings and self.settings.LOG_PATH:
             # Create directory if not exists
             if not os.path.exists(self.settings.LOG_PATH):
                 os.makedirs(self.settings.LOG_PATH)
-            import logging
+
             # Create file handler
             log_file = os.path.join(self.settings.LOG_PATH, 'tornado.log')
             file_handler = logging.FileHandler(log_file)
-            torando_logger = logging.getLogger("tornado.application")
             file_handler.setLevel(logging.INFO)
-            torando_logger.setLevel(logging.INFO)
-            torando_logger.addHandler(file_handler)
+
+            # Set tornado.acces logging to file. Disable propagation of logs
+            tornado_access = logging.getLogger("tornado.access")
+            tornado_access.setLevel(logging.INFO)
+            tornado_access.addHandler(file_handler)
+            tornado_access.propagate = False
+
+            # Set tornado.application logging to file. Enable propagation of logs
+            tornado_application = logging.getLogger("tornado.application")
+            tornado_application.setLevel(logging.INFO)
+            tornado_application.addHandler(file_handler)
+            tornado_application.propagate = True  # Send logs also to root logger (command line)
+
+            # Set tornado.general logging to file. Enable propagation of logs
+            tornado_general = logging.getLogger("tornado.general")
+            tornado_general.setLevel(logging.INFO)
+            tornado_general.addHandler(file_handler)
+            tornado_general.propagate = True  # Send logs also to root logger (command line)
+
             tornado_log.enable_pretty_logging()
 
     def run(self):
@@ -96,7 +108,7 @@ class UIServer(threading.Thread):
         # Load the app
         self.app = self.makeApp()
         self._log("Listening on port 8888")
-        self._log(settings['static_path'])
+        self._log(tornado_settings['static_path'])
         self.app.listen(8888)
 
         tornado.ioloop.IOLoop.current().start()
@@ -104,7 +116,12 @@ class UIServer(threading.Thread):
     def makeApp(self):
         return tornado.web.Application([
             (r"/assets/(.*)", tornado.web.StaticFileHandler, dict(
-                path=settings['static_path']
+                path=tornado_settings['static_path']
+            )),
+            (r"/dashboard/(.*)", MainUIRequestHandler, dict(
+                data_queues=self.data_queues,
+                workerHandle=self.workerHandle,
+                settings=self.settings
             )),
             (r"/history/(.*)", HistoryUIRequestHandler, dict(
                 data_queues=self.data_queues,
@@ -115,12 +132,10 @@ class UIServer(threading.Thread):
                 data_queues=self.data_queues,
                 settings=self.settings
             )),
-            (r"/(.*)", MainUIRequestHandler, dict(
-                data_queues=self.data_queues,
-                workerHandle=self.workerHandle,
-                settings=self.settings
+            (r"/(.*)", tornado.web.RedirectHandler, dict(
+                url="/dashboard/"
             )),
-        ], **settings)
+        ], **tornado_settings)
 
 
 if __name__ == "__main__":

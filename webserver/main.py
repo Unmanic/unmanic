@@ -68,14 +68,14 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
                 self.write(json.dumps(self.get_historical_tasks()))
 
     def get_workers_info(self):
-        return self.workerHandle.getAllWorkerStatus()
+        return self.workerHandle.get_all_worker_status()
 
     def get_workers_count(self):
-        return len(self.workerHandle.getAllWorkerStatus())
+        return len(self.workerHandle.get_all_worker_status())
 
     def get_pending_tasks(self):
         return self.workerHandle.job_queue.list_all_incoming_items()
 
     def get_historical_tasks(self):
-        return self.workerHandle.getAllHistoricalTasks()
+        return self.workerHandle.get_all_historical_tasks()
 

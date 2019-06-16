@@ -3,25 +3,32 @@
     <div class="portlet box blue">
         <div class="portlet-title">
             <div class="caption">
-                <i class="fa fa-film"></i>Conversion Details
+                <i class="fa fa-random"></i>Conversion Details
             </div>
             <ul class="nav nav-tabs">
                 <li class="active">
-                    <a href="#portlet_tab_1" data-toggle="tab"> Source </a>
+                    <a href="#portlet_tab_stats" data-toggle="tab"> Statistics </a>
                 </li>
                 <li>
-                    <a href="#portlet_tab_2" data-toggle="tab"> Destination </a>
+                    <a href="#portlet_tab_source" data-toggle="tab"> Source </a>
+                </li>
+                <li>
+                    <a href="#portlet_tab_dest" data-toggle="tab"> Destination </a>
                 </li>
             </ul>
         </div>
         <div class="portlet-body">
             <div class="tab-content" style="height: 60vh; overflow-y:auto; overflow-x:hidden;">
-                <div class="tab-pane active" id="portlet_tab_1">
+                <div class="tab-pane active" id="portlet_tab_stats">
+                    <!--Dest-->
+                    {% include "history-conversion-details-stats.html" %}
+                </div>
+                <div class="tab-pane" id="portlet_tab_source">
                     <!--Source-->
                     {% set file_data = job_data['source'] %}
                     {% include "history-conversion-details-video-data.html" %}
                 </div>
-                <div class="tab-pane" id="portlet_tab_2">
+                <div class="tab-pane" id="portlet_tab_dest">
                     <!--Dest-->
                     {% set file_data = job_data['destination'] %}
                     {% include "history-conversion-details-video-data.html" %}

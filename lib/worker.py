@@ -1,33 +1,35 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-###################################################################################################
-#
-#   Written by:               Josh.5 <jsunnex@gmail.com>
-#   Date:                     Thu Jan 02 2019, (7:21:18 AM)
-#
-#   Copyright:
-#          Copyright (C) Josh Sunnex - All Rights Reserved
-#
-#          Permission is hereby granted, free of charge, to any person obtaining a copy
-#          of this software and associated documentation files (the "Software"), to deal
-#          in the Software without restriction, including without limitation the rights
-#          to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#          copies of the Software, and to permit persons to whom the Software is
-#          furnished to do so, subject to the following conditions:
-# 
-#          The above copyright notice and this permission notice shall be included in all
-#          copies or substantial portions of the Software.
-# 
-#          THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-#          EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-#          MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-#          IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-#          DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-#          OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
-#          OR OTHER DEALINGS IN THE SOFTWARE.
-#
-#
-###################################################################################################
+
+"""
+    unmanic.worker.py
+
+    Written by:               Josh.5 <jsunnex@gmail.com>
+    Date:                     02 Jan 2019, (7:21 AM)
+
+    Copyright:
+           Copyright (C) Josh Sunnex - All Rights Reserved
+
+           Permission is hereby granted, free of charge, to any person obtaining a copy
+           of this software and associated documentation files (the "Software"), to deal
+           in the Software without restriction, including without limitation the rights
+           to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+           copies of the Software, and to permit persons to whom the Software is
+           furnished to do so, subject to the following conditions:
+
+           The above copyright notice and this permission notice shall be included in all
+           copies or substantial portions of the Software.
+
+           THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+           EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+           MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+           IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+           DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+           OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+           OR OTHER DEALINGS IN THE SOFTWARE.
+
+"""
+
 import os
 import threading
 import queue
@@ -56,6 +58,8 @@ class WorkerThread(threading.Thread):
         self.redundant_flag = threading.Event()
         self.redundant_flag.clear()
         self.logger = data_queues["logging"].get_logger(self.name)
+        self.start_time = None
+        self.finish_time = None
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -69,6 +73,7 @@ class WorkerThread(threading.Thread):
         status['pid'] = self.ident
         status['progress'] = self.get_job_progress()
         status['current_file'] = ""
+        status['start_time'] = self.start_time
         if self.current_task:
             status['current_file'] = self.current_task.get_source_basename()
         return status
@@ -87,6 +92,37 @@ class WorkerThread(threading.Thread):
             progress['bitrate'] = str(self.current_task.ffmpeg.bitrate)
             progress['file_size'] = str(self.current_task.ffmpeg.file_size)
         return progress
+
+    def set_current_task(self, current_task):
+        self.current_task = current_task
+
+    def unset_current_task(self):
+        self.current_task = None
+
+    def start_task_stats(self):
+        self.start_time = time.time()
+        self.finish_time = None
+        # Format our final statistics data
+        statistics = {
+            'processed_by_worker': self.name,
+            'start_time':          self.start_time,
+            'finish_time':         self.finish_time,
+            'video_encoder':       self.settings.CODEC_CONFIG[self.settings.VIDEO_CODEC]['encoder'],
+            'audio_encoder':       self.settings.CODEC_CONFIG[self.settings.AUDIO_CODEC]['encoder']
+        }
+        # Send statistic data to task to be applied
+        self.current_task.set_task_stats(statistics)
+
+    def finish_task_stats(self):
+        self.finish_time = time.time()
+        # Format our final statistics data
+        statistics = {
+            'processed_by_worker': self.name,
+            'start_time':          self.start_time,
+            'finish_time':         self.finish_time
+        }
+        # Send statistic data to task to be applied
+        self.current_task.set_task_stats(statistics)
 
     def process_item(self):
         abspath = self.current_task.get_source_abspath()
@@ -109,21 +145,26 @@ class WorkerThread(threading.Thread):
         self._log("Failed to convert file '{}'".format(abspath), level='warning')
         return False
 
-    def process_task_queue_item(self, current_task):
+    def process_task_queue_item(self):
         self.idle = False
-        self.current_task = current_task
         abspath = self.current_task.get_source_abspath()
         self._log("{} picked up job - {}".format(self.name, abspath))
 
+        # Start current task stats
+        self.start_task_stats()
+
         # Process the file. Will return true if success, otherwise false
         self.current_task.success = self.process_item()
+
+        # Mark task completion statistics
+        self.finish_task_stats()
 
         # Log completion of job
         self._log("{} finished job - {}".format(self.name, abspath))
         self.complete_queue.put(self.current_task)
 
         # Reset the current file info for the next task
-        self.current_task = {}
+        self.unset_current_task()
 
     def run(self):
         self._log("Starting {}".format(self.name))
@@ -131,7 +172,8 @@ class WorkerThread(threading.Thread):
             self.idle = True
             while not self.redundant_flag.is_set() and not self.task_queue.empty():
                 try:
-                    self.process_task_queue_item(self.task_queue.get_nowait())
+                    self.set_current_task(self.task_queue.get_nowait())
+                    self.process_task_queue_item()
                 except queue.Empty:
                     continue
                 except Exception as e:
@@ -158,7 +200,7 @@ class Worker(threading.Thread):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
-    def initWorkerThreads(self):
+    def init_worker_threads(self):
         # Remove any redundant idle workers from our list
         for thread in range(len(self.worker_threads)):
             if not self.worker_threads[thread].isAlive():
@@ -169,7 +211,7 @@ class Worker(threading.Thread):
             for i in range(int(self.settings.NUMBER_OF_WORKERS)):
                 if not i in self.worker_threads:
                     # This worker does not yet exists, create it
-                    self.startWorkerThread(i)
+                    self.start_worker_thread(i)
         # Check if we have to many workers running and stop the ones with id's higher than our configured number
         if len(self.worker_threads) > int(self.settings.NUMBER_OF_WORKERS):
             self._log("Worker Threads exceed the configured limit. Marking some for removal...")
@@ -181,12 +223,12 @@ class Worker(threading.Thread):
                     self.remove_list.append(thread)
             time.sleep(2)
 
-    def startWorkerThread(self, worker_id):
+    def start_worker_thread(self, worker_id):
         thread = WorkerThread(worker_id, "Worker-{}".format(worker_id), self.settings, self.data_queues, self.task_queue, self.complete_queue)
         thread.start()
         self.worker_threads[worker_id] = thread
 
-    def checkForIdleWorkers(self):
+    def check_for_idle_workers(self):
         for thread in self.worker_threads:
             if self.worker_threads[thread].idle:
                 return True
@@ -201,10 +243,10 @@ class Worker(threading.Thread):
             time.sleep(1)
 
             # First setup the correct number of workers
-            self.initWorkerThreads()
+            self.init_worker_threads()
 
             # Check if there are any free workers
-            if not self.checkForIdleWorkers():
+            if not self.check_for_idle_workers():
                 # All workers are currently busy
                 time.sleep(5)
                 continue
@@ -223,7 +265,7 @@ class Worker(threading.Thread):
             while not self.abort_flag.is_set() and not self.job_queue.incoming_is_empty():
                 time.sleep(.2)
                 # Ensure we have the correct number of workers running
-                self.initWorkerThreads()
+                self.init_worker_threads()
                 # Check if we are able to start up a worker for another encoding job
                 if self.task_queue.full():
                     break
@@ -236,13 +278,13 @@ class Worker(threading.Thread):
 
         self._log("Leaving Worker Monitor loop...")
 
-    def getAllWorkerStatus(self):
+    def get_all_worker_status(self):
         all_status = []
         for thread in self.worker_threads:
             all_status.append(self.worker_threads[thread].get_status())
         return all_status
 
-    def getAllHistoricalTasks(self):
+    def get_all_historical_tasks(self):
         return self.settings.read_history_log()
 
 
@@ -324,7 +366,8 @@ class TestClass(object):
         for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'small')):
             # Create test task
             self.setup_test_task(os.path.join(tests_dir, 'videos', 'small', video_file))
-            worker_thread.process_task_queue_item(self.test_task)
+            worker_thread.set_current_task(self.test_task)
+            worker_thread.process_task_queue_item()
             # Ensure the completed task was added to the completed queue
             assert not self.complete_queue.empty()
             # Retrieve this task and add it to the global completed_test_task variable

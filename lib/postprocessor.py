@@ -29,7 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-import json
+
 import os
 import shutil
 import threading
@@ -146,8 +146,12 @@ class PostProcessor(threading.Thread):
         # Set the completed timestamp
         time_completed = time.time()
 
+        # Set the job id
+        job_id = '{}-{}'.format(common.random_string(), time_completed)
+
         # Append the file data to the history log
         historical_log.append({
+            'job_id': job_id,
             'description': self.current_task.source['basename'],
             'time_complete': time_completed,
             'abspath': self.current_task.source['abspath'],
@@ -166,14 +170,14 @@ class PostProcessor(threading.Thread):
         # Set path of history json file
         history_file = os.path.join(self.settings.CONFIG_PATH, 'history.json')
         # Set path of conversion details file
-        job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(time_completed))
+        job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(job_id))
 
-        try:
-            # Write job details file
-            with open(job_details_file, 'w') as outfile:
-                json.dump(self.current_task.task_dump(), outfile, sort_keys=True, indent=4)
-            # Write history file
-            with open(history_file, 'w') as outfile:
-                json.dump(historical_log, outfile, sort_keys=True, indent=4)
-        except Exception as e:
-            self._log("Exception in writing history to file:", message2=str(e), level="exception")
+        result = common.json_dump_to_file(self.current_task.task_dump(), job_details_file)
+        if not result['success']:
+            for message in result['errors']:
+                self._log("Exception in writing history to file:", message2=str(message), level="exception")
+
+        result = common.json_dump_to_file(historical_log, history_file)
+        if not result['success']:
+            for message in result['errors']:
+                self._log("Exception in writing history to file:", message2=str(message), level="exception")

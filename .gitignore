@@ -1,6 +1,7 @@
+# IDE configs
 .vscode
 **/__pycache__
-.idea
+.idea/workspace.xml
 
 # Files used for testing
 config/**
@@ -9,3 +10,6 @@ library
 tests/videos/*
 tests/tmp/*
 tests/.vstats_file
+
+# Files needed for development only
+venv/**

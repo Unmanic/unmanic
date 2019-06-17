@@ -196,11 +196,10 @@ class CONFIG(object):
             os.makedirs(self.CONFIG_PATH)
         settings_file = os.path.join(self.CONFIG_PATH, 'settings.json')
         data = self.get_config_as_dict()
-        try:
-            with open(settings_file, 'w') as outfile:
-                json.dump(data, outfile, sort_keys=True, indent=4)
-        except Exception as e:
-            self._log("Exception in writing settings to file:", message2=str(e), level="exception")
+        result = common.json_dump_to_file(data, settings_file)
+        if not result['success']:
+            for message in result['errors']:
+                self._log("Exception in writing settings to file:", message2=str(message), level="exception")
 
     def get_config_as_dict(self):
         # Create a copy of this class's dict
@@ -289,6 +288,24 @@ class CONFIG(object):
             except Exception as e:
                 self._log("Exception in reading history from file:", message2=str(e), level="exception")
         data.reverse()
+        return data
+
+    def read_completed_job_data(self, job_id):
+        data = []
+        # Create completed job details path in not exists
+        completed_job_details_dir = os.path.join(self.CONFIG_PATH, 'completed_job_details')
+        if not os.path.exists(completed_job_details_dir):
+            os.makedirs(completed_job_details_dir)
+        # Set path of conversion details file
+        job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(job_id))
+        if os.path.exists(job_details_file):
+            try:
+                with open(job_details_file) as infile:
+                    data = json.load(infile)
+            except JSONDecodeError:
+                self._log("ValueError in reading completed job data from file:", level="exception")
+            except Exception as e:
+                self._log("Exception in reading completed job data from file:", message2=str(e), level="exception")
         return data
 
     def read_version(self):

@@ -415,7 +415,8 @@ class FFMPEGHandle(object):
 
                     # TODO: Make this optional
                     try:
-                        audio_tag = ''.join([i for i in stream['tags']['title'] if not i.isdigit()]).rstrip('.') + 'Stereo'
+                        audio_tag = ''.join([i for i in stream['tags']['title'] if not i.isdigit()]).rstrip(
+                            '.') + 'Stereo'
                     except:
                         audio_tag = 'Stereo'
 
@@ -425,7 +426,7 @@ class FFMPEGHandle(object):
                         ]
 
                     streams_to_create = streams_to_create + [
-                                "-c:a:{}".format(audio_tracks_count), self.settings.CODEC_CONFIG[self.settings.AUDIO_CODEC]['encoder'] ,
+                                "-c:a:{}".format(audio_tracks_count), self.settings.CODEC_CONFIG[self.settings.AUDIO_CODEC]['encoder'],
                                 "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
                                 "-ac", "2",
                                 "-metadata:s:a:{}".format(audio_tracks_count), "title='{}'".format(audio_tag),
@@ -437,7 +438,7 @@ class FFMPEGHandle(object):
                         ]
 
                     streams_to_create = streams_to_create + [
-                                "-c:a:{}".format(audio_tracks_count), self.settings.CODEC_CONFIG[self.settings.AUDIO_CODEC]['encoder'] ,
+                                "-c:a:{}".format(audio_tracks_count), self.settings.CODEC_CONFIG[self.settings.AUDIO_CODEC]['encoder'],
                                 "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
                                 "-ac", "2",
                             ]

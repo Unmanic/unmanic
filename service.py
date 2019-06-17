@@ -80,7 +80,7 @@ class TaskHandler(threading.Thread):
                 except queue.Empty:
                     continue
                 except Exception as e:
-                    main_logger.error("Exception in processing scheduledtasks:", message2=str(e), level="exception")
+                    main_logger.exception("Exception in processing scheduledtasks: {}".format(str(e)))
             while not self.abort_flag.is_set() and not self.inotifytasks.empty():
                 try:
                     pathname = self.inotifytasks.get_nowait()
@@ -91,7 +91,7 @@ class TaskHandler(threading.Thread):
                 except queue.Empty:
                     continue
                 except Exception as e:
-                    main_logger.error("Exception in processing inotifytasks:", message2=str(e), level="exception")
+                    main_logger.exception("Exception in processing inotifytasks: {}".format(str(e)))
             time.sleep(.2)
         main_logger.info("Leaving TaskHandler Monitor loop...")
 
@@ -123,6 +123,7 @@ class LibraryScanner(threading.Thread):
                 self._log("Starting LibraryScanner schedule to scan every {} mins...".format(self.interval))
                 # Configure schedule
                 schedule.every(self.interval).minutes.do(self.scheduled_job)
+                # TODO: Move logging to file
 
                 # First run the task
                 if self.settings.RUN_FULL_SCAN_ON_START and self.firstrun:

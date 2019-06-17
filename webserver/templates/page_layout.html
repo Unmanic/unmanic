@@ -87,24 +87,24 @@ License: You must have a valid license purchased only from themeforest(the above
                                 </li>
                                 <li class="dropdown dropdown-fw  {% if handler.name == 'settings' %}active open selected{% end %}">
                                     <a href="/settings/?step=general" class="text-uppercase">
-                                        <i class="icon-puzzle"></i> Settings </a>
+                                        <i class="icon-settings"></i> Settings </a>
                                     {% if handler.name == 'settings' %}
                                         <ul class="dropdown-menu dropdown-menu-fw">
                                             <li class="dropdown {% if handler.step == 'general' %}active{% end %}">
                                                 <a href="/settings/?step=general">
-                                                    <i class="icon-diamond"></i> General</a>
+                                                    <i class="fa fa-cog"></i> General</a>
                                             </li>
                                             <li class="dropdown {% if handler.step == 'container' %}active{% end %}">
                                                 <a href="/settings/?step=container">
-                                                    <i class="icon-puzzle"></i> Container </a>
+                                                    <i class="fa fa-file-archive-o"></i> Container </a>
                                             </li>
                                             <li class="dropdown {% if handler.step == 'video' %}active{% end %}">
                                                 <a href="/settings/?step=video">
-                                                    <i class="icon-settings"></i> Video Encoding </a>
+                                                    <i class="fa fa-file-video-o"></i> Video Encoding </a>
                                             </li>
                                             <li class="dropdown {% if handler.step == 'audio' %}active{% end %}">
                                                 <a href="/settings/?step=audio">
-                                                    <i class="icon-wallet"></i> Audio Encoding </a>
+                                                    <i class="fa fa-file-audio-o"></i> Audio Encoding </a>
                                             </li>
                                         </ul>
                                     {% end %}

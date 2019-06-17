@@ -32,8 +32,8 @@
 
 import json
 import time
-import datetime
 import tornado.web
+import tornado.log
 
 
 class HistoryUIRequestHandler(tornado.web.RequestHandler):
@@ -80,17 +80,23 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
     def get_historical_job_data(self, job_id):
         job_data = self.config.read_completed_job_data(job_id)
         if 'statistics' in job_data:
-            if 'start_time' in job_data['statistics']:
+            try:
                 job_data['statistics']['start_datetime'] = self.make_pretty_date_string(
                     job_data['statistics']['start_time'])
-            if 'finish_time' in job_data['statistics']:
+            except KeyError:
+                tornado.log.app_log.warning("Error setting start datetime in historical item job data.", exc_info=True)
+            try:
                 job_data['statistics']['finish_datetime'] = self.make_pretty_date_string(
                     job_data['statistics']['finish_time'])
-            if 'start_time' in job_data['statistics'] and 'finish_time' in job_data['statistics']:
+            except KeyError:
+                tornado.log.app_log.warning("Error setting finish datetime in historical item job data.", exc_info=True)
+            try:
                 duration = job_data['statistics']['finish_time'] - job_data['statistics']['start_time']
                 m, s = divmod(duration, 60)
                 h, m = divmod(m, 60)
                 job_data['statistics']['duration'] = '{:d} hours, {:02d} minutes, {:02d} seconds'.format(int(h), int(m), int(s))
+            except KeyError:
+                tornado.log.app_log.warning("Error setting duration in historical item job data.", exc_info=True)
         # TODO: Add audio and video encoder data
         return job_data
 
@@ -107,10 +113,12 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
             count += 1
             item['id'] = count
             # Check if this item is meant to be selected
-            if job_id == item['job_id']:
-                item['selected'] = True
-            else:
-                item['selected'] = False
+            item['selected'] = False
+            try:
+                if job_id == item['job_id']:
+                    item['selected'] = True
+            except KeyError:
+                tornado.log.app_log.warning("Error locating 'job_id' in historical item job data.", exc_info=True)
             # Set success status
             if item['success']:
                 self.data['success_count'] += 1

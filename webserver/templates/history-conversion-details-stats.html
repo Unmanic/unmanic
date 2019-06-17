@@ -132,14 +132,13 @@
     // If the destination file size is greater than the source, then mark it red, otherwise green
     var reduced = true;
     var destination_bar_colour = green;
+    var percent_changed = 100 - (destination_file_size/source_file_size*100);
     if (destination_file_size >= source_file_size) {
         var reduced = false;
         var destination_bar_colour = red;
+        var percent_changed = 100 - (source_file_size/destination_file_size*100);
     }
 
-    var percent_changed = (destination_file_size/source_file_size*100);
-
-    var categories = [' '];
     $('#file_size_chart').highcharts({
         chart: {
             type: 'bar',
@@ -147,26 +146,15 @@
         },
         colors: ['#555555', destination_bar_colour],
         title: {
-            text: 'File Size ' + ((reduced) ? 'Reduced by' : 'Increase') + ': ' + Highcharts.numberFormat(percent_changed, 2) + '%'
+            text: Highcharts.numberFormat(percent_changed, 2) + '% ' + ((reduced) ? 'decrease' : 'increase') + ' in file size'
         },
-        {#subtitle: {
-            text: ''
-        },#}
-        xAxis: [{
-            categories: categories,
-            reversed: false,
-            labels: {
-                step: 1
-            }
-        }, { // mirror axis on right side
-            opposite: true,
-            reversed: false,
-            categories: categories,
-            linkedTo: 0,
-            labels: {
-                step: 1
-            }
-        }],
+        subtitle: {
+            text: null
+        },
+
+        xAxis: {
+            categories: ['Original', 'New']
+        },
         yAxis: {
             title: {
                 text: null
@@ -177,6 +165,13 @@
                 }
             }
         },
+        series: [{
+            name: 'Original',
+            data: [source_file_size, 0]
+        },{
+            name: 'New',
+            data: [0, destination_file_size]
+        }],
 
         plotOptions: {
             series: {
@@ -189,14 +184,6 @@
                 return '<b>' + this.series.name + '</b><br/>' +
                     'File Size: ' + formatBytes(Math.abs(this.point.y));
             }
-        },
-
-        series: [{
-            name: 'Source',
-            data: [(source_file_size * -1)]
-        }, {
-            name: 'Destination',
-            data: [destination_file_size]
-        }]
+        }
     });
 </script>

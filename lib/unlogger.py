@@ -92,7 +92,7 @@ class UnmanicLogger(object, metaclass=SingletonType):
                 os.makedirs(self._settings.LOG_PATH)
             # Create file handler
             log_file = os.path.join(self._settings.LOG_PATH, 'unmanic.log')
-            self._file_handler = logging.FileHandler(log_file)
+            self._file_handler = logging.handlers.TimedRotatingFileHandler(log_file, when='midnight', interval=1, backupCount=7)
             # Apply formatter
             self._file_handler.setFormatter(self.formatter)
             # Set log level of file handler...

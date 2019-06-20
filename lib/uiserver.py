@@ -78,7 +78,7 @@ class UIServer(threading.Thread):
 
             # Create file handler
             log_file = os.path.join(self.settings.LOG_PATH, 'tornado.log')
-            file_handler = logging.FileHandler(log_file)
+            file_handler = logging.handlers.TimedRotatingFileHandler(log_file, when='midnight', interval=1, backupCount=7)
             file_handler.setLevel(logging.INFO)
 
             # Set tornado.acces logging to file. Disable propagation of logs

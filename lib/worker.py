@@ -37,11 +37,11 @@ import time
 import sys
 
 try:
-    from lib import common
+    from lib import common, history
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
-    from lib import common
+    from lib import common, history
 
 
 class WorkerThread(threading.Thread):
@@ -107,8 +107,8 @@ class WorkerThread(threading.Thread):
             'processed_by_worker': self.name,
             'start_time':          self.start_time,
             'finish_time':         self.finish_time,
-            'video_encoder':       self.settings.CODEC_CONFIG[self.settings.VIDEO_CODEC]['encoder'],
-            'audio_encoder':       self.settings.CODEC_CONFIG[self.settings.AUDIO_CODEC]['encoder']
+            'video_encoder':       self.settings.SUPPORTED_CODECS[self.settings.VIDEO_CODEC]['encoder'],
+            'audio_encoder':       self.settings.SUPPORTED_CODECS[self.settings.AUDIO_CODEC]['encoder']
         }
         # Send statistic data to task to be applied
         self.current_task.set_task_stats(statistics)
@@ -283,9 +283,6 @@ class Worker(threading.Thread):
         for thread in self.worker_threads:
             all_status.append(self.worker_threads[thread].get_status())
         return all_status
-
-    def get_all_historical_tasks(self):
-        return self.settings.read_history_log()
 
 
 class TestClass(object):

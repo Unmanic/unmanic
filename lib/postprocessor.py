@@ -35,7 +35,7 @@ import shutil
 import threading
 import time
 
-from lib import common
+from lib import common, history
 
 """
 
@@ -141,7 +141,8 @@ class PostProcessor(threading.Thread):
 
     def write_history_log(self):
         # Read the current history log from file
-        historical_log = self.settings.read_history_log()
+        history_logging = history.History(self.settings)
+        historical_log = history_logging.read_history_log()
 
         # Set the completed timestamp
         time_completed = time.time()
@@ -151,11 +152,11 @@ class PostProcessor(threading.Thread):
 
         # Append the file data to the history log
         historical_log.append({
-            'job_id': job_id,
-            'description': self.current_task.source['basename'],
+            'job_id':        job_id,
+            'description':   self.current_task.source['basename'],
             'time_complete': time_completed,
-            'abspath': self.current_task.source['abspath'],
-            'success': self.current_task.success
+            'abspath':       self.current_task.source['abspath'],
+            'success':       self.current_task.success
         })
 
         # Create config path in not exists

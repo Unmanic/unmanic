@@ -14,9 +14,9 @@
     }
     var toggleInotify = function() {
         if ($("#inotify_enabled").prop("checked")) {
-            $("#INOTIFY").val("true");
+            $("#ENABLE_INOTIFY").val("true");
         } else {
-            $("#INOTIFY").val("false");
+            $("#ENABLE_INOTIFY").val("false");
         }
     }
     var toggleDebugging = function() {
@@ -27,7 +27,7 @@
         }
     }
     var toggleStripSubtitles = function() {
-        if ($("#remove_suptitles_enabled").prop("checked")) {
+        if ($("#remove_subtitles_enabled").prop("checked")) {
             $("#REMOVE_SUBTITLE_STREAMS").val("true");
         } else {
             $("#REMOVE_SUBTITLE_STREAMS").val("false");

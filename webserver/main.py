@@ -34,6 +34,8 @@ import time
 import tornado.web
 import json
 
+from lib import history
+
 
 class MainUIRequestHandler(tornado.web.RequestHandler):
     def initialize(self, data_queues, workerHandle, settings):
@@ -46,11 +48,11 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
     def get(self, path):
         if self.get_query_arguments('ajax'):
             # Print out the json based on the call
-            self.handleAjaxCall(self.get_query_arguments('ajax')[0])
+            self.handle_ajax_call(self.get_query_arguments('ajax')[0])
         else:
             self.render("main.html", time_now=time.time())
 
-    def handleAjaxCall(self, query):
+    def handle_ajax_call(self, query):
         self.set_header("Content-Type", "application/json")
         if query == 'workersInfo':
             self.write(json.dumps(self.get_workers_info()))
@@ -77,5 +79,6 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
         return self.workerHandle.job_queue.list_all_incoming_items()
 
     def get_historical_tasks(self):
-        return self.workerHandle.get_all_historical_tasks()
+        history_logging = history.History(self.config)
+        return history_logging.read_history_log()
 

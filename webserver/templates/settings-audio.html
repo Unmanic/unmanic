@@ -17,7 +17,7 @@
                                 <select class="form-control" name="AUDIO_CODEC">
                                     {% for option in config.get_supported_audio_configs() %}
                                         <option value="{{ escape(option) }}" {% if option == config.AUDIO_CODEC %} selected {% end %}>
-                                            {{ escape(config.CODEC_CONFIG[option]['codec_long_name']) }}
+                                            {{ escape(config.SUPPORTED_CODECS[option]['codec_long_name']) }}
                                         </option>
                                     {% end %}
                                 </select>

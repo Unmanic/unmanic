@@ -237,8 +237,8 @@ class FFMPEGHandle(object):
                 self._log("Current file format names:", current_possible_format_names, level='debug')
             for format_name in current_possible_format_names:
                 extension = 'NONE SELECTED'
-                if format_name in self.settings.MUXER_CONFIG:
-                    extension = self.settings.MUXER_CONFIG[format_name]['extension']
+                if format_name in self.settings.SUPPORTED_CONTAINERS:
+                    extension = self.settings.SUPPORTED_CONTAINERS[format_name]['extension']
                 if extension == self.settings.OUT_CONTAINER:
                     if self.settings.DEBUGGING:
                         self._log("File already in container format {} - {}".format(self.settings.OUT_CONTAINER,
@@ -398,7 +398,7 @@ class FFMPEGHandle(object):
                     ]
 
                 streams_to_create = streams_to_create + [
-                        "-c:v", self.settings.CODEC_CONFIG[self.settings.VIDEO_CODEC]['encoder']
+                        "-c:v", self.settings.SUPPORTED_CODECS[self.settings.VIDEO_CODEC]['encoder']
                     ]
             if stream['codec_type'] == 'audio':
                 # Get details of audio channel:
@@ -426,7 +426,7 @@ class FFMPEGHandle(object):
                         ]
 
                     streams_to_create = streams_to_create + [
-                                "-c:a:{}".format(audio_tracks_count), self.settings.CODEC_CONFIG[self.settings.AUDIO_CODEC]['encoder'],
+                                "-c:a:{}".format(audio_tracks_count), self.settings.SUPPORTED_CODECS[self.settings.AUDIO_CODEC]['encoder'],
                                 "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
                                 "-ac", "2",
                                 "-metadata:s:a:{}".format(audio_tracks_count), "title='{}'".format(audio_tag),
@@ -438,7 +438,7 @@ class FFMPEGHandle(object):
                         ]
 
                     streams_to_create = streams_to_create + [
-                                "-c:a:{}".format(audio_tracks_count), self.settings.CODEC_CONFIG[self.settings.AUDIO_CODEC]['encoder'],
+                                "-c:a:{}".format(audio_tracks_count), self.settings.SUPPORTED_CODECS[self.settings.AUDIO_CODEC]['encoder'],
                                 "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
                                 "-ac", "2",
                             ]
@@ -602,11 +602,11 @@ class TestClass(object):
         getattr(self.logger, level)(message)
 
     def build_ffmpeg_args(self, test_for_failure=False):
-        configured_vencoder = self.settings.CODEC_CONFIG[self.settings.VIDEO_CODEC]['encoder']
+        configured_vencoder = self.settings.SUPPORTED_CODECS[self.settings.VIDEO_CODEC]['encoder']
         failure_vencoder = None
-        for x in self.settings.CODEC_CONFIG:
+        for x in self.settings.SUPPORTED_CODECS:
             if x != self.settings.VIDEO_CODEC:
-                failure_vencoder = self.settings.CODEC_CONFIG[x]['encoder']
+                failure_vencoder = self.settings.SUPPORTED_CODECS[x]['encoder']
                 break
         if test_for_failure:
             vencoder = failure_vencoder

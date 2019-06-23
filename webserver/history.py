@@ -35,6 +35,8 @@ import time
 import tornado.web
 import tornado.log
 
+from lib import history
+
 
 class HistoryUIRequestHandler(tornado.web.RequestHandler):
     def initialize(self, data_queues, workerHandle, settings):
@@ -47,12 +49,12 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
     def get(self, path):
         if self.get_query_arguments('ajax'):
             # Print out the json based on the call
-            self.handleAjaxCall(self.get_query_arguments('ajax')[0])
+            self.handle_ajax_call(self.get_query_arguments('ajax')[0])
         else:
             self.set_page_data()
             self.render("history.html", config=self.config, data=self.data)
 
-    def handleAjaxCall(self, query):
+    def handle_ajax_call(self, query):
         if query == 'conversionDetails':
             if self.get_query_arguments('jobId')[0]:
                 job_data = self.get_historical_job_data(self.get_query_arguments('jobId')[0])
@@ -75,10 +77,12 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
                 self.render("history-completed-tasks-list.html", config=self.config, data=self.data)
 
     def get_historical_tasks(self):
-        return self.workerHandle.get_all_historical_tasks()
+        history_logging = history.History(self.config)
+        return history_logging.read_history_log()
 
     def get_historical_job_data(self, job_id):
-        job_data = self.config.read_completed_job_data(job_id)
+        history_logging = history.History(self.config)
+        job_data = history_logging.read_completed_job_data(job_id)
         if 'statistics' in job_data:
             try:
                 job_data['statistics']['start_datetime'] = self.make_pretty_date_string(
@@ -118,7 +122,7 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
                 if job_id == item['job_id']:
                     item['selected'] = True
             except KeyError:
-                tornado.log.app_log.warning("Error locating 'job_id' in historical item job data.", exc_info=True)
+                tornado.log.app_log.debug("Error locating 'job_id' in historical item job data.", exc_info=True)
             # Set success status
             if item['success']:
                 self.data['success_count'] += 1
@@ -128,7 +132,4 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
             self.data['historical_item_list'].append(item)
 
     def make_pretty_date_string(self, date):
-        #return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(date))
-        import locale
-        print(locale.getlocale())
         return time.strftime('%d %B, %Y - %H:%M:%S', time.gmtime(date))

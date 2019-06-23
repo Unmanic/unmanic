@@ -124,7 +124,7 @@ class UnmanicLogger(object, metaclass=SingletonType):
         #     log_to_debug = log_to_debug.parent
         # ##########
 
-    def get_logger(self, name = None):
+    def get_logger(self, name=None):
         if name:
             logger = logging.getLogger("Unmanic."+name)
         else:

@@ -20,7 +20,7 @@ services:
       - PGID=1000
       - DEBUGGING=false
       - NUMBER_OF_WORKERS=2
-      - SCHEDULE_FULL_SCAN_MINS=10
+      - SCHEDULE_FULL_SCAN_MINUTES=10
       - RUN_FULL_SCAN_ON_START=false
     volumes:
       - ../tests/tmp/cache:/tmp/unmanic

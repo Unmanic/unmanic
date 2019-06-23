@@ -14,7 +14,7 @@
                         <div class="form-group">
                             <label class="col-md-3 control-label">Search for extensions</label>
                             <div class="col-md-9">
-                                <input type="text" class="form-control input-inline input-medium" name="SUPPORTED_CONTAINERS" value="{{ ','.join(config.SUPPORTED_CONTAINERS) }}" >
+                                <input type="text" class="form-control input-inline input-xlarge" name="SEARCH_EXTENSIONS" value="{{ ','.join(config.allowed_search_extensions()) }}" >
                                 <span class="help-inline"> Comma separated list of file extensions to search for during library scans and new file event triggers </span>
                             </div>
                         </div>
@@ -22,9 +22,9 @@
                             <label class="col-md-3 control-label">Output container </label>
                             <div class="col-md-9">
                                 <select class="form-control" name="OUT_CONTAINER">
-                                    {% for option in config.MUXER_CONFIG %}
-                                        <option value="{{ escape(config.MUXER_CONFIG[option]['extension']) }}" {% if config.OUT_CONTAINER == config.MUXER_CONFIG[option]['extension'] %} selected {% end %}>
-                                            .{{ escape(config.MUXER_CONFIG[option]['extension']) }} - {{ escape(config.MUXER_CONFIG[option]['description']) }}
+                                    {% for option in config.SUPPORTED_CONTAINERS %}
+                                        <option value="{{ escape(config.SUPPORTED_CONTAINERS[option]['extension']) }}" {% if config.OUT_CONTAINER == config.SUPPORTED_CONTAINERS[option]['extension'] %} selected {% end %}>
+                                            .{{ escape(config.SUPPORTED_CONTAINERS[option]['extension']) }} - {{ escape(config.SUPPORTED_CONTAINERS[option]['description']) }}
                                         </option>
                                     {% end %}
                                 </select>
@@ -37,7 +37,7 @@
                                 <div class="checkbox-list">
                                         <input type="hidden" name="REMOVE_SUBTITLE_STREAMS" id="REMOVE_SUBTITLE_STREAMS" value="{% if config.REMOVE_SUBTITLE_STREAMS %}true{% end %}" > 
                                     <label>
-                                        <input type="checkbox" id="remove_suptitles_enabled" onchange="toggleStripSubtitles();" {% if config.REMOVE_SUBTITLE_STREAMS %} checked {% end %} />
+                                        <input type="checkbox" id="remove_subtitles_enabled" onchange="toggleStripSubtitles();" {% if config.REMOVE_SUBTITLE_STREAMS %} checked {% end %} />
                                     </label>
                                 </div>
                                 <span class="help-inline"> Removes the subtitle stream from the container. This is useful if you intend to supply your own subtitles for your library </span>

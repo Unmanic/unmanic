@@ -1,7 +1,7 @@
 # IDE configs
 .vscode
 **/__pycache__
-.idea/workspace.xml
+.idea/
 
 # Files used for testing
 config/**

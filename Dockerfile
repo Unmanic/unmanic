@@ -33,4 +33,4 @@ WORKDIR /app
 # Set User to Unmanic
 USER unmanic
 
-CMD ["/usr/bin/python3", "/app/service.py"]
+CMD ["/usr/bin/python3", "-u" , "/app/service.py"]

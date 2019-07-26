@@ -17,18 +17,20 @@ RUN apk update \
  && python3 -m pip install --no-cache-dir -r /tmp/requirements.txt  \
  && rm -rf /tmp/* /var/tmp/*
 
+### Add local files
+COPY / /app/
+
 RUN addgroup -S unmanic && adduser -S -g unmanic unmanic \
     # For Cache, Code, Configs, and Library Files
     && mkdir -p /tmp/unmanic /app /config/.unmanic /library \
-    && chown -R unmanic /tmp/unmanic /app /config/.unmanic /library && chgrp -R unmanic /tmp/unmanic /app /config/.unmanic /library
-
-### Add local files
-COPY /docker/root /
-COPY / /app/
+    && chown -R unmanic /tmp/unmanic /app /config/ /library && chgrp -R unmanic /tmp/unmanic /app /config/ /library
 
 EXPOSE 8888
 
 # Needed to be set since paths in python code aren't handled properly
 WORKDIR /app
+
+# Set User to Unmanic
+USER unmanic
 
 CMD ["/usr/bin/python3", "/app/service.py"]

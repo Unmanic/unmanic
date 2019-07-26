@@ -1,14 +1,27 @@
+# Build/dev files
 .vscode
 **/__pycache__
+*__pycache__*
 .git
 .gitignore
 .github
 .gitattributes
+.idea
+
+# Unneeded Files
+Dockerfile
+pytest.ini
 README.md
 
-
+# Volumes
 config
 cache
 library
+
+# Directories
+docker
+docs
 tests
+
+# Personal Directory for Testing
 videos

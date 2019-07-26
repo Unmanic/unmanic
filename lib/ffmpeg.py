@@ -37,6 +37,7 @@ import shutil
 import re
 import sys
 import time
+import ffmpeg
 
 try:
     from lib import common
@@ -120,25 +121,13 @@ class FFMPEGHandle(object):
         if type(vid_file_path) != str:
             raise Exception('Give ffprobe a full file path of the video')
 
-        command = ["ffprobe",
-                   "-loglevel", "quiet",
-                   "-print_format", "json",
-                   "-show_format",
-                   "-show_streams",
-                   "-show_error",
-                   vid_file_path
-                   ]
-
-        pipe = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
-
-        # Check result
+        # Get File Stats via FFProbe
         try:
-            info = json.loads(out.decode("utf-8"))
-        except Exception as e:
-            self._log("Exception - file_probe: {}".format(e), level='exception')
+            info = ffmpeg.probe(vid_file_path)
+        except ffmpeg.Error as e:
+            self._log("Exception - file_probe: {}".format(e.stderr), level='exception')
             raise FFMPEGHandleFFProbeError(vid_file_path, str(e))
-        if pipe.returncode == 1 or 'error' in info:
+        if 'error' in info:
             raise FFMPEGHandleFFProbeError(vid_file_path, info)
 
         # Get FPS

@@ -6,8 +6,12 @@ ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
+# Debugging
+ARG DEBUGGING=false
+ENV DEBUGGING=$DEBUGGING
+
 # Add pip requirements
-COPY /requirements.txt /tmp/requirements.txt
+COPY requirements.txt /tmp/requirements.txt
 
 # Install needed Packages
 RUN apk update \
@@ -22,7 +26,7 @@ COPY / /app/
 
 RUN addgroup -S unmanic && adduser -S -g unmanic unmanic \
     # For Cache, Code, Configs, and Library Files
-    && mkdir -p /tmp/unmanic /app /config/.unmanic /library \
+    && mkdir -p /tmp/unmanic /app /config/ /library \
     && chown -R unmanic /tmp/unmanic /app /config/ /library && chgrp -R unmanic /tmp/unmanic /app /config/ /library
 
 EXPOSE 8888

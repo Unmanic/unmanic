@@ -40,7 +40,6 @@ try:
 except ImportError:
     JSONDecodeError = ValueError
 
-HOME_DIR = os.path.expanduser("~")
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -50,8 +49,8 @@ class CONFIG(object):
         self.logger = logger
 
         # Set defaults
-        self.CONFIG_PATH = os.path.join(HOME_DIR, '.unmanic', 'config')
-        self.LOG_PATH = os.path.join(HOME_DIR, '.unmanic', 'logs')
+        self.CONFIG_PATH = os.path.join(APP_DIR, '.unmanic', 'config')
+        self.LOG_PATH = os.path.join(APP_DIR, '.unmanic', 'logs')
         self.LIBRARY_PATH = '/library'
         self.CACHE_PATH = '/tmp/unmanic'
         self.VIDEO_CODEC = 'hevc'

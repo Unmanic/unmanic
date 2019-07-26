@@ -1,53 +1,34 @@
-FROM josh5/base-alpine:3.8
+FROM alpine:3.10
 LABEL maintainer="Josh.5 <jsunnex@gmail.com>"
 
-
-################################
-### Config:
-###
-# Build Dependencies (not required in final image)
-ARG BUILD_DEPENDENCIES=" \
-        python3-dev \
-        python3-pip \
-        python3-setuptools \
-    "
-
+### Environment variables
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 # Add pip requirements
 COPY /requirements.txt /tmp/requirements.txt
 
-
 ### Install pyinotify service.
-RUN \
-    echo "**** Update sources ****" \
-        && apk update \
-    && \
-    echo "**** Install python ****" \
-        && apk add --no-cache \
-            python3 \
-    && \
-    echo "**** Install ffmpeg ****" \
-        && apk add --no-cache \
-            ffmpeg \
-    && \
-    echo "**** Install pip packages ****" \
-        && python3 -m pip install --no-cache-dir -r /tmp/requirements.txt  \
-    && \
-    echo "**** Cleanup ****" \
-        && rm -rf \
-            /tmp/* \
-            /var/tmp/*
+RUN apk update \
+ && apk add --no-cache \
+        python3 \
+        ffmpeg \
+ && python3 -m pip install --no-cache-dir -r /tmp/requirements.txt  \
+ && rm -rf /tmp/* /var/tmp/*
 
+RUN addgroup -S unmanic && adduser -S -g unmanic unmanic \
+    # For Cache, Code, Configs, and Library Files
+    && mkdir -p /tmp/unmanic /app /config/.unmanic /library \
+    && chown -R unmanic /tmp/unmanic /app /config/.unmanic /library && chgrp -R unmanic /tmp/unmanic /app /config/.unmanic /library
 
 ### Add local files
-COPY /docker/root   /
-COPY /              /app/
+COPY /docker/root /
+COPY / /app/
 
+EXPOSE 8888
 
-### Environment variables
-ENV \
-    LANG=en_US.UTF-8 \
-    LANGUAGE=en_US.UTF-8 \
-    LC_CTYPE=en_US.UTF-8 \
-    LC_ALL=en_US.UTF-8
+# Needed to be set since paths in python code aren't handled properly
+WORKDIR /app
 
+CMD ["/usr/bin/python3", "/app/service.py"]

@@ -1,6 +1,0 @@
-#!/usr/bin/with-contenv bash
-
-export HOME=/config
-
-cd /app
-exec s6-setuidgid docker /usr/bin/python3 /app/service.py

@@ -1,7 +1,7 @@
 FROM alpine:3.10
 LABEL maintainer="Josh.5 <jsunnex@gmail.com>"
 
-### Environment variables
+# Environment variables for localization
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
@@ -9,7 +9,7 @@ ENV LC_ALL=en_US.UTF-8
 # Add pip requirements
 COPY /requirements.txt /tmp/requirements.txt
 
-### Install pyinotify service.
+# Install needed Packages
 RUN apk update \
  && apk add --no-cache \
         python3 \
@@ -17,7 +17,7 @@ RUN apk update \
  && python3 -m pip install --no-cache-dir -r /tmp/requirements.txt  \
  && rm -rf /tmp/* /var/tmp/*
 
-### Add local files
+# Copy Project Files, needs to be more selective
 COPY / /app/
 
 RUN addgroup -S unmanic && adduser -S -g unmanic unmanic \

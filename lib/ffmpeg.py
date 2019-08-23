@@ -398,7 +398,8 @@ class FFMPEGHandle(object):
                     ]
 
                 streams_to_create = streams_to_create + [
-                        "-c:v", self.settings.CODEC_CONFIG[self.settings.VIDEO_CODEC]['encoder']
+                        "-c:v",
+                        'copy' if stream['codec_name'] == self.settings.VIDEO_CODEC else self.settings.CODEC_CONFIG[self.settings.VIDEO_CODEC]['encoder']
                     ]
             if stream['codec_type'] == 'audio':
                 # Get details of audio channel:

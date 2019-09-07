@@ -4,35 +4,53 @@
 {% block page %}settings{% end %}
 
 {% block scripts %}
-<script type="text/javascript" >
-    var toggleRunScanOnStart = function() {
+<script type="text/javascript">
+    var toggleRunScanOnStart = function () {
         if ($("#run_scan_on_start_enabled").prop("checked")) {
             $("#RUN_FULL_SCAN_ON_START").val("true");
         } else {
             $("#RUN_FULL_SCAN_ON_START").val("false");
         }
-    }
-    var toggleInotify = function() {
+    };
+    var toggleInotify = function () {
         if ($("#inotify_enabled").prop("checked")) {
             $("#ENABLE_INOTIFY").val("true");
         } else {
             $("#ENABLE_INOTIFY").val("false");
         }
-    }
-    var toggleDebugging = function() {
+    };
+    var toggleDebugging = function () {
         if ($("#debugging_enabled").prop("checked")) {
             $("#DEBUGGING").val("true");
         } else {
             $("#DEBUGGING").val("false");
         }
-    }
-    var toggleStripSubtitles = function() {
+    };
+    var toggleStripSubtitles = function () {
         if ($("#remove_subtitles_enabled").prop("checked")) {
             $("#REMOVE_SUBTITLE_STREAMS").val("true");
         } else {
             $("#REMOVE_SUBTITLE_STREAMS").val("false");
         }
-    }
+    };
+    var toggleEnableVideoEncoding = function () {
+        if ($("#video_encoding_enabled").prop("checked")) {
+            $("#ENABLE_VIDEO_ENCODING").val("true");
+            $(".video_encoding_settings").removeClass('hidden');
+        } else {
+            $("#ENABLE_VIDEO_ENCODING").val("false");
+            $(".video_encoding_settings").addClass('hidden');
+        }
+    };
+    var toggleEnableAudioEncoding = function () {
+        if ($("#audio_encoding_enabled").prop("checked")) {
+            $("#ENABLE_AUDIO_ENCODING").val("true");
+            $(".audio_encoding_settings").removeClass('hidden');
+        } else {
+            $("#ENABLE_AUDIO_ENCODING").val("false");
+            $(".audio_encoding_settings").addClass('hidden');
+        }
+    };
 </script>
 {% end %}
 

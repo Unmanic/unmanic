@@ -129,14 +129,17 @@ class PostProcessor(threading.Thread):
         result = False
         for stream in file_probe['streams']:
             if stream['codec_type'] == 'video':
-                # Check if this file is the right codec
-                if stream['codec_name'] == self.settings.VIDEO_CODEC:
+                if self.settings.ENABLE_VIDEO_ENCODING:
+                    # Check if this file is the right codec
+                    if stream['codec_name'] == self.settings.VIDEO_CODEC:
+                        result = True
+                    elif self.settings.DEBUGGING:
+                        self._log("File is the not correct codec {} - {}".format(self.settings.VIDEO_CODEC, abspath))
+                        raise PostProcessError(self.settings.VIDEO_CODEC, stream['codec_name'])
+                    # TODO: Test duration is the same as src
+                    # TODO: Add file checksum from before and after move
+                else:
                     result = True
-                elif self.settings.DEBUGGING:
-                    self._log("File is the not correct codec {} - {}".format(self.settings.VIDEO_CODEC, abspath))
-                    raise PostProcessError(self.settings.VIDEO_CODEC, stream['codec_name'])
-                # TODO: Test duration is the same as src
-                # TODO: Add file checksum from before and after move
         return result
 
     def write_history_log(self):

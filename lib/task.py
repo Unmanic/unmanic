@@ -46,7 +46,7 @@ class Task(object):
     def __init__(self, settings, data_queues):
         self.name = 'Task'
         self.settings = settings
-        self.ffmpeg = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
+        self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
         self.logger = data_queues["logging"].get_logger(self.name)
         self.source = None
         self.destination = None

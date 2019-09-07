@@ -106,7 +106,7 @@ class LibraryScanner(threading.Thread):
         self.scheduledtasks = data_queues["scheduledtasks"]
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
-        self.ffmpeg = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
+        self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -184,7 +184,7 @@ class EventProcessor(pyinotify.ProcessEvent):
         self.inotifytasks = data_queues["inotifytasks"]
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
-        self.ffmpeg = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
+        self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)

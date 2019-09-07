@@ -39,7 +39,7 @@ import sys
 import time
 
 try:
-    from lib import common
+    from lib import common, unlogger
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
@@ -68,9 +68,8 @@ class FFMPEGHandleConversionError(Exception):
 
 
 class FFMPEGHandle(object):
-    def __init__(self, settings, logging):
+    def __init__(self, settings):
         self.name = 'FFMPEGHandle'
-        self.logger = logging.get_logger(self.name)
         self.settings = settings
         self.process = None
         self.file_in = None
@@ -107,8 +106,13 @@ class FFMPEGHandle(object):
         self.file_size = None
 
     def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
+        unmanic_logging = unlogger.UnmanicLogger.__call__()
+        logger = unmanic_logging.get_logger(self.name)
+        if logger:
+            message = common.format_message(message, message2)
+            getattr(logger, level)(message)
+        else:
+            print("Unmanic.{} - ERROR!!! Failed to find logger".format(self.name))
 
     def file_probe(self, vid_file_path):
         """
@@ -144,8 +148,7 @@ class FFMPEGHandle(object):
         # Get FPS
         try:
             # TODO: Remove unnecessary logging
-            if self.settings.DEBUGGING:
-                self._log('media', message2=info, level='debug')
+            #self._log('media', message2=info, level='debug')
             if info:
                 self.src_fps = eval(info['streams'][0]['avg_frame_rate'])
         except ZeroDivisionError:
@@ -258,29 +261,32 @@ class FFMPEGHandle(object):
 
         # Check if the file video codec from it's properties matches the configured video codec
         correct_video_codec = False
-        try:
-            video_streams_codecs = ""
-            for stream in file_probe['streams']:
-                if stream['codec_type'] == 'video':
-                    # Check if this file is already the right format
-                    video_streams_codecs += "{},{}".format(video_streams_codecs, stream['codec_name'])
-                    if stream['codec_name'] == self.settings.VIDEO_CODEC:
-                        if self.settings.DEBUGGING:
-                            self._log("File already has {} codec video stream - {}".format(self.settings.VIDEO_CODEC, vid_file_path),
-                                      level='debug')
-                        correct_video_codec = True
-            if not correct_video_codec:
+        if self.settings.ENABLE_VIDEO_ENCODING:
+            try:
+                video_streams_codecs = ""
+                for stream in file_probe['streams']:
+                    if stream['codec_type'] == 'video':
+                        # Check if this file is already the right format
+                        video_streams_codecs += "{},{}".format(video_streams_codecs, stream['codec_name'])
+                        if stream['codec_name'] == self.settings.VIDEO_CODEC:
+                            if self.settings.DEBUGGING:
+                                self._log("File already has {} codec video stream - {}".format(self.settings.VIDEO_CODEC, vid_file_path),
+                                          level='debug')
+                            correct_video_codec = True
+                if not correct_video_codec:
+                    if self.settings.DEBUGGING:
+                        self._log(
+                            "The current file's video streams ({}) do not match the configured video codec ({})".format(
+                                video_streams_codecs, self.settings.VIDEO_CODEC), level='debug')
+            except Exception as e:
+                # Failed to fetch properties
+                self._log("Exception - check_file_to_be_processed check video codec: {}".format(e), level='exception')
                 if self.settings.DEBUGGING:
-                    self._log(
-                        "The current file's video streams ({}) do not match the configured video codec ({})".format(
-                            video_streams_codecs, self.settings.VIDEO_CODEC), level='debug')
-        except Exception as e:
-            # Failed to fetch properties
-            self._log("Exception - check_file_to_be_processed check video codec: {}".format(e), level='exception')
-            if self.settings.DEBUGGING:
-                self._log("Failed to read codec info of file {}".format(vid_file_path), level='debug')
-                self._log("Marking file not to be processed", level='debug')
-            return False
+                    self._log("Failed to read codec info of file {}".format(vid_file_path), level='debug')
+                    self._log("Marking file not to be processed", level='debug')
+                return False
+        else:
+            correct_video_codec = True
 
         # Finally ensure that all file properties match the configured values.
         if correct_extension and correct_video_codec:
@@ -307,7 +313,7 @@ class FFMPEGHandle(object):
                     result = True
                 elif self.settings.DEBUGGING:
                     self._log("File is the not correct codec {} - {}".format(self.settings.VIDEO_CODEC,vid_file_path))
-                    raise FFMPEGHandlePostProcessError(self.settings.VIDEO_CODEC,stream['codec_name'])
+                    raise FFMPEGHandlePostProcessError(self.settings.VIDEO_CODEC, stream['codec_name'])
                 # TODO: Test duration is the same as src
         return result
 
@@ -387,9 +393,10 @@ class FFMPEGHandle(object):
         command = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "512"]
 
         # Read stream data
-        streams_to_map      = []
-        streams_to_create   = []
-        audio_tracks_count  = 0
+        streams_to_map        = []
+        streams_to_create     = []
+        audio_tracks_count    = 0
+        subtitle_tracks_count = 0
         for stream in file_probe['streams']:
             if stream['codec_type'] == 'video':
                 # Map this stream
@@ -397,51 +404,72 @@ class FFMPEGHandle(object):
                         "-map",   "0:{}".format(stream['index'])
                     ]
 
-                streams_to_create = streams_to_create + [
-                        "-c:v", self.settings.SUPPORTED_CODECS[self.settings.VIDEO_CODEC]['encoder']
-                    ]
+                if self.settings.ENABLE_VIDEO_ENCODING:
+                    # Video re-encoding is enabled
+                    streams_to_create = streams_to_create + [
+                            "-c:v", self.settings.SUPPORTED_CODECS[self.settings.VIDEO_CODEC]['encoder']
+                        ]
+                else:
+                    # Video re-encoding is disabled. Just copy the stream
+                    streams_to_create = streams_to_create + [
+                            "-c:v", "copy"
+                        ]
             if stream['codec_type'] == 'audio':
-                # Get details of audio channel:
-                if stream['channels'] > 2:
-                    # Map this stream
+
+                if self.settings.ENABLE_AUDIO_ENCODING:
+                    # Get details of audio channel:
+                    if stream['channels'] > 2:
+                        # Map this stream
+                        streams_to_map = streams_to_map + [
+                                "-map",   "0:{}".format(stream['index'])
+                            ]
+
+                        streams_to_create = streams_to_create + [
+                                "-c:a:{}".format(audio_tracks_count), "copy"
+                            ]
+                        audio_tracks_count += 1
+
+                        # TODO: Make this optional
+                        try:
+                            audio_tag = ''.join([i for i in stream['tags']['title'] if not i.isdigit()]).rstrip(
+                                '.') + 'Stereo'
+                        except:
+                            audio_tag = 'Stereo'
+
+                        # Map a duplicated stream
+                        streams_to_map = streams_to_map + [
+                                "-map",   " 0:{}".format(stream['index'])
+                            ]
+
+                        streams_to_create = streams_to_create + [
+                                    "-c:a:{}".format(audio_tracks_count), self.settings.SUPPORTED_CODECS[self.settings.AUDIO_CODEC]['encoder'],
+                                    "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
+                                    "-ac", "2",
+                                    "-metadata:s:a:{}".format(audio_tracks_count), "title='{}'".format(audio_tag),
+                                ]
+                        audio_tracks_count += 1
+                    else:
+                        # Force conversion of stereo audio to standard
+                        streams_to_map = streams_to_map + [
+                                "-map",   " 0:{}".format(stream['index'])
+                            ]
+
+                        streams_to_create = streams_to_create + [
+                                    "-c:a:{}".format(audio_tracks_count), self.settings.SUPPORTED_CODECS[self.settings.AUDIO_CODEC]['encoder'],
+                                    "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
+                                    "-ac", "2",
+                                ]
+                        audio_tracks_count += 1
+                else:
+                    # Audio re-encoding is disabled. Just copy the stream
                     streams_to_map = streams_to_map + [
                             "-map",   "0:{}".format(stream['index'])
                         ]
-
                     streams_to_create = streams_to_create + [
                             "-c:a:{}".format(audio_tracks_count), "copy"
                         ]
                     audio_tracks_count += 1
 
-                    # TODO: Make this optional
-                    try:
-                        audio_tag = ''.join([i for i in stream['tags']['title'] if not i.isdigit()]).rstrip(
-                            '.') + 'Stereo'
-                    except:
-                        audio_tag = 'Stereo'
-
-                    # Map a duplicated stream
-                    streams_to_map = streams_to_map + [
-                            "-map",   " 0:{}".format(stream['index'])
-                        ]
-
-                    streams_to_create = streams_to_create + [
-                                "-c:a:{}".format(audio_tracks_count), self.settings.SUPPORTED_CODECS[self.settings.AUDIO_CODEC]['encoder'],
-                                "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
-                                "-ac", "2",
-                                "-metadata:s:a:{}".format(audio_tracks_count), "title='{}'".format(audio_tag),
-                            ]
-                else:
-                    # Force conversion of stereo audio to standard
-                    streams_to_map = streams_to_map + [
-                            "-map",   " 0:{}".format(stream['index'])
-                        ]
-
-                    streams_to_create = streams_to_create + [
-                                "-c:a:{}".format(audio_tracks_count), self.settings.SUPPORTED_CODECS[self.settings.AUDIO_CODEC]['encoder'],
-                                "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
-                                "-ac", "2",
-                            ]
             if stream['codec_type'] == 'subtitle':
                 if self.settings.REMOVE_SUBTITLE_STREAMS:
                     continue
@@ -451,9 +479,9 @@ class FFMPEGHandle(object):
                     ]
 
                 streams_to_create = streams_to_create + [
-                        "-c:s:{}".format(audio_tracks_count), "copy"
+                        "-c:s:{}".format(subtitle_tracks_count), "copy"
                     ]
-                audio_tracks_count += 1
+                subtitle_tracks_count += 1
 
         # Map streams
         command = command + streams_to_map
@@ -461,8 +489,7 @@ class FFMPEGHandle(object):
         # Add arguments for creating streams
         command = command + streams_to_create
 
-        if self.settings.DEBUGGING:
-            self._log(" ".join(command), level='debug')
+        self._log(" ".join(command), level='debug')
 
         return command
 
@@ -591,15 +618,16 @@ class TestClass(object):
         import config
         self.settings = config.CONFIG()
         self.settings.DEBUGGING = True
-        from lib import unlogger
-        self.logging = unlogger.UnmanicLogger.__call__()
-        self.logging.setup_logger(self.settings)
-        self.logger = self.logging.get_logger()
-        self.ffmpeg = FFMPEGHandle(self.settings, self.logging)
+        self.ffmpeg = FFMPEGHandle(self.settings)
 
     def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
+        unmanic_logging = unlogger.UnmanicLogger.__call__()
+        logger = unmanic_logging.get_logger('TestClass')
+        if logger:
+            message = common.format_message(message, message2)
+            getattr(logger, level)(message)
+        else:
+            print("Unmanic.{} - ERROR!!! Failed to find logger".format('TestClass'))
 
     def build_ffmpeg_args(self, test_for_failure=False):
         configured_vencoder = self.settings.SUPPORTED_CODECS[self.settings.VIDEO_CODEC]['encoder']

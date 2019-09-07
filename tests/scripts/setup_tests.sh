@@ -41,12 +41,17 @@ SMALL_TEST_VIDEOS=" \
         https://sample-videos.com/video123/flv/720/big_buck_bunny_720p_1mb.flv \
         https://sample-videos.com/video123/3gp/144/big_buck_bunny_144p_1mb.3gp \
     "
-# http://www.engr.colostate.edu/me/facil/dynamics/files/flame.avi <- single stream (not supporeted yet)
+# http://www.engr.colostate.edu/me/facil/dynamics/files/flame.avi <- single stream (not supported yet)
+# https://github.com/Matroska-Org/matroska-test-files
+#   - test5.mkv = Multiple audio/subtitles
+#   - test8.mkv = Audio gap
 MED_TEST_VIDEOS=" \
         https://sample-videos.com/video123/mkv/720/big_buck_bunny_720p_10mb.mkv \
         https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_10mb.mp4 \
         https://sample-videos.com/video123/flv/720/big_buck_bunny_720p_10mb.flv \
         https://sample-videos.com/video123/3gp/240/big_buck_bunny_240p_10mb.3gp \
+        https://github.com/Matroska-Org/matroska-test-files/raw/master/test_files/test5.mkv \
+        https://github.com/Matroska-Org/matroska-test-files/raw/master/test_files/test8.mkv \
     "
 
 

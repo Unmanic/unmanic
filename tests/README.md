@@ -6,7 +6,7 @@
 
 Before any tests can be run, you need to execute
 ```
-tests/setup_tests.sh
+tests/scripts/setup_tests.sh
 ```
 
 

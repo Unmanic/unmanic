@@ -45,12 +45,14 @@ class SingletonType(type):
 
 # python 3 style
 class UnmanicLogger(object, metaclass=SingletonType):
+    _enable_log_to_file = None
     _stream_handler = None
     _file_handler = None
     _settings = None
     _logger = None
 
-    def __init__(self):
+    def __init__(self, log_to_file=True):
+        self._enable_log_to_file = log_to_file
         # Create our default parent logger and set the default level to info
         self._logger = logging.getLogger("Unmanic")
         # Initially set this logger to INFO (once the config is applied, this may change)
@@ -86,7 +88,7 @@ class UnmanicLogger(object, metaclass=SingletonType):
         # ##########
 
     def setup_file_handler(self):
-        if not self._file_handler and self._settings and self._settings.LOG_PATH:
+        if self._enable_log_to_file and not self._file_handler and self._settings and self._settings.LOG_PATH:
             # Create directory if not exists
             if not os.path.exists(self._settings.LOG_PATH):
                 os.makedirs(self._settings.LOG_PATH)

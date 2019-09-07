@@ -30,6 +30,7 @@
 
 """
 
+import os
 from peewee_migrate import Router
 from peewee import *
 
@@ -44,6 +45,10 @@ class Migrations(object):
     def __init__(self, config):
         # Based on configuration, select database to connect to.
         if config['TYPE'] == 'SQLITE':
+            # Create SQLite directory if not exists
+            db_file_directory = os.path.dirname(config['FILE'])
+            if not os.path.exists(db_file_directory):
+                os.makedirs(db_file_directory)
             database = SqliteDatabase(config['FILE'])
             self.router = Router(database)
 

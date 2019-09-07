@@ -24,6 +24,10 @@ services:
       - RUN_FULL_SCAN_ON_START=false
     volumes:
       - ../tests/tmp/cache:/tmp/unmanic
-      - ../tests/tmp/tests/tmp/library:/library
-      - ../tests/tmp/tests/tmp/config:/config
+      - ../tests/tmp/library:/library
       - ../tests:/app/tests
+      # Uncomment for debugging of tests within the docker container
+      # Note that some tests are setup to only succeed with a particular configuration
+      # and modifying the configuration may cause tests to fail unexpectedly.
+      # - ../tests/tmp/config:/config
+      # - ..:/app

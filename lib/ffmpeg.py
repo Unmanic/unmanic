@@ -43,7 +43,7 @@ try:
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
-    from lib import common
+    from lib import common, unlogger
 
 
 class FFMPEGHandlePostProcessError(Exception):
@@ -614,6 +614,8 @@ class TestClass(object):
     def setup_class(self):
         self.project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         # sys.path.append(self.project_dir)
+        unmanic_logging = unlogger.UnmanicLogger.__call__(False)
+        main_logger = unmanic_logging.get_logger()
         # import config
         import config
         self.settings = config.CONFIG()
@@ -713,7 +715,7 @@ class TestClass(object):
         # Set project root path
         tests_dir = os.path.join(self.project_dir, 'tests')
         tmp_dir = os.path.join(tests_dir, 'tmp')
-        # Test
+        # Test all small files of various containers
         for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'small')):
             filename, file_extension = os.path.splitext(os.path.basename(video_file))
             infile = os.path.join(tests_dir, 'videos', 'small', video_file)
@@ -725,7 +727,7 @@ class TestClass(object):
         # Set project root path
         tests_dir = os.path.join(self.project_dir, 'tests')
         tmp_dir = os.path.join(tests_dir, 'tmp')
-        # Test
+        # Test just the first file found in the med folder
         for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'med')):
             filename, file_extension = os.path.splitext(os.path.basename(video_file))
             infile = os.path.join(tests_dir, 'videos', 'med', video_file)
@@ -759,6 +761,18 @@ class TestClass(object):
             # Check that the check_file_to_be_processed function correctly identifies the file to be converted
             convert = self.ffmpeg.check_file_to_be_processed(pathname)
             assert (should_convert == convert)
+
+    def test_convert_all_faulty_files_for_success(self):
+        self.setup_class()
+        # Set project root path
+        tests_dir = os.path.join(self.project_dir, 'tests')
+        tmp_dir = os.path.join(tests_dir, 'tmp')
+        # Test all faulty files can be successfully converted (these files have assorted issues)
+        for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'faulty')):
+            filename, file_extension = os.path.splitext(os.path.basename(video_file))
+            infile = os.path.join(tests_dir, 'videos', 'faulty', video_file)
+            outfile = os.path.join(tmp_dir, filename + '.mkv')
+            self.convert_single_file(infile, outfile)
 
 
 if __name__ == "__main__":

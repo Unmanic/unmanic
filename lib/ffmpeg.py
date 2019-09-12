@@ -40,10 +40,12 @@ import time
 
 try:
     from lib import common, unlogger
+    from lib.unffmpeg import containers
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
     from lib import common, unlogger
+    from lib.unffmpeg import containers
 
 
 class FFMPEGHandlePostProcessError(Exception):
@@ -235,22 +237,32 @@ class FFMPEGHandle(object):
         # Check if the file container from it's properties matches the configured container
         correct_extension = False
         try:
+            # Get the list of possible file extensions from the ffprobe
             current_possible_format_names = file_probe['format']['format_name'].split(",")
             if self.settings.DEBUGGING:
                 self._log("Current file format names:", current_possible_format_names, level='debug')
+
+            # Get container extension
+            container = containers.grab_module(self.settings.OUT_CONTAINER)
+            container_extension = container.container_extension()
+
+            # Loop over file extensions to check if it is already one used by our configured container.
             for format_name in current_possible_format_names:
                 extension = 'NONE SELECTED'
                 if format_name in self.settings.SUPPORTED_CONTAINERS:
                     extension = self.settings.SUPPORTED_CONTAINERS[format_name]['extension']
-                if extension == self.settings.OUT_CONTAINER:
+                if extension == container_extension:
                     if self.settings.DEBUGGING:
-                        self._log("File already in container format {} - {}".format(self.settings.OUT_CONTAINER,
+                        self._log("File already in container format {} - {}".format(container_extension,
                                                                                     vid_file_path), level='debug')
+                    # This extension is used by our configured container.
+                    # We will assume that we are already the correct container
                     correct_extension = True
-            if not correct_extension:
-                if self.settings.DEBUGGING:
-                    self._log("Current file format names do not match the configured extension {}".format(
-                        self.settings.OUT_CONTAINER), level='debug')
+
+            # If this is not in the correct extension, then log it. This file may be added to the conversion list
+            if not correct_extension and self.settings.DEBUGGING:
+                self._log("Current file format names do not match the configured extension {}".format(
+                    container_extension), level='debug')
         except Exception as e:
             self._log("Exception - check_file_to_be_processed check file container: {}".format(e), level='exception')
             # Failed to fetch properties
@@ -323,9 +335,13 @@ class FFMPEGHandle(object):
         src_path = os.path.abspath(vid_file_path)
         src_folder = os.path.dirname(src_path)
 
+        # Get container extension
+        container = containers.grab_module(self.settings.OUT_CONTAINER)
+        container_extension = container.container_extension()
+
         # Parse an output cache path
         out_folder = "file_conversion-{}".format(time.time())
-        out_file = "{}-{}.{}".format(os.path.splitext(src_file)[0], time.time(), self.settings.OUT_CONTAINER)
+        out_file = "{}-{}.{}".format(os.path.splitext(src_file)[0], time.time(), container_extension)
         out_path = os.path.join(self.settings.CACHE_PATH, out_folder, out_file)
 
         # Create output path if not exists 

@@ -160,7 +160,8 @@ class LibraryScanner(threading.Thread):
         return True
 
     def get_convert_files(self, search_folder):
-        self._log(search_folder)
+        if self.settings.DEBUGGING:
+            self._log("Scanning directory - '{}'".format(search_folder))
         for root, subFolders, files in os.walk(search_folder):
             if self.settings.DEBUGGING:
                 self._log(json.dumps(files, indent=2))
@@ -171,9 +172,10 @@ class LibraryScanner(threading.Thread):
                     # Check if this file is already the correct format:
                     if self.file_not_target_format(pathname):
                         self.add_path_to_queue(pathname)
-                else:
-                    if self.settings.DEBUGGING:
-                        self._log("Ignoring file due to incorrect suffix - '{}'".format(file_path))
+                    elif self.settings.DEBUGGING:
+                        self._log("Ignoring file due to already correct format - '{}'".format(file_path))
+                elif self.settings.DEBUGGING:
+                    self._log("Ignoring file due to incorrect suffix - '{}'".format(file_path))
 
 
 class EventProcessor(pyinotify.ProcessEvent):
@@ -215,9 +217,10 @@ class EventProcessor(pyinotify.ProcessEvent):
                 # Add it to the queue
                 if self.file_not_target_format(event.pathname):
                     self.add_path_to_queue(event.pathname)
-            else:
-                if self.settings.DEBUGGING:
-                    self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
+                elif self.settings.DEBUGGING:
+                    self._log("Ignoring file due to already correct format - '{}'".format(event.pathname))
+            elif self.settings.DEBUGGING:
+                self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
 
     def process_IN_MOVED_TO(self, event):
         if self.inotify_enabled():
@@ -226,9 +229,10 @@ class EventProcessor(pyinotify.ProcessEvent):
                 # Add it to the queue
                 if self.file_not_target_format(event.pathname):
                     self.add_path_to_queue(event.pathname)
-            else:
-                if self.settings.DEBUGGING:
-                    self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
+                elif self.settings.DEBUGGING:
+                    self._log("Ignoring file due to already correct format - '{}'".format(event.pathname))
+            elif self.settings.DEBUGGING:
+                self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
 
     def process_IN_DELETE(self, event):
         if self.inotify_enabled():

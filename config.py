@@ -36,6 +36,7 @@ from lib import common
 import json
 
 from lib.history import History
+from lib.unffmpeg import containers
 
 try:
     from json.decoder import JSONDecodeError
@@ -74,56 +75,6 @@ SUPPORTED_CODECS = {
         "encoder":         "libmp3lame"
     }
 }
-SUPPORTED_CONTAINERS = {
-    "3g2":      {
-        "extension":   "3g2",
-        "description": "3GP2 (3GPP2 file format)",
-    },
-    "3gp":      {
-        "extension":   "3gp",
-        "description": "3GP (3GPP file format)",
-    },
-    "avi":      {
-        "extension":   "avi",
-        "description": "AVI (Audio Video Interleaved)",
-    },
-    "flv":      {
-        "extension":   "flv",
-        "description": "FLV (Flash Video)",
-    },
-    "matroska": {
-        "extension":   "mkv",
-        "description": "Matroska",
-    },
-    "mov":      {
-        "extension":   "mov",
-        "description": "QuickTime / MOV",
-    },
-    "mp4":      {
-        "extension":   "mp4",
-        "description": "MP4 (MPEG-4 Part 14)",
-    },
-    "mpeg":     {
-        "extension":   "mpeg",
-        "description": "MPEG-1 Systems / MPEG program stream",
-    },
-    "mpegts":   {
-        "extension":   "ts",
-        "description": "MPEG-TS (MPEG-2 Transport Stream)",
-    },
-    "ogv":      {
-        "extension":   "ogv",
-        "description": "Ogg Video",
-    },
-    "psp":      {
-        "extension":   "psp",
-        "description": "PSP MP4 (MPEG-4 Part 14)",
-    },
-    "vob":      {
-        "extension":   "vob",
-        "description": "MPEG-2 PS (VOB)",
-    },
-}
 
 
 class CONFIG(object):
@@ -134,10 +85,10 @@ class CONFIG(object):
 
         # Immutable values
         # Set the supported codecs (for destination)
-        # TODO: Read this from ffmpeg
+        # TODO: Read this from unffmpeg
         self.SUPPORTED_CODECS = SUPPORTED_CODECS
         # Set the supported containers (for destination)
-        self.SUPPORTED_CONTAINERS = SUPPORTED_CONTAINERS
+        self.SUPPORTED_CONTAINERS = containers.get_all_containers()
 
         # Finish setup...
         # Set default db config
@@ -353,6 +304,8 @@ class CONFIG(object):
             value = self.SEARCH_EXTENSIONS.split(",")
             # Strip all whitespace (including within the item as extensions dont have any whitespace)
             value = [item.replace(' ', '') for item in value]
+            # Remove empty values from the list
+            value = [item for item in value if item]
             return tuple(value)
         return self.SEARCH_EXTENSIONS
 

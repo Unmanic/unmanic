@@ -33,6 +33,7 @@ import os
 import time
 
 from lib import common, ffmpeg
+from lib.unffmpeg import containers
 
 
 class Task(object):
@@ -79,18 +80,29 @@ class Task(object):
         # Fetch the file's name without the file extension (this is going to be reset)
         file_name_without_extension = os.path.splitext(self.source['basename'])[0]
 
+        # Get container extension
+        container = containers.grab_module(self.settings.OUT_CONTAINER)
+        container_extension = container.container_extension()
+
         # Set destination dict
-        self.destination = {}
-        self.destination['basename'] = "{}.{}".format(file_name_without_extension, self.settings.OUT_CONTAINER)
-        self.destination['abspath'] = os.path.join(self.source['dirname'], self.destination['basename'])
+        basename = "{}.{}".format(file_name_without_extension, container_extension)
+        abspath = os.path.join(self.source['dirname'], basename)
+        self.destination = {
+            'basename': basename,
+            'abspath':  abspath
+        }
 
     def set_cache_path(self):
         # Fetch the file's name without the file extension (this is going to be reset)
         file_name_without_extension = os.path.splitext(self.source['basename'])[0]
 
+        # Get container extension
+        container = containers.grab_module(self.settings.OUT_CONTAINER)
+        container_extension = container.container_extension()
+
         # Parse an output cache path
         out_folder = "file_conversion-{}".format(time.time())
-        out_file = "{}-{}.{}".format(file_name_without_extension, time.time(), self.settings.OUT_CONTAINER)
+        out_file = "{}-{}.{}".format(file_name_without_extension, time.time(), container_extension)
         self.cache_path = os.path.join(self.settings.CACHE_PATH, out_folder, out_file)
 
     def get_source_basename(self):

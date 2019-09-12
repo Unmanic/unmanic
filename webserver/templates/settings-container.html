@@ -23,10 +23,22 @@
                         <div class="form-group">
                             <label class="col-md-3 control-label">Output container </label>
                             <div class="col-md-9">
-                                <select class="form-control" name="OUT_CONTAINER">
-                                    {% for option in config.SUPPORTED_CONTAINERS %}
-                                    <option value="{{ escape(config.SUPPORTED_CONTAINERS[option]['extension']) }}" {% if config.OUT_CONTAINER == config.SUPPORTED_CONTAINERS[option]['extension'] %}
-                                            selected {% end %}>
+                                <select class="form-control"
+                                        name="OUT_CONTAINER"
+                                        id="out_container"
+                                        onchange="showHideSubtitleSettings();">
+                                    {% set enable_subtitles = True %}
+                                    {% for option in config.SUPPORTED_CONTAINERS %}data-supportssubtitles=
+                                    <option value="{{ escape(option) }}"
+                                            {% if config.SUPPORTED_CONTAINERS[option]['supports_subtitles'] %}
+                                            data-supports_subtitles="true"
+                                            {% else %}
+                                            data-supports_subtitles="false"
+                                            {% end %}
+                                            {% if config.OUT_CONTAINER == option %}
+                                            {% set enable_subtitles = config.SUPPORTED_CONTAINERS[option]['supports_subtitles'] %}
+                                            selected
+                                            {% end %}>
                                         .{{ escape(config.SUPPORTED_CONTAINERS[option]['extension']) }}
                                         - {{ escape(config.SUPPORTED_CONTAINERS[option]['description']) }}
                                     </option>
@@ -35,7 +47,7 @@
                                 <span class="help-inline"> Select the container you want output files to be </span>
                             </div>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group subtitle_settings" {% if not enable_subtitles %} style="display:none" {% end %}>
                             <label class="col-md-3 control-label">Remove subtitles</label>
                             <div class="col-md-9">
                                 <div class="checkbox-list">

@@ -26,6 +26,15 @@
             $("#DEBUGGING").val("false");
         }
     };
+    var showHideSubtitleSettings = function () {
+        var supports_subtitles = $("#out_container option:selected").data('supports_subtitles');
+        console.log(supports_subtitles);
+        if (supports_subtitles) {
+            $(".subtitle_settings").show()
+        } else {
+            $(".subtitle_settings").hide()
+        }
+    };
     var toggleStripSubtitles = function () {
         if ($("#remove_subtitles_enabled").prop("checked")) {
             $("#REMOVE_SUBTITLE_STREAMS").val("true");

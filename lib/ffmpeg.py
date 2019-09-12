@@ -435,14 +435,17 @@ class FFMPEGHandle(object):
                 else:
                     # Force conversion of stereo audio to standard
                     streams_to_map = streams_to_map + [
-                            "-map",   " 0:{}".format(stream['index'])
-                        ]
+                        "-map",   " 0:{}".format(stream['index'])
+                    ]
 
-                    streams_to_create = streams_to_create + [
-                                "-c:a:{}".format(audio_tracks_count), self.settings.CODEC_CONFIG[self.settings.AUDIO_CODEC]['encoder'],
-                                "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
-                                "-ac", "2",
-                            ]
+                    if stream['codec_name'] == self.settings.AUDIO_CODEC:
+                        streams_to_create = streams_to_create + ["-c:a:{}".format(audio_tracks_count), 'copy']
+                    else:
+                        streams_to_create = streams_to_create + [
+                            "-c:a:{}".format(audio_tracks_count), self.settings.CODEC_CONFIG[self.settings.AUDIO_CODEC]['encoder'],
+                            "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
+                            "-ac", "2",
+                        ]
             if stream['codec_type'] == 'subtitle':
                 if self.settings.REMOVE_SUBTITLE_STREAMS:
                     continue

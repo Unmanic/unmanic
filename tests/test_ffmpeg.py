@@ -169,7 +169,9 @@ class TestClass(object):
             # Ensure the file probe was successful
             assert 'format' in file_probe
             assert 'streams' in file_probe
-            # Check for our test mkv file (this one should be set not to need a conversion
+            # Check for our test mkv file, this file should be set not to need a conversion.
+            # The default OUT_CONTAINER os 'matroska'. If this video is already 'matroska',
+            # then is should not need converting again.
             if 'matroska' in file_probe['format']['format_name']:
                 should_convert = False
                 for stream in file_probe['streams']:

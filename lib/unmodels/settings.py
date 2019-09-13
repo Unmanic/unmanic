@@ -54,7 +54,7 @@ class Settings(BaseModel):
     library_path = TextField(null=False, default='/library')
     log_path = TextField(null=False, default=os.path.join(HOME_DIR, '.unmanic', 'logs'))
     number_of_workers = IntegerField(null=False, default=3)
-    out_container = TextField(null=False, default='mkv')
+    out_container = TextField(null=False, default='matroska')
     remove_subtitle_streams = BooleanField(null=False, default=True)
     run_full_scan_on_start = BooleanField(null=False, default=False)
     schedule_full_scan_minutes = IntegerField(null=False, default=60)

@@ -48,3 +48,23 @@ To clean the config run
 ```
 tests/scripts/library_scan.sh --clean
 ```
+
+
+-----------------------------------------------------------
+
+
+## Python unit tests within docker
+
+To run the python unit tests within the test docker env
+(in order to test them in a controlled environment), run
+these commands:
+
+```
+docker-compose -f docker/docker-compose-test.yml up --force-recreate
+```
+
+Wait for the container to start, then run
+
+```
+docker exec --workdir=/app unmanic-testenv pytest --log-cli-level=INFO
+```

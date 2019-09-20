@@ -99,3 +99,15 @@ class TestClass(object):
         # Assert the streams to encode array is not empty
         assert subtitle_args['streams_to_encode']
 
+    def test_ensure_we_can_convert_subtitles_from_mkv_to_mp4_in_args(self):
+        # Get the destination container object by it's name
+        destination_container = self.get_container('mp4')
+        # Fetch a list of args from the unffmpeg subtitle handler
+        subtitle_handle = unffmpeg.SubtitleHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe, destination_container)
+        subtitle_args = subtitle_handle.args()
+        print(subtitle_args)
+        # Assert the streams to map array is not empty
+        assert subtitle_args['streams_to_map']
+        # Assert the streams to encode array is not empty
+        assert subtitle_args['streams_to_encode']
+

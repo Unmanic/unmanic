@@ -72,6 +72,8 @@ class SubtitleHandle(object):
                 # Check container for support of current stream (If copy is possible)
                 # TODO: Add support for user selection of subtitle format
                 supported_subtitles = self.container.supported_subtitles()
+                # TODO: Select best/or configured subtitle codec, then fetch that codec class.
+                #       Use the subtitle class rather than this array
                 if stream['codec_name'] in supported_subtitles:
                     # If dest container supports the current subtitle codec, just copy it
                     self.subtitle_args['streams_to_encode'] = self.subtitle_args['streams_to_encode'] + [

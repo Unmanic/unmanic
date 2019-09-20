@@ -54,7 +54,7 @@ def grab_module(module_name, *args, **kwargs):
         if '.' in module_name:
             module_name, class_name = module_name.rsplit('.', 1)
         else:
-            class_name = module_name.capitalize()
+            class_name = module_name.title().replace("_", "")
 
         module = import_module('.' + module_name, package=__name__)
         module_class = getattr(module, class_name)

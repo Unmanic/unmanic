@@ -59,7 +59,6 @@ class TestClass(object):
         :return:
         """
         self.project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        # sys.path.append(self.project_dir)
         unmanic_logging = unlogger.UnmanicLogger.__call__(False)
         unmanic_logging.get_logger()
 
@@ -85,22 +84,22 @@ class TestClass(object):
         # Assert the streams to encode array is set to copy
         assert video_codec_args['streams_to_encode'][1] == 'copy'
 
-    def test_ensure_we_can_generate_hevc_current_video_codec_args(self):
+    def test_ensure_we_can_generate_hevc_video_codec_args(self):
         # Fetch a list of args from the unffmpeg video codec handler
         video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
-        # Just copy the current codec (do not re-encode)
+        # Set the video codec to HEVC
         video_codec_handle.set_video_codec('hevc')
         video_codec_args = video_codec_handle.args()
         # Assert the streams to map array is not empty
         assert video_codec_args['streams_to_map']
         # Assert the streams to encode array is not empty
         assert video_codec_args['streams_to_encode']
-        # Assert the streams to encode array is set to copy
+        # Assert the streams to encode array is set to libx265
         assert video_codec_args['streams_to_encode'][1] == 'libx265'
 
     def test_ensure_throws_exception_for_absent_video_codec_args(self):
         with pytest.raises(ImportError) as excinfo:
             # Fetch a list of args from the unffmpeg video codec handler
             video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
-            # Just copy the current codec (do not re-encode)
+            # Set the video codec to something that does not exist
             video_codec_handle.set_video_codec('non_existent_codec')

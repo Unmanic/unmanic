@@ -281,3 +281,122 @@ mkv_multiple_subtitles_ffprobe = {
     }
   }
 }
+
+
+mkv_stereo_aac_audio_ffprobe = {
+  "streams": [
+    {
+      "index": 0,
+      "codec_name": "h264",
+      "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+      "profile": "High",
+      "codec_type": "video",
+      "codec_time_base": "1001/48000",
+      "codec_tag_string": "[0][0][0][0]",
+      "codec_tag": "0x0000",
+      "width": 1920,
+      "height": 1080,
+      "coded_width": 1920,
+      "coded_height": 1088,
+      "has_b_frames": 1,
+      "sample_aspect_ratio": "1:1",
+      "display_aspect_ratio": "16:9",
+      "pix_fmt": "yuv420p",
+      "level": 40,
+      "chroma_location": "left",
+      "field_order": "progressive",
+      "refs": 1,
+      "is_avc": "true",
+      "nal_length_size": "4",
+      "r_frame_rate": "24000/1001",
+      "avg_frame_rate": "24000/1001",
+      "time_base": "1/1000",
+      "start_pts": 36,
+      "start_time": "0.036000",
+      "bits_per_raw_sample": "8",
+      "disposition": {
+        "default": 1,
+        "dub": 0,
+        "original": 0,
+        "comment": 0,
+        "lyrics": 0,
+        "karaoke": 0,
+        "forced": 0,
+        "hearing_impaired": 0,
+        "visual_impaired": 0,
+        "clean_effects": 0,
+        "attached_pic": 0,
+        "timed_thumbnails": 0
+      },
+      "tags": {
+        "BPS-eng": "7905319",
+        "DURATION-eng": "00:42:24.626000000",
+        "NUMBER_OF_FRAMES-eng": "61010",
+        "NUMBER_OF_BYTES-eng": "2514510211",
+        "_STATISTICS_WRITING_APP-eng": "mkvmerge v24.0.0 ('Beyond The Pale') 64-bit",
+        "_STATISTICS_WRITING_DATE_UTC-eng": "2019-02-13 09:50:46",
+        "_STATISTICS_TAGS-eng": "BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES"
+      }
+    },
+    {
+      "index": 1,
+      "codec_name": "aac",
+      "codec_long_name": "AAC (Advanced Audio Coding)",
+      "profile": "LC",
+      "codec_type": "audio",
+      "codec_time_base": "1/44100",
+      "codec_tag_string": "[0][0][0][0]",
+      "codec_tag": "0x0000",
+      "sample_fmt": "fltp",
+      "sample_rate": "44100",
+      "channels": 2,
+      "channel_layout": "stereo",
+      "bits_per_sample": 0,
+      "r_frame_rate": "0/0",
+      "avg_frame_rate": "0/0",
+      "time_base": "1/1000",
+      "start_pts": 0,
+      "start_time": "0.000000",
+      "disposition": {
+        "default": 1,
+        "dub": 0,
+        "original": 0,
+        "comment": 0,
+        "lyrics": 0,
+        "karaoke": 0,
+        "forced": 0,
+        "hearing_impaired": 0,
+        "visual_impaired": 0,
+        "clean_effects": 0,
+        "attached_pic": 0,
+        "timed_thumbnails": 0
+      },
+      "tags": {
+        "language": "eng",
+        "BPS-eng": "125590",
+        "DURATION-eng": "00:42:24.628000000",
+        "NUMBER_OF_FRAMES-eng": "109588",
+        "NUMBER_OF_BYTES-eng": "39947530",
+        "_STATISTICS_WRITING_APP-eng": "mkvmerge v24.0.0 ('Beyond The Pale') 64-bit",
+        "_STATISTICS_WRITING_DATE_UTC-eng": "2019-02-13 09:50:46",
+        "_STATISTICS_TAGS-eng": "BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES"
+      }
+    }
+  ],
+  "format": {
+    "filename": "some_file_name.mkv",
+    "nb_streams": 2,
+    "nb_programs": 0,
+    "format_name": "matroska,webm",
+    "format_long_name": "Matroska / WebM",
+    "start_time": "0.000000",
+    "duration": "2544.662000",
+    "size": "2555231069",
+    "bit_rate": "8033227",
+    "probe_score": 100,
+    "tags": {
+      "encoder": "libebml v1.3.6 + libmatroska v1.4.9",
+      "creation_time": "2019-02-13T09:50:46.000000Z"
+    }
+  }
+}

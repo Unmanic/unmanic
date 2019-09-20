@@ -63,8 +63,14 @@ these commands:
 docker-compose -f docker/docker-compose-test.yml up --force-recreate
 ```
 
-Wait for the container to start, then run
+Wait for the container to start, then run:
 
 ```
 docker exec --workdir=/app unmanic-testenv pytest --log-cli-level=INFO
+```
+
+When developing, if you wish to run only a single test, run:
+
+```
+docker exec --workdir=/app unmanic-testenv pytest --log-cli-level=INFO --maxfail 1 -s tests/test_<TEST NAME>.py
 ```

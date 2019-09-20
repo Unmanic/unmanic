@@ -412,79 +412,6 @@ class FFMPEGHandle(object):
         # Read stream data
         streams_to_map = []
         streams_to_encode = []
-        audio_tracks_count = 0
-        for stream in file_probe['streams']:
-            if stream['codec_type'] == 'video':
-                # Map this stream
-                streams_to_map = streams_to_map + [
-                        "-map",   "0:{}".format(stream['index'])
-                    ]
-
-                if self.settings.ENABLE_VIDEO_ENCODING:
-                    # Video re-encoding is enabled
-                    streams_to_encode = streams_to_encode + [
-                            "-c:v", self.settings.SUPPORTED_CODECS[self.settings.VIDEO_CODEC]['encoder']
-                        ]
-                else:
-                    # Video re-encoding is disabled. Just copy the stream
-                    streams_to_encode = streams_to_encode + [
-                            "-c:v", "copy"
-                        ]
-            if stream['codec_type'] == 'audio':
-
-                if self.settings.ENABLE_AUDIO_ENCODING:
-                    # Get details of audio channel:
-                    if stream['channels'] > 2:
-                        # Map this stream
-                        streams_to_map = streams_to_map + [
-                                "-map",   "0:{}".format(stream['index'])
-                            ]
-
-                        streams_to_encode = streams_to_encode + [
-                                "-c:a:{}".format(audio_tracks_count), "copy"
-                            ]
-                        audio_tracks_count += 1
-
-                        # TODO: Make this optional
-                        try:
-                            audio_tag = ''.join([i for i in stream['tags']['title'] if not i.isdigit()]).rstrip(
-                                '.') + 'Stereo'
-                        except:
-                            audio_tag = 'Stereo'
-
-                        # Map a duplicated stream
-                        streams_to_map = streams_to_map + [
-                                "-map",   " 0:{}".format(stream['index'])
-                            ]
-
-                        streams_to_encode = streams_to_encode + [
-                                    "-c:a:{}".format(audio_tracks_count), self.settings.SUPPORTED_CODECS[self.settings.AUDIO_CODEC]['encoder'],
-                                    "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
-                                    "-ac", "2",
-                                    "-metadata:s:a:{}".format(audio_tracks_count), "title='{}'".format(audio_tag),
-                                ]
-                        audio_tracks_count += 1
-                    else:
-                        # Force conversion of stereo audio to standard
-                        streams_to_map = streams_to_map + [
-                                "-map",   " 0:{}".format(stream['index'])
-                            ]
-
-                        streams_to_encode = streams_to_encode + [
-                                    "-c:a:{}".format(audio_tracks_count), self.settings.SUPPORTED_CODECS[self.settings.AUDIO_CODEC]['encoder'],
-                                    "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
-                                    "-ac", "2",
-                                ]
-                        audio_tracks_count += 1
-                else:
-                    # Audio re-encoding is disabled. Just copy the stream
-                    streams_to_map = streams_to_map + [
-                            "-map",   "0:{}".format(stream['index'])
-                        ]
-                    streams_to_encode = streams_to_encode + [
-                            "-c:a:{}".format(audio_tracks_count), "copy"
-                        ]
-                    audio_tracks_count += 1
 
         # Set video encoding args
         video_codec_handle = unffmpeg.VideoCodecHandle(file_probe)
@@ -494,6 +421,16 @@ class FFMPEGHandle(object):
         video_codec_args = video_codec_handle.args()
         streams_to_map = streams_to_map + video_codec_args['streams_to_map']
         streams_to_encode = streams_to_encode + video_codec_args['streams_to_encode']
+
+        # Set audio encoding args
+        audio_codec_handle = unffmpeg.AudioCodecHandle(file_probe)
+        if not self.settings.ENABLE_AUDIO_ENCODING:
+            audio_codec_handle.disable_audio_encoding = True
+        audio_codec_handle.set_audio_codec(self.settings.AUDIO_CODEC)
+        audio_codec_handle.audio_stereo_stream_bitrate = self.settings.AUDIO_STEREO_STREAM_BITRATE
+        audio_codec_args = audio_codec_handle.args()
+        streams_to_map = streams_to_map + audio_codec_args['streams_to_map']
+        streams_to_encode = streams_to_encode + audio_codec_args['streams_to_encode']
 
         # Set subtitle encoding args
         subtitle_handle = unffmpeg.SubtitleHandle(file_probe, destination_container)

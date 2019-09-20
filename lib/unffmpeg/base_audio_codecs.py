@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.base_audio_codecs.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     10 Sep 2019, (8:05 PM)
+    Date:                     21 Sep 2019, (7:49 AM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,27 +30,18 @@
 
 """
 
-from __future__ import absolute_import
-import warnings
 
+class AudioCodecs(object):
+    """
+    AudioCodecs
 
-from . import containers
-from . import subtitles
-from . import audio_codecs
-from . import video_codecs
-from .subtitle_handle import SubtitleHandle
-from .audio_codec_handle import AudioCodecHandle
-from .video_codec_handle import VideoCodecHandle
+    Generic configuration and methods used across all audio codec classes
+    """
 
+    def audio_encoder(self):
+        """
+        Return the audio codec encoder string
 
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'containers',
-    'subtitles',
-    'video_codecs',
-    'audio_codecs',
-    'SubtitleHandle',
-    'AudioCodecHandle',
-    'VideoCodecHandle',
-)
+        :return:
+        """
+        return self.encoder

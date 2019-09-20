@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.mp3.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     10 Sep 2019, (8:05 PM)
+    Date:                     21 Sep 2019, (8:45 AM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,27 +30,10 @@
 
 """
 
-from __future__ import absolute_import
-import warnings
+from ..base_audio_codecs import AudioCodecs
 
 
-from . import containers
-from . import subtitles
-from . import audio_codecs
-from . import video_codecs
-from .subtitle_handle import SubtitleHandle
-from .audio_codec_handle import AudioCodecHandle
-from .video_codec_handle import VideoCodecHandle
-
-
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'containers',
-    'subtitles',
-    'video_codecs',
-    'audio_codecs',
-    'SubtitleHandle',
-    'AudioCodecHandle',
-    'VideoCodecHandle',
-)
+class Mp3(AudioCodecs):
+    name = 'mp3'
+    encoder = 'libmp3lame'
+    codec_long_name = 'MP3 (MPEG audio layer 3)'

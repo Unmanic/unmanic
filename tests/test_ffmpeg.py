@@ -132,6 +132,21 @@ class TestClass(object):
             with pytest.raises(ffmpeg.FFMPEGHandlePostProcessError):
                 self.ffmpeg.post_process_file(outfile)
 
+    def test_process_file_for_success(self):
+        # Set project root path
+        tests_dir = os.path.join(self.project_dir, 'tests')
+        tmp_dir = os.path.join(tests_dir, 'tmp')
+        # Test just the first file found in the med folder
+        for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'med')):
+            filename, file_extension = os.path.splitext(os.path.basename(video_file))
+            infile = os.path.join(tests_dir, 'videos', 'med', video_file)
+            # Copy the file to a tmp location (it will be replaced)
+            testfile = os.path.join(tmp_dir, filename + file_extension)
+            self._log(infile, testfile)
+            shutil.copy(infile, testfile)
+            assert self.ffmpeg.process_file_with_configured_settings(testfile)
+            break
+
     def test_read_file_info_for_success(self):
         # Set project root path
         tests_dir = os.path.join(self.project_dir, 'tests')
@@ -194,21 +209,6 @@ class TestClass(object):
             infile = os.path.join(tests_dir, 'videos', 'small', video_file)
             outfile = os.path.join(tmp_dir, filename + '.mkv')
             self.convert_single_file(infile, outfile)
-
-    def test_process_file_for_success(self):
-        # Set project root path
-        tests_dir = os.path.join(self.project_dir, 'tests')
-        tmp_dir = os.path.join(tests_dir, 'tmp')
-        # Test just the first file found in the med folder
-        for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'med')):
-            filename, file_extension = os.path.splitext(os.path.basename(video_file))
-            infile = os.path.join(tests_dir, 'videos', 'med', video_file)
-            # Copy the file to a tmp location (it will be replaced)
-            testfile = os.path.join(tmp_dir, filename + file_extension)
-            self._log(infile, testfile)
-            shutil.copy(infile, testfile)
-            assert self.ffmpeg.process_file_with_configured_settings(testfile)
-            break
 
     def test_convert_all_faulty_files_for_success(self):
         # Set project root path

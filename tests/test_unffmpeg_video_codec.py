@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.test_unffmpeg_subtitles.py
+    unmanic.test_unffmpeg_video_codec.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     19 Sep 2019, (6:57 PM)
+    Date:                     20 Sep 2019, (6:55 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -33,6 +33,8 @@
 import os
 import sys
 
+import pytest
+
 try:
     from lib import common, unlogger, unffmpeg
     from tests.test_data import mkv_ffprobe
@@ -47,7 +49,7 @@ class TestClass(object):
     """
     TestClass
 
-    Runs unit tests against the unffmpeg subtitle's class
+    Runs unit tests against the unffmpeg video codec class
 
     """
 
@@ -61,41 +63,44 @@ class TestClass(object):
         unmanic_logging = unlogger.UnmanicLogger.__call__(False)
         unmanic_logging.get_logger()
 
-    def get_container(self, out_container):
-        return unffmpeg.containers.grab_module(out_container)
-
-    def test_ensure_we_can_copy_subtitles_if_container_supports_current_subtitle_stream_in_args(self):
-        # Get the destination container object by it's name
-        destination_container = self.get_container('matroska')
-        # Fetch a list of args from the unffmpeg subtitle handler
-        subtitle_handle = unffmpeg.SubtitleHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe, destination_container)
-        subtitle_args = subtitle_handle.args()
+    def test_ensure_we_can_generate_video_codec_args(self):
+        # Fetch a list of args from the unffmpeg video codec handler
+        video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
+        video_codec_args = video_codec_handle.args()
         # Assert the streams to map array is not empty
-        assert subtitle_args['streams_to_map']
+        assert video_codec_args['streams_to_map']
         # Assert the streams to encode array is not empty
-        assert subtitle_args['streams_to_encode']
+        assert video_codec_args['streams_to_encode']
 
-    def test_ensure_we_can_remove_subtitles_in_args(self):
-        # Get the destination container object by it's name
-        destination_container = self.get_container('matroska')
-        # Fetch a list of args from the unffmpeg subtitle handler
-        subtitle_handle = unffmpeg.SubtitleHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe, destination_container)
-        # Remove the subtitles for this (even though the destination supports subtitles)
-        subtitle_handle.remove_subtitle_streams = True
-        subtitle_args = subtitle_handle.args()
+    def test_ensure_we_can_generate_copy_current_video_codec_args(self):
+        # Fetch a list of args from the unffmpeg video codec handler
+        video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
+        # Just copy the current codec (do not re-encode)
+        video_codec_handle.disable_video_encoding = True
+        video_codec_args = video_codec_handle.args()
         # Assert the streams to map array is not empty
-        assert not subtitle_args['streams_to_map']
+        assert video_codec_args['streams_to_map']
         # Assert the streams to encode array is not empty
-        assert not subtitle_args['streams_to_encode']
+        assert video_codec_args['streams_to_encode']
+        # Assert the streams to encode array is set to copy
+        assert video_codec_args['streams_to_encode'][1] == 'copy'
 
-    def test_ensure_we_can_convert_subtitles_from_mkv_to_avi_in_args(self):
-        # Get the destination container object by it's name
-        destination_container = self.get_container('avi')
-        # Fetch a list of args from the unffmpeg subtitle handler
-        subtitle_handle = unffmpeg.SubtitleHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe, destination_container)
-        subtitle_args = subtitle_handle.args()
+    def test_ensure_we_can_generate_hevc_current_video_codec_args(self):
+        # Fetch a list of args from the unffmpeg video codec handler
+        video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
+        # Just copy the current codec (do not re-encode)
+        video_codec_handle.set_video_codec('hevc')
+        video_codec_args = video_codec_handle.args()
         # Assert the streams to map array is not empty
-        assert subtitle_args['streams_to_map']
+        assert video_codec_args['streams_to_map']
         # Assert the streams to encode array is not empty
-        assert subtitle_args['streams_to_encode']
+        assert video_codec_args['streams_to_encode']
+        # Assert the streams to encode array is set to copy
+        assert video_codec_args['streams_to_encode'][1] == 'libx265'
 
+    def test_ensure_throws_exception_for_absent_video_codec_args(self):
+        with pytest.raises(ImportError) as excinfo:
+            # Fetch a list of args from the unffmpeg video codec handler
+            video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
+            # Just copy the current codec (do not re-encode)
+            video_codec_handle.set_video_codec('non_existent_codec')

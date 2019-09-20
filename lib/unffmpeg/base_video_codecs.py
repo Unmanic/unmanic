@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.base_video_codecs.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     10 Sep 2019, (8:05 PM)
+    Date:                     20 Sep 2019, (5:38 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,21 +30,18 @@
 
 """
 
-from __future__ import absolute_import
-import warnings
 
+class VideoCodecs(object):
+    """
+    VideoCodecs
 
-from . import containers
-from . import subtitles
-from . import video_codecs
-from .subtitle_handle import SubtitleHandle
-from .video_codec_handle import VideoCodecHandle
+    Generic configuration and methods used across all video codec classes
+    """
 
+    def video_encoder(self):
+        """
+        Return the video codec encoder string
 
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'containers',
-    'SubtitleHandle',
-    'VideoCodecHandle',
-)
+        :return:
+        """
+        return self.encoder

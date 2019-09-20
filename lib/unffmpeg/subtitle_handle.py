@@ -97,7 +97,7 @@ class SubtitleHandle(object):
 
     def remove_subtitles(self):
         """
-        Return the subtitles codec string
+        Remove the subtitles stream from result file
 
         :return:
         """

@@ -486,10 +486,19 @@ class FFMPEGHandle(object):
                         ]
                     audio_tracks_count += 1
 
-        # Set subtitle args
+        # Set video encoding args
+        video_codec_handle = unffmpeg.VideoCodecHandle(file_probe)
+        if not self.settings.ENABLE_VIDEO_ENCODING:
+            video_codec_handle.disable_video_encoding = True
+        video_codec_handle.set_video_codec(self.settings.VIDEO_CODEC)
+        video_codec_args = video_codec_handle.args()
+        streams_to_map = streams_to_map + video_codec_args['streams_to_map']
+        streams_to_encode = streams_to_encode + video_codec_args['streams_to_encode']
+
+        # Set subtitle encoding args
         subtitle_handle = unffmpeg.SubtitleHandle(file_probe, destination_container)
         if self.settings.REMOVE_SUBTITLE_STREAMS:
-            subtitle_handle.remove_subtitles()
+            subtitle_handle.remove_subtitle_streams = True
         subtitle_args = subtitle_handle.args()
         streams_to_map = streams_to_map + subtitle_args['streams_to_map']
         streams_to_encode = streams_to_encode + subtitle_args['streams_to_encode']

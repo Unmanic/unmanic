@@ -5,7 +5,7 @@
     unmanic.__init__.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     10 Sep 2019, (8:05 PM)
+    Date:                     20 Sep 2019, (5:37 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -32,19 +32,56 @@
 
 from __future__ import absolute_import
 import warnings
+from importlib import import_module
+from pathlib import Path
+import sys
+import inspect
+import pkgutil
+
+from ..base_video_codecs import VideoCodecs
 
 
-from . import containers
-from . import subtitles
-from . import video_codecs
-from .subtitle_handle import SubtitleHandle
-from .video_codec_handle import VideoCodecHandle
+def grab_module(module_name, *args, **kwargs):
+    """
+    Fetch a module by name and return the instance of that class
 
+    :param module_name:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    try:
+        if '.' in module_name:
+            module_name, class_name = module_name.rsplit('.', 1)
+        else:
+            class_name = module_name.capitalize()
+
+        module = import_module('.' + module_name, package=__name__)
+        module_class = getattr(module, class_name)
+        instance = module_class(*args, **kwargs)
+
+        return instance
+
+    except (AttributeError, AssertionError, ModuleNotFoundError):
+        raise ImportError('{} is not part of our collection!'.format(module_name))
+
+
+"""
+Import all submodules for this package
+
+"""
+for (_, name, _) in pkgutil.iter_modules([Path(__file__).parent]):
+
+    imported_module = import_module('.' + name, package=__name__)
+
+    for i in dir(imported_module):
+        attribute = getattr(imported_module, i)
+
+        if inspect.isclass(attribute) and issubclass(attribute, VideoCodecs):
+            setattr(sys.modules[__name__], name, attribute)
 
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
 
 __all__ = (
-    'containers',
-    'SubtitleHandle',
-    'VideoCodecHandle',
+    'VideoCodecs',
 )

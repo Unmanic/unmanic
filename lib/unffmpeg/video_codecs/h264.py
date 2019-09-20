@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.h264.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     10 Sep 2019, (8:05 PM)
+    Date:                     20 Sep 2019, (5:41 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,21 +30,10 @@
 
 """
 
-from __future__ import absolute_import
-import warnings
+from ..base_video_codecs import VideoCodecs
 
 
-from . import containers
-from . import subtitles
-from . import video_codecs
-from .subtitle_handle import SubtitleHandle
-from .video_codec_handle import VideoCodecHandle
-
-
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'containers',
-    'SubtitleHandle',
-    'VideoCodecHandle',
-)
+class H264(VideoCodecs):
+    name = 'h264'
+    encoder = 'libx264'
+    codec_long_name = 'H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10'

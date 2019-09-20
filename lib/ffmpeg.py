@@ -39,13 +39,11 @@ import sys
 import time
 
 try:
-    from lib import common, unlogger
-    from lib.unffmpeg import containers
+    from lib import common, unlogger, unffmpeg
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
-    from lib import common, unlogger
-    from lib.unffmpeg import containers
+    from lib import common, unlogger, unffmpeg
 
 
 class FFMPEGHandlePostProcessError(Exception):
@@ -243,7 +241,7 @@ class FFMPEGHandle(object):
                 self._log("Current file format names:", current_possible_format_names, level='debug')
 
             # Get container extension
-            container = containers.grab_module(self.settings.OUT_CONTAINER)
+            container = unffmpeg.containers.grab_module(self.settings.OUT_CONTAINER)
             container_extension = container.container_extension()
 
             # Loop over file extensions to check if it is already one used by our configured container.
@@ -336,7 +334,7 @@ class FFMPEGHandle(object):
         src_folder = os.path.dirname(src_path)
 
         # Get container extension
-        container = containers.grab_module(self.settings.OUT_CONTAINER)
+        container = unffmpeg.containers.grab_module(self.settings.OUT_CONTAINER)
         container_extension = container.container_extension()
 
         # Parse an output cache path
@@ -402,6 +400,9 @@ class FFMPEGHandle(object):
         if not file_probe:
             return False
 
+        # current_container = unffmpeg.containers.grab_module(self.settings.OUT_CONTAINER)
+        destination_container = unffmpeg.containers.grab_module(self.settings.OUT_CONTAINER)
+
         # Suppress printing banner. (-hide_banner)
         # Set loglevel to info ("-loglevel", "info")
         # Allow experimental encoder config ("-strict", "-2")
@@ -409,10 +410,9 @@ class FFMPEGHandle(object):
         command = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "512"]
 
         # Read stream data
-        streams_to_map        = []
-        streams_to_create     = []
-        audio_tracks_count    = 0
-        subtitle_tracks_count = 0
+        streams_to_map = []
+        streams_to_encode = []
+        audio_tracks_count = 0
         for stream in file_probe['streams']:
             if stream['codec_type'] == 'video':
                 # Map this stream
@@ -422,12 +422,12 @@ class FFMPEGHandle(object):
 
                 if self.settings.ENABLE_VIDEO_ENCODING:
                     # Video re-encoding is enabled
-                    streams_to_create = streams_to_create + [
+                    streams_to_encode = streams_to_encode + [
                             "-c:v", self.settings.SUPPORTED_CODECS[self.settings.VIDEO_CODEC]['encoder']
                         ]
                 else:
                     # Video re-encoding is disabled. Just copy the stream
-                    streams_to_create = streams_to_create + [
+                    streams_to_encode = streams_to_encode + [
                             "-c:v", "copy"
                         ]
             if stream['codec_type'] == 'audio':
@@ -440,7 +440,7 @@ class FFMPEGHandle(object):
                                 "-map",   "0:{}".format(stream['index'])
                             ]
 
-                        streams_to_create = streams_to_create + [
+                        streams_to_encode = streams_to_encode + [
                                 "-c:a:{}".format(audio_tracks_count), "copy"
                             ]
                         audio_tracks_count += 1
@@ -457,7 +457,7 @@ class FFMPEGHandle(object):
                                 "-map",   " 0:{}".format(stream['index'])
                             ]
 
-                        streams_to_create = streams_to_create + [
+                        streams_to_encode = streams_to_encode + [
                                     "-c:a:{}".format(audio_tracks_count), self.settings.SUPPORTED_CODECS[self.settings.AUDIO_CODEC]['encoder'],
                                     "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
                                     "-ac", "2",
@@ -470,7 +470,7 @@ class FFMPEGHandle(object):
                                 "-map",   " 0:{}".format(stream['index'])
                             ]
 
-                        streams_to_create = streams_to_create + [
+                        streams_to_encode = streams_to_encode + [
                                     "-c:a:{}".format(audio_tracks_count), self.settings.SUPPORTED_CODECS[self.settings.AUDIO_CODEC]['encoder'],
                                     "-b:a:{}".format(audio_tracks_count), self.settings.AUDIO_STEREO_STREAM_BITRATE,
                                     "-ac", "2",
@@ -481,29 +481,24 @@ class FFMPEGHandle(object):
                     streams_to_map = streams_to_map + [
                             "-map",   "0:{}".format(stream['index'])
                         ]
-                    streams_to_create = streams_to_create + [
+                    streams_to_encode = streams_to_encode + [
                             "-c:a:{}".format(audio_tracks_count), "copy"
                         ]
                     audio_tracks_count += 1
 
-            if stream['codec_type'] == 'subtitle':
-                if self.settings.REMOVE_SUBTITLE_STREAMS:
-                    continue
-                # Map this stream
-                streams_to_map = streams_to_map + [
-                        "-map",   "0:{}".format(stream['index'])
-                    ]
-
-                streams_to_create = streams_to_create + [
-                        "-c:s:{}".format(subtitle_tracks_count), "copy"
-                    ]
-                subtitle_tracks_count += 1
+        # Set subtitle args
+        subtitle_handle = unffmpeg.SubtitleHandle(file_probe, destination_container)
+        if self.settings.REMOVE_SUBTITLE_STREAMS:
+            subtitle_handle.remove_subtitles()
+        subtitle_args = subtitle_handle.args()
+        streams_to_map = streams_to_map + subtitle_args['streams_to_map']
+        streams_to_encode = streams_to_encode + subtitle_args['streams_to_encode']
 
         # Map streams
         command = command + streams_to_map
 
         # Add arguments for creating streams
-        command = command + streams_to_create
+        command = command + streams_to_encode
 
         self._log(" ".join(command), level='debug')
 

@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.avi.py
+    unmanic.__init__.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     12 Sep 2019, (7:44 PM)
+    Date:                     19 Sep 2019, (7:09 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -29,12 +29,3 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
-from lib.unffmpeg.containers import Containers
-
-
-class Avi(Containers):
-    extension = 'avi'
-    description = 'AVI (Audio Video Interleaved)'
-    supports_subtitles = True
-    subtitle_codecs = ['xsub']

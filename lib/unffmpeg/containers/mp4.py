@@ -36,4 +36,5 @@ from lib.unffmpeg.containers import Containers
 class Mp4(Containers):
     extension = 'mp4'
     description = 'MP4 (MPEG-4 Part 14)'
-    supports_subtitles = False
+    supports_subtitles = True
+    subtitle_codecs = ['mov_text']

@@ -36,4 +36,5 @@ from lib.unffmpeg.containers import Containers
 class Mov(Containers):
     extension = 'mov'
     description = 'QuickTime / MOV'
-    supports_subtitles = False
+    supports_subtitles = True
+    subtitle_codecs = ['mov_text']

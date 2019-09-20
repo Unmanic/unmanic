@@ -64,3 +64,13 @@ class Containers(object):
             if self.supports_subtitles:
                 return True
         return False
+
+    def supported_subtitles(self):
+        """
+        Check if this Container supports subtitles
+
+        :return:
+        """
+        if self.container_supports_subtitles():
+            return self.subtitle_codecs
+        return []

@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.avi.py
+    unmanic.subrip.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     12 Sep 2019, (7:44 PM)
+    Date:                     19 Sep 2019, (5:16 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,11 +30,9 @@
 
 """
 
-from lib.unffmpeg.containers import Containers
+from ..base_subtitles import Subtitles
 
 
-class Avi(Containers):
-    extension = 'avi'
-    description = 'AVI (Audio Video Interleaved)'
-    supports_subtitles = True
-    subtitle_codecs = ['xsub']
+class Subrip(Subtitles):
+    codec = 'subrip'
+

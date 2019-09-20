@@ -2,24 +2,24 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.avi.py
- 
+    unmanic.base_containers.py
+
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     12 Sep 2019, (7:44 PM)
- 
+    Date:                     10 Sep 2019, (8:13 PM)
+
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
- 
+
            Permission is hereby granted, free of charge, to any person obtaining a copy
            of this software and associated documentation files (the "Software"), to deal
            in the Software without restriction, including without limitation the rights
            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
            copies of the Software, and to permit persons to whom the Software is
            furnished to do so, subject to the following conditions:
-  
+
            The above copyright notice and this permission notice shall be included in all
            copies or substantial portions of the Software.
-  
+
            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
            EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
            MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -30,11 +30,18 @@
 
 """
 
-from lib.unffmpeg.containers import Containers
 
+class Subtitles(object):
+    """
+    Subtitles
 
-class Avi(Containers):
-    extension = 'avi'
-    description = 'AVI (Audio Video Interleaved)'
-    supports_subtitles = True
-    subtitle_codecs = ['xsub']
+    Generic configuration and methods used across all Subtitles classes
+    """
+
+    def subtitle_codec(self):
+        """
+        Return the subtitles codec string
+
+        :return:
+        """
+        return self.codec

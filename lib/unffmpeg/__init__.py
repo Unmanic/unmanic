@@ -29,3 +29,18 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+
+from __future__ import absolute_import
+import warnings
+
+
+from . import containers
+from .subtitle_handle import SubtitleHandle
+
+
+__author__ = 'Josh.5 (jsunnex@gmail.com)'
+
+__all__ = (
+    'containers',
+    'SubtitleHandle',
+)

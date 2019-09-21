@@ -46,7 +46,8 @@ class VideoCodecHandle(object):
 
         # Configurable settings
         self.disable_video_encoding = False
-        self.video_encoder = 'libx264'  # Default to h264
+        self.video_codec = 'h264'  # Default to h264
+        self.video_encoder = 'libx264'  # Default to libx264
 
     def args(self):
         """
@@ -59,21 +60,33 @@ class VideoCodecHandle(object):
         for stream in self.file_probe['streams']:
             # If this is a video stream, then process the args
             if stream['codec_type'] == 'video':
-                # Map this stream
-                self.encoding_args['streams_to_map'] = self.encoding_args['streams_to_map'] + [
-                    "-map", "0:{}".format(stream['index'])
-                ]
+                # By default the video stream will be re-encoded
+                just_copy_video_stream = False
 
+                # If this video encoding is disabled. Then copy the stream
                 if self.disable_video_encoding:
-                    # Video re-encoding is disabled. Just copy the stream
+                    just_copy_video_stream = True
+
+                # If the current video codec is the same as the configured destination
+                # codec, then do not re-encode the video
+                if stream['codec_name'] == self.video_codec:
+                    just_copy_video_stream = True
+
+                if just_copy_video_stream:
+                    # Video stream just needs to be copied
                     self.encoding_args['streams_to_encode'] = self.encoding_args['streams_to_encode'] + [
                         "-c:v", "copy"
                     ]
                 else:
-                    # Video re-encoding is enabled
+                    # Video stream to be re-encoded
                     self.encoding_args['streams_to_encode'] = self.encoding_args['streams_to_encode'] + [
                         "-c:v", self.video_encoder
                     ]
+
+                # Map this video stream to be processed
+                self.encoding_args['streams_to_map'] = self.encoding_args['streams_to_map'] + [
+                    "-map", "0:{}".format(stream['index'])
+                ]
 
         return self.encoding_args
 
@@ -84,4 +97,5 @@ class VideoCodecHandle(object):
         :return:
         """
         codec = video_codecs.grab_module(codec_name)
+        self.video_codec = codec_name.lower()
         self.video_encoder = codec.video_encoder()

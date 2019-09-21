@@ -119,3 +119,15 @@ class TestClass(object):
             audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_stereo_aac_audio_ffprobe)
             # Set the audio codec to something that does not exist
             audio_codec_handle.set_audio_codec('non_existent_codec')
+
+    def test_ensure_args_of_audio_stream_is_copy_if_src_codec_matches_dest_codec(self):
+        # Fetch a list of args from the unffmpeg audio codec handler
+        audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_stereo_aac_audio_ffprobe)
+        audio_codec_handle.set_audio_codec('aac')  # Src is aac and dest is aac. Audio stream should just copy
+        audio_codec_args = audio_codec_handle.args()
+        # Assert the streams to map array is not empty
+        assert audio_codec_args['streams_to_map']
+        # Assert the streams to encode array is not empty
+        assert audio_codec_args['streams_to_encode']
+        # Assert the streams to encode array is set to copy
+        assert audio_codec_args['streams_to_encode'][1] == 'copy'

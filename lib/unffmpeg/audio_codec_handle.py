@@ -46,6 +46,7 @@ class AudioCodecHandle(object):
 
         # Configurable settings
         self.disable_audio_encoding = False
+        self.audio_codec = 'aac'  # Default to aac
         self.audio_encoder = 'aac'  # Default to aac
         self.audio_stereo_stream_bitrate = '128k'  # Default to 128k
 
@@ -59,7 +60,7 @@ class AudioCodecHandle(object):
         self.encoding_args['streams_to_encode'] = []
         audio_tracks_count = 0
         for stream in self.file_probe['streams']:
-            # If this is a video stream, then process the args
+            # If this is a audio stream, then process the args
             if stream['codec_type'] == 'audio':
 
                 if self.disable_audio_encoding:
@@ -77,12 +78,12 @@ class AudioCodecHandle(object):
                     if stream['channels'] > 2:
                         # Map this stream
                         self.encoding_args['streams_to_map'] = self.encoding_args['streams_to_map'] + [
-                                "-map",   "0:{}".format(stream['index'])
-                            ]
+                            "-map", "0:{}".format(stream['index'])
+                        ]
 
                         self.encoding_args['streams_to_encode'] = self.encoding_args['streams_to_encode'] + [
-                                "-c:a:{}".format(audio_tracks_count), "copy"
-                            ]
+                            "-c:a:{}".format(audio_tracks_count), "copy"
+                        ]
                         audio_tracks_count += 1
 
                         # TODO: Make this optional
@@ -94,27 +95,34 @@ class AudioCodecHandle(object):
 
                         # Map a duplicated stream
                         self.encoding_args['streams_to_map'] = self.encoding_args['streams_to_map'] + [
-                                "-map",   " 0:{}".format(stream['index'])
-                            ]
+                            "-map", " 0:{}".format(stream['index'])
+                        ]
 
                         self.encoding_args['streams_to_encode'] = self.encoding_args['streams_to_encode'] + [
-                                    "-c:a:{}".format(audio_tracks_count), self.audio_encoder,
-                                    "-b:a:{}".format(audio_tracks_count), self.audio_stereo_stream_bitrate,
-                                    "-ac", "2",
-                                    "-metadata:s:a:{}".format(audio_tracks_count), "title='{}'".format(audio_tag),
-                                ]
+                            "-c:a:{}".format(audio_tracks_count), self.audio_encoder,
+                            "-b:a:{}".format(audio_tracks_count), self.audio_stereo_stream_bitrate,
+                            "-ac", "2",
+                            "-metadata:s:a:{}".format(audio_tracks_count), "title='{}'".format(audio_tag),
+                        ]
                         audio_tracks_count += 1
                     else:
                         # Force conversion of stereo audio to standard
                         self.encoding_args['streams_to_map'] = self.encoding_args['streams_to_map'] + [
-                                "-map",   " 0:{}".format(stream['index'])
-                            ]
+                            "-map", " 0:{}".format(stream['index'])
+                        ]
 
-                        self.encoding_args['streams_to_encode'] = self.encoding_args['streams_to_encode'] + [
-                                    "-c:a:{}".format(audio_tracks_count), self.audio_encoder,
-                                    "-b:a:{}".format(audio_tracks_count), self.audio_stereo_stream_bitrate,
-                                    "-ac", "2",
-                                ]
+                        # If the current audio codec of this stream is the same as the configured
+                        # destination codec, then do not re-encode this audio stream
+                        if stream['codec_name'] == self.audio_codec:
+                            self.encoding_args['streams_to_encode'] = self.encoding_args['streams_to_encode'] + [
+                                "-c:a:{}".format(audio_tracks_count), "copy"
+                            ]
+                        else:
+                            self.encoding_args['streams_to_encode'] = self.encoding_args['streams_to_encode'] + [
+                                "-c:a:{}".format(audio_tracks_count), self.audio_encoder,
+                                "-b:a:{}".format(audio_tracks_count), self.audio_stereo_stream_bitrate,
+                                "-ac", "2",
+                            ]
                         audio_tracks_count += 1
 
         return self.encoding_args
@@ -126,4 +134,5 @@ class AudioCodecHandle(object):
         :return:
         """
         codec = audio_codecs.grab_module(codec_name)
+        self.audio_codec = codec_name.lower()
         self.audio_encoder = codec.audio_encoder()

@@ -54,13 +54,6 @@ class FFMPEGHandlePostProcessError(Exception):
         self.result_var = result_var
 
 
-class FFMPEGHandleFFProbeError(Exception):
-    def __init___(self, path, info):
-        Exception.__init__(self, "Unable to fetch data from file {}. {}".format(path, info))
-        self.path = path
-        self.info = info
-
-
 class FFMPEGHandleConversionError(Exception):
     def __init___(self, command):
         Exception.__init__(self, "FFMPEG command returned non 0 status. Command: {}".format(command))
@@ -121,51 +114,7 @@ class FFMPEGHandle(object):
         :param vid_file_path: The absolute (full) path of the video file, string.
         :return:
         """
-        if type(vid_file_path) != str:
-            raise Exception('Give ffprobe a full file path of the video')
-
-        command = ["ffprobe",
-                   "-loglevel", "quiet",
-                   "-print_format", "json",
-                   "-show_format",
-                   "-show_streams",
-                   "-show_error",
-                   vid_file_path
-                   ]
-
-        pipe = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
-
-        # Check result
-        try:
-            info = json.loads(out.decode("utf-8"))
-        except Exception as e:
-            self._log("Exception - file_probe: {}".format(e), level='exception')
-            raise FFMPEGHandleFFProbeError(vid_file_path, str(e))
-        if pipe.returncode == 1 or 'error' in info:
-            raise FFMPEGHandleFFProbeError(vid_file_path, info)
-
-        # Get FPS
-        try:
-            # TODO: Remove unnecessary logging
-            #self._log('media', message2=info, level='debug')
-            if info:
-                self.src_fps = eval(info['streams'][0]['avg_frame_rate'])
-        except ZeroDivisionError:
-            self._log('Warning, Cannot use input FPS', level='warning')
-        if self.src_fps == 0:
-            raise ValueError('Unexpected zero FPS')
-
-        # Get Duration
-        try:
-            self.duration = float(info['format']['duration'])
-        except ZeroDivisionError:
-            self._log('Warning, Cannot use input Duration', level='warning')
-
-        if self.src_fps is None and self.duration is None:
-            raise ValueError('Unable to match against FPS or Duration.')
-
-        return info
+        return unffmpeg.Info().file_probe(vid_file_path)
 
     def set_file_in(self, vid_file_path):
         """
@@ -426,8 +375,15 @@ class FFMPEGHandle(object):
         audio_codec_handle = unffmpeg.AudioCodecHandle(file_probe)
         if not self.settings.ENABLE_AUDIO_ENCODING:
             audio_codec_handle.disable_audio_encoding = True
-        audio_codec_handle.set_audio_codec(self.settings.AUDIO_CODEC)
+        # Are we transcoding audio streams to a configured codec?
+        audio_codec_handle.enable_audio_stream_transcoding = self.settings.ENABLE_AUDIO_STREAM_TRANSCODING
+        audio_codec_handle.audio_codec_transcoding = self.settings.AUDIO_CODEC
+        audio_codec_handle.audio_encoder_transcoding = self.settings.AUDIO_STREAM_ENCODER
+        # Are we cloning audio streams to stereo streams?
+        audio_codec_handle.enable_audio_stream_stereo_cloning = self.settings.ENABLE_AUDIO_STREAM_STEREO_CLONING
+        audio_codec_handle.set_audio_codec_with_default_encoder_cloning(self.settings.AUDIO_CODEC_CLONING)
         audio_codec_handle.audio_stereo_stream_bitrate = self.settings.AUDIO_STEREO_STREAM_BITRATE
+        # Fetch args
         audio_codec_args = audio_codec_handle.args()
         streams_to_map = streams_to_map + audio_codec_args['streams_to_map']
         streams_to_encode = streams_to_encode + audio_codec_args['streams_to_encode']

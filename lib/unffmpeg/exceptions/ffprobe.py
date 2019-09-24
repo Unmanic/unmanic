@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.ssa.py
+    unmanic.ffprobe.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     21 Sep 2019, (8:50 AM)
+    Date:                     22 Sep 2019, (11:30 AM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,8 +30,9 @@
 
 """
 
-from ..base_subtitles import Subtitles
 
-
-class Ssa(Subtitles):
-    codec = 'ssa'
+class FFProbeError(Exception):
+    def __init___(self, path, info):
+        Exception.__init__(self, "Unable to fetch data from file {}. {}".format(path, info))
+        self.path = path
+        self.info = info

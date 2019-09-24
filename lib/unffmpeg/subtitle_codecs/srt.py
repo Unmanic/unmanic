@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.avi.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     10 Sep 2019, (8:05 PM)
+    Date:                     19 Sep 2019, (5:10 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,31 +30,12 @@
 
 """
 
-from __future__ import absolute_import
-import warnings
+from ..base_codecs import Codecs
 
 
-from . import containers
-from . import exceptions
-from . import audio_codecs
-from . import subtitle_codecs
-from . import video_codecs
-from .info import Info
-from .audio_codec_handle import AudioCodecHandle
-from .subtitle_handle import SubtitleHandle
-from .video_codec_handle import VideoCodecHandle
+class Srt(Codecs):
+    name = 'srt'
+    encoders = ['srt']
+    default_encoder = 'srt'
+    codec_long_name = 'SubRip subtitle (codec subrip)'
 
-
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'containers',
-    'exceptions',
-    'audio_codecs',
-    'subtitle_codecs',
-    'video_codecs',
-    'Info',
-    'AudioCodecHandle',
-    'SubtitleHandle',
-    'VideoCodecHandle',
-)

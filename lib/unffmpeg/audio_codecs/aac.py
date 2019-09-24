@@ -30,10 +30,11 @@
 
 """
 
-from ..base_audio_codecs import AudioCodecs
+from ..base_codecs import Codecs
 
 
-class Aac(AudioCodecs):
+class Aac(Codecs):
     name = 'aac'
-    encoder = 'aac'
+    encoders = ['aac']
+    default_encoder = 'aac'
     codec_long_name = 'AAC (Advanced Audio Coding)'

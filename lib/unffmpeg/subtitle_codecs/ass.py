@@ -30,8 +30,11 @@
 
 """
 
-from ..base_subtitles import Subtitles
+from ..base_codecs import Codecs
 
 
-class Ass(Subtitles):
-    codec = 'ass'
+class Ass(Codecs):
+    name = 'ass'
+    encoders = ['ass']
+    default_encoder = 'ass'
+    codec_long_name = 'ASS (Advanced SubStation Alpha) subtitle'

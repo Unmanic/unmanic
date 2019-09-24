@@ -30,10 +30,11 @@
 
 """
 
-from ..base_video_codecs import VideoCodecs
+from ..base_codecs import Codecs
 
 
-class H264(VideoCodecs):
+class H264(Codecs):
     name = 'h264'
-    encoder = 'libx264'
+    encoders = ['libx264']
+    default_encoder = 'libx264'
     codec_long_name = 'H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10'

@@ -44,11 +44,16 @@ class Settings(BaseModel):
     All application settings
     """
     audio_codec = TextField(null=False, default='aac')
+    audio_stream_encoder = TextField(null=False, default='aac')
+    audio_codec_cloning = TextField(null=False, default='aac')
+    audio_stream_encoder_cloning = TextField(null=False, default='aac')
     audio_stereo_stream_bitrate = TextField(null=False, default='128k')
     cache_path = TextField(null=False, default='/tmp/unmanic')
     config_path = TextField(null=False, default=os.path.join(HOME_DIR, '.unmanic', 'config'))
     debugging = BooleanField(null=False, default=False)
     enable_audio_encoding = BooleanField(null=False, default=True)
+    enable_audio_stream_transcoding = BooleanField(null=False, default=True)
+    enable_audio_stream_stereo_cloning = BooleanField(null=False, default=True)
     enable_inotify = BooleanField(null=False, default=True)
     enable_video_encoding = BooleanField(null=False, default=True)
     library_path = TextField(null=False, default='/library')

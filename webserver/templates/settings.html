@@ -55,10 +55,54 @@
         if ($("#audio_encoding_enabled").prop("checked")) {
             $("#ENABLE_AUDIO_ENCODING").val("true");
             $(".audio_encoding_settings").removeClass('hidden');
+            $(".audio_encoding_settings_disabled_notice").addClass('hidden');
         } else {
             $("#ENABLE_AUDIO_ENCODING").val("false");
             $(".audio_encoding_settings").addClass('hidden');
+            $(".audio_encoding_settings_disabled_notice").removeClass('hidden');
         }
+    };
+    var toggleEnableAudioStreamTrascoding = function () {
+        if ($("#audio_stream_transcoding_enabled").prop("checked")) {
+            $("#ENABLE_AUDIO_STREAM_TRANSCODING").val("true");
+            $(".audio_stream_transcoding_settings").removeClass('hidden');
+            $(".audio_stream_transcoding_settings_disabled_notice").addClass('hidden');
+        } else {
+            $("#ENABLE_AUDIO_STREAM_TRANSCODING").val("false");
+            $(".audio_stream_transcoding_settings").addClass('hidden');
+            $(".audio_stream_transcoding_settings_disabled_notice").removeClass('hidden');
+        }
+    };
+    var setAudioStreamEncoderListForTranscoding = function () {
+        var query = {
+            ajax: 'reload_audio_stream_encoder_selection',
+            selected_audio_codec: $("#AUDIO_CODEC :selected").val()
+        };
+        $.post('/settings/?step=audio', query, function (data) {
+            // update the encoders list
+            $('#audio_stream_encoder_selection').html(data);
+        });
+    };
+    var toggleEnableAudioStreamStereoCloning = function () {
+        if ($("#audio_stream_stereo_cloning_enabled").prop("checked")) {
+            $("#ENABLE_AUDIO_STREAM_STEREO_CLONING").val("true");
+            $(".audio_stream_stereo_cloning_settings").removeClass('hidden');
+            $(".audio_stream_stereo_cloning_settings_disabled_notice").addClass('hidden');
+        } else {
+            $("#ENABLE_AUDIO_STREAM_STEREO_CLONING").val("false");
+            $(".audio_stream_stereo_cloning_settings").addClass('hidden');
+            $(".audio_stream_stereo_cloning_settings_disabled_notice").removeClass('hidden');
+        }
+    };
+    var setAudioStreamEncoderListForCloning = function () {
+        var query = {
+            ajax: 'reload_audio_stream_encoder_cloning_selection',
+            selected_audio_codec_cloning: $("#AUDIO_CODEC_CLONING :selected").val()
+        };
+        $.post('/settings/?step=audio', query, function (data) {
+            // update the encoders list
+            $('#audio_stream_encoder_cloning_selection').html(data);
+        });
     };
 </script>
 {% end %}

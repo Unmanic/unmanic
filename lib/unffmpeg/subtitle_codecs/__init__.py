@@ -38,7 +38,7 @@ import sys
 import inspect
 import pkgutil
 
-from ..base_subtitles import Subtitles
+from ..base_codecs import Codecs
 
 
 def grab_module(module_name, *args, **kwargs):
@@ -66,23 +66,26 @@ def grab_module(module_name, *args, **kwargs):
         raise ImportError('{} is not part of our collection!'.format(module_name))
 
 
-def get_all_subtitles():
+def get_all_subtitle_codecs():
     """
     Fetch a list of supported subtitles and
     return a dictionary of their data
 
     :return:
     """
-    subtitles_dic = {}
+    return_dic = {}
 
     for (_, module_name, _) in pkgutil.iter_modules([Path(__file__).parent]):
         instance = grab_module(module_name)
-        subtitle_data = {
-            "codec":          instance.subtitle_codec(),
+        return_data = {
+            "name":            instance.codec_name(),
+            "encoders":        instance.codec_encoders(),
+            "default_encoder": instance.codec_default_encoder(),
+            "description":     instance.codec_description(),
         }
-        subtitles_dic[module_name] = subtitle_data
+        return_dic[module_name] = return_data
 
-    return subtitles_dic
+    return return_dic
 
 
 """
@@ -96,11 +99,11 @@ for (_, name, _) in pkgutil.iter_modules([Path(__file__).parent]):
     for i in dir(imported_module):
         attribute = getattr(imported_module, i)
 
-        if inspect.isclass(attribute) and issubclass(attribute, Subtitles):
+        if inspect.isclass(attribute) and issubclass(attribute, Codecs):
             setattr(sys.modules[__name__], name, attribute)
 
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
 
 __all__ = (
-    'Subtitles',
+    'Codecs',
 )

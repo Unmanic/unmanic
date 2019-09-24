@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.base_audio_codecs.py
+    unmanic.xsub.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     21 Sep 2019, (7:49 AM)
+    Date:                     21 Sep 2019, (8:49 AM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,18 +30,11 @@
 
 """
 
+from ..base_codecs import Codecs
 
-class AudioCodecs(object):
-    """
-    AudioCodecs
 
-    Generic configuration and methods used across all audio codec classes
-    """
-
-    def audio_encoder(self):
-        """
-        Return the audio codec encoder string
-
-        :return:
-        """
-        return self.encoder
+class Xsub(Codecs):
+    name = 'xsub'
+    encoders = ['xsub']
+    default_encoder = 'xsub'
+    codec_long_name = 'DivX subtitles (XSUB)'

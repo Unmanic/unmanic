@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.mov_text.py
+    unmanic.ac3.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     21 Sep 2019, (8:51 AM)
+    Date:                     24 Sep 2019, (9:43 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,8 +30,11 @@
 
 """
 
-from ..base_subtitles import Subtitles
+from ..base_codecs import Codecs
 
 
-class MovText(Subtitles):
-    codec = 'mov_text'
+class Ac3(Codecs):
+    name = 'ac3'
+    encoders = ['ac3']
+    default_encoder = 'ac3'
+    codec_long_name = 'ATSC A/52A (AC-3)'

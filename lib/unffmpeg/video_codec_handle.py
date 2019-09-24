@@ -98,4 +98,4 @@ class VideoCodecHandle(object):
         """
         codec = video_codecs.grab_module(codec_name)
         self.video_codec = codec_name.lower()
-        self.video_encoder = codec.video_encoder()
+        self.video_encoder = codec.codec_default_encoder()

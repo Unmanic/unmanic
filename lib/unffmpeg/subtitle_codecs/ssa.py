@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.xsub.py
+    unmanic.ssa.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     21 Sep 2019, (8:49 AM)
+    Date:                     21 Sep 2019, (8:50 AM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,8 +30,12 @@
 
 """
 
-from ..base_subtitles import Subtitles
+from ..base_codecs import Codecs
 
 
-class Xsub(Subtitles):
-    codec = 'xsub'
+class Ssa(Codecs):
+    codec = 'ssa'
+    name = 'ssa'
+    encoders = ['ssa']
+    default_encoder = 'ssa'
+    codec_long_name = 'ASS (Advanced SubStation Alpha) subtitle (codec ass)'

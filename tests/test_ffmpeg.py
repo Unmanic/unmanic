@@ -35,11 +35,11 @@ import shutil
 import sys
 
 try:
-    from lib import common, unlogger, ffmpeg
+    from lib import common, unlogger, unffmpeg, ffmpeg
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
-    from lib import common, unlogger, ffmpeg
+    from lib import common, unlogger, unffmpeg, ffmpeg
 
 
 class TestClass(object):
@@ -52,7 +52,8 @@ class TestClass(object):
 
     def setup_class(self):
         """
-        Setup the class state for pytest
+        Setup the class state for pytest.
+
         :return:
         """
         self.project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -75,17 +76,17 @@ class TestClass(object):
             print("Unmanic.{} - ERROR!!! Failed to find logger".format('TestClass'))
 
     def build_ffmpeg_args(self, test_for_failure=False):
-        configured_vencoder = self.settings.SUPPORTED_CODECS[self.settings.VIDEO_CODEC]['encoder']
+        configured_video_encoder = self.settings.get_configured_video_encoder()
         failure_vencoder = None
-        for x in self.settings.SUPPORTED_CODECS:
+        for x in self.settings.SUPPORTED_CODECS['video']:
             if x != self.settings.VIDEO_CODEC:
-                failure_vencoder = self.settings.SUPPORTED_CODECS[x]['encoder']
+                failure_vencoder = self.settings.SUPPORTED_CODECS['video'][x]['encoders'][0]
                 break
         if test_for_failure:
             vencoder = failure_vencoder
             self._log("Using encoder {} to setup failure condition".format(vencoder))
         else:
-            vencoder = configured_vencoder
+            vencoder = configured_video_encoder
             self._log("Using encoder {} to setup success condition".format(vencoder))
         # Setup default args
         args = [
@@ -133,6 +134,11 @@ class TestClass(object):
                 self.ffmpeg.post_process_file(outfile)
 
     def test_process_file_for_success(self):
+        """
+        This will test the FFMPEGHandle for processing a file automatically using configured settings.
+
+        :return:
+        """
         # Set project root path
         tests_dir = os.path.join(self.project_dir, 'tests')
         tmp_dir = os.path.join(tests_dir, 'tmp')
@@ -148,6 +154,11 @@ class TestClass(object):
             break
 
     def test_read_file_info_for_success(self):
+        """
+        Ensure that ffprobe is able to read a video file.
+
+        :return:
+        """
         # Set project root path
         tests_dir = os.path.join(self.project_dir, 'tests')
         # Test
@@ -156,6 +167,11 @@ class TestClass(object):
             assert self.ffmpeg.file_probe(infile)
 
     def test_read_file_info_for_failure(self):
+        """
+        Ensure that and exception is thrown if ffprobe is unable to read a file.
+
+        :return:
+        """
         # Set project root path
         tests_dir = os.path.join(self.project_dir, 'tests')
         tmp_dir = os.path.join(tests_dir, 'tmp')
@@ -163,7 +179,7 @@ class TestClass(object):
         # Test
         common.touch(fail_file)
         import pytest
-        with pytest.raises(ffmpeg.FFMPEGHandleFFProbeError):
+        with pytest.raises(unffmpeg.exceptions.ffprobe.FFProbeError):
             self.ffmpeg.file_probe(fail_file)
 
     def test_file_not_target_format_for_success(self):
@@ -171,6 +187,7 @@ class TestClass(object):
         This modifies the self.settings.VIDEO_CODEC to an incorrect video codec.
         self.setup_class() is called at the end of this function to return the
         settings back to their original state.
+
         :return:
         """
         self.setup_class()
@@ -200,6 +217,11 @@ class TestClass(object):
         self.setup_class()
 
     def test_convert_all_files_for_success(self):
+        """
+        Ensure all small test files are able to be converted.
+
+        :return:
+        """
         # Set project root path
         tests_dir = os.path.join(self.project_dir, 'tests')
         tmp_dir = os.path.join(tests_dir, 'tmp')
@@ -211,6 +233,12 @@ class TestClass(object):
             self.convert_single_file(infile, outfile)
 
     def test_convert_all_faulty_files_for_success(self):
+        """
+        Ensure all faulty test files are able to be converted.
+        These files have various issues with them that may cause ffmpeg to fail if not configured correctly.
+
+        :return:
+        """
         # Set project root path
         tests_dir = os.path.join(self.project_dir, 'tests')
         tmp_dir = os.path.join(tests_dir, 'tmp')

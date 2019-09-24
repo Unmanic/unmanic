@@ -30,9 +30,12 @@
 
 """
 
-from ..base_subtitles import Subtitles
+from ..base_codecs import Codecs
 
 
-class Subrip(Subtitles):
-    codec = 'subrip'
+class Subrip(Codecs):
+    name = 'subrip'
+    encoders = ['subrip']
+    default_encoder = 'subrip'
+    codec_long_name = 'SubRip subtitle'
 

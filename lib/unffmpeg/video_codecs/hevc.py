@@ -30,10 +30,11 @@
 
 """
 
-from ..base_video_codecs import VideoCodecs
+from ..base_codecs import Codecs
 
 
-class Hevc(VideoCodecs):
+class Hevc(Codecs):
     name = 'hevc'
-    encoder = 'libx265'
+    encoders = ['libx265']
+    default_encoder = 'libx265'
     codec_long_name = 'HEVC (High Efficiency Video Coding)'

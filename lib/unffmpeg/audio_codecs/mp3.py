@@ -30,10 +30,11 @@
 
 """
 
-from ..base_audio_codecs import AudioCodecs
+from ..base_codecs import Codecs
 
 
-class Mp3(AudioCodecs):
+class Mp3(Codecs):
     name = 'mp3'
-    encoder = 'libmp3lame'
+    encoders = ['libmp3lame']
+    default_encoder = 'libmp3lame'
     codec_long_name = 'MP3 (MPEG audio layer 3)'

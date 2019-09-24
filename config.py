@@ -30,13 +30,10 @@
 ###################################################################################################
 
 import os
-from lib import unmodels, unlogger
+from lib import unmodels, unlogger, unffmpeg
 from lib import common
 
 import json
-
-from lib.history import History
-from lib.unffmpeg import containers
 
 try:
     from json.decoder import JSONDecodeError
@@ -53,28 +50,6 @@ DEFAULT_DB_CONFIG = {
         "FILE": os.path.join(HOME_DIR, '.unmanic', 'config', 'unmanic.db'),
     }
 }
-SUPPORTED_CODECS = {
-    "hevc": {
-        "type":            "video",
-        "codec_long_name": "HEVC (High Efficiency Video Coding)",
-        "encoder":         "libx265"
-    },
-    "h264": {
-        "type":            "video",
-        "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
-        "encoder":         "libx264"
-    },
-    "aac":  {
-        "type":            "audio",
-        "codec_long_name": "AAC (Advanced Audio Coding)",
-        "encoder":         "aac"
-    },
-    "mp3":  {
-        "type":            "audio",
-        "codec_long_name": "MP3 (MPEG audio layer 3)",
-        "encoder":         "libmp3lame"
-    }
-}
 
 
 class CONFIG(object):
@@ -83,14 +58,6 @@ class CONFIG(object):
         self.name = "Config"
         self.settings = None
 
-        # Immutable values
-        # Set the supported codecs (for destination)
-        # TODO: Read this from unffmpeg
-        self.SUPPORTED_CODECS = SUPPORTED_CODECS
-        # Set the supported containers (for destination)
-        self.SUPPORTED_CONTAINERS = containers.get_all_containers()
-
-        # Finish setup...
         # Set default db config
         self.apply_default_db_settings()
         # Run DB migrations
@@ -103,6 +70,10 @@ class CONFIG(object):
         self.import_settings_from_file()
         # Apply settings to the unmanic logger
         self.setup_unmanic_logger()
+        # Set the supported codecs (for destination)
+        self.SUPPORTED_CODECS = unffmpeg.Info().get_all_supported_codecs()
+        # Set the supported containers (for destination)
+        self.SUPPORTED_CONTAINERS = unffmpeg.containers.get_all_containers()
 
     def _log(self, message, message2='', level="info"):
         """
@@ -309,29 +280,35 @@ class CONFIG(object):
             return tuple(value)
         return self.SEARCH_EXTENSIONS
 
-    def get_supported_video_configs(self):
-        """
-        Return a list of video codecs supported by unmanic
-
-        :return:
-        """
-        return_list = {}
-        for x in self.SUPPORTED_CODECS:
-            if self.SUPPORTED_CODECS[x]['type'] == 'video':
-                return_list[x] = self.SUPPORTED_CODECS[x]
-        return return_list
-
-    def get_supported_audio_configs(self):
+    def get_supported_audio_codecs(self):
         """
         Return a list of audio codecs supported by unmanic
 
         :return:
         """
-        return_list = {}
-        for x in self.SUPPORTED_CODECS:
-            if self.SUPPORTED_CODECS[x]['type'] == 'audio':
-                return_list[x] = self.SUPPORTED_CODECS[x]
-        return return_list
+        if 'audio' not in self.SUPPORTED_CODECS:
+            return {}
+        return self.SUPPORTED_CODECS['audio']
+
+    def get_supported_video_codecs(self):
+        """
+        Return a list of video codecs supported by unmanic
+
+        :return:
+        """
+        if 'video' not in self.SUPPORTED_CODECS:
+            return {}
+        return self.SUPPORTED_CODECS['video']
+
+    def get_configured_audio_encoder(self):
+        if 'audio' not in self.SUPPORTED_CODECS:
+            return ''
+        return self.AUDIO_STREAM_ENCODER
+
+    def get_configured_video_encoder(self):
+        if 'video' not in self.SUPPORTED_CODECS:
+            return ''
+        return self.SUPPORTED_CODECS['video'][self.VIDEO_CODEC]['encoders'][0]
 
     def read_version(self):
         """

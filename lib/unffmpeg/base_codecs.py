@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.avi.py
+    unmanic.base_codecs.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     19 Sep 2019, (5:10 PM)
+    Date:                     20 Sep 2019, (5:38 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,9 +30,46 @@
 
 """
 
-from ..base_subtitles import Subtitles
 
+class Codecs(object):
+    """
+    Codecs
 
-class Srt(Subtitles):
-    codec = 'srt'
+    Generic configuration and methods used across all codec classes
+    """
+    name = ''
+    encoders = []
+    default_encoder = ''
+    codec_long_name = ''
 
+    def codec_name(self):
+        """
+        Return the codec name string
+
+        :return:
+        """
+        return self.name
+
+    def codec_encoders(self):
+        """
+        Return the codec encoders list
+
+        :return:
+        """
+        return self.encoders
+
+    def codec_default_encoder(self):
+        """
+        Return the codec encoders list
+
+        :return:
+        """
+        return self.default_encoder
+
+    def codec_description(self):
+        """
+        Return the codec description string
+
+        :return:
+        """
+        return self.codec_long_name

@@ -107,9 +107,10 @@ class WorkerThread(threading.Thread):
             'processed_by_worker': self.name,
             'start_time':          self.start_time,
             'finish_time':         self.finish_time,
-            'video_encoder':       self.settings.SUPPORTED_CODECS[self.settings.VIDEO_CODEC]['encoder'],
-            'audio_encoder':       self.settings.SUPPORTED_CODECS[self.settings.AUDIO_CODEC]['encoder']
+            'video_encoder':       self.settings.get_configured_video_encoder(),
+            'audio_encoder':       self.settings.get_configured_audio_encoder()
         }
+        # TODO: If this was a clone/copy, add clone/copied encoder info to stats
         # Send statistic data to task to be applied
         self.current_task.set_task_stats(statistics)
 

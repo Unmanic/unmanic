@@ -34,10 +34,11 @@
                                 <label class="col-md-3 control-label">Video Codec</label>
                                 <div class="col-md-9">
                                     <select class="form-control" name="VIDEO_CODEC">
-                                        {% for option in config.get_supported_video_configs() %}
+                                        {% set supported_video_configs = config.get_supported_video_codecs() %}
+                                        {% for option in supported_video_configs %}
                                         <option value="{{ escape(option) }}" {% if option == config.VIDEO_CODEC %}
                                                 selected {% end %}>
-                                            {{ escape(config.SUPPORTED_CODECS[option]['codec_long_name']) }}
+                                            {{ escape(supported_video_configs[option]['description']) }}
                                         </option>
                                         {% end %}
                                     </select>

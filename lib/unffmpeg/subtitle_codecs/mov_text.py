@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.base_video_codecs.py
+    unmanic.mov_text.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     20 Sep 2019, (5:38 PM)
+    Date:                     21 Sep 2019, (8:51 AM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,18 +30,11 @@
 
 """
 
+from ..base_codecs import Codecs
 
-class VideoCodecs(object):
-    """
-    VideoCodecs
 
-    Generic configuration and methods used across all video codec classes
-    """
-
-    def video_encoder(self):
-        """
-        Return the video codec encoder string
-
-        :return:
-        """
-        return self.encoder
+class MovText(Codecs):
+    name = 'mov_text'
+    encoders = ['mov_text']
+    default_encoder = 'mov_text'
+    codec_long_name = '3GPP Timed Text subtitle'

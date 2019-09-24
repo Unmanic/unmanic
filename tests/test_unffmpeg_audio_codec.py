@@ -62,7 +62,7 @@ class TestClass(object):
         unmanic_logging = unlogger.UnmanicLogger.__call__(False)
         unmanic_logging.get_logger()
 
-    def test_ensure_we_can_generate_audio_codec_args(self):
+    def test_ensure_we_can_generate_audio_codec_stereo_clone_args(self):
         # Fetch a list of args from the unffmpeg audio codec handler
         audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
         audio_codec_args = audio_codec_handle.args()
@@ -88,7 +88,8 @@ class TestClass(object):
         # Fetch a list of args from the unffmpeg audio codec handler
         audio_codec_handle = unffmpeg.AudioCodecHandle(mp4_ffprobe.mp4_dd_plus_audio_ffprobe)
         # Set the audio codec to aac
-        audio_codec_handle.set_audio_codec('aac')
+        audio_codec_handle.enable_audio_stream_stereo_cloning = True
+        audio_codec_handle.set_audio_codec_with_default_encoder_cloning('aac')
         audio_codec_args = audio_codec_handle.args()
         # Assert the streams to map array is not empty
         assert audio_codec_args['streams_to_map']
@@ -103,7 +104,8 @@ class TestClass(object):
         # Fetch a list of args from the unffmpeg audio codec handler
         audio_codec_handle = unffmpeg.AudioCodecHandle(mp4_ffprobe.mp4_dd_plus_audio_ffprobe)
         # Set the audio codec to aac
-        audio_codec_handle.set_audio_codec('aac')
+        audio_codec_handle.enable_audio_stream_stereo_cloning = True
+        audio_codec_handle.set_audio_codec_with_default_encoder_cloning('aac')
         audio_codec_handle.audio_stereo_stream_bitrate = 'TEST_BITRATE'
         audio_codec_args = audio_codec_handle.args()
         # Assert the streams to map array is not empty
@@ -118,12 +120,15 @@ class TestClass(object):
             # Fetch a list of args from the unffmpeg audio codec handler
             audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_stereo_aac_audio_ffprobe)
             # Set the audio codec to something that does not exist
-            audio_codec_handle.set_audio_codec('non_existent_codec')
+            audio_codec_handle.enable_audio_stream_stereo_cloning = True
+            audio_codec_handle.set_audio_codec_with_default_encoder_cloning('non_existent_codec')
 
-    def test_ensure_args_of_audio_stream_is_copy_if_src_codec_matches_dest_codec(self):
+    def test_ensure_args_of_audio_stream_clone_is_copy_if_src_codec_matches_dest_codec(self):
         # Fetch a list of args from the unffmpeg audio codec handler
         audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_stereo_aac_audio_ffprobe)
-        audio_codec_handle.set_audio_codec('aac')  # Src is aac and dest is aac. Audio stream should just copy
+        audio_codec_handle.enable_audio_stream_stereo_cloning = True
+        audio_codec_handle.set_audio_codec_with_default_encoder_cloning(
+            'aac')  # Src is aac and dest is aac. Audio stream should just copy
         audio_codec_args = audio_codec_handle.args()
         # Assert the streams to map array is not empty
         assert audio_codec_args['streams_to_map']
@@ -131,3 +136,32 @@ class TestClass(object):
         assert audio_codec_args['streams_to_encode']
         # Assert the streams to encode array is set to copy
         assert audio_codec_args['streams_to_encode'][1] == 'copy'
+
+    def test_ensure_args_of_audio_stream_transcode_is_copy_if_src_codec_matches_dest_codec(self):
+        # Fetch a list of args from the unffmpeg audio codec handler
+        audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_stereo_aac_audio_ffprobe)
+        audio_codec_handle.enable_audio_stream_transcoding = True
+        audio_codec_handle.set_audio_codec_with_default_encoder_transcoding(
+            'aac')  # Src is aac and dest is aac. Audio stream should just copy
+        audio_codec_args = audio_codec_handle.args()
+        # Assert the streams to map array is not empty
+        assert audio_codec_args['streams_to_map']
+        # Assert the streams to encode array is not empty
+        assert audio_codec_args['streams_to_encode']
+        # Assert the streams to encode array is set to copy
+        assert audio_codec_args['streams_to_encode'][1] == 'copy'
+
+    def test_ensure_we_can_generate_audio_codec_transcode_args(self):
+        # Fetch a list of args from the unffmpeg audio codec handler
+        audio_codec_handle = unffmpeg.AudioCodecHandle(mp4_ffprobe.mp4_dd_plus_audio_ffprobe)
+        audio_codec_handle.enable_audio_stream_transcoding = True
+        audio_codec_handle.set_audio_codec_with_default_encoder_transcoding('ac3')
+        audio_codec_args = audio_codec_handle.args()
+        # Assert the streams to map array is not empty
+        assert audio_codec_args['streams_to_map']
+        # Assert the streams to encode array is not empty
+        assert audio_codec_args['streams_to_encode']
+        # Assert the first streams to encode array item is set to ac3
+        assert audio_codec_args['streams_to_encode'][1] == 'ac3'
+        # Assert no clone stream args are created (the streams_to_encode array is only a length of 2)
+        assert len(audio_codec_args['streams_to_encode']) == 2

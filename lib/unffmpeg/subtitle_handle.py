@@ -82,7 +82,7 @@ class SubtitleHandle(object):
                     subtitle_tracks_count += 1
                 else:
                     # The dest container does not support the current subtitle stream.
-                    # Re-encode the stream to a format that the destination container does support
+                    # Transcode the stream to a format that the destination container does support
                     # TODO: Check if it can be re-encoded. It is not possible to switch between image and text format
                     # If dest container supports the current subtitle codec, just copy it
                     self.subtitle_args['streams_to_encode'] = self.subtitle_args['streams_to_encode'] + [

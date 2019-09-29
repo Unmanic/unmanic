@@ -52,7 +52,7 @@ class SettingsUIRequestHandler(tornado.web.RequestHandler):
         if step_list:
             self.step = step_list[0]
         self.components = [x for x in self.request.path.split("/") if x]
-        self.render("settings.html", config=self.config)
+        self.render("settings/settings.html", config=self.config)
 
     def post(self, path):
         if self.get_body_arguments('ajax'):

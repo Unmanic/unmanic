@@ -1,5 +1,5 @@
 
-{% extends "page_layout.html" %}
+{% extends "../page_layout.html" %}
 {% block title %}Settings{% end %}
 {% block page %}settings{% end %}
 
@@ -111,14 +111,14 @@
 {% block content %}
     <div class="row">
         {% if 'general' in handler.step %}
-            {% include "settings-general.html" %}
+            {% include "general/settings-general.html" %}
             {#{% include "settings-form.html" %}#}
         {% elif 'container' in handler.step %}
-            {% include "settings-container.html" %}
+            {% include "container/settings-container.html" %}
         {% elif 'video' in handler.step %}
-            {% include "settings-video.html" %}
+            {% include "video_encoding/settings-video.html" %}
         {% elif 'audio' in handler.step %}
-            {% include "settings-audio.html" %}
+            {% include "audio_encoding/settings-audio.html" %}
         {% end %}
     </div>
 {% end %}

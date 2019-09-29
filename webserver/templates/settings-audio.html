@@ -2,7 +2,15 @@
 
     <div class="col-md-4 ">
         <h3 class="list-heading">Audio Encoding</h3>
-        Some audio options (Will fill in more text later on)
+        Media files can come with all kinds of different formats for audio streams.
+        <br>
+        You may wish to standardise this format or duplicate a multi-channel (more than 2 channels) stream as a stereo (2 channels) stream.
+        <br>
+        <br>
+        If `Enable Audio Encoding` is not selected, all audio streams from the source will be passed through to the output file without being modified.
+        <br>
+        <br>
+        If you choose to select `Enable Audio Encoding`, you may choose to clone all multi-channel audio streams or transcode them to a standard audio codec.
     </div>
     <div class="col-md-6 ">
         <!-- BEGIN FORM PORTLET-->
@@ -106,10 +114,10 @@
 
                             {# Cloning audio streams #}
                             <div class="caption">
-                                <span class="caption-subject font-dark sbold uppercase">Create a stereo copy of streams</span>
+                                <span class="caption-subject font-dark sbold uppercase">Create a stereo clone of streams</span>
                                 <br>
                                 <span class="help-inline">
-                                    Create a stereo copy of all audio streams if the original stream is more than 2 channels.
+                                    Create a stereo clone of all audio streams if the original stream is more than 2 channels.
                                     If the source file already has a stereo stream, this is ignored and no clone is generated.
                                 </span>
                             </div>

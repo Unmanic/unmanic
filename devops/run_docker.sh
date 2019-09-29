@@ -34,6 +34,12 @@ PROJECT_BASE=$(realpath ${SCRIPT_PATH}/../);
 PUID=$(id -u);
 PGID=$(id -g);
 
+for arg in ${@}; do
+    if [[ ${arg} == '--debug' ]]; then
+        DEBUGGING=true;
+    fi
+done
+
 docker run -ti --rm \
     -p 8888:8888 \
     -v ${PROJECT_BASE}:/app \
@@ -42,6 +48,6 @@ docker run -ti --rm \
     -v ${PROJECT_BASE}/cache:/tmp/unmanic \
     -e PUID=${PUID} \
     -e PGID=${PGID} \
-    -e DEBUGGING=false \
+    -e DEBUGGING=${DEBUGGING} \
     josh5/unmanic bash
 

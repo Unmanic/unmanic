@@ -6,7 +6,7 @@
 
 Before any tests can be run, you need to execute
 ```
-tests/setup_tests.sh
+tests/scripts/setup_tests.sh
 ```
 
 
@@ -38,7 +38,39 @@ To run the test first run a docker environment. You can do this by running
 tests/scripts/library_scan.sh
 ```
 You can export the following variables to configure the test container:
+```
+DEBUGGING=true
+NUMBER_OF_WORKERS=1
+SCHEDULE_FULL_SCAN_MINUTES=1
+RUN_FULL_SCAN_ON_START=true
+```
 To clean the config run 
 ```
 tests/scripts/library_scan.sh --clean
+```
+
+
+-----------------------------------------------------------
+
+
+## Python unit tests within docker
+
+To run the python unit tests within the test docker env
+(in order to test them in a controlled environment), run
+these commands:
+
+```
+docker-compose -f docker/docker-compose-test.yml up --force-recreate
+```
+
+Wait for the container to start, then run:
+
+```
+docker exec --workdir=/app unmanic-testenv pytest --log-cli-level=INFO
+```
+
+When developing, if you wish to run only a single test, run:
+
+```
+docker exec --workdir=/app unmanic-testenv pytest --log-cli-level=INFO --maxfail 1 -s tests/test_<TEST NAME>.py
 ```

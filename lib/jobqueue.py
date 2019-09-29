@@ -64,7 +64,7 @@ class JobQueue(object):
         self.incoming = collections.deque()
         self.in_progress = collections.deque()
         self.processed = collections.deque()
-        self.ffmpeg = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
+        self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
         self.logger = data_queues["logging"].get_logger(self.name)
 
     def _log(self, message, message2='', level="info"):

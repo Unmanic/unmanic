@@ -1,0 +1,206 @@
+
+
+    <div class="col-md-4 ">
+        <h3 class="list-heading">Audio Encoding</h3>
+        Media files can come with all kinds of different formats for audio streams.
+        <br>
+        You may wish to standardise this format or duplicate a multi-channel (more than 2 channels) stream as a stereo (2 channels) stream.
+        <br>
+        <br>
+        If `Enable Audio Encoding` is not selected, all audio streams from the source will be passed through to the output file without being modified.
+        <br>
+        <br>
+        If you choose to select `Enable Audio Encoding`, you may choose to clone all multi-channel audio streams or transcode them to a standard audio codec.
+    </div>
+    <div class="col-md-6 ">
+        <!-- BEGIN FORM PORTLET-->
+        <div class="portlet light bordered">
+            <div class="portlet-body form">
+                <form class="form-horizontal" role="form" method="POST">
+                    <div class="form-body">
+
+                        {# Enable/Disable settings on this screen #}
+                        <div class="form-group">
+                            <label class="col-md-3 control-label">Enable Audio Encoding</label>
+                            <div class="col-md-9">
+                                <div class="checkbox-list">
+                                    <input type="hidden" name="ENABLE_AUDIO_ENCODING" id="ENABLE_AUDIO_ENCODING"
+                                           value="{% if config.ENABLE_AUDIO_ENCODING %}true{% end %}">
+                                    <label>
+                                        <input type="checkbox" id="audio_encoding_enabled"
+                                               onchange="toggleEnableAudioEncoding();"
+                                               {% if config.ENABLE_AUDIO_ENCODING %} checked {% end %} />
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <hr/>
+
+                        <div class="audio_encoding_settings_disabled_notice {% if config.ENABLE_AUDIO_ENCODING %}hidden{% end %}">
+                            <div class="note note-info caption">
+                                <span class="caption-subject font-dark sbold uppercase">Audio streams will be copied</span>
+                                <br>
+                                <span class="help-inline">
+                                    All audio streams will be copied to the destination file without being modified.
+                                </span>
+                            </div>
+                            <hr/>
+                        </div>
+
+                        <div class="audio_encoding_settings {% if not config.ENABLE_AUDIO_ENCODING %}hidden{% end %}">
+
+                            {# Transcoding audio streams #}
+                            <div class="caption">
+                                <span class="caption-subject font-dark sbold uppercase">Transcode all audio streams</span>
+                                <br>
+                                <span class="help-inline">
+                                    Modify the audio stream codec. Channel count and bitrate are kept the same as the source.
+                                </span>
+                            </div>
+                            <br>
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Enable Audio Stream Transcoding</label>
+                                <div class="col-md-9">
+                                    <div class="checkbox-list">
+                                        <input type="hidden" name="ENABLE_AUDIO_STREAM_TRANSCODING"
+                                               id="ENABLE_AUDIO_STREAM_TRANSCODING"
+                                               value="{% if config.ENABLE_AUDIO_STREAM_TRANSCODING %}true{% end %}">
+                                        <label>
+                                            <input type="checkbox"
+                                                   id="audio_stream_transcoding_enabled"
+                                                   onchange="toggleEnableAudioStreamTrascoding();"
+                                                    {% if config.ENABLE_AUDIO_STREAM_TRANSCODING %} checked {% end %} />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <br>
+                            <div class="audio_stream_transcoding_settings_disabled_notice {% if config.ENABLE_AUDIO_STREAM_TRANSCODING %}hidden{% end %}">
+                                <div class="note note-info caption">
+                                    <span class="caption-subject font-dark sbold uppercase">Audio streams will be copied</span>
+                                    <br>
+                                    <span class="help-inline">
+                                        All audio streams will be copied to the destination file without being modified.
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="audio_stream_transcoding_settings {% if not config.ENABLE_AUDIO_STREAM_TRANSCODING %}hidden{% end %}">
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Audio Codec</label>
+                                    <div class="col-md-9">
+                                        <select class="form-control"
+                                                id="AUDIO_CODEC"
+                                                name="AUDIO_CODEC"
+                                                onchange="setAudioStreamEncoderListForTranscoding();">
+                                            {% set supported_audio_codecs = config.get_supported_audio_codecs() %}
+                                            {% for option in supported_audio_codecs %}
+                                            <option value="{{ escape(option) }}" {% if option == config.AUDIO_CODEC %}
+                                                    selected {% end %}>
+                                                {{ escape(supported_audio_codecs[option]['description']) }}
+                                            </option>
+                                            {% end %}
+                                        </select>
+                                        <span class="help-inline"> Select the output audio codec </span>
+                                    </div>
+                                </div>
+                                <br>
+                                {# If there is only one option, disable this field #}
+                                <div class="form-group" id="audio_stream_encoder_selection">
+                                    {% include "audio_stream_encoder.html" %}
+                                </div>
+                            </div>
+
+                            <hr/>
+
+                            {# Cloning audio streams #}
+                            <div class="caption">
+                                <span class="caption-subject font-dark sbold uppercase">Create a stereo clone of streams</span>
+                                <br>
+                                <span class="help-inline">
+                                    Create a stereo clone of all audio streams if the original stream is more than 2 channels.
+                                    If the source file already has a stereo stream, this is ignored and no clone is generated.
+                                </span>
+                            </div>
+                            <br>
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Enable Audio Stream Cloning</label>
+                                <div class="col-md-9">
+                                    <div class="checkbox-list">
+                                        <input type="hidden" name="ENABLE_AUDIO_STREAM_STEREO_CLONING"
+                                               id="ENABLE_AUDIO_STREAM_STEREO_CLONING"
+                                               value="{% if config.ENABLE_AUDIO_STREAM_STEREO_CLONING %}true{% end %}">
+                                        <label>
+                                            <input type="checkbox"
+                                                   id="audio_stream_stereo_cloning_enabled"
+                                                   onchange="toggleEnableAudioStreamStereoCloning();"
+                                                    {% if config.ENABLE_AUDIO_STREAM_STEREO_CLONING %} checked {% end %} />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <br>
+                            <div class="audio_stream_stereo_cloning_settings_disabled_notice {% if config.ENABLE_AUDIO_STREAM_STEREO_CLONING %}hidden{% end %}">
+                                <div class="note note-info caption">
+                                    <span class="caption-subject font-dark sbold uppercase">Multi-channel audio streams will not be cloned</span>
+                                    <br>
+                                    <span class="help-inline">
+                                        No stereo clones of multi-channel audio streams will be created.
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="audio_stream_stereo_cloning_settings {% if not config.ENABLE_AUDIO_STREAM_STEREO_CLONING %}hidden{% end %}">
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Audio Codec</label>
+                                    <div class="col-md-9">
+                                        <select class="form-control"
+                                                id="AUDIO_CODEC_CLONING"
+                                                name="AUDIO_CODEC_CLONING"
+                                                onchange="setAudioStreamEncoderListForCloning();">
+                                            {% set supported_audio_codecs = config.get_supported_audio_codecs() %}
+                                            {% for option in supported_audio_codecs %}
+                                            <option value="{{ escape(option) }}" {% if option == config.AUDIO_CODEC_CLONING %}
+                                                    selected {% end %}>
+                                                {{ escape(supported_audio_codecs[option]['description']) }}
+                                            </option>
+                                            {% end %}
+                                        </select>
+                                        <span class="help-inline"> Select the output audio codec </span>
+                                    </div>
+                                </div>
+                                <br>
+                                <div class="form-group" id="audio_stream_encoder_cloning_selection">
+                                    {% include "audio_stream_encoder_cloning.html" %}
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Bitrate</label>
+                                    <div class="col-md-9">
+                                        <select class="form-control" name="AUDIO_STEREO_STREAM_BITRATE">
+                                            {# TODO: Move this array to the config class #}
+                                            {% for option in ['128k','160k','192k','256k','320k'] %}
+                                            <option value="{{ escape(option) }}" {% if option == config.AUDIO_STEREO_STREAM_BITRATE %}
+                                                    selected {% end %}>
+                                                {{ escape(option) }}
+                                            </option>
+                                            {% end %}
+                                        </select>
+                                        <span class="help-inline"> Select the bitrate for your stereo stream </span>
+                                    </div>
+                                </div>
+                                {# TODO: Make the audio cloning capibility able to select the number of channels #}
+                            </div>
+
+                        </div>
+
+                    </div>
+                    <div class="form-actions">
+                        <div class="row">
+                            <div class="col-md-offset-3 col-md-9">
+                                <button type="submit" class="btn green">Submit</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- END FORM PORTLET-->
+    </div>

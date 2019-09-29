@@ -2,9 +2,14 @@
   <code_scheme name="Project" version="173">
     <Python>
       <option name="DICT_ALIGNMENT" value="1" />
+      <option name="DICT_NEW_LINE_AFTER_LEFT_BRACE" value="true" />
+      <option name="DICT_NEW_LINE_BEFORE_RIGHT_BRACE" value="true" />
     </Python>
     <codeStyleSettings language="EditorConfig">
       <option name="ALIGN_GROUP_FIELD_DECLARATIONS" value="true" />
+    </codeStyleSettings>
+    <codeStyleSettings language="Python">
+      <option name="WRAP_ON_TYPING" value="0" />
     </codeStyleSettings>
   </code_scheme>
 </component>

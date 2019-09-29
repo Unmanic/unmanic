@@ -11,4 +11,5 @@ config
 cache
 library
 tests
+venv
 videos

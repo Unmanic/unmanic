@@ -67,9 +67,9 @@
                                 <label class="col-md-3 control-label">Enable watcher</label>
                                 <div class="col-md-9">
                                     <div class="checkbox-list">
-                                            <input type="hidden" name="INOTIFY" id="INOTIFY" value="{% if config.INOTIFY %}true{% end %}" >
+                                            <input type="hidden" name="ENABLE_INOTIFY" id="ENABLE_INOTIFY" value="{% if config.ENABLE_INOTIFY %}true{% end %}" >
                                         <label>
-                                            <input type="checkbox" id="inotify_enabled" onchange="toggleInotify();" {% if config.INOTIFY %} checked {% end %} />
+                                            <input type="checkbox" id="inotify_enabled" onchange="toggleInotify();" {% if config.ENABLE_INOTIFY %} checked {% end %} />
                                         </label>
                                             <span class="help-inline"> If enabled, any file modifications or additions to the library will trigger that file to be processed </span>
                                     </div>
@@ -86,7 +86,7 @@
                             <div class="form-group">
                                 <label class="col-md-3 control-label">Library scan schedule</label>
                                 <div class="col-md-9">
-                                    <input type="text" class="form-control input-inline input-medium" name="SCHEDULE_FULL_SCAN_MINS" value="{{ escape(config.SCHEDULE_FULL_SCAN_MINS) }}" >
+                                    <input type="text" class="form-control input-inline input-medium" name="SCHEDULE_FULL_SCAN_MINUTES" value="{{ escape(str(config.SCHEDULE_FULL_SCAN_MINUTES)) }}" >
                                     <span class="help-inline"> The time (in minutes) between full library scans. Set to 0 to disable </span>
                                 </div>
                             </div>

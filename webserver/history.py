@@ -39,6 +39,12 @@ from lib import history
 
 
 class HistoryUIRequestHandler(tornado.web.RequestHandler):
+    name = None
+    config = None
+    data_queues = None
+    workerHandle = None
+    data = None
+
     def initialize(self, data_queues, workerHandle, settings):
         self.name = 'history'
         self.config = settings
@@ -52,7 +58,7 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
             self.handle_ajax_call(self.get_query_arguments('ajax')[0])
         else:
             self.set_page_data()
-            self.render("history.html", config=self.config, data=self.data)
+            self.render("history/history.html", config=self.config, data=self.data)
 
     def handle_ajax_call(self, query):
         if query == 'conversionDetails':
@@ -63,7 +69,7 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
                     self.write(json.dumps(job_data))
                 else:
                     self.set_header("Content-Type", "text/html")
-                    self.render("history-conversion-details.html", job_data=job_data)
+                    self.render("history/history-conversion-details.html", job_data=job_data)
         if query == 'reloadCompletedTaskList':
             job_id = None
             if self.get_query_arguments('jobId'):
@@ -74,7 +80,7 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
                 self.write(json.dumps(self.data))
             else:
                 self.set_header("Content-Type", "text/html")
-                self.render("history-completed-tasks-list.html", config=self.config, data=self.data)
+                self.render("history/history-completed-tasks-list.html", config=self.config, data=self.data)
 
     def get_historical_tasks(self):
         history_logging = history.History(self.config)

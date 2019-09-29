@@ -37,11 +37,11 @@ import time
 import sys
 
 try:
-    from lib import common
+    from lib import common, history
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
-    from lib import common
+    from lib import common, history
 
 
 class WorkerThread(threading.Thread):
@@ -107,9 +107,10 @@ class WorkerThread(threading.Thread):
             'processed_by_worker': self.name,
             'start_time':          self.start_time,
             'finish_time':         self.finish_time,
-            'video_encoder':       self.settings.CODEC_CONFIG[self.settings.VIDEO_CODEC]['encoder'],
-            'audio_encoder':       self.settings.CODEC_CONFIG[self.settings.AUDIO_CODEC]['encoder']
+            'video_encoder':       self.settings.get_configured_video_encoder(),
+            'audio_encoder':       self.settings.get_configured_audio_encoder()
         }
+        # TODO: If this was a clone/copy, add clone/copied encoder info to stats
         # Send statistic data to task to be applied
         self.current_task.set_task_stats(statistics)
 
@@ -284,108 +285,3 @@ class Worker(threading.Thread):
             all_status.append(self.worker_threads[thread].get_status())
         return all_status
 
-    def get_all_historical_tasks(self):
-        return self.settings.read_history_log()
-
-
-class TestClass(object):
-    """
-    TestClass
-
-    Runs unit tests against the Worker and Worker Thread classes
-
-    """
-    project_dir = None
-    settings = None
-    logging = None
-    logger = None
-    worker_threads = None
-    test_task = None
-    data_queues = None
-    task_queue = None
-    complete_queue = None
-    completed_test_task = None
-
-    def setup_class(self):
-        self.project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        import config
-        from lib import unlogger
-        self.settings = config.CONFIG()
-        self.settings.DEBUGGING = True
-        self.logging = unlogger.UnmanicLogger.__call__()
-        self.logging.setup_logger(self.settings)
-        self.logger = self.logging.get_logger()
-
-        # Create our test queues
-        self.data_queues = {
-            "progress_reports": queue.Queue(),
-            "logging": self.logging
-        }
-        self.task_queue = queue.Queue(maxsize=1)
-        self.complete_queue = queue.Queue()
-
-    def setup_test_task(self, pathname):
-        # Create a new task and set the source
-        from lib import task
-        self.test_task = task.Task(self.settings, self.data_queues)
-        self.test_task.set_source_data(pathname)
-        self.test_task.set_destination_data()
-        self.test_task.set_cache_path()
-
-    def completed_test_task_is_success(self):
-        assert self.completed_test_task.success
-
-    def completed_test_task_data_has_source_abspath(self):
-        task_data = self.completed_test_task.__dict__.copy()
-        assert 'abspath' in task_data['source']
-
-    def completed_test_task_data_has_source_basename(self):
-        task_data = self.completed_test_task.__dict__.copy()
-        assert 'basename' in task_data['source']
-
-    def completed_test_task_data_has_source_dirname(self):
-        task_data = self.completed_test_task.__dict__.copy()
-        assert 'dirname' in task_data['source']
-
-    def completed_test_task_data_has_source_video_codecs(self):
-        task_data = self.completed_test_task.__dict__.copy()
-        assert 'video_codecs' in task_data['source']
-
-    def completed_test_task_data_has_file_in_probe(self):
-        task_data = self.completed_test_task.__dict__.copy()
-        assert 'streams' in task_data['ffmpeg'].file_in['file_probe']
-
-    def test_worker_tread_for_conversion_success(self):
-        self.setup_class()
-        worker_id = 'test'
-        worker_thread = WorkerThread(worker_id, "Worker-{}".format(worker_id), self.settings, self.data_queues,
-                                     self.task_queue, self.complete_queue)
-        # Set project root path
-        tests_dir = os.path.join(self.project_dir, 'tests')
-        # Test all the small files
-        for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'small')):
-            # Create test task
-            self.setup_test_task(os.path.join(tests_dir, 'videos', 'small', video_file))
-            worker_thread.set_current_task(self.test_task)
-            worker_thread.process_task_queue_item()
-            # Ensure the completed task was added to the completed queue
-            assert not self.complete_queue.empty()
-            # Retrieve this task and add it to the global completed_test_task variable
-            self.completed_test_task = self.complete_queue.get_nowait()
-            # Ensure task was successfully processed
-            self.completed_test_task_is_success()
-            # Ensure task data has source abspath
-            self.completed_test_task_data_has_source_abspath()
-            # Ensure task data has source basename
-            self.completed_test_task_data_has_source_basename()
-            # Ensure task data has source dirname
-            self.completed_test_task_data_has_source_dirname()
-            # Ensure task data has source video_codecs list
-            self.completed_test_task_data_has_source_video_codecs()
-            # Ensure task data has source video in file probe data
-            self.completed_test_task_data_has_file_in_probe()
-
-
-if __name__ == "__main__":
-    test_class = TestClass()
-    test_class.test_worker_tread_for_conversion_success()

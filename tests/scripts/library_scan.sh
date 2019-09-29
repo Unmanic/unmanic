@@ -55,7 +55,7 @@ cp -r ${PROJECT_BASE}/tests/videos/small/* ${PROJECT_BASE}/tests/tmp/library/pat
 # Set the config for the application so that it scans for files right away
 DEBUGGING=${DEBUGGING:-true}
 NUMBER_OF_WORKERS=${NUMBER_OF_WORKERS:-1}
-SCHEDULE_FULL_SCAN_MINS=${SCHEDULE_FULL_SCAN_MINS:-10}
+SCHEDULE_FULL_SCAN_MINUTES=${SCHEDULE_FULL_SCAN_MINUTES:-10}
 RUN_FULL_SCAN_ON_START=${RUN_FULL_SCAN_ON_START:-true}
 
 for arg in ${@}; do
@@ -76,7 +76,7 @@ docker run -ti --rm \
     -e PGID=${PGID} \
     -e DEBUGGING=${DEBUGGING} \
     -e NUMBER_OF_WORKERS=${NUMBER_OF_WORKERS} \
-    -e SCHEDULE_FULL_SCAN_MINS=${SCHEDULE_FULL_SCAN_MINS} \
+    -e SCHEDULE_FULL_SCAN_MINUTES=${SCHEDULE_FULL_SCAN_MINUTES} \
     -e RUN_FULL_SCAN_ON_START=${RUN_FULL_SCAN_ON_START} \
     josh5/unmanic bash
 

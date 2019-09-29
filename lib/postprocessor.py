@@ -35,7 +35,7 @@ import shutil
 import threading
 import time
 
-from lib import common
+from lib import common, history
 
 """
 
@@ -129,19 +129,23 @@ class PostProcessor(threading.Thread):
         result = False
         for stream in file_probe['streams']:
             if stream['codec_type'] == 'video':
-                # Check if this file is the right codec
-                if stream['codec_name'] == self.settings.VIDEO_CODEC:
+                if self.settings.ENABLE_VIDEO_ENCODING:
+                    # Check if this file is the right codec
+                    if stream['codec_name'] == self.settings.VIDEO_CODEC:
+                        result = True
+                    elif self.settings.DEBUGGING:
+                        self._log("File is the not correct codec {} - {}".format(self.settings.VIDEO_CODEC, abspath))
+                        raise PostProcessError(self.settings.VIDEO_CODEC, stream['codec_name'])
+                    # TODO: Test duration is the same as src
+                    # TODO: Add file checksum from before and after move
+                else:
                     result = True
-                elif self.settings.DEBUGGING:
-                    self._log("File is the not correct codec {} - {}".format(self.settings.VIDEO_CODEC, abspath))
-                    raise PostProcessError(self.settings.VIDEO_CODEC, stream['codec_name'])
-                # TODO: Test duration is the same as src
-                # TODO: Add file checksum from before and after move
         return result
 
     def write_history_log(self):
         # Read the current history log from file
-        historical_log = self.settings.read_history_log()
+        history_logging = history.History(self.settings)
+        historical_log = history_logging.read_history_log()
 
         # Set the completed timestamp
         time_completed = time.time()
@@ -151,11 +155,11 @@ class PostProcessor(threading.Thread):
 
         # Append the file data to the history log
         historical_log.append({
-            'job_id': job_id,
-            'description': self.current_task.source['basename'],
+            'job_id':        job_id,
+            'description':   self.current_task.source['basename'],
             'time_complete': time_completed,
-            'abspath': self.current_task.source['abspath'],
-            'success': self.current_task.success
+            'abspath':       self.current_task.source['abspath'],
+            'success':       self.current_task.success
         })
 
         # Create config path in not exists

@@ -106,7 +106,7 @@ class LibraryScanner(threading.Thread):
         self.scheduledtasks = data_queues["scheduledtasks"]
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
-        self.ffmpeg = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
+        self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -117,8 +117,8 @@ class LibraryScanner(threading.Thread):
         # Otherwise close this thread now.
         while not self.abort_flag.is_set():
             # Main loop to configure the scheduler
-            if int(self.settings.SCHEDULE_FULL_SCAN_MINS) != self.interval:
-                self.interval = int(self.settings.SCHEDULE_FULL_SCAN_MINS)
+            if int(self.settings.SCHEDULE_FULL_SCAN_MINUTES) != self.interval:
+                self.interval = int(self.settings.SCHEDULE_FULL_SCAN_MINUTES)
             if self.interval and self.interval != 0:
                 self._log("Starting LibraryScanner schedule to scan every {} mins...".format(self.interval))
                 # Configure schedule
@@ -136,7 +136,7 @@ class LibraryScanner(threading.Thread):
                     # TODO: Dont run scheduler if we already have a full queue
                     schedule.run_pending()
                     time.sleep(60)
-                    if int(self.settings.SCHEDULE_FULL_SCAN_MINS) != self.interval:
+                    if int(self.settings.SCHEDULE_FULL_SCAN_MINUTES) != self.interval:
                         break
                 schedule.clear()
                 self._log("Stopping LibraryScanner schedule...")
@@ -160,20 +160,22 @@ class LibraryScanner(threading.Thread):
         return True
 
     def get_convert_files(self, search_folder):
-        self._log(search_folder)
+        if self.settings.DEBUGGING:
+            self._log("Scanning directory - '{}'".format(search_folder))
         for root, subFolders, files in os.walk(search_folder):
             if self.settings.DEBUGGING:
                 self._log(json.dumps(files, indent=2))
             # Add all files in this path that match our container filter
             for file_path in files:
-                if file_path.lower().endswith(self.settings.SUPPORTED_CONTAINERS):
+                if file_path.lower().endswith(self.settings.allowed_search_extensions()):
                     pathname = os.path.join(root, file_path)
                     # Check if this file is already the correct format:
                     if self.file_not_target_format(pathname):
                         self.add_path_to_queue(pathname)
-                else:
-                    if self.settings.DEBUGGING:
-                        self._log("Ignoring file due to incorrect suffix - '{}'".format(file_path))
+                    elif self.settings.DEBUGGING:
+                        self._log("Ignoring file due to already correct format - '{}'".format(file_path))
+                elif self.settings.DEBUGGING:
+                    self._log("Ignoring file due to incorrect suffix - '{}'".format(file_path))
 
 
 class EventProcessor(pyinotify.ProcessEvent):
@@ -184,14 +186,14 @@ class EventProcessor(pyinotify.ProcessEvent):
         self.inotifytasks = data_queues["inotifytasks"]
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
-        self.ffmpeg = ffmpeg.FFMPEGHandle(settings, data_queues['logging'])
+        self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
     def inotify_enabled(self):
-        if self.settings.INOTIFY:
+        if self.settings.ENABLE_INOTIFY:
             return True
         return False
 
@@ -211,24 +213,26 @@ class EventProcessor(pyinotify.ProcessEvent):
     def process_IN_CLOSE_WRITE(self, event):
         if self.inotify_enabled():
             self._log("CLOSE_WRITE event detected:", event.pathname)
-            if event.pathname.lower().endswith(self.settings.SUPPORTED_CONTAINERS):
+            if event.pathname.lower().endswith(self.settings.allowed_search_extensions()):
                 # Add it to the queue
                 if self.file_not_target_format(event.pathname):
                     self.add_path_to_queue(event.pathname)
-            else:
-                if self.settings.DEBUGGING:
-                    self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
+                elif self.settings.DEBUGGING:
+                    self._log("Ignoring file due to already correct format - '{}'".format(event.pathname))
+            elif self.settings.DEBUGGING:
+                self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
 
     def process_IN_MOVED_TO(self, event):
         if self.inotify_enabled():
             self._log("MOVED_TO event detected:", event.pathname)
-            if event.pathname.lower().endswith(self.settings.SUPPORTED_CONTAINERS):
+            if event.pathname.lower().endswith(self.settings.allowed_search_extensions()):
                 # Add it to the queue
                 if self.file_not_target_format(event.pathname):
                     self.add_path_to_queue(event.pathname)
-            else:
-                if self.settings.DEBUGGING:
-                    self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
+                elif self.settings.DEBUGGING:
+                    self._log("Ignoring file due to already correct format - '{}'".format(event.pathname))
+            elif self.settings.DEBUGGING:
+                self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
 
     def process_IN_DELETE(self, event):
         if self.inotify_enabled():
@@ -292,10 +296,7 @@ def start_ui_server(data_queues, settings, workerHandle):
 
 def main():
     # Read settings
-    settings = config.CONFIG(main_logger)
-
-    # Apply settings to logging
-    unmanic_logging.setup_logger(settings)
+    settings = config.CONFIG()
 
     # Create our data queues
     data_queues = {

@@ -1,0 +1,78 @@
+
+
+    <div class="col-md-4 ">
+        <h3 class="list-heading">Container</h3>
+        Some more settings.
+    </div>
+    <div class="col-md-6 ">
+        <!-- BEGIN FORM PORTLET-->
+        <div class="portlet light bordered">
+            <div class="portlet-body form">
+                <form class="form-horizontal" role="form" method="POST">
+                    <div class="form-body">
+
+                        <div class="form-group">
+                            <label class="col-md-3 control-label">Search for extensions</label>
+                            <div class="col-md-9">
+                                <input type="text" class="form-control input-inline input-xlarge"
+                                       name="SEARCH_EXTENSIONS"
+                                       value="{{ ','.join(config.allowed_search_extensions()) }}">
+                                <span class="help-inline"> Comma separated list of file extensions to search for during library scans and new file event triggers </span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-md-3 control-label">Output container </label>
+                            <div class="col-md-9">
+                                <select class="form-control"
+                                        name="OUT_CONTAINER"
+                                        id="out_container"
+                                        onchange="showHideSubtitleSettings();">
+                                    {% set enable_subtitles = True %}
+                                    {% for option in config.SUPPORTED_CONTAINERS %}data-supportssubtitles=
+                                    <option value="{{ escape(option) }}"
+                                            {% if config.SUPPORTED_CONTAINERS[option]['supports_subtitles'] %}
+                                            data-supports_subtitles="true"
+                                            {% else %}
+                                            data-supports_subtitles="false"
+                                            {% end %}
+                                            {% if config.OUT_CONTAINER == option %}
+                                            {% set enable_subtitles = config.SUPPORTED_CONTAINERS[option]['supports_subtitles'] %}
+                                            selected
+                                            {% end %}>
+                                        .{{ escape(config.SUPPORTED_CONTAINERS[option]['extension']) }}
+                                        - {{ escape(config.SUPPORTED_CONTAINERS[option]['description']) }}
+                                    </option>
+                                    {% end %}
+                                </select>
+                                <span class="help-inline"> Select the container you want output files to be </span>
+                            </div>
+                        </div>
+                        <div class="form-group subtitle_settings" {% if not enable_subtitles %} style="display:none" {% end %}>
+                            <label class="col-md-3 control-label">Remove subtitles</label>
+                            <div class="col-md-9">
+                                <div class="checkbox-list">
+                                    <input type="hidden" name="REMOVE_SUBTITLE_STREAMS" id="REMOVE_SUBTITLE_STREAMS"
+                                           value="{% if config.REMOVE_SUBTITLE_STREAMS %}true{% end %}">
+                                    <label>
+                                        <input type="checkbox" id="remove_subtitles_enabled"
+                                               onchange="toggleStripSubtitles();" {% if config.REMOVE_SUBTITLE_STREAMS %}
+                                               checked {% end %} />
+                                    </label>
+                                </div>
+                                <span class="help-inline"> Removes the subtitle stream from the container. This is useful if you intend to supply your own subtitles for your library </span>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="form-actions">
+                        <div class="row">
+                            <div class="col-md-offset-3 col-md-9">
+                                <button type="submit" class="btn green">Submit</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- END FORM PORTLET-->
+    </div>

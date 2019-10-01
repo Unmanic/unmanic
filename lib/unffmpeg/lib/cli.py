@@ -68,27 +68,6 @@ def ffprobe_file(vid_file_path):
     if not info:
         raise FFProbeError(vid_file_path, 'No info found')
 
-    # Get FPS
-    src_fps = None
-    try:
-        src_fps = eval(info['streams'][0]['avg_frame_rate'])
-    except ZeroDivisionError:
-        # Warning, Cannot use input FPS
-        pass
-    if src_fps == 0:
-        raise ValueError('Unexpected zero FPS')
-
-    # Get Duration
-    duration = None
-    try:
-        duration = float(info['format']['duration'])
-    except ZeroDivisionError:
-        # Warning, Cannot use input Duration
-        pass
-
-    if src_fps is None and duration is None:
-        raise ValueError('Unable to match against FPS or Duration.')
-
     return info
 
 

@@ -98,9 +98,9 @@ class Info(object):
 
         # Combine dictionaries into one
         self.available_encoders = {
-            'audio' : available_audio_encoders,
-            'subtitle' : available_subtitle_encoders,
-            'video' : available_video_encoders
+            'audio':    available_audio_encoders,
+            'subtitle': available_subtitle_encoders,
+            'video':    available_video_encoders
         }
 
     def get_ffmpeg_audio_encoders(self):

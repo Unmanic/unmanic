@@ -29,9 +29,8 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-import logging
-import os
 
+import os
 import json
 
 from lib import common, unlogger
@@ -97,4 +96,3 @@ class History(object):
             except Exception as e:
                 self._log("Exception in reading completed job data from file:", message2=str(e), level="exception")
         return data
-

@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.historictaskstatistics.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     22 Jun 2019, (1:47 PM)
+    Date:                     30 Sep 2019, (6:49 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,25 +30,20 @@
 
 """
 
-from __future__ import absolute_import
-import warnings
+import datetime
+
+from peewee import *
+from lib.unmodels.basemodel import BaseModel
+from lib.unmodels.historictasks import HistoricTasks
 
 
-from .settings import BaseModel
-from .historictasks import HistoricTasks
-from .historictaskstatistics import HistoricTaskStatistics
-from .migrations import Migrations
-from .settings import Settings
-
-
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'BaseModel',
-    'HistoricTasks',
-    'HistoricTaskStatistics',
-    'Migrations',
-    'Settings',
-)
-
-
+class HistoricTaskStatistics(BaseModel):
+    """
+    HistoricTaskStatistics
+    """
+    historic_task = ForeignKeyField(HistoricTasks)
+    start_time = DateTimeField(null=False, default=datetime.datetime.now)
+    finish_time = DateTimeField(null=False, default=datetime.datetime.now)
+    processed_by_worker = TextField(null=False)
+    audio_encoder = TextField(null=True)
+    video_encoder = TextField(null=True)

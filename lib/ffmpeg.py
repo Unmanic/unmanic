@@ -114,7 +114,31 @@ class FFMPEGHandle(object):
         :param vid_file_path: The absolute (full) path of the video file, string.
         :return:
         """
-        return unffmpeg.Info().file_probe(vid_file_path)
+        # Get the file probe info
+        probe_info = unffmpeg.Info().file_probe(vid_file_path)
+
+        # Get FPS from file probe info
+        self.src_fps = None
+        try:
+            self.src_fps = eval(probe_info['streams'][0]['avg_frame_rate'])
+        except ZeroDivisionError:
+            # Warning, Cannot use input FPS
+            self._log('Warning, Cannot use input FPS', level='warning')
+        if self.src_fps == 0:
+            raise ValueError('Unexpected zero FPS')
+
+        # Get Duration from file probe info
+        self.duration = None
+        try:
+            self.duration = float(probe_info['format']['duration'])
+        except ZeroDivisionError:
+            # Warning, Cannot use input Duration
+            self._log('Warning, Cannot use input Duration', level='warning')
+
+        if self.src_fps is None and self.duration is None:
+            raise ValueError('Unable to match against FPS or Duration.')
+
+        return probe_info
 
     def set_file_in(self, vid_file_path):
         """

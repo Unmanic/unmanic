@@ -63,7 +63,7 @@ def grab_module(module_name, *args, **kwargs):
         return instance
 
     except (AttributeError, AssertionError, ModuleNotFoundError):
-        raise ImportError('{} is not part of our collection!'.format(module_name))
+        raise ImportError('{} is not part of our supported audio codecs!'.format(module_name))
 
 
 def get_all_audio_codecs():

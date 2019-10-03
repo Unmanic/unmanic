@@ -40,7 +40,8 @@ class HistoricTasks(BaseModel):
     """
     HistoricTasks
     """
+    task_label = TextField(null=False)
     task_success = BooleanField(null=False)
-    time_complete = DateTimeField(null=False, default=datetime.datetime.now)
-    description = TextField(null=False)
-    abspath = TextField(null=False)
+    start_time = DateTimeField(null=False, default=datetime.datetime.now)
+    finish_time = DateTimeField(null=False, default=datetime.datetime.now)
+    processed_by_worker = TextField(null=False)

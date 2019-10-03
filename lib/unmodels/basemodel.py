@@ -130,7 +130,7 @@ class BaseModel(Model):
         """
         return self._meta.fields
 
-    def get_current_settings_dict(self):
+    def get_current_field_values_dict(self):
         """
         Return a dictionary of this models fields and their current values
 

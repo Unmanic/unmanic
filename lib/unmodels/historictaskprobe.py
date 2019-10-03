@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.historictaskprobe.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     22 Jun 2019, (1:47 PM)
+    Date:                     02 Oct 2019, (7:02 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,33 +30,20 @@
 
 """
 
-from __future__ import absolute_import
-import warnings
+from peewee import *
+from lib.unmodels.basemodel import BaseModel
+from lib.unmodels.historictasks import HistoricTasks
 
 
-from .basemodel import BaseModel
-from .basemodel import Database
-from .basemodel import db
-from .historictasks import HistoricTasks
-from .historictaskprobe import HistoricTaskProbe
-from .historictaskprobestreams import HistoricTaskProbeStreams
-from .historictasksettings import HistoricTaskSettings
-from .migrations import Migrations
-from .settings import Settings
-
-
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'BaseModel',
-    'Database',
-    'db',
-    'HistoricTasks',
-    'HistoricTaskProbe',
-    'HistoricTaskProbeStreams',
-    'HistoricTaskSettings',
-    'Migrations',
-    'Settings',
-)
-
-
+class HistoricTaskProbe(BaseModel):
+    """
+    HistoricTaskProbe
+    """
+    historictask_id = ForeignKeyField(HistoricTasks)
+    type = TextField(null=False, default='source')
+    abspath = TextField(null=False)
+    basename = TextField(null=False)
+    bit_rate = TextField(null=False)
+    format_long_name = TextField(null=False)
+    format_name = TextField(null=False)
+    size = TextField(null=False)

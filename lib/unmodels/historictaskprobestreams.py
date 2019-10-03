@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.historictaskprobestreams.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     22 Jun 2019, (1:47 PM)
+    Date:                     02 Oct 2019, (7:03 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,33 +30,24 @@
 
 """
 
-from __future__ import absolute_import
-import warnings
+from peewee import *
+from lib.unmodels.basemodel import BaseModel
+from lib.unmodels.historictaskprobe import HistoricTaskProbe
 
 
-from .basemodel import BaseModel
-from .basemodel import Database
-from .basemodel import db
-from .historictasks import HistoricTasks
-from .historictaskprobe import HistoricTaskProbe
-from .historictaskprobestreams import HistoricTaskProbeStreams
-from .historictasksettings import HistoricTaskSettings
-from .migrations import Migrations
-from .settings import Settings
-
-
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'BaseModel',
-    'Database',
-    'db',
-    'HistoricTasks',
-    'HistoricTaskProbe',
-    'HistoricTaskProbeStreams',
-    'HistoricTaskSettings',
-    'Migrations',
-    'Settings',
-)
-
-
+class HistoricTaskProbeStreams(BaseModel):
+    """
+    HistoricTaskProbeStreams
+    """
+    historictaskprobe_id = ForeignKeyField(HistoricTaskProbe)
+    codec_type = TextField(null=False)
+    codec_long_name = TextField(null=False)
+    avg_frame_rate = TextField(null=False)
+    bit_rate = TextField(null=False)
+    coded_height = TextField(null=False)
+    coded_width = TextField(null=False)
+    height = TextField(null=False)
+    width = TextField(null=False)
+    duration = TextField(null=False)
+    channels = TextField(null=False)
+    channel_layout = TextField(null=False)

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.historictaskstatistics.py
+    unmanic.historictasksettings.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
     Date:                     30 Sep 2019, (6:49 PM)
@@ -37,13 +37,10 @@ from lib.unmodels.basemodel import BaseModel
 from lib.unmodels.historictasks import HistoricTasks
 
 
-class HistoricTaskStatistics(BaseModel):
+class HistoricTaskSettings(BaseModel):
     """
-    HistoricTaskStatistics
+    HistoricTaskSettings
     """
-    historic_task = ForeignKeyField(HistoricTasks)
-    start_time = DateTimeField(null=False, default=datetime.datetime.now)
-    finish_time = DateTimeField(null=False, default=datetime.datetime.now)
-    processed_by_worker = TextField(null=False)
+    historictask_id = ForeignKeyField(HistoricTasks)
     audio_encoder = TextField(null=True)
     video_encoder = TextField(null=True)

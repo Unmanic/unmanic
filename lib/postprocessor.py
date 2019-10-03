@@ -185,3 +185,17 @@ class PostProcessor(threading.Thread):
         if not result['success']:
             for message in result['errors']:
                 self._log("Exception in writing history to file:", message2=str(message), level="exception")
+
+        # New recording...
+        history_logging = history.History(self.settings)
+        task_dump = self.current_task.task_dump()
+        history_logging.save_task_history(
+            {
+                'task_label':          self.current_task.source['basename'],
+                'task_success':        self.current_task.success,
+                'start_time':          task_dump['statistics']['start_time'],
+                'finish_time':         task_dump['statistics']['finish_time'],
+                'processed_by_worker': task_dump['statistics']['processed_by_worker'],
+                'task_dump':           task_dump,
+            }
+        )

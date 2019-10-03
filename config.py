@@ -102,7 +102,7 @@ class CONFIG(object):
         config_dict = {}
         # Create a copy of this class's dict
         if self.settings:
-            config_dict = self.settings.get_current_settings_dict()
+            config_dict = self.settings.get_current_field_values_dict()
         else:
             # TODO: Set this to debug logging
             self._log("Something went wrong. The settings variable is not set.", level="info")
@@ -158,7 +158,7 @@ class CONFIG(object):
 
         :return:
         """
-        unmodels.basemodel.Database.select_database(self.DATABASE)
+        unmodels.Database.select_database(self.DATABASE)
         # Fetch current settings (create it if nothing yet exists)
         db_settings = unmodels.Settings()
         try:
@@ -168,7 +168,7 @@ class CONFIG(object):
             # Create settings (defaults will be applied)
             self.settings = db_settings.create()
         # Check if key is a valid setting
-        current_settings = self.settings.get_current_settings_dict()
+        current_settings = self.settings.get_current_field_values_dict()
         for setting in current_settings:
             # Import settings
             self.set_config_item(setting.upper(), current_settings[setting], save_settings=False)
@@ -249,7 +249,7 @@ class CONFIG(object):
             # Get lowercase value of key
             field_id = key.lower()
             # Check if key is a valid setting
-            if field_id not in self.settings.get_current_settings_dict().keys():
+            if field_id not in self.settings.get_current_field_values_dict().keys():
                 self._log("Attempting to save unknown key", message2=str(key), level="warning")
                 # Do not proceed if this is any key other than the database
                 return

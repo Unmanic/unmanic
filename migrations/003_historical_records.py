@@ -40,23 +40,21 @@ def migrate(migrator, database, fake=False, **kwargs):
 
     @migrator.create_model
     class HistoricTasks(pw.Model):
+        task_label = pw.TextField(null=False)
         task_success = pw.BooleanField(null=False)
-        time_complete = pw.DateTimeField(null=False, default=datetime.datetime.now)
-        description = pw.TextField(null=False)
-        abspath = pw.TextField(null=False)
-
-    @migrator.create_model
-    class HistoricTaskStatistics(pw.Model):
-        historic_task = pw.ForeignKeyField(HistoricTasks)
         start_time = pw.DateTimeField(null=False, default=datetime.datetime.now)
         finish_time = pw.DateTimeField(null=False, default=datetime.datetime.now)
         processed_by_worker = pw.TextField(null=False)
+
+    @migrator.create_model
+    class HistoricTaskSettings(pw.Model):
+        historictask_id = pw.ForeignKeyField(HistoricTasks)
         audio_encoder = pw.TextField(null=True)
         video_encoder = pw.TextField(null=True)
 
     @migrator.create_model
     class HistoricTaskProbe(pw.Model):
-        historic_task = pw.ForeignKeyField(HistoricTasks)
+        historictask_id = pw.ForeignKeyField(HistoricTasks)
         type = pw.TextField(null=False, default='source')
         abspath = pw.TextField(null=False)
         basename = pw.TextField(null=False)
@@ -67,7 +65,7 @@ def migrate(migrator, database, fake=False, **kwargs):
 
     @migrator.create_model
     class HistoricTaskProbeStreams(pw.Model):
-        historic_task_probe = pw.ForeignKeyField(HistoricTaskProbe)
+        historictaskprobe_id = pw.ForeignKeyField(HistoricTaskProbe)
         codec_type = pw.TextField(null=False)
         codec_long_name = pw.TextField(null=False)
         avg_frame_rate = pw.TextField(null=False)

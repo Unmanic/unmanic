@@ -1,12 +1,12 @@
 
 
 <ul class="feeds">
-    {% for historical_item in handler.get_historical_tasks() %}
+    {% for historical_item in historic_task_list %}
     <li>
         <div class="col1">
             <div class="cont">
                 <div class="cont-col1">
-                    {% if 'success' in historical_item and historical_item['success'] %}
+                    {% if 'task_success' in historical_item and historical_item['task_success'] %}
                         <div class="label label-sm label-info">
                                 <i class="fa fa-check"></i>
                         </div>
@@ -19,7 +19,7 @@
                 <div class="cont-col2">
                     <div class="desc"> 
                     {% try %}
-                        {{ historical_item['description'] }}
+                        {{ historical_item['task_label'] }}
                     {% except %}
                         <span class="error">(Error fetching historical item information - Please report this as a bug)</span>
                     {% end %}
@@ -31,10 +31,10 @@
             <div class="date">
                 {% import time %}
                 {% import common %}
-                {% if ((int(historical_item['time_complete']) + 60) > int(time.time())) %}
+                {% if ((int(historical_item['finish_time']) + 60) > int(time.time())) %}
                     Just Now
                 {% else %}
-                    {{ escape(common.make_timestamp_human_readable( int( historical_item['time_complete'] ) )) }}
+                    {{ escape(common.make_timestamp_human_readable( int( historical_item['finish_time'] ) )) }}
                 {%end%}
                     
             </div>

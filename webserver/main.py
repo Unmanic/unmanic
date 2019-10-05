@@ -43,6 +43,7 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
     workerHandle = None
     components = None
     config = None
+    historic_task_list = None
 
     def initialize(self, data_queues, workerHandle, settings):
         self.name = 'main'
@@ -50,13 +51,16 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
         self.workerHandle = workerHandle
         self.components = []
         self.config = settings
+        self.historic_task_list = []
 
     def get(self, path):
         if self.get_query_arguments('ajax'):
             # Print out the json based on the call
             self.handle_ajax_call(self.get_query_arguments('ajax')[0])
         else:
-            self.render("main/main.html", time_now=time.time())
+            self.get_historical_tasks()
+            self.set_header("Content-Type", "text/html")
+            self.render("main/main.html", historic_task_list=self.historic_task_list, time_now=time.time())
 
     def handle_ajax_call(self, query):
         self.set_header("Content-Type", "application/json")
@@ -70,9 +74,12 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
                 self.write(json.dumps(self.get_pending_tasks()))
         if query == 'historicalTasks':
             if self.get_query_arguments('format') and 'html' in self.get_query_arguments('format'):
+                self.get_historical_tasks()
                 self.set_header("Content-Type", "text/html")
-                self.render("main/main-completed-tasks-list.html", time_now=time.time())
+                self.render("main/main-completed-tasks-list.html", historic_task_list=self.historic_task_list,
+                            time_now=time.time())
             else:
+                self.set_header("Content-Type", "application/json")
                 self.write(json.dumps(self.get_historical_tasks()))
 
     def get_workers_info(self):
@@ -86,4 +93,5 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
 
     def get_historical_tasks(self):
         history_logging = history.History(self.config)
-        return history_logging.read_history_log()
+        self.historic_task_list = list(history_logging.get_historic_task_list())
+        return self.historic_task_list

@@ -34,7 +34,8 @@ import os
 import json
 import time
 
-from lib import common, unlogger, unmodels
+from lib import common, unlogger
+from lib.unmodels import db, HistoricTasks, HistoricTaskSettings, HistoricTaskProbe, HistoricTaskProbeStreams
 
 try:
     from json.decoder import JSONDecodeError
@@ -112,6 +113,41 @@ class History(object):
                 self._log("Exception in reading completed job data from file:", message2=str(e), level="exception")
         return data
 
+    def get_historic_task_list(self):
+        """
+        Read all historic tasks entries
+
+        :return:
+        """
+        historic_task = HistoricTasks()
+        try:
+            # Fetch a single row (get() will raise DoesNotExist exception if no results are found)
+            historic_tasks = historic_task.select()
+        except historic_task.DoesNotExist:
+            # No historic entries exist yet
+            self._log("No historic tasks exist yet.", level="exception")
+            historic_tasks = []
+
+        return historic_tasks.dicts()
+
+    def get_historic_task_data_dictionary(self, task_id):
+        """
+        Read all data for a task and return a dictionary of that data
+
+        :return:
+        """
+        # Get historic task matching the id
+        try:
+            # Fetch the historic task (get() will raise DoesNotExist exception if no results are found)
+            historic_tasks = HistoricTasks.get_by_id(task_id)
+        except HistoricTasks.DoesNotExist:
+            self._log("Failed to retrieve historic task from database for id {}.".format(task_id), level="error")
+            return False
+        # Get all saved data for this task and create dictionary of task data
+        historic_task = historic_tasks.model_to_dict()
+        # Return task data dictionary
+        return historic_task
+
     def save_task_history(self, task_data):
         """
         Record a task's data and state to the database.
@@ -120,7 +156,7 @@ class History(object):
         :return:
         """
         try:
-            with unmodels.db.atomic():
+            with db.atomic():
 
                 # Create the new historical task entry
                 new_historic_task = self.create_historic_task_entry(task_data)
@@ -157,13 +193,11 @@ class History(object):
         :param task_data:
         :return:
         """
-        historic_task = unmodels.HistoricTasks()
-
         if not task_data:
             self._log('Task data param empty', json.dumps(task_data), level="debug")
             raise Exception('Task data param empty. This should not happen - Something has gone really wrong.')
 
-        new_historic_task = historic_task.create(task_label=task_data['task_label'],
+        new_historic_task = HistoricTasks.create(task_label=task_data['task_label'],
                                                  task_success=task_data['task_success'],
                                                  start_time=task_data['start_time'],
                                                  finish_time=task_data['finish_time'],
@@ -189,8 +223,6 @@ class History(object):
         :param task_dump:
         :return:
         """
-        task_probe = unmodels.HistoricTaskProbe()
-
         probe_data = task_dump.get(probe_type, None)
 
         if not probe_data:
@@ -200,18 +232,18 @@ class History(object):
         file_probe = probe_data.get('file_probe', None)
         file_probe_format = file_probe.get('format', None)
 
-        new_historic_task_probe = task_probe.create(historictask_id=historic_task,
-                                                    type=probe_type,
-                                                    abspath=task_dump['source']['abspath'],
-                                                    basename=task_dump['source']['basename'],
-                                                    bit_rate=file_probe_format.get('bit_rate', ''),
-                                                    format_long_name=file_probe_format.get('format_long_name', ''),
-                                                    format_name=file_probe_format.get('format_name', ''),
-                                                    size=file_probe_format.get('size', ''))
+        historic_task_probe = HistoricTaskProbe.create(historictask_id=historic_task,
+                                                       type=probe_type,
+                                                       abspath=task_dump[probe_type]['abspath'],
+                                                       basename=task_dump[probe_type]['basename'],
+                                                       bit_rate=file_probe_format.get('bit_rate', ''),
+                                                       format_long_name=file_probe_format.get('format_long_name', ''),
+                                                       format_name=file_probe_format.get('format_name', ''),
+                                                       size=file_probe_format.get('size', ''))
 
-        self.create_historic_task_probe_streams_entries(probe_type, new_historic_task_probe, file_probe)
+        self.create_historic_task_probe_streams_entries(probe_type, historic_task_probe, file_probe)
 
-        return new_historic_task_probe
+        return historic_task_probe
 
     def create_historic_task_probe_streams_entries(self, probe_type, historic_task_probe, file_probe):
         """
@@ -237,8 +269,6 @@ class History(object):
         :param file_probe:
         :return:
         """
-        task_probe_streams = unmodels.HistoricTaskProbeStreams()
-
         # Loop over streams and add them
         for stream in file_probe.get('streams', []):
 
@@ -246,15 +276,15 @@ class History(object):
                 self._log('Stream data for {} missing codec_type'.format(probe_type), json.dumps(stream), level="debug")
                 raise Exception('Stream data for {} missing required "codec_type" data'.format(probe_type))
 
-            task_probe_streams.create(historictaskprobe_id=historic_task_probe,
-                                      codec_type=stream.get('codec_type', None),
-                                      codec_long_name=stream.get('codec_long_name', ''),
-                                      avg_frame_rate=stream.get('avg_frame_rate', ''),
-                                      bit_rate=stream.get('bit_rate', ''),
-                                      coded_height=stream.get('coded_height', ''),
-                                      coded_width=stream.get('coded_width', ''),
-                                      height=stream.get('height', ''),
-                                      width=stream.get('width', ''),
-                                      duration=stream.get('duration', ''),
-                                      channels=stream.get('channels', ''),
-                                      channel_layout=stream.get('channel_layout', ''))
+            HistoricTaskProbeStreams.create(historictaskprobe_id=historic_task_probe,
+                                            codec_type=stream.get('codec_type', None),
+                                            codec_long_name=stream.get('codec_long_name', ''),
+                                            avg_frame_rate=stream.get('avg_frame_rate', ''),
+                                            bit_rate=stream.get('bit_rate', ''),
+                                            coded_height=stream.get('coded_height', ''),
+                                            coded_width=stream.get('coded_width', ''),
+                                            height=stream.get('height', ''),
+                                            width=stream.get('width', ''),
+                                            duration=stream.get('duration', ''),
+                                            channels=stream.get('channels', ''),
+                                            channel_layout=stream.get('channel_layout', ''))

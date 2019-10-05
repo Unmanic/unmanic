@@ -167,7 +167,7 @@ class LibraryScanner(threading.Thread):
                 self._log(json.dumps(files, indent=2))
             # Add all files in this path that match our container filter
             for file_path in files:
-                if file_path.lower().endswith(self.settings.allowed_search_extensions()):
+                if self.settings.file_ends_in_allowed_search_extensions(file_path):
                     pathname = os.path.join(root, file_path)
                     # Check if this file is already the correct format:
                     if self.file_not_target_format(pathname):
@@ -213,7 +213,7 @@ class EventProcessor(pyinotify.ProcessEvent):
     def process_IN_CLOSE_WRITE(self, event):
         if self.inotify_enabled():
             self._log("CLOSE_WRITE event detected:", event.pathname)
-            if event.pathname.lower().endswith(self.settings.allowed_search_extensions()):
+            if self.settings.file_ends_in_allowed_search_extensions(event.pathname):
                 # Add it to the queue
                 if self.file_not_target_format(event.pathname):
                     self.add_path_to_queue(event.pathname)
@@ -225,7 +225,7 @@ class EventProcessor(pyinotify.ProcessEvent):
     def process_IN_MOVED_TO(self, event):
         if self.inotify_enabled():
             self._log("MOVED_TO event detected:", event.pathname)
-            if event.pathname.lower().endswith(self.settings.allowed_search_extensions()):
+            if self.settings.file_ends_in_allowed_search_extensions(event.pathname):
                 # Add it to the queue
                 if self.file_not_target_format(event.pathname):
                     self.add_path_to_queue(event.pathname)

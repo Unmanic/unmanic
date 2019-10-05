@@ -31,7 +31,7 @@
 
 import os
 from lib import unmodels, unlogger, unffmpeg
-from lib import common
+from lib import common, history
 
 import json
 
@@ -74,6 +74,9 @@ class CONFIG(object):
         self.SUPPORTED_CODECS = unffmpeg.Info().get_all_supported_codecs()
         # Set the supported containers (for destination)
         self.SUPPORTED_CONTAINERS = unffmpeg.containers.get_all_containers()
+        # TODO: Remove temporary beta data migration
+        history_logging = history.History(self)
+        history_logging.migrate_old_beta_data()
 
     def _log(self, message, message2='', level="info"):
         """

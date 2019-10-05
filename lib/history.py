@@ -84,8 +84,8 @@ class History(object):
                 self._log("ValueError in reading history from file:", level="exception")
             except Exception as e:
                 self._log("Exception in reading history from file:", message2=str(e), level="exception")
-        data.reverse()
-        return data
+
+        return sorted(data, key=lambda i: i['time_complete'])
 
     def read_completed_job_data(self, job_id):
         """
@@ -113,19 +113,88 @@ class History(object):
                 self._log("Exception in reading completed job data from file:", message2=str(e), level="exception")
         return data
 
-    def get_historic_task_list(self):
+    def migrate_old_beta_data(self):
+        """
+        Temporary function to migrate old JSON data to database
+        TODO: Remove this function post release. It will not be required.
+
+        :return:
+        """
+        self._log("migrate_old_beta_data function is temporary. To be removed post release.", level="warning")
+
+        # Get paths to old historical json files. These are needed for the cleanup
+        if not os.path.exists(self.settings.CONFIG_PATH):
+            os.makedirs(self.settings.CONFIG_PATH)
+        history_file = os.path.join(self.settings.CONFIG_PATH, 'history.json')
+        completed_job_details_dir = os.path.join(self.settings.CONFIG_PATH, 'completed_job_details')
+
+        # Check if we need to execute this migration
+        if not os.path.exists(history_file):
+            # Migration has already run. no need to continue
+            self._log("No job history migration required. No history.json file exists.", level="debug")
+            return
+
+        # Read current history log and migrate each entry
+        history_log = self.read_history_log()
+        for historical_job in history_log:
+
+            # Fetch completed job data (if it exists)
+            completed_job_data = self.read_completed_job_data(historical_job['job_id'])
+
+            # No completed job data exists for this job
+            if not completed_job_data:
+                continue
+
+            # Set path of job details file (to be deleted post migration)
+            job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(historical_job['job_id']))
+
+            # Create new format dictionary from job data
+            task_data = {
+                'task_label':          historical_job['description'],
+                'task_success':        historical_job['success'],
+                'start_time':          completed_job_data['statistics']['start_time'],
+                'finish_time':         completed_job_data['statistics']['finish_time'],
+                'processed_by_worker': completed_job_data['statistics']['processed_by_worker'],
+                'task_dump':           completed_job_data,
+            }
+
+            try:
+                with db.atomic():
+                    result = self.save_task_history(task_data)
+                    if not result:
+                        raise Exception('Failed to migrate historical file data to database')
+
+                    # Remove json file
+                    os.remove(job_details_file)
+
+            except Exception as error:
+                self._log("Failed to save historic task entry to database.", error, level="error")
+                continue
+
+            # Success
+            self._log("Migrated historical task to DB:", historical_job['abspath'], level="info")
+
+        # If completed_job_details_dir is empty, delete it
+        files = os.listdir(completed_job_details_dir)
+        if len(files) == 0:
+            os.rmdir(completed_job_details_dir)
+            os.remove(history_file)
+
+    def get_historic_task_list(self, limit=None):
         """
         Read all historic tasks entries
 
         :return:
         """
-        historic_task = HistoricTasks()
         try:
             # Fetch a single row (get() will raise DoesNotExist exception if no results are found)
-            historic_tasks = historic_task.select()
-        except historic_task.DoesNotExist:
+            if limit:
+                historic_tasks = HistoricTasks.select().order_by(HistoricTasks.id.desc()).limit(limit)
+            else:
+                historic_tasks = HistoricTasks.select().order_by(HistoricTasks.id.desc())
+        except HistoricTasks.DoesNotExist:
             # No historic entries exist yet
-            self._log("No historic tasks exist yet.", level="exception")
+            self._log("No historic tasks exist yet.", level="warning")
             historic_tasks = []
 
         return historic_tasks.dicts()
@@ -141,7 +210,7 @@ class History(object):
             # Fetch the historic task (get() will raise DoesNotExist exception if no results are found)
             historic_tasks = HistoricTasks.get_by_id(task_id)
         except HistoricTasks.DoesNotExist:
-            self._log("Failed to retrieve historic task from database for id {}.".format(task_id), level="error")
+            self._log("Failed to retrieve historic task from database for id {}.".format(task_id), level="exception")
             return False
         # Get all saved data for this task and create dictionary of task data
         historic_task = historic_tasks.model_to_dict()
@@ -176,8 +245,11 @@ class History(object):
                 # Create an entry of the data from the destination ffprobe
                 self.create_historic_task_probe_entry('destination', new_historic_task, task_dump)
 
+            return True
+
         except Exception as error:
-            self._log("Failed to save historic task entry to database.", error, level="error")
+            self._log("Failed to save historic task entry to database.", error, level="exception")
+            return False
 
     def create_historic_task_entry(self, task_data):
         """

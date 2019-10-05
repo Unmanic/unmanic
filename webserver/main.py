@@ -93,5 +93,5 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
 
     def get_historical_tasks(self):
         history_logging = history.History(self.config)
-        self.historic_task_list = list(history_logging.get_historic_task_list())
+        self.historic_task_list = list(history_logging.get_historic_task_list(20))
         return self.historic_task_list

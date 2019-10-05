@@ -63,13 +63,15 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
     def handle_ajax_call(self, query):
         if query == 'conversionDetails':
             if self.get_query_arguments('jobId')[0]:
-                job_data = self.get_historical_job_data(self.get_query_arguments('jobId')[0])
-                if self.get_query_arguments('json'):
-                    self.set_header("Content-Type", "application/json")
-                    self.write(json.dumps(job_data))
-                else:
-                    self.set_header("Content-Type", "text/html")
-                    self.render("history/history-conversion-details.html", job_data=job_data)
+                job_data = self.get_historical_job_data_for_template(self.get_query_arguments('jobId')[0])
+                # TODO: Make failed response more pretty
+                if job_data:
+                    if self.get_query_arguments('json'):
+                        self.set_header("Content-Type", "application/json")
+                        self.write(json.dumps(job_data))
+                    else:
+                        self.set_header("Content-Type", "text/html")
+                        self.render("history/history-conversion-details.html", job_data=job_data)
         if query == 'reloadCompletedTaskList':
             job_id = None
             if self.get_query_arguments('jobId'):
@@ -84,51 +86,90 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
 
     def get_historical_tasks(self):
         history_logging = history.History(self.config)
-        return history_logging.read_history_log()
+        return history_logging.get_historic_task_list()
 
-    def get_historical_job_data(self, job_id):
+    def get_historical_job_data_for_template(self, job_id):
         history_logging = history.History(self.config)
-        job_data = history_logging.read_completed_job_data(job_id)
-        if 'statistics' in job_data:
-            try:
-                job_data['statistics']['start_datetime'] = self.make_pretty_date_string(
-                    job_data['statistics']['start_time'])
-            except KeyError:
-                tornado.log.app_log.warning("Error setting start datetime in historical item job data.", exc_info=True)
-            try:
-                job_data['statistics']['finish_datetime'] = self.make_pretty_date_string(
-                    job_data['statistics']['finish_time'])
-            except KeyError:
-                tornado.log.app_log.warning("Error setting finish datetime in historical item job data.", exc_info=True)
-            try:
-                duration = job_data['statistics']['finish_time'] - job_data['statistics']['start_time']
-                m, s = divmod(duration, 60)
-                h, m = divmod(m, 60)
-                job_data['statistics']['duration'] = '{:d} hours, {:02d} minutes, {:02d} seconds'.format(int(h), int(m), int(s))
-            except KeyError:
-                tornado.log.app_log.warning("Error setting duration in historical item job data.", exc_info=True)
-        # TODO: Add audio and video encoder data
-        return job_data
+        task_data = history_logging.get_historic_task_data_dictionary(job_id)
+        if not task_data:
+            return False
+        # Set params as required in template
+        template_task_data = {
+            'id':          task_data['id'],
+            'task_label':  task_data.get('task_label'),
+            'statistics':  {
+                'task_success':        task_data.get('task_success'),
+                'duration':            '',
+                'start_time':          task_data.get('start_time'),
+                'finish_time':         task_data.get('finish_time'),
+                'start_datetime':      '',
+                'finish_datetime':     '',
+                'processed_by_worker': task_data.get('processed_by_worker'),
+            },
+            'source':      {},
+            'destination': {}
+        }
 
-    def set_page_data(self, job_id=None):
-        history_list = self.get_historical_tasks()
+        # Generate source/destination ffprobe data
+        source_file_size = 0
+        destination_file_size = 0
+        for probe in task_data.get('historictaskprobe_set', []):
+            if probe['type'] == 'source':
+                template_task_data['source'] = probe
+                source_file_size = probe['size']
+            elif probe['type'] == 'destination':
+                template_task_data['destination'] = probe
+                destination_file_size = probe['size']
+
+        # Generate statistics data
+        # TODO: Add audio and video encoder data
+        template_task_data['statistics']['source_file_size'] = source_file_size
+        template_task_data['statistics']['destination_file_size'] = destination_file_size
+
+        try:
+            template_task_data['statistics']['start_datetime'] = self.make_pretty_date_string(
+                task_data.get('start_time'))
+        except KeyError:
+            tornado.log.app_log.warning("Error setting start datetime in historical item job data.", exc_info=True)
+
+        try:
+            template_task_data['statistics']['finish_datetime'] = self.make_pretty_date_string(
+                task_data.get('finish_time'))
+        except KeyError:
+            tornado.log.app_log.warning("Error setting finish datetime in historical item job data.", exc_info=True)
+
+        try:
+            duration = task_data.get('finish_time') - task_data.get('start_time')
+            m, s = divmod(duration, 60)
+            h, m = divmod(m, 60)
+            pretty_duration = '{:d} hours, {:02d} minutes, {:02d} seconds'.format(int(h), int(m), int(s))
+            template_task_data['statistics']['duration'] = pretty_duration
+        except KeyError:
+            tornado.log.app_log.warning("Error setting duration in historical item job data.", exc_info=True)
+
+        return template_task_data
+
+    def set_page_data(self, task_id=None):
+        historical_tasks = self.get_historical_tasks()
         self.data['historical_item_list'] = []
         self.data['success_count'] = 0
         self.data['failed_count'] = 0
         self.data['total_count'] = 0
-        count = 0
-        for item in history_list:
-            # Set this item's ID
-            # TODO: Set to py enumerate function and remove item id (care that 'id' is now used in the template and js)
-            count += 1
-            item['id'] = count
+        for task in historical_tasks:
+            # Set params as required in template
+            item = {
+                'id':         task['id'],
+                'success':    task['task_success'],
+                'selected':   False,
+                'task_label': task['task_label']
+            }
+
             # Check if this item is meant to be selected
-            item['selected'] = False
             try:
-                if job_id == item['job_id']:
+                if task_id == item['id']:
                     item['selected'] = True
             except KeyError:
-                tornado.log.app_log.debug("Error locating 'job_id' in historical item job data.", exc_info=True)
+                tornado.log.app_log.debug("Error locating 'id' in historical item job data.", exc_info=True)
             # Set success status
             if item['success']:
                 self.data['success_count'] += 1

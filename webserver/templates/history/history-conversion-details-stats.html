@@ -118,13 +118,13 @@
     var red = '#d05454';
 
     {# Set the source and destination size variables #}
-    {% if 'size' in job_data['source']['file_probe']['format'] %}
-        var source_file_size = {{ job_data['source']['file_probe']['format']['size'] }};
+    {% if 'source_file_size' in job_data['statistics'] %}
+        var source_file_size = {{ job_data['statistics']['source_file_size'] }};
     {% else %}
         var source_file_size = 0;
     {% end %}
-    {% if 'size' in job_data['destination']['file_probe']['format'] %}
-        var destination_file_size = {{ job_data['destination']['file_probe']['format']['size'] }};
+    {% if 'destination_file_size' in job_data['statistics'] %}
+        var destination_file_size = {{ job_data['statistics']['destination_file_size'] }};
     {% else %}
         var destination_file_size = 0;
     {% end %}
@@ -132,11 +132,11 @@
     // If the destination file size is greater than the source, then mark it red, otherwise green
     var reduced = true;
     var destination_bar_colour = green;
-    var percent_changed = 100 - (destination_file_size/source_file_size*100);
+    var percent_changed = 100 - (destination_file_size / source_file_size * 100);
     if (destination_file_size >= source_file_size) {
         var reduced = false;
         var destination_bar_colour = red;
-        var percent_changed = 100 - (source_file_size/destination_file_size*100);
+        var percent_changed = 100 - (source_file_size / destination_file_size * 100);
     }
 
     $('#file_size_chart').highcharts({

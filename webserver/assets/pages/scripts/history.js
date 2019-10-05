@@ -7,7 +7,7 @@ var $state = {};
  * @param jobId
  * @param rowId
  */
-var viewConversionDetails = function(jobId, rowId) {
+var viewConversionDetails = function(jobId) {
     $state.jobId = jobId;
     // Get conversion details template for this item
     $.get('?ajax=conversionDetails&jobId=' + jobId, function (data) {
@@ -16,7 +16,7 @@ var viewConversionDetails = function(jobId, rowId) {
 
         // Highlight the currently selected task
         $('.completed_task').css('background', ''); // Remove highlight on all rows
-        $('.completed_task_jobid_' + rowId).css('background', 'rgba(197, 185, 107, 0.20)');
+        $('.completed_task_jobid_' + jobId).css('background', 'rgba(197, 185, 107, 0.20)');
     });
 };
 

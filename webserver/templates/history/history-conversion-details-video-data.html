@@ -10,9 +10,9 @@
             </div>
             <div class="portlet-body">
                 <!--TODO: Perhaps it is better for this to be formatted in a table-->
-                <span class="font-dark sbold uppercase">Format:</span> {{ file_data['file_probe']['format']['format_long_name'] }}
+                <span class="font-dark sbold uppercase">Format:</span> {{ file_data['format_long_name'] }}
                 <br>
-                <span class="font-dark sbold uppercase">Filename:</span> {{ file_data['file_probe']['format']['filename'] }}
+                <span class="font-dark sbold uppercase">Filename:</span> {{ file_data['basename'] }}
                 <br>
                 <br>
                 <div class="row">
@@ -29,7 +29,7 @@
                             </div>
                             <div class="portlet-body">
                                 <div class="row">
-                                    {% for stream in file_data['file_probe']['streams'] %}
+                                    {% for stream in file_data['historictaskprobestreams_set'] %}
                                         {% if stream['codec_type'] == 'video' %}
                                             <div class="col-md-6">
                                                 <!-- BEGIN Portlet PORTLET-->
@@ -92,7 +92,7 @@
                             </div>
                             <div class="portlet-body">
                                 <div class="row">
-                                    {% for stream in file_data['file_probe']['streams'] %}
+                                    {% for stream in file_data['historictaskprobestreams_set'] %}
                                         {% if stream['codec_type'] == 'audio' %}
                                             <div class="col-md-6">
                                                 <!-- BEGIN Portlet PORTLET-->

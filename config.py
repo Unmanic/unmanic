@@ -277,8 +277,22 @@ class CONFIG(object):
             value = [item.replace(' ', '') for item in value]
             # Remove empty values from the list
             value = [item for item in value if item]
-            return tuple(value)
-        return self.SEARCH_EXTENSIONS
+            return value
+        return list(self.SEARCH_EXTENSIONS)
+
+    def file_ends_in_allowed_search_extensions(self, file_name):
+        # Get the file extension
+        file_extension = os.path.splitext(file_name)[-1][1:]
+        # Ensure the file's extension is lowercase
+        file_extension = file_extension.lower()
+        self._log("Check file_extension", file_extension, level="debug")
+        # Get the list of configured extensions to search for
+        allowed_search_extensions = self.allowed_search_extensions()
+        self._log("Check allowed_search_extensions", allowed_search_extensions, level="debug")
+        # Check if it ends with one of the allowed search extensions
+        if file_extension in allowed_search_extensions:
+            return True
+        return False
 
     def get_supported_audio_codecs(self):
         """

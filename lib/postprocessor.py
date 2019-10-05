@@ -143,48 +143,14 @@ class PostProcessor(threading.Thread):
         return result
 
     def write_history_log(self):
-        # Read the current history log from file
-        history_logging = history.History(self.settings)
-        historical_log = history_logging.read_history_log()
-
-        # Set the completed timestamp
-        time_completed = time.time()
-
-        # Set the job id
-        job_id = '{}-{}'.format(common.random_string(), time_completed)
-
-        # Append the file data to the history log
-        historical_log.append({
-            'job_id':        job_id,
-            'description':   self.current_task.source['basename'],
-            'time_complete': time_completed,
-            'abspath':       self.current_task.source['abspath'],
-            'success':       self.current_task.success
-        })
-
-        # Create config path in not exists
+        # TODO: Make migration from files in this folder to DB. Then remove this folder
+        # Create config path if not exists
         if not os.path.exists(self.settings.CONFIG_PATH):
             os.makedirs(self.settings.CONFIG_PATH)
-
         # Create completed job details path in not exists
         completed_job_details_dir = os.path.join(self.settings.CONFIG_PATH, 'completed_job_details')
         if not os.path.exists(completed_job_details_dir):
             os.makedirs(completed_job_details_dir)
-
-        # Set path of history json file
-        history_file = os.path.join(self.settings.CONFIG_PATH, 'history.json')
-        # Set path of conversion details file
-        job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(job_id))
-
-        result = common.json_dump_to_file(self.current_task.task_dump(), job_details_file)
-        if not result['success']:
-            for message in result['errors']:
-                self._log("Exception in writing history to file:", message2=str(message), level="exception")
-
-        result = common.json_dump_to_file(historical_log, history_file)
-        if not result['success']:
-            for message in result['errors']:
-                self._log("Exception in writing history to file:", message2=str(message), level="exception")
 
         # New recording...
         history_logging = history.History(self.settings)

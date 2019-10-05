@@ -33,6 +33,7 @@
 from peewee import *
 from datetime import datetime
 from base64 import b64decode
+from playhouse.shortcuts import model_to_dict, dict_to_model
 
 # Do not initialise the database until the model is called.
 db = DatabaseProxy()  # Create a proxy for our db.
@@ -140,7 +141,8 @@ class BaseModel(Model):
 
     def parse_field_value_by_type(self, field_id, value):
         """
-        Fetches the field type for this field
+        Fetches the field type for this field.
+        Return the passed value with the correct type.
 
         :param field_id:
         :param value:
@@ -183,3 +185,12 @@ class BaseModel(Model):
             return b64decode(value)
 
         return value
+
+    def model_to_dict(self):
+        """
+        Retrieve all related objects recursively and
+        then converts the resulting objects to a dictionary.
+
+        :return:
+        """
+        return model_to_dict(self, backrefs=True)

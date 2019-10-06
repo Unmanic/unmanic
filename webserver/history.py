@@ -107,7 +107,8 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
                 'processed_by_worker': task_data.get('processed_by_worker'),
             },
             'source':      {},
-            'destination': {}
+            'destination': {},
+            'ffmpeg_log':  ''
         }
 
         # Generate source/destination ffprobe data
@@ -125,6 +126,10 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
         # TODO: Add audio and video encoder data
         template_task_data['statistics']['source_file_size'] = source_file_size
         template_task_data['statistics']['destination_file_size'] = destination_file_size
+
+        if not template_task_data['statistics']['task_success']:
+            for ffmpeg_log in task_data.get('historictaskffmpeglog_set', []):
+                template_task_data['ffmpeg_log'] += ffmpeg_log['dump']
 
         try:
             template_task_data['statistics']['start_datetime'] = self.make_pretty_date_string(

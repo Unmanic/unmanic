@@ -79,6 +79,7 @@ class FFMPEGHandle(object):
         self.speed = None
         self.bitrate = None
         self.file_size = None
+        self.ffmpeg_cmd_stdout = None
 
         self.set_info_defaults()
 
@@ -97,6 +98,7 @@ class FFMPEGHandle(object):
         self.speed = 0
         self.bitrate = 0
         self.file_size = None
+        self.ffmpeg_cmd_stdout = []
 
     def _log(self, message, message2='', level="info"):
         unmanic_logging = unlogger.UnmanicLogger.__call__()
@@ -152,8 +154,11 @@ class FFMPEGHandle(object):
             self.file_in['abspath'] = vid_file_path
             self.file_in['file_probe'] = self.file_probe(vid_file_path)
             return True
+        except unffmpeg.exceptions.ffprobe.FFProbeError as e:
+            self._log("Exception in method process_file", str(e), level='exception')
+            return False
         except Exception as e:
-            self._log("Exception - process_file: {}".format(e), level='exception')
+            self._log("Exception in method process_file", str(e), level='exception')
             return False
 
     def set_file_out(self, vid_file_path):
@@ -168,8 +173,11 @@ class FFMPEGHandle(object):
             self.file_out['abspath'] = vid_file_path
             self.file_out['file_probe'] = self.file_probe(vid_file_path)
             return True
+        except unffmpeg.exceptions.ffprobe.FFProbeError as e:
+            self._log("Exception in method set_file_out", str(e), level='exception')
+            return False
         except Exception as e:
-            self._log("Exception - process_file: {}".format(e), level='exception')
+            self._log("Exception in method set_file_out", str(e), level='exception')
             return False
 
     def get_current_video_codecs(self, file_properties):
@@ -198,7 +206,7 @@ class FFMPEGHandle(object):
                 return False
             file_probe = self.file_in['file_probe']
         except Exception as e:
-            self._log("Exception - check_file_to_be_processed read file in: {}".format(e), level='exception')
+            self._log("Exception in method check_file_to_be_processed when reading file in", str(e), level='exception')
             # Failed to fetch properties
             if self.settings.DEBUGGING:
                 self._log("Failed to fetch properties of file {}".format(vid_file_path), level='debug')
@@ -235,7 +243,7 @@ class FFMPEGHandle(object):
                 self._log("Current file format names do not match the configured extension {}".format(
                     container_extension), level='debug')
         except Exception as e:
-            self._log("Exception - check_file_to_be_processed check file container: {}".format(e), level='exception')
+            self._log("Exception in method check_file_to_be_processed. check file container", str(e), level='exception')
             # Failed to fetch properties
             if self.settings.DEBUGGING:
                 self._log("Failed to read format of file {}".format(vid_file_path), level='debug')
@@ -263,7 +271,8 @@ class FFMPEGHandle(object):
                                 video_streams_codecs, self.settings.VIDEO_CODEC), level='debug')
             except Exception as e:
                 # Failed to fetch properties
-                self._log("Exception - check_file_to_be_processed check video codec: {}".format(e), level='exception')
+                self._log("Exception in method check_file_to_be_processed. Check video codec.", str(e),
+                          level='exception')
                 if self.settings.DEBUGGING:
                     self._log("Failed to read codec info of file {}".format(vid_file_path), level='debug')
                     self._log("Marking file not to be processed", level='debug')
@@ -281,11 +290,12 @@ class FFMPEGHandle(object):
     def post_process_file(self, vid_file_path):
         try:
             self.file_out = self.file_probe(vid_file_path)
-        except Exception as e: 
-            self._log("Exception - post_process_file: {}".format(e), level='exception')
+        except unffmpeg.exceptions.ffprobe.FFProbeError as e:
+            self._log("Exception in method post_process_file", str(e), level='exception')
             return False
-            # Failed to fetch properties
-            raise FFMPEGHandlePostProcessError(self.settings.VIDEO_CODEC,stream['codec_name'])
+        except Exception as e:
+            self._log("Exception in method post_process_file", str(e), level='exception')
+            return False
 
         # Ensure file is correct format
         result = False
@@ -431,12 +441,14 @@ class FFMPEGHandle(object):
         return command
 
     def convert_file_and_fetch_progress(self, infile, outfile, args):
-        file_probe = self.file_in['file_probe']
-        if not file_probe:
+        if not self.file_in['file_probe']:
             try:
-                file_probe = self.file_probe(infile)
+                self.file_in['file_probe'] = self.file_probe(infile)
+            except unffmpeg.exceptions.ffprobe.FFProbeError as e:
+                self._log("Exception in method convert_file_and_fetch_progress", str(e), level='exception')
+                return False
             except Exception as e:
-                self._log("Exception - convert_file_and_fetch_progress: {}".format(e), level='exception')
+                self._log("Exception in method convert_file_and_fetch_progress", str(e), level='exception')
                 return False
 
         # Create command with infile, outfile and the arguments
@@ -458,17 +470,23 @@ class FFMPEGHandle(object):
         # Poll process for new output until finished
         while True:
             line_text = self.process.stdout.readline()
+            # Add line to stdout list. This is used for debugging the process if something goes wrong
+            # TODO: Run some tests to see how much of an affect this has on the task.
+            #  If it is minimal, then we should do this all the time and not just when debugging.
+            if self.settings.DEBUGGING:
+                self.ffmpeg_cmd_stdout.append(line_text)
             if line_text == '' and self.process.poll() is not None:
                 break
             # parse the progress
             try:
                 self.parse_conversion_progress(line_text)
-            except:
+            except Exception as e:
                 pass
 
         # Get the final output and the exit status
         self.process.communicate()[0]
         if self.process.returncode == 0:
+            self.ffmpeg_cmd_stdout = []
             return True
         else:
             raise FFMPEGHandleConversionError(command)

@@ -103,7 +103,7 @@ class UnmanicLogger(object, metaclass=SingletonType):
             else:
                 self._file_handler.setLevel(logging.INFO)
             # Set the log level of the stream handle always to error
-            self._stream_handler.setLevel(logging.ERROR)
+            self._stream_handler.setLevel(logging.CRITICAL)
             # Add handler
             self._logger.addHandler(self._file_handler)
     

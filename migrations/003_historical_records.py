@@ -49,8 +49,28 @@ def migrate(migrator, database, fake=False, **kwargs):
     @migrator.create_model
     class HistoricTaskSettings(pw.Model):
         historictask_id = pw.ForeignKeyField(HistoricTasks)
-        audio_encoder = pw.TextField(null=True)
-        video_encoder = pw.TextField(null=True)
+        audio_codec = pw.TextField(null=False)
+        audio_stream_encoder = pw.TextField(null=False)
+        audio_codec_cloning = pw.TextField(null=False)
+        audio_stream_encoder_cloning = pw.TextField(null=False)
+        audio_stereo_stream_bitrate = pw.TextField(null=False)
+        cache_path = pw.TextField(null=False)
+        config_path = pw.TextField(null=False)
+        debugging = pw.BooleanField(null=False)
+        enable_audio_encoding = pw.BooleanField(null=False)
+        enable_audio_stream_transcoding = pw.BooleanField(null=False)
+        enable_audio_stream_stereo_cloning = pw.BooleanField(null=False)
+        enable_inotify = pw.BooleanField(null=False)
+        enable_video_encoding = pw.BooleanField(null=False)
+        library_path = pw.TextField(null=False)
+        log_path = pw.TextField(null=False)
+        number_of_workers = pw.IntegerField(null=False)
+        out_container = pw.TextField(null=False)
+        remove_subtitle_streams = pw.BooleanField(null=False)
+        run_full_scan_on_start = pw.BooleanField(null=False)
+        schedule_full_scan_minutes = pw.IntegerField(null=False)
+        search_extensions = pw.TextField(null=False)
+        video_codec = pw.TextField(null=False)
 
     @migrator.create_model
     class HistoricTaskProbe(pw.Model):
@@ -77,6 +97,11 @@ def migrate(migrator, database, fake=False, **kwargs):
         duration = pw.TextField(null=False)
         channels = pw.TextField(null=False)
         channel_layout = pw.TextField(null=False)
+
+    @migrator.create_model
+    class HistoricTaskFfmpegLog(pw.Model):
+        historictask_id = pw.ForeignKeyField(HistoricTasks)
+        dump = pw.TextField(null=True)
 
 
 def rollback(migrator, database, fake=False, **kwargs):

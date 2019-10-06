@@ -35,7 +35,7 @@ import shutil
 import threading
 import time
 
-from lib import common, history
+from lib import common, history, unffmpeg
 
 """
 
@@ -75,6 +75,9 @@ class PostProcessor(threading.Thread):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
+    def stop(self):
+        self.abort_flag.set()
+
     def run(self):
         self._log("Starting PostProcessor Monitor loop...")
         while not self.abort_flag.is_set():
@@ -84,13 +87,19 @@ class PostProcessor(threading.Thread):
                 time.sleep(.2)
                 self.current_task = self.job_queue.get_next_processed_item()
                 if self.current_task:
-                    self._log("Post-processing item - {}".format(self.current_task.get_source_abspath()))
+                    self._log("Post-processing task - {}".format(self.current_task.get_source_abspath()))
                     self.post_process_file()
                     self.write_history_log()
 
         self._log("Leaving PostProcessor Monitor loop...")
 
     def post_process_file(self):
+        # Check if the job was a success
+        if not self.current_task.success:
+            self._log("Task was marked as failed.", level='debug')
+            self._log("Removing cached file", self.current_task.cache_path, level='debug')
+            os.remove(self.current_task.cache_path)
+            return False
         # Ensure file is correct format
         self.current_task.success = self.validate_streams(self.current_task.cache_path)
         # Move file back to original folder and remove source
@@ -122,8 +131,10 @@ class PostProcessor(threading.Thread):
 
     def validate_streams(self, abspath):
         # Read video information for the input file
-        file_probe = self.current_task.ffmpeg.file_probe(abspath)
-        if not file_probe:
+        try:
+            file_probe = self.current_task.ffmpeg.file_probe(abspath)
+        except unffmpeg.exceptions.ffprobe.FFProbeError as e:
+            self._log("Exception in method process_file", str(e), level='exception')
             return False
 
         result = False
@@ -143,16 +154,12 @@ class PostProcessor(threading.Thread):
         return result
 
     def write_history_log(self):
-        # TODO: Make migration from files in this folder to DB. Then remove this folder
-        # Create config path if not exists
-        if not os.path.exists(self.settings.CONFIG_PATH):
-            os.makedirs(self.settings.CONFIG_PATH)
-        # Create completed job details path in not exists
-        completed_job_details_dir = os.path.join(self.settings.CONFIG_PATH, 'completed_job_details')
-        if not os.path.exists(completed_job_details_dir):
-            os.makedirs(completed_job_details_dir)
+        """
+        Record task history
 
-        # New recording...
+        :return:
+        """
+        self._log("Writing task history log.", level='debug')
         history_logging = history.History(self.settings)
         task_dump = self.current_task.task_dump()
         history_logging.save_task_history(

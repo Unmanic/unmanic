@@ -38,6 +38,7 @@ from .basemodel import BaseModel
 from .basemodel import Database
 from .basemodel import db
 from .historictasks import HistoricTasks
+from .historictaskffmpeglog import HistoricTaskFfmpegLog
 from .historictaskprobe import HistoricTaskProbe
 from .historictaskprobestreams import HistoricTaskProbeStreams
 from .historictasksettings import HistoricTaskSettings
@@ -52,6 +53,7 @@ __all__ = (
     'Database',
     'db',
     'HistoricTasks',
+    'HistoricTaskFfmpegLog',
     'HistoricTaskProbe',
     'HistoricTaskProbeStreams',
     'HistoricTaskSettings',

@@ -37,7 +37,7 @@ import time
 import sys
 
 try:
-    from lib import common, history
+    from lib import common, history, ffmpeg
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
@@ -127,17 +127,26 @@ class WorkerThread(threading.Thread):
 
     def process_item(self):
         abspath = self.current_task.get_source_abspath()
-        self._log("{} running job - {}".format(self.name, abspath))
+        self._log("{} processing job - {}".format(self.name, abspath))
 
         # Create output path if not exists
         common.ensure_dir(self.current_task.cache_path)
 
         # Convert file
         success = False
-        ffmpeg_args = self.current_task.ffmpeg.generate_ffmpeg_args()
-        if ffmpeg_args:
-            success = self.current_task.ffmpeg.convert_file_and_fetch_progress(abspath, self.current_task.cache_path,
-                                                                               ffmpeg_args)
+        try:
+            ffmpeg_args = self.current_task.ffmpeg.generate_ffmpeg_args()
+            if ffmpeg_args:
+                success = self.current_task.ffmpeg.convert_file_and_fetch_progress(abspath,
+                                                                                   self.current_task.cache_path,
+                                                                                   ffmpeg_args)
+
+        except ffmpeg.FFMPEGHandleConversionError as e:
+            # Fetch ffmpeg stdout and append it to the current task object (to be saved during post process)
+            self.current_task.ffmpeg_log = self.current_task.ffmpeg.ffmpeg_cmd_stdout
+            self._log("Error while executing the FFMPEG command {}. "
+                      "Download FFMPEG command dump from history for more information.".format(abspath),
+                      message2=str(e), level="error")
 
         if success:
             # If file conversion was successful, we will get here
@@ -178,7 +187,8 @@ class WorkerThread(threading.Thread):
                 except queue.Empty:
                     continue
                 except Exception as e:
-                    self._log("Exception in processing job with {}:".format(self.name), message2=str(e), level="exception")
+                    self._log("Exception in processing job with {}:".format(self.name), message2=str(e),
+                              level="exception")
             time.sleep(5)
         self._log("Stopping {}".format(self.name))
 
@@ -186,20 +196,26 @@ class WorkerThread(threading.Thread):
 class Worker(threading.Thread):
     def __init__(self, data_queues, settings, job_queue):
         super(Worker, self).__init__(name='Worker')
-        self.settings       = settings
-        self.job_queue      = job_queue
-        self.data_queues    = data_queues
-        self.logger         = data_queues["logging"].get_logger(self.name)
-        self.task_queue     = queue.Queue(maxsize=1)
+        self.settings = settings
+        self.job_queue = job_queue
+        self.data_queues = data_queues
+        self.logger = data_queues["logging"].get_logger(self.name)
+        self.task_queue = queue.Queue(maxsize=1)
         self.complete_queue = queue.Queue()
         self.worker_threads = {}
-        self.remove_list    = []
-        self.abort_flag     = threading.Event()
+        self.remove_list = []
+        self.abort_flag = threading.Event()
         self.abort_flag.clear()
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
+
+    def stop(self):
+        self.abort_flag.set()
+        # Stop all workers
+        for thread in range(len(self.worker_threads)):
+            self.mark_worker_thread_as_redundant(thread)
 
     def init_worker_threads(self):
         # Remove any redundant idle workers from our list
@@ -210,7 +226,7 @@ class Worker(threading.Thread):
             self._log("Worker Threads under the configured limit. Spawning more...")
             # Not enough workers, create some
             for i in range(int(self.settings.NUMBER_OF_WORKERS)):
-                if not i in self.worker_threads:
+                if i not in self.worker_threads:
                     # This worker does not yet exists, create it
                     self.start_worker_thread(i)
         # Check if we have to many workers running and stop the ones with id's higher than our configured number
@@ -220,12 +236,13 @@ class Worker(threading.Thread):
             for thread in range(len(self.worker_threads)):
                 if self.worker_threads[thread].threadID >= int(self.settings.NUMBER_OF_WORKERS):
                     # This thread id is greater than the max number available. We should set it as redundant
-                    self.worker_threads[thread].redundant_flag.set()
-                    self.remove_list.append(thread)
+                    self.mark_worker_thread_as_redundant(thread)
             time.sleep(2)
 
     def start_worker_thread(self, worker_id):
-        thread = WorkerThread(worker_id, "Worker-{}".format(worker_id), self.settings, self.data_queues, self.task_queue, self.complete_queue)
+        thread = WorkerThread(worker_id, "Worker-{}".format(worker_id), self.settings, self.data_queues,
+                              self.task_queue, self.complete_queue)
+        thread.daemon = True
         thread.start()
         self.worker_threads[worker_id] = thread
 
@@ -235,11 +252,15 @@ class Worker(threading.Thread):
                 return True
         return False
 
+    def mark_worker_thread_as_redundant(self, worker_id):
+        self.worker_threads[worker_id].redundant_flag.set()
+        self.remove_list.append(worker_id)
+
     def add_to_task_queue(self, item):
         self.task_queue.put(item)
 
     def run(self):
-        self._log("Starting Worker Monitor loop...")
+        self._log("Starting Worker Monitor loop")
         while not self.abort_flag.is_set():
             time.sleep(1)
 
@@ -284,4 +305,3 @@ class Worker(threading.Thread):
         for thread in self.worker_threads:
             all_status.append(self.worker_threads[thread].get_status())
         return all_status
-

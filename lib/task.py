@@ -54,6 +54,8 @@ class Task(object):
         self.success = False
         self.cache_path = None
         self.statistics = {}
+        self.errors = []
+        self.ffmpeg_log = []
 
         # Reset all ffmpeg info
         self.ffmpeg.set_info_defaults()
@@ -123,14 +125,18 @@ class Task(object):
     def task_dump(self):
         # Generate a copy of this class as a dict
         task_dict = {
-            'success': self.success,
-            'source': self.source,
+            'success':     self.success,
+            'source':      self.source,
             'destination': self.destination,
-            'statistics': self.statistics
+            'statistics':  self.statistics,
+            'errors':      self.errors,
+            'ffmpeg_log':  self.ffmpeg_log
         }
         # Append the ffmpeg probe data
-        task_dict['source']['file_probe'] = self.ffmpeg.file_in['file_probe']
-        task_dict['destination']['file_probe'] = self.ffmpeg.file_out['file_probe']
+        if self.ffmpeg.file_in:
+            task_dict['source']['file_probe'] = self.ffmpeg.file_in.get('file_probe', {})
+        if self.ffmpeg.file_in:
+            task_dict['destination']['file_probe'] = self.ffmpeg.file_out.get('file_probe', {})
         # Append file size data
         return task_dict
 

@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.historictasksettings.py
+    unmanic.historictaskffmpeglog.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     30 Sep 2019, (6:49 PM)
+    Date:                     06 Oct 2019, (4:02 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,37 +30,14 @@
 
 """
 
-import datetime
-
 from peewee import *
 from lib.unmodels.basemodel import BaseModel
 from lib.unmodels.historictasks import HistoricTasks
 
 
-class HistoricTaskSettings(BaseModel):
+class HistoricTaskFfmpegLog(BaseModel):
     """
-    HistoricTaskSettings
+    HistoricTaskFfmpegLog
     """
     historictask_id = ForeignKeyField(HistoricTasks)
-    audio_codec = TextField(null=False)
-    audio_stream_encoder = TextField(null=False)
-    audio_codec_cloning = TextField(null=False)
-    audio_stream_encoder_cloning = TextField(null=False)
-    audio_stereo_stream_bitrate = TextField(null=False)
-    cache_path = TextField(null=False)
-    config_path = TextField(null=False)
-    debugging = BooleanField(null=False)
-    enable_audio_encoding = BooleanField(null=False)
-    enable_audio_stream_transcoding = BooleanField(null=False)
-    enable_audio_stream_stereo_cloning = BooleanField(null=False)
-    enable_inotify = BooleanField(null=False)
-    enable_video_encoding = BooleanField(null=False)
-    library_path = TextField(null=False)
-    log_path = TextField(null=False)
-    number_of_workers = IntegerField(null=False)
-    out_container = TextField(null=False)
-    remove_subtitle_streams = BooleanField(null=False)
-    run_full_scan_on_start = BooleanField(null=False)
-    schedule_full_scan_minutes = IntegerField(null=False)
-    search_extensions = TextField(null=False)
-    video_codec = TextField(null=False)
+    dump = TextField(null=False, default='')

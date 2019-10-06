@@ -35,7 +35,8 @@ import json
 import time
 
 from lib import common, unlogger
-from lib.unmodels import db, HistoricTasks, HistoricTaskSettings, HistoricTaskProbe, HistoricTaskProbeStreams
+from lib.unmodels import db, HistoricTasks, HistoricTaskSettings, HistoricTaskProbe, HistoricTaskProbeStreams, \
+    HistoricTaskFfmpegLog
 
 try:
     from json.decoder import JSONDecodeError
@@ -245,11 +246,37 @@ class History(object):
                 # Create an entry of the data from the destination ffprobe
                 self.create_historic_task_probe_entry('destination', new_historic_task, task_dump)
 
+                # Create an entry of the data from the source ffprobe
+                if not task_dump['success']:
+                    self.create_historic_task_ffmpeg_log_entry(new_historic_task, task_dump)
+                    pass
+
             return True
 
         except Exception as error:
             self._log("Failed to save historic task entry to database.", error, level="exception")
             return False
+
+    def create_historic_task_ffmpeg_log_entry(self, historic_task, task_dump):
+        """
+        Create an entry of the stdout log from the ffmpeg command
+
+        Required task_dump params:
+            - ffmpeg_log
+
+        :param historic_task:
+        :param task_dump:
+        :return:
+        """
+        if 'ffmpeg_log' not in task_dump:
+            self._log('Task dump dict missing ffmpeg_log', json.dumps(task_dump), level="debug")
+            raise Exception('Function param missing ffmpeg_log')
+
+        ffmpeg_log = task_dump.get('ffmpeg_log')
+        ffmpeg_log = ''.join(ffmpeg_log)
+
+        HistoricTaskFfmpegLog.create(historictask_id=historic_task,
+                                     dump=ffmpeg_log)
 
     def create_historic_task_entry(self, task_data):
         """
@@ -298,10 +325,17 @@ class History(object):
         probe_data = task_dump.get(probe_type, None)
 
         if not probe_data:
-            self._log('Task dump dict missing {} data'.function(probe_type), json.dumps(probe_data), level="debug")
-            raise Exception('Function param missing {} data'.function(probe_type))
+            self._log('Task dump dict missing {} data'.format(probe_type), json.dumps(probe_data), level="debug")
+            raise Exception('Function param missing {} data'.format(probe_type))
 
         file_probe = probe_data.get('file_probe', None)
+        if not file_probe:
+            if historic_task.task_success:
+                raise Exception(
+                    'Exception: Successful task data missing {} probe data. Something is wrong'.format(probe_type))
+            self._log('Task dump probe data for {} file does not exist possibly due to task failure'.format(probe_type),
+                      level="debug")
+            return
         file_probe_format = file_probe.get('format', None)
 
         historic_task_probe = HistoricTaskProbe.create(historictask_id=historic_task,
@@ -314,8 +348,6 @@ class History(object):
                                                        size=file_probe_format.get('size', ''))
 
         self.create_historic_task_probe_streams_entries(probe_type, historic_task_probe, file_probe)
-
-        return historic_task_probe
 
     def create_historic_task_probe_streams_entries(self, probe_type, historic_task_probe, file_probe):
         """

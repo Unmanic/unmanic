@@ -9,12 +9,14 @@
                 <li class="active">
                     <a href="#portlet_tab_stats" data-toggle="tab"> Statistics </a>
                 </li>
-                <li>
-                    <a href="#portlet_tab_source" data-toggle="tab"> Original File Info </a>
-                </li>
-                <li>
-                    <a href="#portlet_tab_dest" data-toggle="tab"> New File Info </a>
-                </li>
+                {% if job_data['statistics']['task_success'] %}
+                    <li>
+                        <a href="#portlet_tab_source" data-toggle="tab"> Original File Info </a>
+                    </li>
+                    <li>
+                        <a href="#portlet_tab_dest" data-toggle="tab"> New File Info </a>
+                    </li>
+                {% end %}
             </ul>
         </div>
         <div class="portlet-body">
@@ -23,16 +25,18 @@
                     <!--Dest-->
                     {% include "history-conversion-details-stats.html" %}
                 </div>
-                <div class="tab-pane" id="portlet_tab_source">
-                    <!--Source-->
-                    {% set file_data = job_data['source'] %}
-                    {% include "history-conversion-details-video-data.html" %}
-                </div>
-                <div class="tab-pane" id="portlet_tab_dest">
-                    <!--Dest-->
-                    {% set file_data = job_data['destination'] %}
-                    {% include "history-conversion-details-video-data.html" %}
-                </div>
+                {% if job_data['statistics']['task_success'] %}
+                    <div class="tab-pane" id="portlet_tab_source">
+                        <!--Source-->
+                        {% set file_data = job_data['source'] %}
+                        {% include "history-conversion-details-video-data.html" %}
+                    </div>
+                    <div class="tab-pane" id="portlet_tab_dest">
+                        <!--Dest-->
+                        {% set file_data = job_data['destination'] %}
+                        {% include "history-conversion-details-video-data.html" %}
+                    </div>
+                {% end %}
             </div>
         </div>
     </div>

@@ -57,6 +57,7 @@ class UIServer(threading.Thread):
     def __init__(self, data_queues, settings, workerHandle):
         super(UIServer, self).__init__(name='UIServer')
         self.settings = settings
+        self.ioloop = None
         self.app = None
         self.data_queues = data_queues
         self.logger = data_queues["logging"].get_logger(self.name)
@@ -69,6 +70,10 @@ class UIServer(threading.Thread):
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
+
+    def stop(self):
+        self.abort_flag.set()
+        self.ioloop.stop()
 
     def set_logging(self):
         if self.settings and self.settings.LOG_PATH:
@@ -102,8 +107,10 @@ class UIServer(threading.Thread):
             tornado_log.enable_pretty_logging()
 
     def run(self):
-        self._log("Settings up UIServer event loop...")
+        self._log("Setting up UIServer loop...")
         asyncio.set_event_loop(asyncio.new_event_loop())
+
+        self.ioloop = tornado.ioloop.IOLoop.current()
 
         # Load the app
         self.app = self.makeApp()
@@ -111,7 +118,9 @@ class UIServer(threading.Thread):
         self._log(tornado_settings['static_path'])
         self.app.listen(8888)
 
-        tornado.ioloop.IOLoop.current().start()
+        self.ioloop.start()
+
+        self._log("Leaving UIServer loop...")
 
     def makeApp(self):
         return tornado.web.Application([

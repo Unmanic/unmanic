@@ -38,6 +38,7 @@ import threading
 import queue
 import pyinotify
 import schedule
+import signal
 
 import config
 from lib import unlogger, common, ffmpeg
@@ -53,6 +54,7 @@ unmanic_logging = unlogger.UnmanicLogger.__call__()
 main_logger = unmanic_logging.get_logger()
 
 threads = []
+RUN_THREADS = True
 
 
 # The TaskHandler reads all items in the queues and passes them to the appropriate locations in the application.
@@ -61,39 +63,50 @@ class TaskHandler(threading.Thread):
     def __init__(self, data_queues, settings, job_queue):
         super(TaskHandler, self).__init__(name='TaskHandler')
         self.settings = settings
+        self.logger = data_queues["logging"].get_logger(self.name)
         self.job_queue = job_queue
         self.inotifytasks = data_queues["inotifytasks"]
         self.scheduledtasks = data_queues["scheduledtasks"]
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
 
+    def _log(self, message, message2='', level="info"):
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
+
+    def stop(self):
+        self.abort_flag.set()
+
     def run(self):
-        main_logger.info("Starting TaskHandler Monitor loop...")
+        self._log("Starting TaskHandler Monitor loop")
         while not self.abort_flag.is_set():
             while not self.abort_flag.is_set() and not self.scheduledtasks.empty():
                 try:
                     pathname = self.scheduledtasks.get_nowait()
                     if self.job_queue.add_item(pathname):
-                        main_logger.info("Adding job to queue - {}".format(pathname))
+                        self._log("Adding job to queue", pathname, level='info')
                     else:
-                        main_logger.info("Skipping job already in the queue - {}".format(pathname))
+                        self._log("Skipping job already in the queue", pathname, level='info')
                 except queue.Empty:
                     continue
                 except Exception as e:
-                    main_logger.exception("Exception in processing scheduledtasks: {}".format(str(e)))
+                    self._log("Exception in processing scheduledtasks", str(e), level='exception')
             while not self.abort_flag.is_set() and not self.inotifytasks.empty():
                 try:
                     pathname = self.inotifytasks.get_nowait()
+                    # TODO: Ensure the file is not still being modified at this point.
+                    #  If it is still being modified here, it is ok to wait for that to finish (should not matter much)
                     if self.job_queue.add_item(pathname):
-                        main_logger.info("Adding inotify job to queue - {}".format(pathname))
+                        self._log("Adding inotify job to queue", pathname, level='info')
                     else:
-                        main_logger.info("Skipping inotify job already in the queue - {}".format(pathname))
+                        self._log("Skipping inotify job already in the queue", pathname, level='info')
                 except queue.Empty:
                     continue
                 except Exception as e:
-                    main_logger.exception("Exception in processing inotifytasks: {}".format(str(e)))
+                    self._log("Exception in processing inotifytasks", str(e), level='exception')
             time.sleep(.2)
-        main_logger.info("Leaving TaskHandler Monitor loop...")
+
+        self._log("Leaving TaskHandler Monitor loop...")
 
 
 class LibraryScanner(threading.Thread):
@@ -112,18 +125,21 @@ class LibraryScanner(threading.Thread):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
+    def stop(self):
+        self.abort_flag.set()
+
     def run(self):
         # If we have a config set to run a schedule, then start the process.
         # Otherwise close this thread now.
+        self._log("Starting LibraryScanner Monitor loop")
         while not self.abort_flag.is_set():
             # Main loop to configure the scheduler
             if int(self.settings.SCHEDULE_FULL_SCAN_MINUTES) != self.interval:
                 self.interval = int(self.settings.SCHEDULE_FULL_SCAN_MINUTES)
             if self.interval and self.interval != 0:
-                self._log("Starting LibraryScanner schedule to scan every {} mins...".format(self.interval))
+                self._log("Setting LibraryScanner schedule to scan every {} mins...".format(self.interval))
                 # Configure schedule
                 schedule.every(self.interval).minutes.do(self.scheduled_job)
-                # TODO: Move logging to file
 
                 # First run the task
                 if self.settings.RUN_FULL_SCAN_ON_START and self.firstrun:
@@ -135,12 +151,15 @@ class LibraryScanner(threading.Thread):
                 while not self.abort_flag.is_set():
                     # TODO: Dont run scheduler if we already have a full queue
                     schedule.run_pending()
-                    time.sleep(60)
+                    time.sleep(1)
+                    # If the settings have changed, then break this loop and clear
+                    # the scheduled job resetting to the new interval
                     if int(self.settings.SCHEDULE_FULL_SCAN_MINUTES) != self.interval:
+                        self._log("Resetting LibraryScanner schedule")
                         break
                 schedule.clear()
-                self._log("Stopping LibraryScanner schedule...")
-        time.sleep(5)
+
+        self._log("Leaving LibraryScanner Monitor loop...")
 
     def scheduled_job(self):
         self._log("Running full library scan")
@@ -244,38 +263,59 @@ class EventProcessor(pyinotify.ProcessEvent):
 
 
 def start_handler(data_queues, settings, job_queue):
+    global threads
     main_logger.info("Starting TaskHandler")
     handler = TaskHandler(data_queues, settings, job_queue)
     handler.daemon = True
     handler.start()
+    threads.append({
+        'name':   'TaskHandler',
+        'thread': handler
+    })
     return handler
 
 
 def start_post_processor(data_queues, settings, job_queue):
+    global threads
     main_logger.info("Starting PostProcessor")
     postprocessor = PostProcessor(data_queues, settings, job_queue)
     postprocessor.daemon = True
     postprocessor.start()
+    threads.append({
+        'name':   'PostProcessor',
+        'thread': postprocessor
+    })
     return postprocessor
 
 
 def start_workers(data_queues, settings, job_queue):
+    global threads
     main_logger.info("Starting Workers")
     worker = Worker(data_queues, settings, job_queue)
     worker.daemon = True
     worker.start()
+    threads.append({
+        'name':   'Workers',
+        'thread': worker
+    })
     return worker
 
 
 def start_library_scanner_manager(data_queues, settings):
+    global threads
     main_logger.info("Starting LibraryScanner")
     scheduler = LibraryScanner(data_queues, settings)
     scheduler.daemon = True
     scheduler.start()
+    threads.append({
+        'name':   'LibraryScanner',
+        'thread': scheduler
+    })
     return scheduler
 
 
 def start_inotify_watch_manager(data_queues, settings):
+    global threads
     main_logger.info("Starting EventProcessor")
     wm = pyinotify.WatchManager()
     wm.add_watch(settings.LIBRARY_PATH, pyinotify.ALL_EVENTS, rec=True)
@@ -283,27 +323,45 @@ def start_inotify_watch_manager(data_queues, settings):
     ep = EventProcessor(data_queues, settings)
     # notifier
     notifier = pyinotify.ThreadedNotifier(wm, ep)
+    notifier.start()
+    threads.append({
+        'name':   'EventProcessor',
+        'thread': notifier
+    })
     return notifier
 
 
-def start_ui_server(data_queues, settings, workerHandle):
-    main_logger.info("Starting UI Server")
-    uiserver = UIServer(data_queues, settings, workerHandle)
+def start_ui_server(data_queues, settings, worker_handle):
+    global threads
+    main_logger.info("Starting UIServer")
+    uiserver = UIServer(data_queues, settings, worker_handle)
     uiserver.daemon = True
     uiserver.start()
+    threads.append({
+        'name':   'UIServer',
+        'thread': uiserver
+    })
     return uiserver
 
 
+def sig_handle(a, b):
+    global RUN_THREADS
+    main_logger.info("SIGTERM Received")
+    RUN_THREADS = False
+
+
 def main():
+    global threads
+    global RUN_THREADS
     # Read settings
     settings = config.CONFIG()
 
     # Create our data queues
     data_queues = {
-        "scheduledtasks": queue.Queue(),
-        "inotifytasks": queue.Queue(),
+        "scheduledtasks":   queue.Queue(),
+        "inotifytasks":     queue.Queue(),
         "progress_reports": queue.Queue(),
-        "logging": unmanic_logging
+        "logging":          unmanic_logging
     }
 
     # Clear cache directory
@@ -324,22 +382,25 @@ def main():
     # Start new thread to run the web UI
     start_ui_server(data_queues, settings, worker_handle)
 
-    # start scheduled thread
+    # Start scheduled thread
     start_library_scanner_manager(data_queues, settings)
 
-    # start inotify watch manager
-    notifier = start_inotify_watch_manager(data_queues, settings)
-    notifier.loop()
-    while True:
-        time.sleep(5)
+    # Start inotify watch manager
+    start_inotify_watch_manager(data_queues, settings)
 
-    # stop everything
-    main_logger.info("Stopping all processes")
-    scheduler.abort_flag.set()
-    handler.abort_flag.set()
-    scheduler.join()
-    handler.join()
-    main_logger.info("Exit")
+    # Watch for the term signal
+    signal.signal(signal.SIGTERM, sig_handle)
+    while RUN_THREADS:
+        signal.pause()
+
+    # Received term signal. Stop everything
+    main_logger.info("Stopping all threads")
+    for thread in threads:
+        main_logger.info("Sending thread {} abort signal".format(thread['name']))
+        thread['thread'].stop()
+        main_logger.info("Waiting for thread {} to stop".format(thread['name']))
+        thread['thread'].join()
+    main_logger.info("Exit Unmanic")
 
 
 if __name__ == "__main__":

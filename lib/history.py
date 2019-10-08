@@ -142,12 +142,17 @@ class History(object):
             # Fetch completed job data (if it exists)
             try:
                 completed_job_data = self.read_completed_job_data(historical_job['job_id'])
-            except:
-                completed_job_data = False
+            except Exception as e:
+                self._log("Missing critical data in completed_job_data JSON dump. Ignore this record.", str(e),
+                          level="debug")
+                continue
 
             # No completed job data exists for this job
             if not completed_job_data:
                 continue
+
+            # Append ffmpeg_log to completed_job_data
+            completed_job_data['ffmpeg_log'] = []
 
             # Set path of job details file (to be deleted post migration)
             job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(historical_job['job_id']))

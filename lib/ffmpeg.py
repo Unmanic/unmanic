@@ -467,13 +467,20 @@ class FFMPEGHandle(object):
         self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                         universal_newlines=True)
 
+        # Reset cmd stdout
+        self.ffmpeg_cmd_stdout = []
+
         # Poll process for new output until finished
         while True:
             line_text = self.process.stdout.readline()
             # Add line to stdout list. This is used for debugging the process if something goes wrong
-            # TODO: Run some tests to see how much of an affect this has on the task.
-            #  If it is minimal, then we should do this all the time and not just when debugging.
             if self.settings.DEBUGGING:
+                # Fetch ffmpeg stdout and append it to the current task object (to be saved during post process)
+                # This adds a fair amount of data to the database. It is not ideal to do this
+                # for every task unless the user really needs it.
+                # TODO: Add config options to save this data instead of relying on debugging.
+                #  We could filter it here so that it does not include the lines starting with 'frame='
+                #  in order to reduce the amount of data needing to be saved.
                 self.ffmpeg_cmd_stdout.append(line_text)
             if line_text == '' and self.process.poll() is not None:
                 break
@@ -481,19 +488,24 @@ class FFMPEGHandle(object):
             try:
                 self.parse_conversion_progress(line_text)
             except Exception as e:
-                pass
+                # Only need to show any sort of exception if we have debugging enabled.
+                # So we should log it as a debug rather than an exception.
+                self._log("Exception in method parse_conversion_progress", str(e), level='debug')
 
         # Get the final output and the exit status
         self.process.communicate()[0]
         if self.process.returncode == 0:
-            self.ffmpeg_cmd_stdout = []
             return True
         else:
             raise FFMPEGHandleConversionError(command)
 
     def parse_conversion_progress(self, line_text):
-        # Use regex to pull progress data from process line text
+        """
+        Use regex to pull progress data from process line text
 
+        :param line_text:
+        :return:
+        """
         # Calculate elapsed time
         self.elapsed = (time.time() - self.start_time)
 

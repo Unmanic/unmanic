@@ -247,9 +247,7 @@ class History(object):
                 self.create_historic_task_probe_entry('destination', new_historic_task, task_dump)
 
                 # Create an entry of the data from the source ffprobe
-                if not task_dump['success']:
-                    self.create_historic_task_ffmpeg_log_entry(new_historic_task, task_dump)
-                    pass
+                self.create_historic_task_ffmpeg_log_entry(new_historic_task, task_dump)
 
             return True
 

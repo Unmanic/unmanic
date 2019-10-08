@@ -197,7 +197,7 @@
 {% end %}
 
 {# FFMPEG Command Log #}
-{% if not job_data['statistics']['task_success'] %}
+{% if 'ffmpeg_log' in job_data %}
 <div class="row">
     <div class="col-md-12">
         <div class="portlet box {{ portlet_colour }}">
@@ -215,14 +215,6 @@
                     <pre>{{ job_data['ffmpeg_log'] }}</pre>
                     {% else %}
                     <pre>No FFMPEG command log recorded for this task.</pre>
-                    <br>
-                    <div class="note note-info caption">
-                        <span class="caption-subject font-dark sbold uppercase">Hint:</span>
-                        <br>
-                        <span class="help-inline">
-                                Ensure debugging is enabled in order to record the FFMPEG command logs.
-                            </span>
-                    </div>
                     {% end %}
                 </div>
             </div>

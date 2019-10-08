@@ -23,7 +23,7 @@ Remember that these are some guidelines, use your best judgement.
 
 ### Versions
 
-The version can be found at teh footer of the WebUI. Also, please include the OS details and what version you are running
+The version can be found at the footer of the WebUI. Also, please include the OS details and what version you are running
 (e.g. `cat /etc/os-release`).
 
 ### Installation Method Used

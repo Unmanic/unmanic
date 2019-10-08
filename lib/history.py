@@ -140,7 +140,10 @@ class History(object):
         for historical_job in history_log:
 
             # Fetch completed job data (if it exists)
-            completed_job_data = self.read_completed_job_data(historical_job['job_id'])
+            try:
+                completed_job_data = self.read_completed_job_data(historical_job['job_id'])
+            except:
+                completed_job_data = False
 
             # No completed job data exists for this job
             if not completed_job_data:

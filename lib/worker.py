@@ -140,6 +140,7 @@ class WorkerThread(threading.Thread):
                 success = self.current_task.ffmpeg.convert_file_and_fetch_progress(abspath,
                                                                                    self.current_task.cache_path,
                                                                                    ffmpeg_args)
+            self.current_task.ffmpeg_log = self.current_task.ffmpeg.ffmpeg_cmd_stdout
 
         except ffmpeg.FFMPEGHandleConversionError as e:
             # Fetch ffmpeg stdout and append it to the current task object (to be saved during post process)

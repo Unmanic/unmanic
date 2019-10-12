@@ -56,6 +56,9 @@ PGID=$(id -g)
 # CONFIG_DIR - Where you settings are saved
 CONFIG_DIR=/config
 
+# TZ - Your time zone
+TZ=Pacific/Auckland
+
 # LIBRARY_DIR - The location/locations of your library
 LIBRARY_DIR=/library
 
@@ -65,6 +68,7 @@ CACHE_DIR=/tmp/unmanic
 docker run -ti --rm \
     -e PUID:${PUID} \
     -e PGID:${PGID} \
+    -e TZ:${TZ} \
     -p 8888:8888 \
     -v ${CONFIG_DIR}:/config \
     -v ${LIBRARY_DIR}:/library \

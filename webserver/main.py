@@ -40,15 +40,15 @@ from lib import history
 class MainUIRequestHandler(tornado.web.RequestHandler):
     name = None
     data_queues = None
-    workerHandle = None
+    worker_handle = None
     components = None
     config = None
     historic_task_list = None
 
-    def initialize(self, data_queues, workerHandle, settings):
+    def initialize(self, data_queues, worker_handle, settings):
         self.name = 'main'
         self.data_queues = data_queues
-        self.workerHandle = workerHandle
+        self.worker_handle = worker_handle
         self.components = []
         self.config = settings
         self.historic_task_list = []
@@ -83,13 +83,13 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
                 self.write(json.dumps(self.get_historical_tasks()))
 
     def get_workers_info(self):
-        return self.workerHandle.get_all_worker_status()
+        return self.worker_handle.get_all_worker_status()
 
     def get_workers_count(self):
-        return len(self.workerHandle.get_all_worker_status())
+        return len(self.worker_handle.get_all_worker_status())
 
     def get_pending_tasks(self):
-        return self.workerHandle.job_queue.list_all_incoming_items()
+        return self.worker_handle.job_queue.list_all_incoming_items()
 
     def get_historical_tasks(self):
         history_logging = history.History(self.config)

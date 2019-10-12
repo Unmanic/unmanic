@@ -22,6 +22,7 @@ services:
       - NUMBER_OF_WORKERS=2
       - SCHEDULE_FULL_SCAN_MINUTES=10
       - RUN_FULL_SCAN_ON_START=false
+      - TZ=Pacific/Auckland
     volumes:
       - ../tests/tmp/cache:/tmp/unmanic
       - ../tests/tmp/library:/library

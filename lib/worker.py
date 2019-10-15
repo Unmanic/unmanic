@@ -45,9 +45,9 @@ except ImportError:
 
 
 class WorkerThread(threading.Thread):
-    def __init__(self, threadID, name, settings, data_queues, task_queue, complete_queue):
+    def __init__(self, thread_id, name, settings, data_queues, task_queue, complete_queue):
         super(WorkerThread, self).__init__(name=name)
-        self.threadID = threadID
+        self.thread_id = thread_id
         self.settings = settings
         self.data_queues = data_queues
         self.progress_reports = data_queues['progress_reports']
@@ -66,14 +66,15 @@ class WorkerThread(threading.Thread):
         getattr(self.logger, level)(message)
 
     def get_status(self):
-        status = {}
-        status['id'] = str(self.threadID)
-        status['name'] = self.name
-        status['idle'] = self.idle
-        status['pid'] = self.ident
-        status['progress'] = self.get_job_progress()
-        status['current_file'] = ""
-        status['start_time'] = self.start_time
+        status = {
+            'id':           str(self.thread_id),
+            'name':         self.name,
+            'idle':         self.idle,
+            'pid':          self.ident,
+            'progress':     self.get_job_progress(),
+            'current_file': "",
+            'start_time':   self.start_time
+        }
         if self.current_task:
             status['current_file'] = self.current_task.get_source_basename()
         return status
@@ -220,9 +221,13 @@ class Worker(threading.Thread):
 
     def init_worker_threads(self):
         # Remove any redundant idle workers from our list
-        for thread in range(len(self.worker_threads)):
-            if not self.worker_threads[thread].isAlive():
-                del self.worker_threads[thread]
+        thread_keys = [t for t in self.worker_threads]
+        for thread in thread_keys:
+            if thread in self.worker_threads:
+                if not self.worker_threads[thread].isAlive():
+                    del self.worker_threads[thread]
+
+        # Check that we have enough workers running. Spawn new ones as required.
         if len(self.worker_threads) < int(self.settings.NUMBER_OF_WORKERS):
             self._log("Worker Threads under the configured limit. Spawning more...")
             # Not enough workers, create some
@@ -230,15 +235,15 @@ class Worker(threading.Thread):
                 if i not in self.worker_threads:
                     # This worker does not yet exists, create it
                     self.start_worker_thread(i)
-        # Check if we have to many workers running and stop the ones with id's higher than our configured number
+
+        # Check if we have to many workers running and stop the ones that are idle
         if len(self.worker_threads) > int(self.settings.NUMBER_OF_WORKERS):
             self._log("Worker Threads exceed the configured limit. Marking some for removal...")
             # Too many workers, stop any idle ones
-            for thread in range(len(self.worker_threads)):
-                if self.worker_threads[thread].threadID >= int(self.settings.NUMBER_OF_WORKERS):
+            for thread in self.worker_threads:
+                if self.worker_threads[thread].idle:
                     # This thread id is greater than the max number available. We should set it as redundant
                     self.mark_worker_thread_as_redundant(thread)
-            time.sleep(2)
 
     def start_worker_thread(self, worker_id):
         thread = WorkerThread(worker_id, "Worker-{}".format(worker_id), self.settings, self.data_queues,
@@ -249,7 +254,7 @@ class Worker(threading.Thread):
 
     def check_for_idle_workers(self):
         for thread in self.worker_threads:
-            if self.worker_threads[thread].idle:
+            if self.worker_threads[thread].idle and self.worker_threads[thread].isAlive():
                 return True
         return False
 
@@ -265,15 +270,6 @@ class Worker(threading.Thread):
         while not self.abort_flag.is_set():
             time.sleep(1)
 
-            # First setup the correct number of workers
-            self.init_worker_threads()
-
-            # Check if there are any free workers
-            if not self.check_for_idle_workers():
-                # All workers are currently busy
-                time.sleep(5)
-                continue
-
             while not self.abort_flag.is_set() and not self.complete_queue.empty():
                 time.sleep(.2)
                 try:
@@ -285,13 +281,20 @@ class Worker(threading.Thread):
                     self._log("Exception when fetching completed task report from worker", message2=str(e),
                               level="exception")
 
-            while not self.abort_flag.is_set() and not self.job_queue.incoming_is_empty():
+            # First setup the correct number of workers
+            self.init_worker_threads()
+
+            # Check if there are any free workers
+            if not self.check_for_idle_workers():
+                # All workers are currently busy
+                time.sleep(5)
+                continue
+
+            if not self.job_queue.incoming_is_empty():
                 time.sleep(.2)
-                # Ensure we have the correct number of workers running
-                self.init_worker_threads()
                 # Check if we are able to start up a worker for another encoding job
                 if self.task_queue.full():
-                    break
+                    continue
                 next_item_to_process = self.job_queue.get_next_incoming_item()
                 if next_item_to_process:
                     self._log("Processing item - {}".format(next_item_to_process.get_source_abspath()))
@@ -306,3 +309,10 @@ class Worker(threading.Thread):
         for thread in self.worker_threads:
             all_status.append(self.worker_threads[thread].get_status())
         return all_status
+
+    def get_worker_status(self, worker_id):
+        result = {}
+        for thread in self.worker_threads:
+            if int(worker_id) == int(thread):
+                result = self.worker_threads[thread].get_status()
+        return result

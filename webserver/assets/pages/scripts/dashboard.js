@@ -1357,7 +1357,9 @@ var Dashboard = function() {
             $('.worker-pie-chart-reload').click(function() {
                 updateWorkerPieCharts();
             });
+        },
 
+        initEasyPieChartsPolling: function() {
             updateWorkerPieCharts();
             window.setInterval(function(){
                 updateWorkerPieCharts();
@@ -1395,6 +1397,7 @@ var Dashboard = function() {
 
             // Init the widgets
             this.initEasyPieCharts();
+            this.initEasyPieChartsPolling();
             this.initPendingTasks();
             this.initHistoricalTasks();
         }
@@ -1412,54 +1415,72 @@ if (App.isAngularJsApp() === false) {
 
 // Update the Worker Pie Charts
 var updateWorkerPieCharts = function() {
+    var default_percent_value = 100;
+    var default_current_file  = 'Waiting for job...';
+
+    var insertData = function(group_id, element) {
+        $(group_id + ' .number').each(function() {
+            if (element.idle) {
+                // Set graph
+                $(this).data('easyPieChart').options.barColor = App.getBrandColor('yellow');
+                $(this).data('easyPieChart').update(default_percent_value);
+                $('span', this).text('IDLE');
+                // Set subtitle text
+                $(group_id + ' .worker-subtitle').each(function() {
+                    $(this).text(default_current_file);
+                    $(this).prop('title', '');
+                });
+            } else {
+                // Set graph
+                $(this).data('easyPieChart').options.barColor = App.getBrandColor('green');
+                if (typeof element.progress.percent !== 'undefined') {
+                    $(this).data('easyPieChart').update(element.progress.percent);
+                    $('span', this).text(element.progress.percent + '%');
+                } else {
+                    $(this).data('easyPieChart').update(0);
+                    $('span', this).text('IDLE');
+                }
+                // Set subtitle text
+                $(group_id + ' .worker-subtitle').each(function() {
+                    $(this).text(element.current_file);
+                    $(this).prop('title', element.current_file);
+                });
+            }
+        });
+    };
+
     // Get ajax call to fetch update on status for all workers
     $.get('/?ajax=workersInfo', function (data) {
         // Create list of ids that should exist
         var element_list = [];
         // Set the class of all .number divs. (active or idle)
         // TODO: If the element does not yet exist (a new worker was created) then add it
-        data.forEach(element => {
-            var group_id = "#worker_pie_chart_" + element.id;
+        data.forEach(function(element) {
+            // console.log(element)
+            var group_id = "#unmanic_worker_" + element.id;
             element_list.push(group_id);
-            var percent_value = 100;
-            var current_file  = 'Waiting for job...';
-            $(group_id + ' .number').each(function() {
-                if (element.idle) {
-                    // Set graph
-                    $(this).data('easyPieChart').options.barColor = App.getBrandColor('yellow');
-                    $(this).data('easyPieChart').update(percent_value);
-                    $('span', this).text('IDLE');
-                    // Set subtitle text
-                    $(group_id + ' .worker-subtitle').each(function() {
-                        $(this).text(current_file);
-                        $(this).prop('title', '');
-                    });
-                } else {
-                    // Set graph
-                    $(this).data('easyPieChart').options.barColor = App.getBrandColor('green');
-                    if (typeof element.progress.percent !== 'undefined') {
-                        $(this).data('easyPieChart').update(element.progress.percent);
-                        $('span', this).text(element.progress.percent + '%');
-                    } else {
-                        $(this).data('easyPieChart').update(0);
-                        $('span', this).text('IDLE');
-                    }
-                    // Set subtitle text
-                    $(group_id + ' .worker-subtitle').each(function() {
-                        $(this).text(element.current_file);
-                        $(this).prop('title', element.current_file);
-                    });
-                }
-            });
+            if ($(group_id).length) {
+                insertData(group_id, element);
+            } else {
+                // The element does not yet exist (a new worker was created). Add it
+                $.get('/?ajax=workersInfo&workerId=' + element.id, function (html_data) {
+                    // TODO: Insert this into the appropriate place.
+                    $('#worker_pie_chart').append(html_data);
+                    Dashboard.initEasyPieCharts();
+                    insertData(group_id, element);
+                });
+            }
         });
         // TODO: If an element exists but it should not, remove it
-        $('.worker-pie-chart').each(function() {
-            if (!element_list.includes($(this).attr('id'))){
+        $('.worker-pie-chart-item').each(function() {
+            if (!element_list.includes('#' + $(this).attr('id'))) {
                 // element does not belong
+                console.debug("Removing worker - " + $(this).attr('id'));
+                $(this).remove()
             }
         });
     });
-}
+};
 
 
 // Update the Pending Tasks list
@@ -1469,7 +1490,7 @@ var updatePendingTasksList = function() {
         // update the list
         $('#pending_tasks').html(data)
     });
-}
+};
 
 
 // Update the Historical Tasks list
@@ -1479,6 +1500,6 @@ var updateHistoricalTasksList = function() {
         // update the list
         $('#completed_tasks').html(data)
     });
-}
+};
 
 

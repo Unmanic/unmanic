@@ -1,0 +1,21 @@
+
+{% try %}
+<div class="worker-pie-chart-item" id="unmanic_worker_{{ escape(worker_info['id']) }}">
+    <div class="col-md-2 col-sm-4 col-xs-6">
+        <div class="easy-pie-chart worker-pie-chart">
+            <div class="number idle" data-percent="100">
+                <span style="margin-left:-7px;"> - </span>
+            </div>
+            <a class="title" href="javascript:;">
+                {{ escape(worker_info['name']) }}
+                <i class="icon-arrow-right"></i>
+                <br>
+                <span class="worker-subtitle"></span>
+            </a>
+        </div>
+    </div>
+    <div class="margin-bottom-10 visible-sm"></div>
+</div>
+{% except %}
+
+{% end %}

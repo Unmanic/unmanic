@@ -65,7 +65,12 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
     def handle_ajax_call(self, query):
         self.set_header("Content-Type", "application/json")
         if query == 'workersInfo':
-            self.write(json.dumps(self.get_workers_info()))
+            if self.get_query_arguments('workerId'):
+                worker_info = self.get_workers_info(self.get_query_arguments('workerId')[0])
+                self.set_header("Content-Type", "text/html")
+                self.render("main/main-worker-pie-chart.html", worker_info=worker_info)
+            else:
+                self.write(json.dumps(self.get_workers_info()))
         if query == 'pendingTasks':
             if self.get_query_arguments('format') and 'html' in self.get_query_arguments('format'):
                 self.set_header("Content-Type", "text/html")
@@ -82,8 +87,12 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
                 self.set_header("Content-Type", "application/json")
                 self.write(json.dumps(self.get_historical_tasks()))
 
-    def get_workers_info(self):
-        return self.worker_handle.get_all_worker_status()
+    def get_workers_info(self, worker_id=None):
+        if worker_id is not None:
+            workers_info = self.worker_handle.get_worker_status(worker_id)
+        else:
+            workers_info = self.worker_handle.get_all_worker_status()
+        return workers_info
 
     def get_workers_count(self):
         return len(self.worker_handle.get_all_worker_status())

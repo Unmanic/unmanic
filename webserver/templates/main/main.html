@@ -6,7 +6,7 @@
 
 
 {% block head %}
-<link href="/assets/pages/css/dashboard.css" rel="stylesheet" type="text/css" />
+<link href="/assets/pages/css/dashboard.css?version={{ escape(handler.config.read_version()) }}" rel="stylesheet" type="text/css" />
 {% end %}
 
 {% block scripts %}
@@ -39,7 +39,7 @@
 <script src="../assets/global/plugins/jqvmap/jqvmap/maps/jquery.vmap.germany.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/jqvmap/jqvmap/maps/jquery.vmap.usa.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/jqvmap/jqvmap/data/jquery.vmap.sampledata.js" type="text/javascript"></script>
-<script src="../assets/pages/scripts/dashboard.js" type="text/javascript"></script>
+<script src="../assets/pages/scripts/dashboard.js?version={{ escape(handler.config.read_version()) }}" type="text/javascript"></script>
 {% end %}
 
 

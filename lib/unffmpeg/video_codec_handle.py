@@ -63,6 +63,15 @@ class VideoCodecHandle(object):
                 # By default the video stream will be re-encoded
                 just_copy_video_stream = False
 
+                # Check for more details about the stream
+                if 'tags' in stream:
+                    # Is 'mimetype' in the tags
+                    if 'mimetype' in stream['tags']:
+                        # If this video stream is really an embedded jpeg file (image/jpeg)
+                        # simply copy the stream
+                        if stream['tags']['mimetype'] == 'image/jpeg':
+                            just_copy_video_stream = True
+
                 # If this video encoding is disabled. Then copy the stream
                 if self.disable_video_encoding:
                     just_copy_video_stream = True

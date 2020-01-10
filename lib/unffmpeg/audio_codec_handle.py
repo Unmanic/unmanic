@@ -110,7 +110,7 @@ class AudioCodecHandle(object):
         self.encoding_args['streams_to_encode'] = self.encoding_args['streams_to_encode'] + [
             "-c:a:{}".format(self.audio_tracks_count), self.audio_encoder_cloning,
             "-b:a:{}".format(self.audio_tracks_count), self.audio_stereo_stream_bitrate,
-            "-ac", "2",
+            "-ac:a:{}".format(self.audio_tracks_count), "2",
             "-metadata:s:a:{}".format(self.audio_tracks_count), "title='{}'".format(audio_tag),
         ]
         self.audio_tracks_count += 1

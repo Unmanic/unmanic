@@ -194,8 +194,7 @@ class FFMPEGHandle(object):
         :param vid_file_path:
         :return:
         """
-        # TODO: Add variable to force conversion based on audio config also
-
+        
         # Read the file's properties
         try:
             if not self.file_in and not self.set_file_in(vid_file_path):
@@ -280,8 +279,37 @@ class FFMPEGHandle(object):
         else:
             correct_video_codec = True
 
+        correct_audio_codec = False
+        if self.settings.ENABLE_AUDIO_ENCODING:
+            try:
+                audio_streams_codecs = ""
+                for stream in file_probe['streams']:
+                    if stream['codec_type'] == 'audio':
+                        # Check if this file is already the right format
+                        audio_streams_codecs += "{},{}".format(audio_streams_codecs, stream['codec_name'])
+                        if stream['codec_name'] == self.settings.AUDIO_CODEC:
+                            if self.settings.DEBUGGING:
+                                self._log("File already has {} codec audio stream - {}".format(self.settings.AUDIO_CODEC, vid_file_path),
+                                          level='debug')
+                            correct_audio_codec = True
+                if not correct_audio_codec:
+                    if self.settings.DEBUGGING:
+                        self._log(
+                            "The current file's audio streams ({}) do not match the configured audio codec ({})".format(
+                                audio_streams_codecs, self.settings.AUDIO_CODEC), level='debug')
+            except Exception as e:
+                # Failed to fetch properties
+                self._log("Exception in method check_file_to_be_processed. Check audio codec.", str(e),
+                          level='exception')
+                if self.settings.DEBUGGING:
+                    self._log("Failed to read codec info of file {}".format(vid_file_path), level='debug')
+                    self._log("Marking file not to be processed", level='debug')
+                return False
+        else:
+            correct_audio_codec = True
+
         # Finally ensure that all file properties match the configured values.
-        if correct_extension and correct_video_codec:
+        if correct_extension and correct_video_codec and correct_audio_codec:
             # This file is already the correct container and codec
             return False
         # File did not match, it will need to be added to the queue for processing

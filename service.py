@@ -82,7 +82,7 @@ class TaskHandler(threading.Thread):
         while not self.abort_flag.is_set():
             while not self.abort_flag.is_set() and not self.scheduledtasks.empty():
                 try:
-                    pathname = self.scheduledtasks.get_nowait()
+                    _, pathname = self.scheduledtasks.get_nowait()
                     if self.job_queue.add_item(pathname):
                         self._log("Adding job to queue", pathname, level='info')
                     else:
@@ -166,7 +166,18 @@ class LibraryScanner(threading.Thread):
         self.get_convert_files(self.settings.LIBRARY_PATH)
 
     def add_path_to_queue(self, pathname):
-        self.scheduledtasks.put(pathname)
+        default_priority = 100  # Lower priority values get executed first
+        priority_terms = {
+                "remux": 50,
+                }
+        priority = default_priority
+        lower_pathname = pathname.lower()
+        for term, p in priority_terms.items():
+            if term in lower_pathname:
+                priorty = p
+                break
+
+        self.scheduledtasks.put((priority, pathname))
 
     def file_not_target_format(self, pathname):
         # Reset file in
@@ -358,7 +369,7 @@ def main():
 
     # Create our data queues
     data_queues = {
-        "scheduledtasks":   queue.Queue(),
+        "scheduledtasks":   queue.PriorityQueue(),
         "inotifytasks":     queue.Queue(),
         "progress_reports": queue.Queue(),
         "logging":          unmanic_logging

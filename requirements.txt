@@ -5,5 +5,6 @@ peewee==3.9.6
 peewee_migrate==1.1.6
 pyinotify==0.9.6
 pytest==4.6.3
+sortedcontainers==2.1.0
 teamcity-messages==1.25
 wheel==0.33.6

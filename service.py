@@ -79,11 +79,30 @@ class TaskHandler(threading.Thread):
 
     def run(self):
         self._log("Starting TaskHandler Monitor loop")
+        default_priority = 100  # Lower priority values get executed first
+        # This should be a dict of lowercase searchterms and their
+        # integer priority level.
+        priority_terms = {
+                "remux": 50,
+                }
+        def get_priority(pathname):
+            priority = default_priority
+            lower_pathname = pathname.lower()
+            for term, p in priority_terms.items():
+                if term in lower_pathname:
+                    priorty = p
+                    break
+            # Give larger files slightly higher priority
+            priority -= (1 - (1/os.path.getsize(pathname)))
+            return priority
+
         while not self.abort_flag.is_set():
             while not self.abort_flag.is_set() and not self.scheduledtasks.empty():
                 try:
-                    _, pathname = self.scheduledtasks.get_nowait()
-                    if self.job_queue.add_item(pathname):
+                    pathname = self.scheduledtasks.get_nowait()
+                    priority = get_priority(pathname)
+
+                    if self.job_queue.add_item(priority, pathname):
                         self._log("Adding job to queue", pathname, level='info')
                     else:
                         self._log("Skipping job already in the queue", pathname, level='info')
@@ -94,9 +113,10 @@ class TaskHandler(threading.Thread):
             while not self.abort_flag.is_set() and not self.inotifytasks.empty():
                 try:
                     pathname = self.inotifytasks.get_nowait()
+                    priority = get_priority(pathname)
                     # TODO: Ensure the file is not still being modified at this point.
                     #  If it is still being modified here, it is ok to wait for that to finish (should not matter much)
-                    if self.job_queue.add_item(pathname):
+                    if self.job_queue.add_item(priority, pathname):
                         self._log("Adding inotify job to queue", pathname, level='info')
                     else:
                         self._log("Skipping inotify job already in the queue", pathname, level='info')
@@ -166,19 +186,7 @@ class LibraryScanner(threading.Thread):
         self.get_convert_files(self.settings.LIBRARY_PATH)
 
     def add_path_to_queue(self, pathname):
-        default_priority = 100  # Lower priority values get executed first
-        priority_terms = {
-                "remux": 50,
-                }
-        priority = default_priority
-        lower_pathname = pathname.lower()
-        for term, p in priority_terms.items():
-            if term in lower_pathname:
-                priorty = p
-                break
-        priority -= (1- (1/os.path.getsize(pathname)))
-
-        self.scheduledtasks.put((priority, pathname))
+        self.scheduledtasks.put(pathname)
 
     def file_not_target_format(self, pathname):
         # Reset file in
@@ -370,7 +378,7 @@ def main():
 
     # Create our data queues
     data_queues = {
-        "scheduledtasks":   queue.PriorityQueue(),
+        "scheduledtasks":   queue.Queue(),
         "inotifytasks":     queue.Queue(),
         "progress_reports": queue.Queue(),
         "logging":          unmanic_logging

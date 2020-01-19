@@ -35,6 +35,47 @@ from lib import common
 import collections
 import os
 
+from threading import Lock
+from sortedcontainers import SortedList
+
+class IncomingQueue:
+    def __init__(self):
+        self._lock = Lock()
+        self._q = SortedList()
+
+    def add(self, priority, item):
+        """
+        Parameters
+        ----------
+        priority : float
+            Lower value means higher priority
+        item : object
+            Object to be put on queue
+        """
+        elem = (priority, item)
+        with self._lock:
+            self._q.add(elem)
+
+    def is_empty(self):
+        with self._lock:
+            return len(self._q) == 0
+
+    def get(self):
+        """ Get highest priority item.
+        """
+
+        with self._lock:
+            priority, item = self._q.pop(0)
+            return item
+
+    def contains_abspath(self, abspath):
+        with self._lock:
+            for item in self._q:
+                if abspath == item[1].source['abspath']:
+                    return True
+        return False
+
+
 
 """
 
@@ -61,7 +102,7 @@ class JobQueue(object):
         self.name = 'JobQueue'
         self.settings = settings
         self.data_queues = data_queues
-        self.incoming = collections.deque()
+        self.incoming = IncomingQueue()
         self.in_progress = collections.deque()
         self.processed = collections.deque()
         self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
@@ -72,9 +113,7 @@ class JobQueue(object):
         getattr(self.logger, level)(message)
 
     def incoming_is_empty(self):
-        if self.incoming:
-            return False
-        return True
+        return self.incoming.is_empty()
 
     def processed_is_empty(self):
         if self.processed:
@@ -87,7 +126,7 @@ class JobQueue(object):
         return task_item
 
     def get_next_incoming_item(self):
-        task_item = self.incoming.popleft()
+        task_item = self.incoming.get()
         self.in_progress.append(task_item.source['abspath'])
         return task_item
 
@@ -95,12 +134,11 @@ class JobQueue(object):
         item = self.processed.popleft()
         return item
 
-    def add_item(self, pathname):
+    def add_item(self, priority, pathname):
         abspath = os.path.abspath(pathname)
         # Check if this path is already in the job queue
-        for item in self.list_all_incoming_items():
-            if item.source['abspath'] == abspath:
-                return False
+        if self.incoming.contains_abspath(abspath):
+            return False
         # Check if this path is already in progress of being converted
         for path in self.list_all_in_progress_paths():
             if path == abspath:
@@ -114,7 +152,7 @@ class JobQueue(object):
         new_task.set_source_data(pathname)
         new_task.set_destination_data()
         new_task.set_cache_path()
-        self.incoming.append(new_task)
+        self.incoming.add(priority, new_task)
         return True
 
     def list_all_incoming_items(self):

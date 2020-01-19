@@ -10,7 +10,7 @@
 version: '2'
 
 services:
-  unmanic-testenv:
+  sut:
     container_name: unmanic-testenv
     image: josh5/unmanic:latest
     ports:

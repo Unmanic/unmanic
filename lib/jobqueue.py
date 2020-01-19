@@ -41,7 +41,7 @@ from sortedcontainers import SortedList
 class IncomingQueue:
     def __init__(self):
         self._lock = Lock()
-        self._q = SortedList()
+        self._q = SortedList(key=lambda x: x[0])  # only sort by the priority value
 
     def add(self, priority, item):
         """

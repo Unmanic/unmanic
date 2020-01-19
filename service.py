@@ -176,6 +176,7 @@ class LibraryScanner(threading.Thread):
             if term in lower_pathname:
                 priorty = p
                 break
+        priority -= (1- (1/os.path.getsize(pathname)))
 
         self.scheduledtasks.put((priority, pathname))
 

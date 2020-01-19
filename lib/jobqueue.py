@@ -75,6 +75,10 @@ class IncomingQueue:
                     return True
         return False
 
+    def to_list(self):
+        with self._lock:
+            return [x[1] for x in self._q]
+
 
 
 """
@@ -156,7 +160,7 @@ class JobQueue(object):
         return True
 
     def list_all_incoming_items(self):
-        return list(self.incoming)
+        return self.incoming.to_list()
 
     def list_all_processed_items(self):
         return list(self.processed)

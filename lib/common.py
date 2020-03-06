@@ -33,6 +33,7 @@ import datetime
 import os
 import random
 import string
+import shutil
 
 import ago
 
@@ -98,11 +99,9 @@ def clean_files_in_dir(directory):
     """This will completely wipe all contents from a directory"""
     if os.path.exists(directory):
         for root, subFolders, files in os.walk(directory):
-            # Add all files in this path that match our container filter
-            for file_path in files:
-                pathname = os.path.join(root, file_path)
-                if os.path.isfile(pathname):
-                    os.remove(pathname)
+            if os.path.basename(root).startswith("unmanic_file_conversion"):
+                print("Clearing cache path - {}".format(root))
+                shutil.rmtree(root)
 
 
 def random_string(string_length=5):

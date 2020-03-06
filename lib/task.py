@@ -103,7 +103,7 @@ class Task(object):
         container_extension = container.container_extension()
 
         # Parse an output cache path
-        out_folder = "file_conversion-{}".format(time.time())
+        out_folder = "unmanic_file_conversion-{}".format(time.time())
         out_file = "{}-{}.{}".format(file_name_without_extension, time.time(), container_extension)
         self.cache_path = os.path.join(self.settings.CACHE_PATH, out_folder, out_file)
 

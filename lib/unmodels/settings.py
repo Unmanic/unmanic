@@ -50,6 +50,7 @@ class Settings(BaseModel):
     audio_stereo_stream_bitrate = TextField(null=False, default='128k')
     cache_path = TextField(null=False, default='/tmp/unmanic')
     config_path = TextField(null=False, default=os.path.join(HOME_DIR, '.unmanic', 'config'))
+    keep_filename_history = BooleanField(null=False, default=True)
     debugging = BooleanField(null=False, default=False)
     enable_audio_encoding = BooleanField(null=False, default=True)
     enable_audio_stream_transcoding = BooleanField(null=False, default=True)

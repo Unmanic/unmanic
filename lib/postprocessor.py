@@ -35,6 +35,7 @@ import shutil
 import threading
 import time
 
+from lib.fileinfo import FileInfo
 from lib import common, history, unffmpeg
 
 """
@@ -119,6 +120,8 @@ class PostProcessor(threading.Thread):
                 # TODO: Add env variable option to keep src
                 if self.current_task.source['abspath'] != self.current_task.destination['abspath']:
                     self._log("Removing source: {}".format(self.current_task.source['abspath']))
+                    if self.settings.KEEP_FILENAME_HISTORY:
+                        self.keep_filename_history(self.current_task.source["dirname"], self.current_task.destination["basename"], self.current_task.source["basename"])
                     os.remove(self.current_task.source['abspath'])
             else:
                 self._log("Copy / Replace failed during post processing '{}'".format(self.current_task.cache_path),
@@ -172,3 +175,14 @@ class PostProcessor(threading.Thread):
                 'task_dump':           task_dump,
             }
         )
+
+    def keep_filename_history(self, basedir, newname, originalname):
+        """
+        Write filename history in .file_info (Filebot pattern usefull for download subtitles using original filename)
+
+        :return:
+        """
+        fileinfo = FileInfo("{}/.file_info".format(basedir))
+        fileinfo.load()
+        fileinfo.append(newname, originalname)
+        fileinfo.save()

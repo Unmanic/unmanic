@@ -19,6 +19,13 @@
             $("#ENABLE_INOTIFY").val("false");
         }
     };
+    var toggleKeepFilenameHistory = function () {
+        if ($("#keep_filename_history_enabled").prop("checked")) {
+            $("#KEEP_FILENAME_HISTORY").val("true");
+        } else {
+            $("#KEEP_FILENAME_HISTORY").val("false");
+        }
+    };
     var toggleDebugging = function () {
         if ($("#debugging_enabled").prop("checked")) {
             $("#DEBUGGING").val("true");

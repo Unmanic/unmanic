@@ -62,7 +62,7 @@ class SettingsUIRequestHandler(tornado.web.RequestHandler):
                 value = self.get_arguments(config_item)
                 if value:
                     self.config.set_config_item(config_item, value[0])
-            self.redirect(path)
+            self.redirect(self.request.uri)
 
     def handle_ajax_post(self):
         query = self.get_argument('ajax')

@@ -34,7 +34,7 @@ import re, os
 
 """
 
-An object to represent .file_info (Filebot pattern to keep filename history)
+An object to represent file_info (Filebot pattern to keep filename history)
 
 """
 
@@ -43,7 +43,7 @@ class FileInfo(object):
     FileInfo
 
     Attributes:
-        path (string): Path of .file_info
+        path (string): Path of file_info
         entries (array of Entry): Filename history
     """
 

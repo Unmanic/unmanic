@@ -178,11 +178,11 @@ class PostProcessor(threading.Thread):
 
     def keep_filename_history(self, basedir, newname, originalname):
         """
-        Write filename history in .file_info (Filebot pattern usefull for download subtitles using original filename)
+        Write filename history in file_info (Filebot pattern usefull for download subtitles using original filename)
 
         :return:
         """
-        fileinfo = FileInfo("{}/.file_info".format(basedir))
+        fileinfo = FileInfo("{}/file_info".format(basedir))
         fileinfo.load()
         fileinfo.append(newname, originalname)
         fileinfo.save()

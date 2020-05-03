@@ -33,7 +33,6 @@
 from __future__ import absolute_import
 import warnings
 
-
 from .basemodel import BaseModel
 from .basemodel import Database
 from .basemodel import db
@@ -44,7 +43,6 @@ from .historictaskprobestreams import HistoricTaskProbeStreams
 from .historictasksettings import HistoricTaskSettings
 from .migrations import Migrations
 from .settings import Settings
-
 
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
 
@@ -60,5 +58,3 @@ __all__ = (
     'Migrations',
     'Settings',
 )
-
-

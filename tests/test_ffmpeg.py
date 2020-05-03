@@ -248,4 +248,3 @@ class TestClass(object):
             infile = os.path.join(tests_dir, 'videos', 'faulty', video_file)
             outfile = os.path.join(tmp_dir, filename + '.mkv')
             self.convert_single_file(infile, outfile)
-

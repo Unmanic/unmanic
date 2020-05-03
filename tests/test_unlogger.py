@@ -114,4 +114,3 @@ class TestClass(object):
         main_logger.info("Check that these characters display correctly")
         main_logger.info("Success: \u251c – € ’ “ ” « » — à á ã ç ê é í ó õ ú")
         main_logger.info("Fails: \udce2\udc80\udc98")
-

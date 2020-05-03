@@ -38,4 +38,3 @@ class Srt(Codecs):
     encoders = ['srt']
     default_encoder = 'srt'
     codec_long_name = 'SubRip subtitle (codec subrip)'
-

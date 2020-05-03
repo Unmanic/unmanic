@@ -121,7 +121,9 @@ class PostProcessor(threading.Thread):
                 if self.current_task.source['abspath'] != self.current_task.destination['abspath']:
                     self._log("Removing source: {}".format(self.current_task.source['abspath']))
                     if self.settings.KEEP_FILENAME_HISTORY:
-                        self.keep_filename_history(self.current_task.source["dirname"], self.current_task.destination["basename"], self.current_task.source["basename"])
+                        self.keep_filename_history(self.current_task.source["dirname"],
+                                                   self.current_task.destination["basename"],
+                                                   self.current_task.source["basename"])
                     os.remove(self.current_task.source['abspath'])
             else:
                 self._log("Copy / Replace failed during post processing '{}'".format(self.current_task.cache_path),

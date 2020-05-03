@@ -261,8 +261,10 @@ class FFMPEGHandle(object):
                         video_streams_codecs += "{},{}".format(video_streams_codecs, stream['codec_name'])
                         if stream['codec_name'] == self.settings.VIDEO_CODEC:
                             if self.settings.DEBUGGING:
-                                self._log("File already has {} codec video stream - {}".format(self.settings.VIDEO_CODEC, vid_file_path),
-                                          level='debug')
+                                self._log(
+                                    "File already has {} codec video stream - {}".format(self.settings.VIDEO_CODEC,
+                                                                                         vid_file_path),
+                                    level='debug')
                             correct_video_codec = True
                 if not correct_video_codec:
                     if self.settings.DEBUGGING:
@@ -305,7 +307,7 @@ class FFMPEGHandle(object):
                 if stream['codec_name'] == self.settings.VIDEO_CODEC:
                     result = True
                 elif self.settings.DEBUGGING:
-                    self._log("File is the not correct codec {} - {}".format(self.settings.VIDEO_CODEC,vid_file_path))
+                    self._log("File is the not correct codec {} - {}".format(self.settings.VIDEO_CODEC, vid_file_path))
                     raise FFMPEGHandlePostProcessError(self.settings.VIDEO_CODEC, stream['codec_name'])
                 # TODO: Test duration is the same as src
         return result
@@ -325,7 +327,7 @@ class FFMPEGHandle(object):
         out_file = "{}-{}.{}".format(os.path.splitext(src_file)[0], time.time(), container_extension)
         out_path = os.path.join(self.settings.CACHE_PATH, out_folder, out_file)
 
-        # Create output path if not exists 
+        # Create output path if not exists
         common.ensure_dir(out_path)
 
         # Reset all info
@@ -376,7 +378,7 @@ class FFMPEGHandle(object):
         #     -c:a:0 copy \
         #     -c:a:1 libmp3lame -b:a:0 192k -ac 2 \
         #     -y /cache/XXXXX.mkv
-        # 
+        #
 
         # Read video information for the input file
         file_probe = self.file_in['file_probe']
@@ -389,7 +391,7 @@ class FFMPEGHandle(object):
         # Suppress printing banner. (-hide_banner)
         # Set loglevel to info ("-loglevel", "info")
         # Allow experimental encoder config ("-strict", "-2")
-        # 
+        #
         command = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "512"]
 
         # Read stream data
@@ -568,4 +570,3 @@ class FFMPEGHandle(object):
             if len(split_list) == 2:
                 return_value = split_list[1].strip()
         return return_value
-

@@ -38,4 +38,3 @@ class Subrip(Codecs):
     encoders = ['subrip']
     default_encoder = 'subrip'
     codec_long_name = 'SubRip subtitle'
-

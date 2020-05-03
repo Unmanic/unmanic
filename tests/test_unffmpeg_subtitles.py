@@ -109,4 +109,3 @@ class TestClass(object):
         assert subtitle_args['streams_to_map']
         # Assert the streams to encode array is not empty
         assert subtitle_args['streams_to_encode']
-

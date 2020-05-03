@@ -88,6 +88,3 @@ class TestClass(object):
             # base class's container_supports_subtitles function
             if container.supports_subtitles:
                 assert container.container_supports_subtitles()
-
-
-

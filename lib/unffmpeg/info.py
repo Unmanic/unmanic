@@ -216,5 +216,3 @@ class Info(object):
             'subtitle': {},
             'video':    supported_video_codecs
         }
-
-

@@ -4,6 +4,8 @@
       <option name="DICT_ALIGNMENT" value="1" />
       <option name="DICT_NEW_LINE_AFTER_LEFT_BRACE" value="true" />
       <option name="DICT_NEW_LINE_BEFORE_RIGHT_BRACE" value="true" />
+      <option name="OPTIMIZE_IMPORTS_SORT_NAMES_IN_FROM_IMPORTS" value="true" />
+      <option name="OPTIMIZE_IMPORTS_JOIN_FROM_IMPORTS_WITH_SAME_SOURCE" value="true" />
     </Python>
     <codeStyleSettings language="EditorConfig">
       <option name="ALIGN_GROUP_FIELD_DECLARATIONS" value="true" />

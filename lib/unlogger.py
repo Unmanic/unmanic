@@ -62,9 +62,9 @@ class UnmanicLogger(object, metaclass=SingletonType):
 
         # Create formatter
         self.formatter = logging.Formatter(
-                '%(asctime)s:%(levelname)s:%(name)s - %(message)s',
-                datefmt='%Y-%m-%dT%H:%M:%S'
-            )
+            '%(asctime)s:%(levelname)s:%(name)s - %(message)s',
+            datefmt='%Y-%m-%dT%H:%M:%S'
+        )
         # Add stream handler
         if not self._stream_handler:
             # Create file handler
@@ -94,7 +94,8 @@ class UnmanicLogger(object, metaclass=SingletonType):
                 os.makedirs(self._settings.LOG_PATH)
             # Create file handler
             log_file = os.path.join(self._settings.LOG_PATH, 'unmanic.log')
-            self._file_handler = logging.handlers.TimedRotatingFileHandler(log_file, when='midnight', interval=1, backupCount=7)
+            self._file_handler = logging.handlers.TimedRotatingFileHandler(log_file, when='midnight', interval=1,
+                                                                           backupCount=7)
             # Apply formatter
             self._file_handler.setFormatter(self.formatter)
             # Set log level of file handler...
@@ -106,7 +107,7 @@ class UnmanicLogger(object, metaclass=SingletonType):
             self._stream_handler.setLevel(logging.CRITICAL)
             # Add handler
             self._logger.addHandler(self._file_handler)
-    
+
     def setup_logger(self, settings):
         # Set/Update our settings
         self._settings = settings
@@ -128,8 +129,7 @@ class UnmanicLogger(object, metaclass=SingletonType):
 
     def get_logger(self, name=None):
         if name:
-            logger = logging.getLogger("Unmanic."+name)
+            logger = logging.getLogger("Unmanic." + name)
         else:
             logger = self._logger
         return logger
-

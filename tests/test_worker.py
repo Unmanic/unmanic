@@ -35,11 +35,11 @@ import queue
 import sys
 
 try:
-    from lib import unlogger, worker, task
+    from unmanic.libs import unlogger, worker, task
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
-    from lib import unlogger, worker, task
+    from unmanic.libs import unlogger, worker, task
 
 
 class TestClass(object):
@@ -70,7 +70,7 @@ class TestClass(object):
         self.logging = unlogger.UnmanicLogger.__call__(False)
         self.logging.get_logger()
         # import config
-        import config
+        from unmanic import config
         self.settings = config.CONFIG()
         self.settings.DEBUGGING = True
 

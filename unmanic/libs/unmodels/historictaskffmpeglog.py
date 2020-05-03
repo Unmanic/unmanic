@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.test_unffmpeg_info.py
+    unmanic.historictaskffmpeglog.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     21 Sep 2019, (2:51 PM)
+    Date:                     06 Oct 2019, (4:02 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,46 +30,14 @@
 
 """
 
-import os
-import sys
-
-try:
-    from unmanic.libs import unffmpeg
-except ImportError:
-    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    sys.path.append(project_dir)
-    from unmanic.libs import unffmpeg
+from peewee import *
+from unmanic.libs.unmodels.basemodel import BaseModel
+from unmanic.libs.unmodels.historictasks import HistoricTasks
 
 
-class TestClass(object):
+class HistoricTaskFfmpegLog(BaseModel):
     """
-    TestClass
-
-    Runs unit tests against the unffmpeg info class
-
+    HistoricTaskFfmpegLog
     """
-
-    def setup_class(self):
-        """
-        Setup the class state for pytest
-        :return:
-        """
-        self.project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-    def test_can_read_ffmpeg_supported_codecs(self):
-        # Fetch a list of supported codecs from unffmpeg
-        all_codecs = unffmpeg.Info().get_all_supported_codecs()
-        # Ensure audio codecs are available
-        assert 'audio' in all_codecs
-        # Ensure video codecs are available
-        assert 'video' in all_codecs
-
-    def test_can_read_ffmpeg_supported_video_codecs(self):
-        # Fetch a list of supported codecs from unffmpeg
-        all_codecs = unffmpeg.Info().get_all_supported_codecs()
-        # Ensure h264 is available
-        assert 'h264' in all_codecs['video']
-        # Ensure h265 is available
-        assert 'hevc' in all_codecs['video']
-        # Ensure a gibberish codec is not available
-        assert 'NONSENSE CODEC' not in all_codecs['video']
+    historictask_id = ForeignKeyField(HistoricTasks)
+    dump = TextField(null=False, default='')

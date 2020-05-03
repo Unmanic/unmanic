@@ -36,12 +36,12 @@ import sys
 import pytest
 
 try:
-    from lib import common, unlogger, unffmpeg
+    from unmanic.libs import common, unlogger, unffmpeg
     from tests.test_data import mkv_ffprobe, mp4_ffprobe
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
-    from lib import common, unlogger, unffmpeg
+    from unmanic.libs import common, unlogger, unffmpeg
     from tests.test_data import mkv_ffprobe, mp4_ffprobe
 
 

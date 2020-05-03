@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.test_unffmpeg_info.py
+    unmanic.migrations.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     21 Sep 2019, (2:51 PM)
+    Date:                     22 Jun 2019, (8:01 PM)
  
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -31,45 +31,32 @@
 """
 
 import os
-import sys
-
-try:
-    from unmanic.libs import unffmpeg
-except ImportError:
-    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    sys.path.append(project_dir)
-    from unmanic.libs import unffmpeg
+from peewee_migrate import Router
+from peewee import *
 
 
-class TestClass(object):
+class Migrations(object):
     """
-    TestClass
+    Migrations
 
-    Runs unit tests against the unffmpeg info class
-
+    Handle all migrations during application start.
     """
 
-    def setup_class(self):
+    def __init__(self, config):
+        # Based on configuration, select database to connect to.
+        if config['TYPE'] == 'SQLITE':
+            # Create SQLite directory if not exists
+            db_file_directory = os.path.dirname(config['FILE'])
+            if not os.path.exists(db_file_directory):
+                os.makedirs(db_file_directory)
+            database = SqliteDatabase(config['FILE'])
+            self.router = Router(database=database, migrate_dir=config['MIGRATIONS_DIR'])
+
+    def run_all(self):
         """
-        Setup the class state for pytest
+        Run all new migrations.
+        Migrations that have already been run will be ignored.
+
         :return:
         """
-        self.project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-    def test_can_read_ffmpeg_supported_codecs(self):
-        # Fetch a list of supported codecs from unffmpeg
-        all_codecs = unffmpeg.Info().get_all_supported_codecs()
-        # Ensure audio codecs are available
-        assert 'audio' in all_codecs
-        # Ensure video codecs are available
-        assert 'video' in all_codecs
-
-    def test_can_read_ffmpeg_supported_video_codecs(self):
-        # Fetch a list of supported codecs from unffmpeg
-        all_codecs = unffmpeg.Info().get_all_supported_codecs()
-        # Ensure h264 is available
-        assert 'h264' in all_codecs['video']
-        # Ensure h265 is available
-        assert 'hevc' in all_codecs['video']
-        # Ensure a gibberish codec is not available
-        assert 'NONSENSE CODEC' not in all_codecs['video']
+        self.router.run()

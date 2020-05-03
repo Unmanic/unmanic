@@ -34,13 +34,13 @@ import os
 import sys
 
 try:
-    from lib import common, unlogger
-    from lib.unffmpeg import containers
+    from unmanic.libs import common, unlogger
+    from unmanic.libs.unffmpeg import containers
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
-    from lib import common, unlogger
-    from lib.unffmpeg import containers
+    from unmanic.libs import common, unlogger
+    from unmanic.libs.unffmpeg import containers
 
 
 class TestClass(object):

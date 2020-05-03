@@ -68,7 +68,7 @@ done
 # Run container
 docker run -ti --rm \
     -p 8888:8888 \
-    -v ${PROJECT_BASE}:/app \
+    -v ${PROJECT_BASE}/:/app \
     -v ${PROJECT_BASE}/cache:/tmp/unmanic \
     -v ${PROJECT_BASE}/tests/tmp/library:/library \
     -v ${PROJECT_BASE}/tests/tmp/config:/config \

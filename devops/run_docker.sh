@@ -30,7 +30,7 @@
 ###################################################################################################
 
 SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd );
-PROJECT_BASE=$(realpath ${SCRIPT_PATH}/../);
+PROJECT_BASE=$(realpath ${SCRIPT_PATH}/..);
 PUID=$(id -u);
 PGID=$(id -g);
 
@@ -42,7 +42,7 @@ done
 
 docker run -ti --rm \
     -p 8888:8888 \
-    -v ${PROJECT_BASE}:/app \
+    -v ${PROJECT_BASE}/:/app \
     -v ${PROJECT_BASE}/config:/config \
     -v ${PROJECT_BASE}/library:/library \
     -v ${PROJECT_BASE}/cache:/tmp/unmanic \

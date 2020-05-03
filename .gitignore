@@ -13,3 +13,9 @@ tests/.vstats_file
 
 # Files needed for development only
 venv/**
+
+# Files created during the build process
+.eggs/**
+build/**
+dist/**
+unmanic.egg-info/**

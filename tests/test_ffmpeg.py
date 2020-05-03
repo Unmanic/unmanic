@@ -35,11 +35,11 @@ import shutil
 import sys
 
 try:
-    from lib import common, unlogger, unffmpeg, ffmpeg
+    from unmanic.libs import common, unlogger, unffmpeg, ffmpeg
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
-    from lib import common, unlogger, unffmpeg, ffmpeg
+    from unmanic.libs import common, unlogger, unffmpeg, ffmpeg
 
 
 class TestClass(object):
@@ -61,7 +61,7 @@ class TestClass(object):
         unmanic_logging = unlogger.UnmanicLogger.__call__(False)
         unmanic_logging.get_logger()
         # import config
-        import config
+        from unmanic import config
         self.settings = config.CONFIG()
         self.settings.DEBUGGING = True
         self.ffmpeg = ffmpeg.FFMPEGHandle(self.settings)

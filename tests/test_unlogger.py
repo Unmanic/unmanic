@@ -34,11 +34,11 @@ import os
 import sys
 
 try:
-    from lib import unlogger
+    from unmanic.libs import unlogger
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
-    from lib import unlogger
+    from unmanic.libs import unlogger
 
 
 class SettingsObject(object):

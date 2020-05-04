@@ -79,7 +79,9 @@ docker run -ti --rm \
 Otherwise install the dependencies listed above and then run:
 
 ```
-python3 ./service.py
+python3 ./setup.py install --user
+
+unmanic
 ```
 
 ## License and Contribution

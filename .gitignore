@@ -7,9 +7,15 @@
 config/**
 cache
 library
-tests/videos/*
+tests/support_/videos/*
 tests/tmp/*
 tests/.vstats_file
 
 # Files needed for development only
 venv/**
+
+# Files created during the build process
+.eggs/**
+build/**
+dist/**
+unmanic.egg-info/**

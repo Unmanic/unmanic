@@ -6,12 +6,13 @@ name: Python lint and unit tests
 on:
   push:
     branches:
-      - '*'
+      - '**'
   pull_request:
+    branches:
       - 'master'
 
 jobs:
-  lint_and_test:
+  py_lint_and_unit_test:
 
     runs-on: ubuntu-latest
     strategy:

@@ -54,4 +54,3 @@ setup_script_dependencies() {
 
 ### RUN
 setup_script_dependencies
-fetch_test_videos

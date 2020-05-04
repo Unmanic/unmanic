@@ -34,6 +34,8 @@ import os
 import queue
 import sys
 
+import pytest
+
 try:
     from unmanic.libs import unlogger, worker, task
 except ImportError:
@@ -65,7 +67,9 @@ class TestClass(object):
         Setup the class state for pytest
         :return:
         """
-        self.project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.tests_videos_dir = os.path.join(self.project_dir, 'tests', 'support_', 'videos')
+        self.tests_tmp_dir = os.path.join(self.project_dir, 'tests', 'tmp', 'py_test_env')
         # sys.path.append(self.project_dir)
         self.logging = unlogger.UnmanicLogger.__call__(False)
         self.logging.get_logger()
@@ -112,16 +116,16 @@ class TestClass(object):
         task_data = self.completed_test_task.__dict__.copy()
         assert 'streams' in task_data['ffmpeg'].file_in['file_probe']
 
+    @pytest.mark.integrationtest
     def test_worker_tread_for_conversion_success(self):
         worker_id = 'test'
         worker_thread = worker.WorkerThread(worker_id, "Worker-{}".format(worker_id), self.settings, self.data_queues,
                                             self.task_queue, self.complete_queue)
-        # Set project root path
-        tests_dir = os.path.join(self.project_dir, 'tests')
-        # Test all the small files
-        for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'small')):
+        # Test 2 of the small files
+        count = 0
+        for video_file in os.listdir(os.path.join(self.tests_videos_dir, 'small')):
             # Create test task
-            self.setup_test_task(os.path.join(tests_dir, 'videos', 'small', video_file))
+            self.setup_test_task(os.path.join(self.tests_videos_dir, 'small', video_file))
             worker_thread.set_current_task(self.test_task)
             worker_thread.process_task_queue_item()
             # Ensure the completed task was added to the completed queue
@@ -140,3 +144,6 @@ class TestClass(object):
             self.completed_test_task_data_has_source_video_codecs()
             # Ensure task data has source video in file probe data
             self.completed_test_task_data_has_file_in_probe()
+            count += 1
+            if count >= 2:
+                break

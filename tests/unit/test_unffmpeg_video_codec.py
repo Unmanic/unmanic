@@ -37,12 +37,12 @@ import pytest
 
 try:
     from unmanic.libs import common, unlogger, unffmpeg
-    from tests.test_data import mkv_ffprobe
+    from tests.support_.test_data import mkv_ffprobe
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
     from unmanic.libs import common, unlogger, unffmpeg
-    from tests.test_data import mkv_ffprobe
+    from tests.support_.test_data import mkv_ffprobe
 
 
 class TestClass(object):
@@ -62,6 +62,7 @@ class TestClass(object):
         unmanic_logging = unlogger.UnmanicLogger.__call__(False)
         unmanic_logging.get_logger()
 
+    @pytest.mark.unittest
     def test_ensure_we_can_generate_video_codec_args(self):
         # Fetch a list of args from the unffmpeg video codec handler
         video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
@@ -71,6 +72,7 @@ class TestClass(object):
         # Assert the streams to encode array is not empty
         assert video_codec_args['streams_to_encode']
 
+    @pytest.mark.unittest
     def test_ensure_we_can_generate_copy_current_video_codec_args(self):
         # Fetch a list of args from the unffmpeg video codec handler
         video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
@@ -84,6 +86,7 @@ class TestClass(object):
         # Assert the streams to encode array is set to copy
         assert video_codec_args['streams_to_encode'][1] == 'copy'
 
+    @pytest.mark.unittest
     def test_ensure_we_can_generate_hevc_video_codec_args(self):
         # Fetch a list of args from the unffmpeg video codec handler
         video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
@@ -97,6 +100,7 @@ class TestClass(object):
         # Assert the streams to encode array is set to libx265
         assert video_codec_args['streams_to_encode'][1] == 'libx265'
 
+    @pytest.mark.unittest
     def test_ensure_throws_exception_for_absent_video_codec_args(self):
         with pytest.raises(ImportError) as excinfo:
             # Fetch a list of args from the unffmpeg video codec handler
@@ -104,6 +108,7 @@ class TestClass(object):
             # Set the video codec to something that does not exist
             video_codec_handle.set_video_codec('non_existent_codec')
 
+    @pytest.mark.unittest
     def test_ensure_args_of_video_stream_is_copied_if_src_codec_matches_dest_codec(self):
         # Fetch a list of args from the unffmpeg video codec handler
         video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)

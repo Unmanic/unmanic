@@ -33,14 +33,16 @@
 import os
 import sys
 
+import pytest
+
 try:
     from unmanic.libs import common, unlogger, unffmpeg
-    from tests.test_data import mkv_ffprobe
+    from tests.support_.test_data import mkv_ffprobe
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
     from unmanic.libs import common, unlogger, unffmpeg
-    from tests.test_data import mkv_ffprobe
+    from tests.support_.test_data import mkv_ffprobe
 
 
 class TestClass(object):
@@ -64,6 +66,7 @@ class TestClass(object):
     def get_container(self, out_container):
         return unffmpeg.containers.grab_module(out_container)
 
+    @pytest.mark.unittest
     def test_ensure_we_can_copy_subtitles_if_container_supports_current_subtitle_stream_in_args(self):
         # Get the destination container object by it's name
         destination_container = self.get_container('matroska')
@@ -75,6 +78,7 @@ class TestClass(object):
         # Assert the streams to encode array is not empty
         assert subtitle_args['streams_to_encode']
 
+    @pytest.mark.unittest
     def test_ensure_we_can_remove_subtitles_in_args(self):
         # Get the destination container object by it's name
         destination_container = self.get_container('matroska')
@@ -88,6 +92,7 @@ class TestClass(object):
         # Assert the streams to encode array is not empty
         assert not subtitle_args['streams_to_encode']
 
+    @pytest.mark.unittest
     def test_ensure_we_can_convert_subtitles_from_mkv_to_avi_in_args(self):
         # Get the destination container object by it's name
         destination_container = self.get_container('avi')
@@ -99,6 +104,7 @@ class TestClass(object):
         # Assert the streams to encode array is not empty
         assert subtitle_args['streams_to_encode']
 
+    @pytest.mark.unittest
     def test_ensure_we_can_convert_subtitles_from_mkv_to_mp4_in_args(self):
         # Get the destination container object by it's name
         destination_container = self.get_container('mp4')

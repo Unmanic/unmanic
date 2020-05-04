@@ -37,12 +37,12 @@ import pytest
 
 try:
     from unmanic.libs import common, unlogger, unffmpeg
-    from tests.test_data import mkv_ffprobe, mp4_ffprobe
+    from tests.support_.test_data import mkv_ffprobe, mp4_ffprobe
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
     from unmanic.libs import common, unlogger, unffmpeg
-    from tests.test_data import mkv_ffprobe, mp4_ffprobe
+    from tests.support_.test_data import mkv_ffprobe, mp4_ffprobe
 
 
 class TestClass(object):
@@ -62,6 +62,7 @@ class TestClass(object):
         unmanic_logging = unlogger.UnmanicLogger.__call__(False)
         unmanic_logging.get_logger()
 
+    @pytest.mark.unittest
     def test_ensure_we_can_generate_audio_codec_stereo_clone_args(self):
         # Fetch a list of args from the unffmpeg audio codec handler
         audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
@@ -71,6 +72,7 @@ class TestClass(object):
         # Assert the streams to encode array is not empty
         assert audio_codec_args['streams_to_encode']
 
+    @pytest.mark.unittest
     def test_ensure_we_can_generate_copy_current_audio_codec_args(self):
         # Fetch a list of args from the unffmpeg audio codec handler
         audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
@@ -84,6 +86,7 @@ class TestClass(object):
         # Assert the streams to encode array is set to copy
         assert audio_codec_args['streams_to_encode'][1] == 'copy'
 
+    @pytest.mark.unittest
     def test_ensure_we_can_generate_a_cloned_stereo_aac_audio_codec_stream_from_ss_audio_stream_args(self):
         # Fetch a list of args from the unffmpeg audio codec handler
         audio_codec_handle = unffmpeg.AudioCodecHandle(mp4_ffprobe.mp4_dd_plus_audio_ffprobe)
@@ -100,6 +103,7 @@ class TestClass(object):
         # Assert the second streams to encode array item is set to aac (clones the DD Plus stream to a stereo aac)
         assert audio_codec_args['streams_to_encode'][3] == 'aac'
 
+    @pytest.mark.unittest
     def test_ensure_we_can_set_the_bitrate_of_a_stereo_audio_codec_stream(self):
         # Fetch a list of args from the unffmpeg audio codec handler
         audio_codec_handle = unffmpeg.AudioCodecHandle(mp4_ffprobe.mp4_dd_plus_audio_ffprobe)
@@ -115,6 +119,7 @@ class TestClass(object):
         # Assert the second streams to encode array item has a bitrate set of 'TEST_BITRATE'
         assert audio_codec_args['streams_to_encode'][5] == 'TEST_BITRATE'
 
+    @pytest.mark.unittest
     def test_ensure_throws_exception_for_absent_audio_codec_args(self):
         with pytest.raises(ImportError) as excinfo:
             # Fetch a list of args from the unffmpeg audio codec handler
@@ -123,6 +128,7 @@ class TestClass(object):
             audio_codec_handle.enable_audio_stream_stereo_cloning = True
             audio_codec_handle.set_audio_codec_with_default_encoder_cloning('non_existent_codec')
 
+    @pytest.mark.unittest
     def test_ensure_args_of_audio_stream_clone_is_copy_if_src_codec_matches_dest_codec(self):
         # Fetch a list of args from the unffmpeg audio codec handler
         audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_stereo_aac_audio_ffprobe)
@@ -137,6 +143,7 @@ class TestClass(object):
         # Assert the streams to encode array is set to copy
         assert audio_codec_args['streams_to_encode'][1] == 'copy'
 
+    @pytest.mark.unittest
     def test_ensure_args_of_audio_stream_transcode_is_copy_if_src_codec_matches_dest_codec(self):
         # Fetch a list of args from the unffmpeg audio codec handler
         audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_stereo_aac_audio_ffprobe)
@@ -151,6 +158,7 @@ class TestClass(object):
         # Assert the streams to encode array is set to copy
         assert audio_codec_args['streams_to_encode'][1] == 'copy'
 
+    @pytest.mark.unittest
     def test_ensure_we_can_generate_audio_codec_transcode_args(self):
         # Fetch a list of args from the unffmpeg audio codec handler
         audio_codec_handle = unffmpeg.AudioCodecHandle(mp4_ffprobe.mp4_dd_plus_audio_ffprobe)

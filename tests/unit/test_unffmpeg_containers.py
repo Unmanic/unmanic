@@ -33,6 +33,8 @@
 import os
 import sys
 
+import pytest
+
 try:
     from unmanic.libs import common, unlogger
     from unmanic.libs.unffmpeg import containers
@@ -61,6 +63,7 @@ class TestClass(object):
         unmanic_logging = unlogger.UnmanicLogger.__call__(False)
         unmanic_logging.get_logger()
 
+    @pytest.mark.unittest
     def test_ensure_we_can_read_list_of_supported_containers(self):
         supported_containers = containers.get_all_containers()
         # Ensure that a list of containers was returned
@@ -74,6 +77,7 @@ class TestClass(object):
         assert supported_containers['matroska']['extension'] == 'mkv'
         assert supported_containers['matroska']['supports_subtitles']
 
+    @pytest.mark.unittest
     def test_ensure_we_can_grab_module_of_a_supported_container(self):
         supported_containers = containers.get_all_containers()
         # Ensure that a list of containers was returned

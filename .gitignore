@@ -7,7 +7,7 @@
 config/**
 cache
 library
-tests/videos/*
+tests/support_/videos/*
 tests/tmp/*
 tests/.vstats_file
 

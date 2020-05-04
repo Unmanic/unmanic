@@ -34,6 +34,8 @@ import os
 import shutil
 import sys
 
+import pytest
+
 try:
     from unmanic.libs import common, unlogger, unffmpeg, ffmpeg
 except ImportError:
@@ -56,7 +58,9 @@ class TestClass(object):
 
         :return:
         """
-        self.project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.tests_videos_dir = os.path.join(self.project_dir, 'tests', 'support_', 'videos')
+        self.tests_tmp_dir = os.path.join(self.project_dir, 'tests', 'tmp', 'py_test_env')
         # sys.path.append(self.project_dir)
         unmanic_logging = unlogger.UnmanicLogger.__call__(False)
         unmanic_logging.get_logger()
@@ -129,7 +133,6 @@ class TestClass(object):
         if not test_for_failure:
             assert self.ffmpeg.post_process_file(outfile)
         elif test_for_failure:
-            import pytest
             with pytest.raises(ffmpeg.FFMPEGHandlePostProcessError):
                 self.ffmpeg.post_process_file(outfile)
 
@@ -140,15 +143,15 @@ class TestClass(object):
         :return:
         """
         # Set project root path
-        tests_dir = os.path.join(self.project_dir, 'tests')
-        tmp_dir = os.path.join(tests_dir, 'tmp')
+        tmp_dir = self.tests_tmp_dir
         # Test just the first file found in the med folder
-        for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'med')):
+        for video_file in os.listdir(os.path.join(self.tests_videos_dir, 'small')):
             filename, file_extension = os.path.splitext(os.path.basename(video_file))
-            infile = os.path.join(tests_dir, 'videos', 'med', video_file)
+            infile = os.path.join(self.tests_videos_dir, 'small', video_file)
             # Copy the file to a tmp location (it will be replaced)
             testfile = os.path.join(tmp_dir, filename + file_extension)
             self._log(infile, testfile)
+            common.ensure_dir(testfile)
             shutil.copy(infile, testfile)
             assert self.ffmpeg.process_file_with_configured_settings(testfile)
             break
@@ -159,11 +162,9 @@ class TestClass(object):
 
         :return:
         """
-        # Set project root path
-        tests_dir = os.path.join(self.project_dir, 'tests')
         # Test
-        for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'small')):
-            infile = os.path.join(tests_dir, 'videos', 'small', video_file)
+        for video_file in os.listdir(os.path.join(self.tests_videos_dir, 'small')):
+            infile = os.path.join(self.tests_videos_dir, 'small', video_file)
             assert self.ffmpeg.file_probe(infile)
 
     def test_read_file_info_for_failure(self):
@@ -173,12 +174,11 @@ class TestClass(object):
         :return:
         """
         # Set project root path
-        tests_dir = os.path.join(self.project_dir, 'tests')
-        tmp_dir = os.path.join(tests_dir, 'tmp')
+        tmp_dir = self.tests_tmp_dir
         fail_file = os.path.join(tmp_dir, 'test_failure.mkv')
         # Test
+        common.ensure_dir(fail_file)
         common.touch(fail_file)
-        import pytest
         with pytest.raises(unffmpeg.exceptions.ffprobe.FFProbeError):
             self.ffmpeg.file_probe(fail_file)
 
@@ -191,12 +191,10 @@ class TestClass(object):
         :return:
         """
         self.setup_class()
-        # Set project root path
-        tests_dir = os.path.join(self.project_dir, 'tests')
         # Test
-        for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'small')):
+        for video_file in os.listdir(os.path.join(self.tests_videos_dir, 'small')):
             should_convert = True
-            pathname = os.path.join(tests_dir, 'videos', 'small', video_file)
+            pathname = os.path.join(self.tests_videos_dir, 'small', video_file)
             file_probe = self.ffmpeg.file_probe(pathname)
             # Ensure the file probe was successful
             assert 'format' in file_probe
@@ -216,20 +214,19 @@ class TestClass(object):
             assert (should_convert == convert)
         self.setup_class()
 
+    @pytest.mark.integrationtest
     def test_convert_all_files_for_success(self):
         """
         Ensure all small test files are able to be converted.
 
         :return:
         """
-        # Set project root path
-        tests_dir = os.path.join(self.project_dir, 'tests')
-        tmp_dir = os.path.join(tests_dir, 'tmp')
         # Test all small files of various containers
-        for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'small')):
+        for video_file in os.listdir(os.path.join(self.tests_videos_dir, 'small')):
             filename, file_extension = os.path.splitext(os.path.basename(video_file))
-            infile = os.path.join(tests_dir, 'videos', 'small', video_file)
-            outfile = os.path.join(tmp_dir, filename + '.mkv')
+            infile = os.path.join(self.tests_videos_dir, 'small', video_file)
+            outfile = os.path.join(self.tests_tmp_dir, filename + '.mkv')
+            common.ensure_dir(outfile)
             self.convert_single_file(infile, outfile)
 
     def test_convert_all_faulty_files_for_success(self):
@@ -239,12 +236,10 @@ class TestClass(object):
 
         :return:
         """
-        # Set project root path
-        tests_dir = os.path.join(self.project_dir, 'tests')
-        tmp_dir = os.path.join(tests_dir, 'tmp')
         # Test all faulty files can be successfully converted (these files have assorted issues)
-        for video_file in os.listdir(os.path.join(tests_dir, 'videos', 'faulty')):
+        for video_file in os.listdir(os.path.join(self.tests_videos_dir, 'faulty')):
             filename, file_extension = os.path.splitext(os.path.basename(video_file))
-            infile = os.path.join(tests_dir, 'videos', 'faulty', video_file)
-            outfile = os.path.join(tmp_dir, filename + '.mkv')
+            infile = os.path.join(self.tests_videos_dir, 'faulty', video_file)
+            outfile = os.path.join(self.tests_tmp_dir, filename + '.mkv')
+            common.ensure_dir(outfile)
             self.convert_single_file(infile, outfile)

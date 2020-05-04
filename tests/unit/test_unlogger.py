@@ -33,6 +33,8 @@
 import os
 import sys
 
+import pytest
+
 try:
     from unmanic.libs import unlogger
 except ImportError:
@@ -62,6 +64,7 @@ class TestClass(object):
         unmanic_logging = unlogger.UnmanicLogger.__call__(False)
         unmanic_logging.get_logger()
 
+    @pytest.mark.unittest
     def test_logging_singleton(self):
         logger1 = unlogger.UnmanicLogger.__call__().get_logger()
         logger2 = unlogger.UnmanicLogger.__call__().get_logger()
@@ -89,7 +92,7 @@ class TestClass(object):
 
         # Fake our settings...
         settings = SettingsObject()
-        settings.LOG_PATH = "./"
+        settings.LOG_PATH = "../"
         settings.DEBUGGING = False
         logger_config = unlogger.UnmanicLogger.__call__()
         logger_config.setup_logger(settings)
@@ -108,6 +111,7 @@ class TestClass(object):
         logger_blah.critical("BLAH - test2 - critical")
         logger_blah.exception("BLAH - test2 - exception: %s", "Test Exception String")
 
+    @pytest.mark.unittest
     def test_logging_special_characters(self):
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         main_logger = unmanic_logging.get_logger()

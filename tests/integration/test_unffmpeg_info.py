@@ -58,7 +58,7 @@ class TestClass(object):
         """
         self.project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    @pytest.mark.unittest
+    @pytest.mark.integrationtest
     def test_can_read_ffmpeg_supported_codecs(self):
         # Fetch a list of supported codecs from unffmpeg
         all_codecs = unffmpeg.Info().get_all_supported_codecs()
@@ -67,7 +67,7 @@ class TestClass(object):
         # Ensure video codecs are available
         assert 'video' in all_codecs
 
-    @pytest.mark.unittest
+    @pytest.mark.integrationtest
     def test_can_read_ffmpeg_supported_video_codecs(self):
         # Fetch a list of supported codecs from unffmpeg
         all_codecs = unffmpeg.Info().get_all_supported_codecs()

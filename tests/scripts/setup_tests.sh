@@ -31,34 +31,12 @@
 
 # This script is to setup a series of tests for the application
 
+
 SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd );
 PROJECT_BASE=$(realpath ${SCRIPT_PATH}/../../);
 
 
-### CONFIGURE:
-SMALL_TEST_VIDEOS=" \
-        https://sample-videos.com/video123/mkv/720/big_buck_bunny_720p_1mb.mkv \
-        https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4 \
-        https://sample-videos.com/video123/flv/720/big_buck_bunny_720p_1mb.flv \
-        https://sample-videos.com/video123/3gp/144/big_buck_bunny_144p_1mb.3gp \
-    "
-MED_TEST_VIDEOS=" \
-        https://sample-videos.com/video123/mkv/720/big_buck_bunny_720p_10mb.mkv \
-        https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_10mb.mp4 \
-        https://sample-videos.com/video123/flv/720/big_buck_bunny_720p_10mb.flv \
-        https://sample-videos.com/video123/3gp/240/big_buck_bunny_240p_10mb.3gp \
-        https://github.com/Matroska-Org/matroska-test-files/raw/master/test_files/test5.mkv \
-        https://github.com/Matroska-Org/matroska-test-files/raw/master/test_files/test8.mkv \
-    "
-# http://www.engr.colostate.edu/me/facil/dynamics/files/flame.avi <- single stream (not supported yet)
-# https://github.com/Matroska-Org/matroska-test-files
-#   - test5.mkv = Multiple audio/subtitles
-#   - test8.mkv = Audio gap
-FAULTY_TEST_VIDEOS=" \
-        https://github.com/Matroska-Org/matroska-test-files/raw/master/test_files/test5.mkv \
-        https://github.com/Matroska-Org/matroska-test-files/raw/master/test_files/test8.mkv \
-    "
-
+source "${SCRIPT_PATH}/download_test_files.sh"
 
 
 ### FUNCTIONS
@@ -72,38 +50,8 @@ setup_script_dependencies() {
     fi
     python3 -m pip install --user --upgrade -r ${PROJECT_BASE}/requirements.txt
 }
-# Fetch test media:
-fetch_test_videos() {
-    mkdir -p \
-        ${PROJECT_BASE}/tests/videos/small \
-        ${PROJECT_BASE}/tests/videos/med \
-        ${PROJECT_BASE}/tests/videos/faulty
-    for url in ${SMALL_TEST_VIDEOS}; do
-        FILE="${url##*/}";
-        if [[ ! -e ${PROJECT_BASE}/tests/videos/small/${FILE} ]]; then
-            echo "Downloading ${url} -> ${PROJECT_BASE}/tests/videos/small/${FILE}"
-            curl -L ${url} --output ${PROJECT_BASE}/tests/videos/small/${FILE};
-        fi
-    done
-    for url in ${MED_TEST_VIDEOS}; do
-        FILE="${url##*/}";
-        if [[ ! -e ${PROJECT_BASE}/tests/videos/med/${FILE} ]]; then
-            echo "Downloading ${url} -> ${PROJECT_BASE}/tests/videos/med/${FILE}"
-            curl -L ${url} --output ${PROJECT_BASE}/tests/videos/med/${FILE};
-        fi
-    done
-    for url in ${FAULTY_TEST_VIDEOS}; do
-        FILE="${url##*/}";
-        if [[ ! -e ${PROJECT_BASE}/tests/videos/faulty/${FILE} ]]; then
-            echo "Downloading ${url} -> ${PROJECT_BASE}/tests/videos/faulty/${FILE}"
-            curl -L ${url} --output ${PROJECT_BASE}/tests/videos/faulty/${FILE};
-        fi
-    done
-}
-
 
 
 ### RUN
 setup_script_dependencies
 fetch_test_videos
-

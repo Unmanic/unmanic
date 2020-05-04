@@ -36,4 +36,4 @@ jobs:
         flake8 . --count --exit-zero --max-line-length=127 --statistics
     - name: Download test data
       run: |
-        ./tests/scripts/setup_tests.sh
+        bash -c "./tests/scripts/download_test_files.sh"

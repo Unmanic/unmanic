@@ -55,7 +55,7 @@ module_classifiers = [
     versioninfo.dev_status(),
     'Intended Audience :: End Users/Desktop',
     'Intended Audience :: Developers',
-    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.7',
     'Operating System :: POSIX :: Linux',
     'Operating System :: Unix',
     'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',

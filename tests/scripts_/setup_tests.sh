@@ -3,7 +3,7 @@
 ###################################################################################################
 #
 #   Written by:               Josh.5 <jsunnex@gmail.com>
-#   Date:                     Thu Jan 07 2019, (17:59:00 PM)
+#   Date:                     Thu Jan 07 2019, (17:52:42 PM)
 #
 #   Copyright:
 #          Copyright (C) Josh Sunnex - All Rights Reserved
@@ -29,25 +29,28 @@
 #
 ###################################################################################################
 
+# This script is to setup a series of tests for the application
+
+
 SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd );
-PROJECT_BASE=$(realpath ${SCRIPT_PATH}/..);
-PUID=$(id -u);
-PGID=$(id -g);
+PROJECT_BASE=$(realpath ${SCRIPT_PATH}/../../);
 
-for arg in ${@}; do
-    if [[ ${arg} == '--debug' ]]; then
-        DEBUGGING=true;
+
+source "${SCRIPT_PATH}/download_test_files.sh"
+
+
+### FUNCTIONS
+# Install script dependencies:
+setup_script_dependencies() {
+    TO_INSTALL="";
+    [[ ! -x $(command -v curl) ]] && TO_INSTALL="${TO_INSTALL} curl";
+    if [[ "${TO_INSTALL}" != "" ]]; then
+        echo "Missing dependencies - ${TO_INSTALL}";
+        exit 0;
     fi
-done
+    python3 -m pip install --user --upgrade -r ${PROJECT_BASE}/requirements.txt
+}
 
-docker run -ti --rm \
-    -p 8888:8888 \
-    -v ${PROJECT_BASE}/:/app \
-    -v ${PROJECT_BASE}/config:/config \
-    -v ${PROJECT_BASE}/library:/library \
-    -v ${PROJECT_BASE}/cache:/tmp/unmanic \
-    -e PUID=${PUID} \
-    -e PGID=${PGID} \
-    -e DEBUGGING=${DEBUGGING} \
-    josh5/unmanic bash
 
+### RUN
+setup_script_dependencies

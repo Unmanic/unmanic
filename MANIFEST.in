@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+include logo.png
+include requirements.txt
+
+recursive-include unmanic *
+global-exclude *.py[cod]

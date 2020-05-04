@@ -29,25 +29,60 @@
 #
 ###################################################################################################
 
+
 SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd );
-PROJECT_BASE=$(realpath ${SCRIPT_PATH}/..);
+PROJECT_BASE=$(realpath ${SCRIPT_PATH}/../../);
+TEST_VIDEOS_DIRECTORY=$(realpath ${SCRIPT_PATH}/../_support/videos);
+TEMP_ENV=$(realpath ${SCRIPT_PATH}/../tmp/test_env);
 PUID=$(id -u);
 PGID=$(id -g);
 
+
+
+# Setup folders:
+rm -rf ${TEMP_ENV}/library/path*
+mkdir -p \
+    ${TEMP_ENV}/library/path1 \
+    ${TEMP_ENV}/library/path2 \
+    ${TEMP_ENV}/library/path3 \
+    ${TEMP_ENV}/library/path4
+
+
+# Copy test files to test folders
+cp -r ${TEST_VIDEOS_DIRECTORY}/small/* ${TEMP_ENV}/library/path1/
+cp -r ${TEST_VIDEOS_DIRECTORY}/small/* ${TEMP_ENV}/library/path2/
+cp -r ${TEST_VIDEOS_DIRECTORY}/small/* ${TEMP_ENV}/library/path3/
+cp -r ${TEST_VIDEOS_DIRECTORY}/small/* ${TEMP_ENV}/library/path4/
+
+
+# Set the config for the application so that it scans for files right away
+DEBUGGING=${DEBUGGING:-true}
+NUMBER_OF_WORKERS=${NUMBER_OF_WORKERS:-1}
+SCHEDULE_FULL_SCAN_MINUTES=${SCHEDULE_FULL_SCAN_MINUTES:-10}
+RUN_FULL_SCAN_ON_START=${RUN_FULL_SCAN_ON_START:-true}
+
+
+# Parse args
 for arg in ${@}; do
-    if [[ ${arg} == '--debug' ]]; then
-        DEBUGGING=true;
+    # If clean is passed, clear out the config prior to running
+    if [[ ${arg} =~ '--clean' ]]; then
+        rm -rf ${TEMP_ENV}/config;
     fi
 done
 
+
+# Run container
 docker run -ti --rm \
     -p 8888:8888 \
     -v ${PROJECT_BASE}/:/app \
-    -v ${PROJECT_BASE}/config:/config \
-    -v ${PROJECT_BASE}/library:/library \
-    -v ${PROJECT_BASE}/cache:/tmp/unmanic \
+    -v ${TEMP_ENV}/cache:/tmp/unmanic \
+    -v ${TEMP_ENV}/library:/library \
+    -v ${TEMP_ENV}/config:/config \
     -e PUID=${PUID} \
     -e PGID=${PGID} \
     -e DEBUGGING=${DEBUGGING} \
+    -e NUMBER_OF_WORKERS=${NUMBER_OF_WORKERS} \
+    -e SCHEDULE_FULL_SCAN_MINUTES=${SCHEDULE_FULL_SCAN_MINUTES} \
+    -e RUN_FULL_SCAN_ON_START=${RUN_FULL_SCAN_ON_START} \
     josh5/unmanic bash
 

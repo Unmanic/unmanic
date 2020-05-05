@@ -151,6 +151,7 @@ jobs:
       if: success()
       id: prepare
       run: |
+        ls -la dist/unmanic*.egg
         echo ::set-output name=docker_platforms::linux/amd64,linux/arm64
         echo ::set-output name=docker_username::josh5
         echo ::set-output name=docker_image::docker.io/${GITHUB_REPOSITORY,,}

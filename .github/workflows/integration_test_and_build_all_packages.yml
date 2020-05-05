@@ -98,7 +98,7 @@ jobs:
         echo ${BDIST_EGG_FILE} > dist/file_name.txt
 
     # Upload version artifact
-    - uses: actions/upload-artifact@master
+    - uses: actions/upload-artifact@v2
       with:
         name: dist
         path: dist/
@@ -128,7 +128,8 @@ jobs:
     # Fetch all artifacts
     - uses: actions/download-artifact@v2
       with:
-        path: ./dist
+        name: dist
+        path: ./
 
     # Fetch the python package file name artifact
     # - uses: actions/download-artifact@master

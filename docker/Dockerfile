@@ -51,7 +51,7 @@ RUN \
     echo "**** Build and install unmanic ****" \
         && mkdir -p /usr/lib/python3.7/site-packages/unmanic.egg \
         && cd /usr/lib/python3.7/site-packages/unmanic.egg \
-        && unzip /src/*.egg \
+        && unzip -q /src/*.egg \
         && echo './unmanic.egg' > /usr/lib/python3.7/site-packages/easy-install.pth \
     echo "**** Make default paths for unmanic library ****" \
         && mkdir -p /library

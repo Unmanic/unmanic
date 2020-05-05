@@ -18,21 +18,6 @@ jobs:
     # Fetch shallow git repository
     - uses: actions/checkout@v2
 
-    # Setup python environment
-    - name: Set up Python 3.7
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.7
-
-    # Restore the python cache if it exists
-    - name: Restore python cache
-      uses: actions/cache@v1
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
     # Restore test video's cache
     - name: Restore test videos cache
       uses: actions/cache@v1
@@ -49,24 +34,40 @@ jobs:
       run: |
         bash -c "tests/scripts_/download_test_files.sh"
 
+    # Setup python environment
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    # Restore the python cache if it exists
+    - name: Restore python cache
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
     # Install FFMPEG
     - name: Install FFMPEG
       if: success()
       run: |
         sudo apt install -yq --no-install-recommends ffmpeg
 
-    # Install FFMPEG
-    - name: Install FFMPEG
+    # Install dependencies for testing unmanic
+    - name: Install dependencies
       if: success()
       run: |
-        sudo apt-get install -y ffmpeg
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 
     # Run pytest unit tests
     - name: Test with pytest
+      if: success()
       run: |
         pytest -m integrationtest
-
-    # TODO: Create test procedure using the docker image built above
 
   py_build:
 

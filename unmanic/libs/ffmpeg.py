@@ -402,7 +402,9 @@ class FFMPEGHandle(object):
         video_codec_handle = unffmpeg.VideoCodecHandle(file_probe)
         if not self.settings.ENABLE_VIDEO_ENCODING:
             video_codec_handle.disable_video_encoding = True
-        video_codec_handle.set_video_codec(self.settings.VIDEO_CODEC)
+        # Set video codec and encoder
+        video_codec_handle.video_codec = self.settings.VIDEO_CODEC
+        video_codec_handle.video_encoder = self.settings.VIDEO_STREAM_ENCODER
         video_codec_args = video_codec_handle.args()
         streams_to_map = streams_to_map + video_codec_args['streams_to_map']
         streams_to_encode = streams_to_encode + video_codec_args['streams_to_encode']

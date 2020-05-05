@@ -66,3 +66,4 @@ class Settings(BaseModel):
     schedule_full_scan_minutes = IntegerField(null=False, default=60)
     search_extensions = TextField(null=False, default='mkv,avi,mov,ts,rmvb,mp4,')
     video_codec = TextField(null=False, default='hevc')
+    video_stream_encoder = TextField(null=False, default='libx265')

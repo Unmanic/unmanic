@@ -331,7 +331,7 @@ class CONFIG(object):
     def get_configured_video_encoder(self):
         if 'video' not in self.SUPPORTED_CODECS:
             return ''
-        return self.SUPPORTED_CODECS['video'][self.VIDEO_CODEC]['encoders'][0]
+        return self.VIDEO_STREAM_ENCODER
 
     def read_version(self):
         """

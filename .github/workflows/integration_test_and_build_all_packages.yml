@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Build Packages CI
 
 on:
   # TODO: Limit to building branches starting with 'dev', tags or PRs to master
@@ -7,17 +7,43 @@ on:
   pull_request:
     branches: [ master ]
 
+# TODO: Replace all instances of 3.7 with this variable
+env:
+  PYTHON_VERSION: 3.7
+
 jobs:
 
-  build:
+  integration_tests:
 
+    name: Run integration tests
+    runs-on: ubuntu-latest
+
+    # Restore test video's cache
+    - name: Restore test videos cache
+      uses: actions/cache@v1
+      with:
+        path: tests/support_/videos
+        key: ${{ runner.os }}-test_videos-${{ hashFiles('tests/support_/videos/**') }}
+        restore-keys: |
+          ${{ runner.os }}-test_videos-
+
+    # Download any missing test videos
+    - name: Download any missing test videos
+      if: success()
+      run: |
+        bash -c "tests/scripts_/download_test_files.sh"
+
+    # TODO: Create test procedure using the docker image built above
+
+  py_build:
+
+    name: Build Python package
+    needs: integration_tests
     runs-on: ubuntu-latest
 
     steps:
-    # Fetch full git repository
+    # Fetch shallow git repository
     - uses: actions/checkout@v2
-    - run: |
-        git fetch --prune --unshallow
 
     # Setup python environment
     - name: Set up Python 3.7
@@ -33,7 +59,7 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-          
+
     # Install dependencies for testing unmanic
     - name: Install dependencies
       run: |
@@ -43,12 +69,84 @@ jobs:
 
     # Build python dist package
     - name: Build python dist package
+      id: build_py
       run: |
-        echo "Last Git tag:"
-        git describe --tags --abbrev=0
-        echo "Python module version:"
-        python ./setup.py --version
+        echo "Short version:"
+        python ./setup.py  --quiet --version
+        echo "Long version:"
+        python ./setup.py  --quiet fullversion
         python ./setup.py bdist_egg
+
+    # Read the python build data (save to file)
+    - name: Write python build data
+      id: py_build_data
+      run: |
+        PY_VERSION=$(python ./setup.py  --quiet --version)
+        BDIST_EGG_PATH=$(ls  dist/*.egg | head -n1)
+        BDIST_EGG_FILE=${BDIST_EGG_PATH#*/}
+        echo ::set-output name=py_version::${PY_VERSION}
+        echo ::set-output name=bdist_egg_file::${BDIST_EGG_FILE}
+        echo ::set-output name=bdist_egg_path::${BDIST_EGG_PATH}
+        echo ${PY_VERSION} > dist/version
+        echo ${BDIST_EGG_FILE} > dist/file_name
+
+    # Upload version artifact
+    - uses: actions/upload-artifact@master
+      with:
+        name: version
+        path: dist/version
+
+    # Upload file name artifact
+    - uses: actions/upload-artifact@master
+      with:
+        name: file_name
+        path: dist/file_name
+
+    # Upload build artifact
+    - uses: actions/upload-artifact@master
+      with:
+        name: ${{ steps.py_build_data.outputs.bdist_egg_file }}
+        path: ${{ steps.py_build_data.outputs.bdist_egg_path }}
+
+  build_docker:
+
+    name: Build Docker Image
+    needs: job1
+    runs-on: ubuntu-latest
+
+    steps:
+    # Fetch full git repository
+    - uses: actions/checkout@v2
+    - run: |
+        git fetch --prune --unshallow
+
+    # Fetch the python package version artifact
+    - uses: actions/download-artifact@master
+      with:
+        name: version
+        path: dist/version
+
+    # Fetch the python package file name artifact
+    - uses: actions/download-artifact@master
+      with:
+        name: file_name
+        path: dist/file_name
+
+    # Read the python build data
+    - name: Write python build data
+      id: py_build_data
+      run: |
+        PY_VERSION=$(cat dist/version | head -n1)
+        BDIST_EGG_FILE=$(cat dist/file_name | head -n1)
+        echo ::set-output name=py_version::${PY_VERSION}
+        echo ::set-output name=bdist_egg_file::${BDIST_EGG_FILE}
+        echo ::set-output name=bdist_egg_path::dist/${BDIST_EGG_PATH}
+
+    # Fetch the python package artifact
+    - uses: actions/download-artifact@master
+      with:
+        name: ${{ steps.py_build_data.outputs.bdist_egg_file }}
+        path: ${{ steps.py_build_data.outputs.bdist_egg_path }}
 
     # Use docker buildx to build the docker image
     - name: Build the Docker image
@@ -76,7 +174,6 @@ jobs:
         echo ::set-output name=docker_cache::docker.io/josh5/unmanic
 
     # Generate buildx command
-    # TODO: Fix cache (currently not caching to registry)
     - name: Docker Login and set build command
       if: success()
       id: login
@@ -103,20 +200,3 @@ jobs:
       run: |
         echo ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .
         ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .
-  
-    # Restore test video's cache
-    - name: Restore test videos cache
-      uses: actions/cache@v1
-      with:
-        path: tests/support_/videos
-        key: ${{ runner.os }}-test_videos-${{ hashFiles('tests/support_/videos/**') }}
-        restore-keys: |
-          ${{ runner.os }}-test_videos-
-
-    # Download any missing test videos
-    - name: Download any missing test videos
-      if: success()
-      run: |
-        bash -c "tests/scripts_/download_test_files.sh"
-
-    # TODO: Create test procedure using the docker image built above

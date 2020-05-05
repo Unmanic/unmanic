@@ -130,7 +130,7 @@ cmd_class = {
     'build_py':            BuildPyCommand,
     'write-build-version': WriteVersionCommand,
     'clean':               CleanCommand,
-    'version':             FullVersionCommand,
+    'fullversion':         FullVersionCommand,
 }
 
 

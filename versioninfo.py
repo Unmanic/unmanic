@@ -32,7 +32,6 @@
 
 import io
 import os
-import json
 import subprocess
 import sys
 
@@ -93,7 +92,7 @@ def is_pre_release():
     :return:
     """
     full_version_string = full_version()
-    return "alpha" in full_version_string or "beta" in full_version_string
+    return "alpha" in full_version_string.lower() or "beta" in full_version_string.lower()
 
 
 def dev_status():
@@ -104,9 +103,9 @@ def dev_status():
     :return:
     """
     full_version_string = full_version()
-    if 'alpha' in full_version_string:
+    if 'alpha' in full_version_string.lower():
         return 'Development Status :: 3 - Alpha'
-    elif 'beta' in full_version_string or 'RC' in full_version_string:
+    elif 'beta' in full_version_string or 'rc' in full_version_string.lower():
         return 'Development Status :: 4 - Beta'
     else:
         return 'Development Status :: 5 - Production/Stable'
@@ -177,6 +176,14 @@ def get_git_version_info():
     distance_since_last_tag = subprocess.check_output(
         ["git", "rev-list", last_tag + "..HEAD", "--count"]
     ).strip().decode("utf-8")
+
+    # Normalize short version string (saves getting spammed with useless warnings from setuptools about it)
+    if '-alpha' in short_version_string.lower():
+        short_version_string = short_version_string.replace("-alpha", "a")
+    elif '-beta' in short_version_string.lower():
+        short_version_string = short_version_string.replace("-beta", "b")
+    elif '-rc' in short_version_string.lower():
+        short_version_string = short_version_string.replace("-rc", "rc")
 
     # Append a dev tag if this is not a clean tagged build
     if int(distance_since_last_tag) > 0:

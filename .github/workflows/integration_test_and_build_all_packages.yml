@@ -49,14 +49,32 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
 
-    # Install FFMPEG
-    - name: Install FFMPEG
+    # Restore the apt cache if it exists
+    - name: Restore python cache
+      id: apt-cache
+      uses: actions/cache@v1
+      with:
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-apt-cache
+
+    # Download FFMPEG
+    - name: Download FFMPEG
       if: success()
       run: |
+        echo "APT Cache before:"
+        ls -la /var/cache/apt/archives
         sudo apt-get update
+        sudo apt-get install -yq --no-install-recommends --download-only ffmpeg
+        echo "APT Cache after:"
+        ls -la /var/cache/apt/archives
+
+    # Install FFMPEG
+    - name: Download FFMPEG
+      if: success()
+      run: |
         sudo apt-get install -yq --no-install-recommends ffmpeg
 
-    # Install dependencies for testing unmanic
+    # Install python dependencies for testing unmanic
     - name: Install dependencies
       if: success()
       run: |

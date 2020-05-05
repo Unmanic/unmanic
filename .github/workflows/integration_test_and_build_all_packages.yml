@@ -18,6 +18,9 @@ jobs:
     name: Run integration tests
     runs-on: ubuntu-latest
 
+    steps:
+    # Fetch shallow git repository
+    - uses: actions/checkout@v2
     # Restore test video's cache
     - name: Restore test videos cache
       uses: actions/cache@v1

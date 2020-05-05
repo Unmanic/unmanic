@@ -1,6 +1,7 @@
 name: Docker Image CI
 
 on:
+  # TODO: Limit to building branches starting with 'dev', tags or PRs to master
   push:
     branches: [ '**' ]
   pull_request:
@@ -13,14 +14,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # Fetch full git repository
     - uses: actions/checkout@v2
     - run: |
         git fetch --prune --unshallow
+
     # Setup python environment
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
+
     # Restore the python cache if it exists
     - name: Restore python cache
       uses: actions/cache@v1
@@ -29,12 +33,14 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
+          
     # Install dependencies for testing unmanic
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
     # Build python dist package
     - name: Build python dist package
       run: |
@@ -43,6 +49,7 @@ jobs:
         echo "Python module version:"
         python ./setup.py --version
         python ./setup.py bdist_egg
+
     # Use docker buildx to build the docker image
     - name: Build the Docker image
       if: success()
@@ -50,10 +57,12 @@ jobs:
       uses: crazy-max/ghaction-docker-buildx@v1
       with:
         version: latest
+
     # List available build platforms
     - name: Available platforms
       if: success()
       run: echo ${{ steps.buildx.outputs.platforms }}
+
     # Generate 'prepare' build arguments to be retrieved later on
     - name: Prepare
       if: success()
@@ -65,6 +74,7 @@ jobs:
         VERSION_TAG=${GITHUB_REF#refs/*/}
         echo ::set-output name=version::${VERSION_TAG%/merge}
         echo ::set-output name=docker_cache::docker.io/josh5/unmanic
+
     # Generate buildx command
     # TODO: Fix cache (currently not caching to registry)
     - name: Docker Login and set build command
@@ -80,15 +90,33 @@ jobs:
           --build-arg BUILDKIT_INLINE_CACHE=1 \
           --cache-from="type=registry,ref=${{ steps.prepare.outputs.docker_cache }}:${{ steps.prepare.outputs.version }},mode=max" \
           --tag "${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}")
+
     # EITHER: Run the docker buildx command for master branch appending a 'latest' tag to docker image
     - name: Run Buildx (master)
       if: success() && contains(steps.prepare.outputs.version, 'master')
       run: |
         ${{ steps.login.outputs.buildx }} --tag "${{ steps.prepare.outputs.docker_image }}:latest" --file docker/Dockerfile .
+
     # OR: Run the docker buildx command for non-master branches
     - name: Run Buildx (non-master)
       if: success() && !contains(steps.prepare.outputs.version, 'master')
       run: |
         echo ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .
         ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .
+  
+    # Restore test video's cache
+    - name: Restore test videos cache
+      uses: actions/cache@v1
+      with:
+        path: tests/support_/videos
+        key: ${{ runner.os }}-test_videos-${{ hashFiles('tests/support_/videos/**') }}
+        restore-keys: |
+          ${{ runner.os }}-test_videos-
+
+    # Download any missing test videos
+    - name: Download any missing test videos
+      if: success()
+      run: |
+        bash -c "tests/scripts_/download_test_files.sh"
+
     # TODO: Create test procedure using the docker image built above

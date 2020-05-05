@@ -7,7 +7,6 @@ on:
   pull_request:
     branches: [ master ]
 
-# TODO: Replace all instances of 3.7 with this variable
 env:
   PYTHON_VERSION: 3.7
 
@@ -53,10 +52,10 @@ jobs:
         git fetch --prune --unshallow
 
     # Setup python environment
-    - name: Set up Python 3.7
+    - name: Set up Python ${PYTHON_VERSION}
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
+        python-version: ${PYTHON_VERSION}
 
     # Restore the python cache if it exists
     - name: Restore python cache
@@ -94,8 +93,7 @@ jobs:
         echo ::set-output name=py_version::${PY_VERSION}
         echo ::set-output name=bdist_egg_file::${BDIST_EGG_FILE}
         echo ::set-output name=bdist_egg_path::${BDIST_EGG_PATH}
-        echo ${PY_VERSION} > dist/version.txt
-        echo ${BDIST_EGG_FILE} > dist/file_name.txt
+        echo ${PY_VERSION} > dist/VERSION.txt
 
     # Upload version artifact
     - uses: actions/upload-artifact@v2
@@ -116,24 +114,18 @@ jobs:
     # Fetch all artifacts
     - uses: actions/download-artifact@v2
       with:
-        path: ./tmp/
+        path: ./artifacts/
 
-    # Read the python build data
+    # Restore python package distribution data
     - name: Restore python package distribution data
       id: py_build_data
       run: |
-        find ./tmp/ -name '*.egg' -type f
-        BDIST_EGG_PATH=$(find ./tmp/ -name '*.egg' -type f | head -n1)
         mkdir -p ./dist
-        mv ${BDIST_EGG_PATH} ./dist/
-        ls -la ./
-        ls -la ./dist/
-        # PY_VERSION=$(python ./setup.py  --quiet --version)
-        BDIST_EGG_PATH=$(ls  dist/*.egg | head -n1)
-        BDIST_EGG_FILE=${BDIST_EGG_PATH#*/}
-        # echo ::set-output name=py_version::${PY_VERSION}
-        echo ::set-output name=bdist_egg_file::${BDIST_EGG_FILE}
-        echo ::set-output name=bdist_egg_path::${BDIST_EGG_PATH}
+        find ./artifacts/ -type f -name "*.egg" -exec cp -n {} ./dist/ \;
+        find ./artifacts/ -type f -name "VERSION.txt" -exec cp -n {} ./dist/ \;
+        ls -l ./dist/
+        PY_VERSION=$(cat ./dist/VERSION.txt)
+        echo ::set-output name=py_version::${PY_VERSION}
 
     # Use docker buildx to build the docker image
     - name: Build the Docker image
@@ -153,7 +145,6 @@ jobs:
       if: success()
       id: prepare
       run: |
-        ls -la dist/unmanic*.egg
         echo ::set-output name=docker_platforms::linux/amd64,linux/arm64
         echo ::set-output name=docker_username::josh5
         echo ::set-output name=docker_image::docker.io/${GITHUB_REPOSITORY,,}

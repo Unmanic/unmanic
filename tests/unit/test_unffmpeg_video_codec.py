@@ -91,7 +91,7 @@ class TestClass(object):
         # Fetch a list of args from the unffmpeg video codec handler
         video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
         # Set the video codec to HEVC
-        video_codec_handle.set_video_codec('hevc')
+        video_codec_handle.set_video_codec_with_default_encoder('hevc')
         video_codec_args = video_codec_handle.args()
         # Assert the streams to map array is not empty
         assert video_codec_args['streams_to_map']
@@ -106,14 +106,14 @@ class TestClass(object):
             # Fetch a list of args from the unffmpeg video codec handler
             video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
             # Set the video codec to something that does not exist
-            video_codec_handle.set_video_codec('non_existent_codec')
+            video_codec_handle.set_video_codec_with_default_encoder('non_existent_codec')
 
     @pytest.mark.unittest
     def test_ensure_args_of_video_stream_is_copied_if_src_codec_matches_dest_codec(self):
         # Fetch a list of args from the unffmpeg video codec handler
         video_codec_handle = unffmpeg.VideoCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
         # Set the video codec to H264 the same as the current source video codec
-        video_codec_handle.set_video_codec('h264')
+        video_codec_handle.set_video_codec_with_default_encoder('h264')
         video_codec_args = video_codec_handle.args()
         # Assert the streams to map array is not empty
         assert video_codec_args['streams_to_map']

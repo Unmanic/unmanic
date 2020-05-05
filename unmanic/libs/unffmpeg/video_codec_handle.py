@@ -46,6 +46,7 @@ class VideoCodecHandle(object):
 
         # Configurable settings
         self.disable_video_encoding = False
+
         self.video_codec = 'h264'  # Default to h264
         self.video_encoder = 'libx264'  # Default to libx264
 
@@ -90,7 +91,7 @@ class VideoCodecHandle(object):
 
         return self.encoding_args
 
-    def set_video_codec(self, codec_name):
+    def set_video_codec_with_default_encoder(self, codec_name):
         """
         Set the video encoder
 

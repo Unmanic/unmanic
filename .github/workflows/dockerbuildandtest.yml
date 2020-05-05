@@ -66,6 +66,7 @@ jobs:
         echo ::set-output name=version::${VERSION_TAG%/merge}
         echo ::set-output name=docker_cache::docker.io/josh5/unmanic
     # Generate buildx command
+    # TODO: Fix cache (currently not caching to registry)
     - name: Docker Login and set build command
       if: success()
       id: login
@@ -76,13 +77,13 @@ jobs:
         echo  "Platform targets: ${{ steps.buildx.outputs.docker_platforms }}"
         echo ::set-output name=buildx::$(echo docker buildx build --push \
           --platform ${{ steps.prepare.outputs.docker_platforms }} \
+          --build-arg BUILDKIT_INLINE_CACHE=1 \
           --cache-from="type=registry,ref=${{ steps.prepare.outputs.docker_cache }}:${{ steps.prepare.outputs.version }},mode=max" \
           --tag "${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}")
     # EITHER: Run the docker buildx command for master branch appending a 'latest' tag to docker image
     - name: Run Buildx (master)
       if: success() && contains(steps.prepare.outputs.version, 'master')
       run: |
-        echo ${{ steps.login.outputs.buildx }} --tag "${{ steps.prepare.outputs.docker_image }}:latest" --file docker/Dockerfile .
         ${{ steps.login.outputs.buildx }} --tag "${{ steps.prepare.outputs.docker_image }}:latest" --file docker/Dockerfile .
     # OR: Run the docker buildx command for non-master branches
     - name: Run Buildx (non-master)

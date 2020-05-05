@@ -1,9 +1,9 @@
 name: Build Packages CI
 
 on:
-  # TODO: Limit to building branches starting with 'dev', tags or PRs to master
   push:
-    branches: [ '**' ]
+    branches: [ 'dev-**', master ]
+    tags: [ '**' ]
   pull_request:
     branches: [ master ]
 
@@ -50,6 +50,7 @@ jobs:
           ${{ runner.os }}-pip-
 
     # Restore the apt cache if it exists
+    # TODO: Fix this cache. Its not really working at all. It would be nice to have tho.
     - name: Restore python cache
       id: apt-cache
       uses: actions/cache@v1
@@ -71,7 +72,7 @@ jobs:
         sudo apt-get install -yq --no-install-recommends ffmpeg
 
     # Install python dependencies for testing unmanic
-    - name: Install dependencies
+    - name: Install python dependencies
       if: success()
       run: |
         python -m pip install --upgrade pip

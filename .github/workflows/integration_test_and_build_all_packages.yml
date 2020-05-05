@@ -114,7 +114,7 @@ jobs:
   build_docker:
 
     name: Build Docker Image
-    needs: job1
+    needs: py_build
     runs-on: ubuntu-latest
 
     steps:

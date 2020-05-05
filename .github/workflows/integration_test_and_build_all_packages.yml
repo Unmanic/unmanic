@@ -53,7 +53,8 @@ jobs:
     - name: Install FFMPEG
       if: success()
       run: |
-        sudo apt install -yq --no-install-recommends ffmpeg
+        sudo apt-get update
+        sudo apt-get install -yq --no-install-recommends ffmpeg
 
     # Install dependencies for testing unmanic
     - name: Install dependencies

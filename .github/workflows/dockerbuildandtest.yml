@@ -8,13 +8,13 @@ on:
 
 jobs:
 
-  build_docker:
+  build:
 
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - run: |
+      run:|
         git fetch --prune --unshallow
     # Setup python environment
     - name: Set up Python 3.7

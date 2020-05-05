@@ -142,11 +142,8 @@ jobs:
       run: |
         ls -la ./
         ls -la dist/*
-        ls -la dist/*/*
-        ls -la dist/version*
-        ls -la dist/file_name*
-        PY_VERSION=$(cat dist/version | head -n1)
-        BDIST_EGG_FILE=$(cat dist/file_name | head -n1)
+        PY_VERSION=$(cat dist/version.txt | head -n1)
+        BDIST_EGG_FILE=$(cat dist/file_name.txt | head -n1)
         BDIST_EGG_PATH=dist/${BDIST_EGG_FILE}
         echo ::set-output name=py_version::${PY_VERSION}
         echo ::set-output name=bdist_egg_file::${BDIST_EGG_FILE}

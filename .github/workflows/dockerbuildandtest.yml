@@ -38,7 +38,10 @@ jobs:
     # Build python dist package
     - name: Build python dist package
       run: |
-        python ./setup.py bdist_egg
-    # Build docker image
-    - name: Build the Docker image
-      run: docker build . --file docker/Dockerfile --tag josh5/unmanic:latest --tag josh5/unmanic:$(date +%s)
+        echo "Last Git tag:"
+        git describe --tags --abbrev=0
+        echo "Python module version:"
+        python ./setup.py --version
+    # # Build docker image
+    # - name: Build the Docker image
+    #   run: docker build . --file docker/Dockerfile --tag josh5/unmanic:latest --tag josh5/unmanic:$(date +%s)

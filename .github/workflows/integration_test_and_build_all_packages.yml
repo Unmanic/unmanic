@@ -125,17 +125,16 @@ jobs:
     # Fetch shallow git repository
     - uses: actions/checkout@v2
 
-    # Fetch the python package version artifact
+    # Fetch all artifacts
     - uses: actions/download-artifact@master
       with:
-        name: version
-        path: dist/version
+        path: dist/
 
     # Fetch the python package file name artifact
-    - uses: actions/download-artifact@master
-      with:
-        name: file_name
-        path: dist/file_name
+    # - uses: actions/download-artifact@master
+    #   with:
+    #     name: file_name
+    #     path: dist/
 
     # Read the python build data
     - name: Write python build data
@@ -143,15 +142,16 @@ jobs:
       run: |
         PY_VERSION=$(cat dist/version | head -n1)
         BDIST_EGG_FILE=$(cat dist/file_name | head -n1)
+        BDIST_EGG_PATH=dist/${BDIST_EGG_FILE}
         echo ::set-output name=py_version::${PY_VERSION}
         echo ::set-output name=bdist_egg_file::${BDIST_EGG_FILE}
-        echo ::set-output name=bdist_egg_path::dist/${BDIST_EGG_PATH}
+        echo ::set-output name=bdist_egg_path::${BDIST_EGG_PATH}
 
     # Fetch the python package artifact
-    - uses: actions/download-artifact@master
-      with:
-        name: ${{ steps.py_build_data.outputs.bdist_egg_file }}
-        path: ${{ steps.py_build_data.outputs.bdist_egg_path }}
+    # - uses: actions/download-artifact@master
+    #   with:
+    #     name: ${{ steps.py_build_data.outputs.bdist_egg_file }}
+    #     path: ${{ steps.py_build_data.outputs.bdist_egg_path }}
 
     # Use docker buildx to build the docker image
     - name: Build the Docker image

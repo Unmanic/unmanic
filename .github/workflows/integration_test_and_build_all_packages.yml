@@ -61,15 +61,11 @@ jobs:
     - name: Download FFMPEG
       if: success()
       run: |
-        echo "APT Cache before:"
-        ls -la /var/cache/apt/archives
-        sudo apt-get update
+        [[ ! -z `sudo find /var/cache/apt/archives -type f -name "ffmpeg*.deb"` ]] && echo "no update" || sudo apt-get update
         sudo apt-get install -yq --no-install-recommends --download-only ffmpeg
-        echo "APT Cache after:"
-        ls -la /var/cache/apt/archives
 
     # Install FFMPEG
-    - name: Download FFMPEG
+    - name: Install FFMPEG
       if: success()
       run: |
         sudo apt-get install -yq --no-install-recommends ffmpeg

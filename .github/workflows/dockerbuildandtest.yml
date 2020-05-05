@@ -59,7 +59,7 @@ jobs:
       if: success()
       id: prepare
       run: |
-        echo ::set-output name=docker_platforms::linux/amd64
+        echo ::set-output name=docker_platforms::linux/amd64,linux/arm64
         echo ::set-output name=docker_username::josh5
         echo ::set-output name=docker_image::docker.io/${GITHUB_REPOSITORY,,}
         VERSION_TAG=${GITHUB_REF#refs/*/}
@@ -73,7 +73,7 @@ jobs:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
         echo "${DOCKER_PASSWORD}" | docker login --username "${{ steps.prepare.outputs.docker_username }}" --password-stdin docker.io
-        echo  "Available target: ${{ steps.buildx.outputs.platforms }}"
+        echo  "Platform targets: ${{ steps.buildx.outputs.docker_platforms }}"
         echo ::set-output name=buildx::$(echo docker buildx build --output type=image,name=${{ steps.prepare.outputs.docker_image }},push=true \
           --platform ${{ steps.prepare.outputs.docker_platforms }} \
           --cache-to "type=registry,ref=${{ steps.prepare.outputs.docker_cache }}:${{ steps.prepare.outputs.version }}" \

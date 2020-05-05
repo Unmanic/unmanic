@@ -100,20 +100,8 @@ jobs:
     # Upload version artifact
     - uses: actions/upload-artifact@v2
       with:
-        name: dist
-        path: dist/
-
-    ## Upload file name artifact
-    #- uses: actions/upload-artifact@master
-    #  with:
-    #    name: file_name.txt
-    #    path: dist/file_name.txt
-
-    ## Upload build artifact
-    #- uses: actions/upload-artifact@master
-    #  with:
-    #    name: ${{ steps.py_build_data.outputs.bdist_egg_file }}
-    #    path: ${{ steps.py_build_data.outputs.bdist_egg_path }}
+        name: ${{ steps.py_build_data.outputs.bdist_egg_file }}
+        path: ${{ steps.py_build_data.outputs.bdist_egg_path }}
 
   build_docker:
 
@@ -128,14 +116,7 @@ jobs:
     # Fetch all artifacts
     - uses: actions/download-artifact@v2
       with:
-        name: dist
-        path: ./
-
-    # Fetch the python package file name artifact
-    # - uses: actions/download-artifact@master
-    #   with:
-    #     name: file_name.txt
-    #     path: dist/
+        path: ./dist/
 
     # Read the python build data
     - name: Write python build data
@@ -145,22 +126,12 @@ jobs:
         ls -la ./
         echo ls -la ./dist/
         ls -la ./dist/
-        echo cat dist/file_name.txt
-        cat dist/file_name.txt
-        echo cat ./dist/file_name.txt
-        cat ./dist/file_name.txt
-        PY_VERSION=$(cat dist/version.txt | head -n1)
-        BDIST_EGG_FILE=$(cat dist/file_name.txt | head -n1)
-        BDIST_EGG_PATH=dist/${BDIST_EGG_FILE}
-        echo ::set-output name=py_version::${PY_VERSION}
+        # PY_VERSION=$(python ./setup.py  --quiet --version)
+        BDIST_EGG_PATH=$(ls  dist/*.egg | head -n1)
+        BDIST_EGG_FILE=${BDIST_EGG_PATH#*/}
+        # echo ::set-output name=py_version::${PY_VERSION}
         echo ::set-output name=bdist_egg_file::${BDIST_EGG_FILE}
         echo ::set-output name=bdist_egg_path::${BDIST_EGG_PATH}
-
-    # Fetch the python package artifact
-    # - uses: actions/download-artifact@master
-    #   with:
-    #     name: ${{ steps.py_build_data.outputs.bdist_egg_file }}
-    #     path: ${{ steps.py_build_data.outputs.bdist_egg_path }}
 
     # Use docker buildx to build the docker image
     - name: Build the Docker image

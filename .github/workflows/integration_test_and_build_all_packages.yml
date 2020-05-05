@@ -7,9 +7,6 @@ on:
   pull_request:
     branches: [ master ]
 
-env:
-  PYTHON_VERSION: 3.7
-
 jobs:
 
   integration_tests:
@@ -52,10 +49,10 @@ jobs:
         git fetch --prune --unshallow
 
     # Setup python environment
-    - name: Set up Python ${PYTHON_VERSION}
+    - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
-        python-version: ${PYTHON_VERSION}
+        python-version: 3.7
 
     # Restore the python cache if it exists
     - name: Restore python cache

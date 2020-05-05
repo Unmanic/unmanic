@@ -83,10 +83,12 @@ jobs:
     - name: Run Buildx (master)
       if: success() && contains(steps.prepare.outputs.version, 'master')
       run: |
-          ${{ steps.login.outputs.buildx }} --tag "${{ steps.prepare.outputs.docker_image }}:latest" --file docker/Dockerfile .
+        echo ${{ steps.login.outputs.buildx }} --tag "${{ steps.prepare.outputs.docker_image }}:latest" --file docker/Dockerfile .
+        ${{ steps.login.outputs.buildx }} --tag "${{ steps.prepare.outputs.docker_image }}:latest" --file docker/Dockerfile .
     # OR: Run the docker buildx command for non-master branches
     - name: Run Buildx (non-master)
       if: success() && !contains(steps.prepare.outputs.version, 'master')
       run: |
+        echo ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .
         ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .
     # TODO: Create test procedure using the docker image built above

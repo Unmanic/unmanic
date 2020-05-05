@@ -21,6 +21,7 @@ jobs:
     steps:
     # Fetch shallow git repository
     - uses: actions/checkout@v2
+
     # Restore test video's cache
     - name: Restore test videos cache
       uses: actions/cache@v1
@@ -45,8 +46,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Fetch shallow git repository
+    # Fetch full git repository
     - uses: actions/checkout@v2
+    - run: |
+        git fetch --prune --unshallow
 
     # Setup python environment
     - name: Set up Python 3.7
@@ -118,10 +121,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Fetch full git repository
+    # Fetch shallow git repository
     - uses: actions/checkout@v2
-    - run: |
-        git fetch --prune --unshallow
 
     # Fetch the python package version artifact
     - uses: actions/download-artifact@master

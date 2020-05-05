@@ -49,6 +49,7 @@ COPY /docker/root   /
 COPY /dist/      /src/
 RUN \
     echo "**** Build and install unmanic ****" \
+        && ls -la /src/
         && mkdir -p /usr/lib/python3.7/site-packages/unmanic.egg \
         && cd /usr/lib/python3.7/site-packages/unmanic.egg \
         && unzip -q /src/*.egg \

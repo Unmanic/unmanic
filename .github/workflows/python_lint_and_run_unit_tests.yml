@@ -11,6 +11,7 @@ on:
 jobs:
   py_lint_and_unit_test:
 
+    name: Lint & Run Unit Tests Using Python
     runs-on: ubuntu-latest
     strategy:
       matrix:

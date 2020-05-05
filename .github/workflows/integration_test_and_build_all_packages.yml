@@ -140,7 +140,11 @@ jobs:
     - name: Write python build data
       id: py_build_data
       run: |
+        ls -la ./
         ls -la dist/
+        ls -la dist/version
+        ls -la dist/version
+        ls -la dist/file_name
         PY_VERSION=$(cat dist/version | head -n1)
         BDIST_EGG_FILE=$(cat dist/file_name | head -n1)
         BDIST_EGG_PATH=dist/${BDIST_EGG_FILE}

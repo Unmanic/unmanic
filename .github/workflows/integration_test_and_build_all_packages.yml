@@ -126,9 +126,9 @@ jobs:
     - uses: actions/checkout@v2
 
     # Fetch all artifacts
-    - uses: actions/download-artifact@master
+    - uses: actions/download-artifact@v2
       with:
-        path: dist/
+        path: ./dist
 
     # Fetch the python package file name artifact
     # - uses: actions/download-artifact@master
@@ -142,8 +142,8 @@ jobs:
       run: |
         echo ls -la ./
         ls -la ./
-        echo ls -la ./dist/*
-        ls -la ./dist/*
+        echo ls -la ./dist/
+        ls -la ./dist/
         echo cat dist/file_name.txt
         cat dist/file_name.txt
         echo cat ./dist/file_name.txt

@@ -77,7 +77,6 @@ class UnmanicLogger(object, metaclass=SingletonType):
             self._logger.addHandler(self._stream_handler)
         # Add file handler
         self.setup_file_handler()
-        print("UnmanicLogger - GENERATING NEW INSTANCE")
         # ###########
         # log_to_debug = self._logger
         # while log_to_debug is not None:

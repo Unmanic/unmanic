@@ -2,15 +2,52 @@
 
     <div class="col-md-4 ">
         <h3 class="list-heading">Audio Encoding</h3>
-        Media files can come with all kinds of different formats for audio streams.
+        {# TODO: Add pagination #}
+        All media files contain a number of <span class="sbold">streams</span>. If a file contains audio, that audio information is written in on of these streams.
         <br>
-        You may wish to standardise this format or duplicate a multi-channel (more than 2 channels) stream as a stereo (2 channels) stream.
-        <br>
-        <br>
-        If `Enable Audio Encoding` is not selected, all audio streams from the source will be passed through to the output file without being modified.
+        It is also not uncommon for a media file to contain more than one audio stream.
         <br>
         <br>
-        If you choose to select `Enable Audio Encoding`, you may choose to clone all multi-channel audio streams or transcode them to a standard audio codec.
+        This audio information is compressed in a standard format called a <span class="sbold">codec</span>.
+        <br>
+        Different codecs have different capabilities such as supporting multiple channels (eg. surround sound), how many of those channels it can contain, or how much audio data is lost when it is compressed.
+        <br>
+        <br>
+        You may wish to standardise the audio codec streams of your files to better suit your needs.
+        <br>
+        <br>
+        In order to compress an audio stream into a particular codec, we need to use an audio <span class="sbold">encoder</span>. Unmanic currently does not support advanced audio encoder features, so only one option is available per codec.
+        <br>
+        <hr/>
+        If <span class="sbold">`Enable Audio Encoding`</span> is not selected, all audio streams from the source file will be copied through to the output file without the codec being modified.
+        <br>
+        <br>
+        If you select <span class="sbold">`Enable Audio Encoding`</span>, two configuration sections will be available to you.
+        <br>
+        <br>
+        <span class="bold">TRANSCODE ALL AUDIO STREAMS</span>:
+        <br>
+        If <span class="sbold">`Enable Audio Stream Transcoding`</span> is not selected, audio streams will be copied through to the output file without the codec being modified.
+        <br>
+        <br>
+        Selecting the <span class="sbold">`Enable Audio Stream Transcoding`</span> checkbox will give you the option to transcode your audio streams to a standard audio codec.
+        <br>
+        <br>
+        Use the <span class="sbold">`Audio Codec`</span> drop-down to choose which codec the audio streams will be encoded into.
+        <br>
+        <br>
+        Once you have selected a <span class="sbold">`Audio Codec`</span> drop-down, you may also select an encoder using the <span class="sbold">`Audio Encoder`</span> drop-down.
+        <br>
+        <br>
+        <span class="bold">CREATE A STEREO CLONE OF STREAMS</span>:
+        <br>
+        If <span class="sbold">`Enable Audio Stream Cloning`</span> is not selected, no clones of the file's audio streams will be created.
+        <br>
+        <br>
+        Selecting the <span class="sbold">`Enable Audio Stream Cloning`</span> checkbox will give you the option to to create a stereo clone all multi-channel audio streams. This is helpful for playback compatibility on devices that do not support multi-channel audio.
+        <br>
+        <br>
+        Use the <span class="sbold">`Bitrate`</span> drop-down, to select how much audio data should be encoded. A higher value will encode more audio data and better quality audio, but will increase the size of the audio stream.
     </div>
     <div class="col-md-6 ">
         <!-- BEGIN FORM PORTLET-->

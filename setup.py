@@ -111,10 +111,26 @@ class CleanCommand(Command):
         [shutil.rmtree(f) for f in glob.glob(src_dir + "/**/__pycache__", recursive=True)]
 
 
+class FullVersionCommand(Command):
+    """Custom clean command to tidy up the project root."""
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    @staticmethod
+    def run():
+        print(versioninfo.full_version())
+
+
 cmd_class = {
     'build_py':            BuildPyCommand,
     'write-build-version': WriteVersionCommand,
     'clean':               CleanCommand,
+    'fullversion':         FullVersionCommand,
 }
 
 

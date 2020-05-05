@@ -1,0 +1,229 @@
+name: Build All Packages CI
+
+on:
+  push:
+    branches: [ 'dev-**', master ]
+    tags: [ '**' ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  integration_tests:
+
+    name: Run integration tests
+    runs-on: ubuntu-latest
+
+    steps:
+    # Fetch shallow git repository
+    - uses: actions/checkout@v2
+
+    # Restore test video's cache
+    - name: Restore test videos cache
+      uses: actions/cache@v1
+      id: test_videos_cache
+      with:
+        path: tests/support_/videos
+        key: ${{ runner.os }}-test_videos-${{ hashFiles('tests/scripts_/download_test_files.sh') }}
+        restore-keys: |
+          ${{ runner.os }}-test_videos-
+
+    # Download any missing test videos
+    - name: Download any missing test videos
+      if: success() && steps.test_videos_cache.outputs.cache-hit != 'true'
+      run: |
+        bash -c "tests/scripts_/download_test_files.sh"
+
+    # Setup python environment
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    # Restore the python cache if it exists
+    - name: Restore python cache
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    # Restore the apt cache if it exists
+    # TODO: Fix this cache. Its not really working at all. It would be nice to have tho.
+    - name: Restore python cache
+      id: apt-cache
+      uses: actions/cache@v1
+      with:
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-apt-cache
+
+    # Download FFMPEG
+    - name: Download FFMPEG
+      if: success()
+      run: |
+        [[ ! -z `sudo find /var/cache/apt/archives -type f -name "ffmpeg*.deb"` ]] && echo "no update" || sudo apt-get update
+        sudo apt-get install -yq --no-install-recommends --download-only ffmpeg
+
+    # Install FFMPEG
+    - name: Install FFMPEG
+      if: success()
+      run: |
+        sudo apt-get install -yq --no-install-recommends ffmpeg
+
+    # Install python dependencies for testing unmanic
+    - name: Install python dependencies
+      if: success()
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+    # Run pytest unit tests
+    - name: Test with pytest
+      if: success()
+      run: |
+        echo "Using test videos:"
+        ls -l ./tests/support_/videos/*/
+        pytest -m integrationtest
+
+  py_build:
+
+    name: Build Python package
+    needs: integration_tests
+    runs-on: ubuntu-latest
+
+    steps:
+    # Fetch full git repository
+    - uses: actions/checkout@v2
+    - run: |
+        git fetch --prune --unshallow
+
+    # Setup python environment
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    # Restore the python cache if it exists
+    - name: Restore python cache
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    # Install dependencies for testing unmanic
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+    # Build python dist package
+    - name: Build python dist package
+      id: build_py
+      run: |
+        echo "Short version:"
+        python ./setup.py  --quiet --version
+        echo "Long version:"
+        python ./setup.py  --quiet fullversion
+        python ./setup.py bdist_egg
+
+    # Read the python package distribution data (save version to file)
+    - name: Read python package distribution data
+      id: py_build_data
+      run: |
+        PY_VERSION=$(python ./setup.py  --quiet --version)
+        BDIST_EGG_PATH=$(ls  dist/*.egg | head -n1)
+        BDIST_EGG_FILE=${BDIST_EGG_PATH#*/}
+        echo ::set-output name=py_version::${PY_VERSION}
+        echo ::set-output name=bdist_egg_file::${BDIST_EGG_FILE}
+        echo ::set-output name=bdist_egg_path::${BDIST_EGG_PATH}
+        echo ${PY_VERSION} > dist/VERSION.txt
+
+    # Upload python package distribution data artifact
+    - uses: actions/upload-artifact@v2
+      with:
+        name: unmanic-py-dist-data-${{ steps.py_build_data.outputs.py_version }}
+        path: dist/
+
+  build_docker:
+
+    name: Build Docker Image
+    needs: py_build
+    runs-on: ubuntu-latest
+
+    steps:
+    # Fetch shallow git repository
+    - uses: actions/checkout@v2
+
+    # Fetch all artifacts
+    - uses: actions/download-artifact@v2
+      with:
+        path: ./artifacts/
+
+    # Restore python package distribution data
+    - name: Restore python package distribution data
+      id: py_build_data
+      run: |
+        mkdir -p ./dist
+        find ./artifacts/ -type f -name "*.egg" -exec cp -n {} ./dist/ \;
+        find ./artifacts/ -type f -name "VERSION.txt" -exec cp -n {} ./dist/ \;
+        ls -l ./dist/
+        PY_VERSION=$(cat ./dist/VERSION.txt)
+        echo ::set-output name=py_version::${PY_VERSION}
+
+    # Use docker buildx to build the docker image
+    - name: Build the Docker image
+      if: success()
+      id: buildx
+      uses: crazy-max/ghaction-docker-buildx@v1
+      with:
+        version: latest
+
+    # List available build platforms
+    - name: Available platforms
+      if: success()
+      run: echo ${{ steps.buildx.outputs.platforms }}
+
+    # Generate 'prepare' build arguments to be retrieved later on
+    - name: Prepare
+      if: success()
+      id: prepare
+      run: |
+        echo ::set-output name=docker_platforms::linux/amd64,linux/arm64
+        echo ::set-output name=docker_username::josh5
+        echo ::set-output name=docker_image::docker.io/${GITHUB_REPOSITORY,,}
+        VERSION_TAG=${GITHUB_REF#refs/*/}
+        echo ::set-output name=version::${VERSION_TAG%/merge}
+        echo ::set-output name=docker_cache::docker.io/josh5/unmanic
+
+    # Generate buildx command
+    - name: Docker Login and set build command
+      if: success()
+      id: login
+      env:
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        echo "${DOCKER_PASSWORD}" | docker login --username "${{ steps.prepare.outputs.docker_username }}" --password-stdin docker.io
+        echo  "Platform targets: ${{ steps.buildx.outputs.docker_platforms }}"
+        echo ::set-output name=buildx::$(echo docker buildx build --push \
+          --platform ${{ steps.prepare.outputs.docker_platforms }} \
+          --build-arg BUILDKIT_INLINE_CACHE=1 \
+          --cache-from="type=registry,ref=${{ steps.prepare.outputs.docker_cache }}:${{ steps.prepare.outputs.version }},mode=max" \
+          --tag "${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}")
+
+    # EITHER: Run the docker buildx command for master branch appending a 'latest' tag to docker image
+    - name: Run Buildx (master)
+      if: success() && contains(steps.prepare.outputs.version, 'master')
+      run: |
+        ${{ steps.login.outputs.buildx }} --tag "${{ steps.prepare.outputs.docker_image }}:latest" --file docker/Dockerfile .
+
+    # OR: Run the docker buildx command for non-master branches
+    - name: Run Buildx (non-master)
+      if: success() && !contains(steps.prepare.outputs.version, 'master')
+      run: |
+        echo ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .
+        ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .

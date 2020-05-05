@@ -13,5 +13,10 @@
     <codeStyleSettings language="Python">
       <option name="WRAP_ON_TYPING" value="0" />
     </codeStyleSettings>
+    <codeStyleSettings language="yaml">
+      <indentOptions>
+        <option name="CONTINUATION_INDENT_SIZE" value="8" />
+      </indentOptions>
+    </codeStyleSettings>
   </code_scheme>
 </component>

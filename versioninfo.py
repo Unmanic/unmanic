@@ -32,7 +32,6 @@
 
 import io
 import os
-import json
 import subprocess
 import sys
 
@@ -93,7 +92,7 @@ def is_pre_release():
     :return:
     """
     full_version_string = full_version()
-    return "alpha" in full_version_string or "beta" in full_version_string
+    return "alpha" in full_version_string.lower() or "beta" in full_version_string.lower()
 
 
 def dev_status():
@@ -104,9 +103,9 @@ def dev_status():
     :return:
     """
     full_version_string = full_version()
-    if 'alpha' in full_version_string:
+    if 'alpha' in full_version_string.lower():
         return 'Development Status :: 3 - Alpha'
-    elif 'beta' in full_version_string or 'RC' in full_version_string:
+    elif 'beta' in full_version_string or 'rc' in full_version_string.lower():
         return 'Development Status :: 4 - Beta'
     else:
         return 'Development Status :: 5 - Production/Stable'
@@ -142,12 +141,10 @@ def is_git_vcs():
 
     :return:
     """
-    try:
-        if subprocess.Popen(["git", "branch"], stderr=subprocess.STDOUT, stdout=subprocess.PIPE).returncode != 0:
-            return True
-    except:
-        pass
-    return False
+    if subprocess.call(["git", "branch"], stderr=subprocess.STDOUT, stdout=open(os.devnull, 'w')) != 0:
+        return False
+    else:
+        return True
 
 
 def get_git_version_info():
@@ -160,12 +157,16 @@ def get_git_version_info():
         eg. short   - 0.0.1b2.dev3                  (beta release with commits since the last tag)
         eg. long    - 0.0.1~68b3db6                 (full release)
         eg. long    - 0.0.1-beta2~68b3db6           (beta release)
-        eg. long    - 0.0.1-beta2~68b3db6+dirty     (beta release with commits since the last tag)
+        eg. long    - 0.0.1-beta2+68b3db6           (beta release with commits since the last tag)
+        eg. long    - 0.0.1-beta2~68b3db6+dirty     (beta release with uncommitted changes)
+        eg. long    - 0.0.1-beta2+68b3db6+dirty     (beta release with commits since the last tag & uncommitted changes)
 
     :return:
     """
     # Fetch the last tag
     last_tag = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"]).strip().decode("utf-8")
+    # Fetch the current commit ID
+    current_commit = subprocess.check_output(["git", "rev-parse", "--verify", "--short", "HEAD"]).strip().decode("utf-8")
 
     # Create a long and short version string to return
     short_version_string = last_tag
@@ -173,22 +174,31 @@ def get_git_version_info():
 
     # Fetch the amount of commits since the last tag
     distance_since_last_tag = subprocess.check_output(
-        ["git", "rev-list", last_tag + "..HEAD", "--count"]).strip().decode("utf-8")
+        ["git", "rev-list", last_tag + "..HEAD", "--count"]
+    ).strip().decode("utf-8")
+
+    # Normalize short version string (saves getting spammed with useless warnings from setuptools about it)
+    if '-alpha' in short_version_string.lower():
+        short_version_string = short_version_string.replace("-alpha", "a")
+    elif '-beta' in short_version_string.lower():
+        short_version_string = short_version_string.replace("-beta", "b")
+    elif '-rc' in short_version_string.lower():
+        short_version_string = short_version_string.replace("-rc", "rc")
 
     # Append a dev tag if this is not a clean tagged build
     if int(distance_since_last_tag) > 0:
         # There are commits since the last tag
-        # Fetch the current commit ID
-        current_commit = subprocess.check_output(["git", "rev-parse", "--verify", "--short", "HEAD"]).strip().decode(
-            "utf-8")
         # Modify the version strings
         short_version_string = '{}.dev{}'.format(short_version_string, distance_since_last_tag)
+        long_version_string = '{}+{}'.format(long_version_string, current_commit)
+    else:
         long_version_string = '{}~{}'.format(long_version_string, current_commit)
 
     # Check if there are uncommitted changes on the directory
-    pipe = subprocess.Popen(["git", "diff-index", "--quiet", "HEAD", "--"])
-    is_dirty = False if pipe.returncode else True
-    if is_dirty:
+    git_diff_status = subprocess.check_output(
+        "git diff-index --quiet HEAD -- || echo 'is_dirty'", shell=True
+    ).strip().decode("utf-8")
+    if git_diff_status == 'is_dirty':
         # There are commits since the last tag
         long_version_string = '{}+dirty'.format(long_version_string)
 

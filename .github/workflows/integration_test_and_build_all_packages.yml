@@ -25,15 +25,16 @@ jobs:
     # Restore test video's cache
     - name: Restore test videos cache
       uses: actions/cache@v1
+      id: test_videos_cache
       with:
         path: tests/support_/videos
-        key: ${{ runner.os }}-test_videos-${{ hashFiles('tests/support_/videos/**') }}
+        key: ${{ runner.os }}-test_videos-${{ hashFiles('tests/scripts_/download_test_files.sh') }}
         restore-keys: |
           ${{ runner.os }}-test_videos-
 
     # Download any missing test videos
     - name: Download any missing test videos
-      if: success()
+      if: success() && steps.test_videos_cache.outputs.cache-hit != 'true'
       run: |
         bash -c "tests/scripts_/download_test_files.sh"
 

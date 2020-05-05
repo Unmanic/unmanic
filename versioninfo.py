@@ -184,9 +184,8 @@ def get_git_version_info():
         long_version_string = '{}~{}'.format(long_version_string, current_commit)
 
     # Check if there are uncommitted changes on the directory
-    pipe = subprocess.Popen(["git", "diff-index", "--quiet", "HEAD", "--"])
-    is_dirty = False if pipe.returncode else True
-    if is_dirty:
+    git_diff_status = subprocess.check_output("git diff-index --quiet HEAD -- || echo 'is_dirty'",shell=True).strip().decode("utf-8")
+    if git_diff_status == 'is_dirty':
         # There are commits since the last tag
         long_version_string = '{}+dirty'.format(long_version_string)
 

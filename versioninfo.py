@@ -142,12 +142,10 @@ def is_git_vcs():
 
     :return:
     """
-    try:
-        if subprocess.Popen(["git", "branch"], stderr=subprocess.STDOUT, stdout=subprocess.PIPE).returncode != 0:
-            return False
-        return True
-    except:
+    if subprocess.call(["git", "branch"], stderr=subprocess.STDOUT, stdout=open(os.devnull, 'w')) != 0:
         return False
+    else:
+        return True
 
 
 def get_git_version_info():

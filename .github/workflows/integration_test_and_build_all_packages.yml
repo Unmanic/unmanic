@@ -80,8 +80,8 @@ jobs:
         python ./setup.py  --quiet fullversion
         python ./setup.py bdist_egg
 
-    # Read the python build data (save to file)
-    - name: Write python build data
+    # Read the python package distribution data (save version to file)
+    - name: Read python package distribution data
       id: py_build_data
       run: |
         PY_VERSION=$(python ./setup.py  --quiet --version)
@@ -92,11 +92,11 @@ jobs:
         echo ::set-output name=bdist_egg_path::${BDIST_EGG_PATH}
         echo ${PY_VERSION} > dist/VERSION.txt
 
-    # Upload version artifact
+    # Upload python package distribution data artifact
     - uses: actions/upload-artifact@v2
       with:
-        name: ${{ steps.py_build_data.outputs.bdist_egg_file }}
-        path: ${{ steps.py_build_data.outputs.bdist_egg_path }}
+        name: unmanic-py-dist-data-${{ steps.py_build_data.outputs.py_version }}
+        path: dist/
 
   build_docker:
 

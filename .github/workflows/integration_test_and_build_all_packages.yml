@@ -68,6 +68,8 @@ jobs:
     - name: Test with pytest
       if: success()
       run: |
+        echo "Using test videos:"
+        ls -l ./tests/support_/videos/*/
         pytest -m integrationtest
 
   py_build:

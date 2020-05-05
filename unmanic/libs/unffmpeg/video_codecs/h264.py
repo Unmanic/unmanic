@@ -35,6 +35,6 @@ from ..base_codecs import Codecs
 
 class H264(Codecs):
     name = 'h264'
-    encoders = ['libx264']
+    encoders = [ 'h264_nvenc', 'libx264', 'libx264rgb', 'nvenc', 'nvenc_h264' ]
     default_encoder = 'libx264'
     codec_long_name = 'H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10'

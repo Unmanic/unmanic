@@ -53,9 +53,11 @@
         if ($("#video_encoding_enabled").prop("checked")) {
             $("#ENABLE_VIDEO_ENCODING").val("true");
             $(".video_encoding_settings").removeClass('hidden');
+            $(".video_encoding_settings_disabled_notice").addClass('hidden');
         } else {
             $("#ENABLE_VIDEO_ENCODING").val("false");
             $(".video_encoding_settings").addClass('hidden');
+            $(".video_encoding_settings_disabled_notice").removeClass('hidden');
         }
     };
     var toggleEnableAudioEncoding = function () {
@@ -79,6 +81,16 @@
             $(".audio_stream_transcoding_settings").addClass('hidden');
             $(".audio_stream_transcoding_settings_disabled_notice").removeClass('hidden');
         }
+    };
+    var setVideoStreamEncoderListForTranscoding = function () {
+        var query = {
+            ajax: 'reload_video_stream_encoder_selection',
+            selected_video_codec: $("#VIDEO_CODEC :selected").val()
+        };
+        $.post('/settings/?step=video', query, function (data) {
+            // update the encoders list
+            $('#video_stream_encoder_selection').html(data);
+        });
     };
     var setAudioStreamEncoderListForTranscoding = function () {
         var query = {

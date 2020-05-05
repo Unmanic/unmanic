@@ -99,7 +99,7 @@ class PostProcessor(threading.Thread):
         if not self.current_task.success:
             self._log("Task was marked as failed.", level='debug')
             self._log("Removing cached file", self.current_task.cache_path, level='debug')
-            os.remove(self.current_task.cache_path)
+            self.remove_current_task_cache_file()
             return False
         # Ensure file is correct format
         self.current_task.success = self.validate_streams(self.current_task.cache_path)
@@ -188,3 +188,7 @@ class PostProcessor(threading.Thread):
         fileinfo.load()
         fileinfo.append(newname, originalname)
         fileinfo.save()
+
+    def remove_current_task_cache_file(self):
+        if os.path.exists(self.current_task.cache_path):
+            os.remove(self.current_task.cache_path)

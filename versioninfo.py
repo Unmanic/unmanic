@@ -158,12 +158,16 @@ def get_git_version_info():
         eg. short   - 0.0.1b2.dev3                  (beta release with commits since the last tag)
         eg. long    - 0.0.1~68b3db6                 (full release)
         eg. long    - 0.0.1-beta2~68b3db6           (beta release)
-        eg. long    - 0.0.1-beta2~68b3db6+dirty     (beta release with commits since the last tag)
+        eg. long    - 0.0.1-beta2+68b3db6           (beta release with commits since the last tag)
+        eg. long    - 0.0.1-beta2~68b3db6+dirty     (beta release with uncommitted changes)
+        eg. long    - 0.0.1-beta2+68b3db6+dirty     (beta release with commits since the last tag & uncommitted changes)
 
     :return:
     """
     # Fetch the last tag
     last_tag = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"]).strip().decode("utf-8")
+    # Fetch the current commit ID
+    current_commit = subprocess.check_output(["git", "rev-parse", "--verify", "--short", "HEAD"]).strip().decode("utf-8")
 
     # Create a long and short version string to return
     short_version_string = last_tag
@@ -171,20 +175,22 @@ def get_git_version_info():
 
     # Fetch the amount of commits since the last tag
     distance_since_last_tag = subprocess.check_output(
-        ["git", "rev-list", last_tag + "..HEAD", "--count"]).strip().decode("utf-8")
+        ["git", "rev-list", last_tag + "..HEAD", "--count"]
+    ).strip().decode("utf-8")
 
     # Append a dev tag if this is not a clean tagged build
     if int(distance_since_last_tag) > 0:
         # There are commits since the last tag
-        # Fetch the current commit ID
-        current_commit = subprocess.check_output(["git", "rev-parse", "--verify", "--short", "HEAD"]).strip().decode(
-            "utf-8")
         # Modify the version strings
         short_version_string = '{}.dev{}'.format(short_version_string, distance_since_last_tag)
+        long_version_string = '{}+{}'.format(long_version_string, current_commit)
+    else:
         long_version_string = '{}~{}'.format(long_version_string, current_commit)
 
     # Check if there are uncommitted changes on the directory
-    git_diff_status = subprocess.check_output("git diff-index --quiet HEAD -- || echo 'is_dirty'",shell=True).strip().decode("utf-8")
+    git_diff_status = subprocess.check_output(
+        "git diff-index --quiet HEAD -- || echo 'is_dirty'", shell=True
+    ).strip().decode("utf-8")
     if git_diff_status == 'is_dirty':
         # There are commits since the last tag
         long_version_string = '{}+dirty'.format(long_version_string)

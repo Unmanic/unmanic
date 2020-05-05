@@ -42,6 +42,51 @@ jobs:
         git describe --tags --abbrev=0
         echo "Python module version:"
         python ./setup.py --version
-    # # Build docker image
-    # - name: Build the Docker image
-    #   run: docker build . --file docker/Dockerfile --tag josh5/unmanic:latest --tag josh5/unmanic:$(date +%s)
+        python ./setup.py bdist_egg
+    # Use docker buildx to build the docker image
+    - name: Build the Docker image
+      if: success()
+      id: buildx
+      uses: crazy-max/ghaction-docker-buildx@v1
+      with:
+        version: latest
+    # List available build platforms
+    - name: Available platforms
+      if: success()
+      run: echo ${{ steps.buildx.outputs.platforms }}
+    # Generate 'prepare' build arguments to be retrieved later on
+    - name: Prepare
+      if: success()
+      id: prepare
+      run: |
+        echo ::set-output name=docker_platforms::linux/amd64
+        echo ::set-output name=docker_username::josh5
+        echo ::set-output name=docker_image::docker.io/${GITHUB_REPOSITORY,,}
+        VERSION_TAG=${GITHUB_REF#refs/*/}
+        echo ::set-output name=version::${VERSION_TAG%/merge}
+        echo ::set-output name=docker_cache::docker.io/josh5/unmanic
+    # Generate buildx command
+    - name: Docker Login and set build command
+      if: success()
+      id: login
+      env:
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        echo "${DOCKER_PASSWORD}" | docker login --username "${{ steps.prepare.outputs.docker_username }}" --password-stdin docker.io
+        echo  "Available target: ${{ steps.buildx.outputs.platforms }}"
+        echo ::set-output name=buildx::$(echo docker buildx build --output type=image,name=${{ steps.prepare.outputs.docker_image }},push=true \
+          --platform ${{ steps.prepare.outputs.docker_platforms }} \
+          --cache-to "type=registry,ref=${{ steps.prepare.outputs.docker_cache }}:${{ steps.prepare.outputs.version }}" \
+          --cache-from "type=registry,ref=${{ steps.prepare.outputs.docker_cache }}:${{ steps.prepare.outputs.version }},mode=max" \
+          --tag "${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}")
+    # EITHER: Run the docker buildx command for master branch appending a 'latest' tag to docker image
+    - name: Run Buildx (master)
+      if: success() && contains(steps.prepare.outputs.version, 'master')
+      run: |
+          ${{ steps.login.outputs.buildx }} --tag "${{ steps.prepare.outputs.docker_image }}:latest" --file docker/Dockerfile .
+    # OR: Run the docker buildx command for non-master branches
+    - name: Run Buildx (non-master)
+      if: success() && !contains(steps.prepare.outputs.version, 'master')
+      run: |
+        ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .
+    # TODO: Create test procedure using the docker image built above

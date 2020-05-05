@@ -116,15 +116,17 @@ jobs:
     # Fetch all artifacts
     - uses: actions/download-artifact@v2
       with:
-        path: ./dist/
+        path: ./tmp/
 
     # Read the python build data
-    - name: Write python build data
+    - name: Restore python package distribution data
       id: py_build_data
       run: |
-        echo ls -la ./
+        find ./tmp/ -name '*.egg' -type f
+        BDIST_EGG_PATH=$(find ./tmp/ -name '*.egg' -type f | head -n1)
+        mkdir -p ./dist
+        mv ${BDIST_EGG_PATH} ./dist/
         ls -la ./
-        echo ls -la ./dist/
         ls -la ./dist/
         # PY_VERSION=$(python ./setup.py  --quiet --version)
         BDIST_EGG_PATH=$(ls  dist/*.egg | head -n1)

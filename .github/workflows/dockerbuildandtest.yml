@@ -74,10 +74,9 @@ jobs:
       run: |
         echo "${DOCKER_PASSWORD}" | docker login --username "${{ steps.prepare.outputs.docker_username }}" --password-stdin docker.io
         echo  "Platform targets: ${{ steps.buildx.outputs.docker_platforms }}"
-        echo ::set-output name=buildx::$(echo docker buildx build --output type=image,name=${{ steps.prepare.outputs.docker_image }},push=true \
+        echo ::set-output name=buildx::$(echo docker buildx build --push \
           --platform ${{ steps.prepare.outputs.docker_platforms }} \
-          --cache-to "type=registry,ref=${{ steps.prepare.outputs.docker_cache }}:${{ steps.prepare.outputs.version }}" \
-          --cache-from "type=registry,ref=${{ steps.prepare.outputs.docker_cache }}:${{ steps.prepare.outputs.version }},mode=max" \
+          --cache-from="type=registry,ref=${{ steps.prepare.outputs.docker_cache }}:${{ steps.prepare.outputs.version }},mode=max" \
           --tag "${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}")
     # EITHER: Run the docker buildx command for master branch appending a 'latest' tag to docker image
     - name: Run Buildx (master)

@@ -63,6 +63,7 @@ class FFMPEGHandleConversionError(Exception):
 class FFMPEGHandle(object):
     def __init__(self, settings):
         self.name = 'FFMPEGHandle'
+        # TODO: Modify to have a static configuration dictionary passed to it rather than reading directly from the config object
         self.settings = settings
         self.process = None
         self.file_in = None

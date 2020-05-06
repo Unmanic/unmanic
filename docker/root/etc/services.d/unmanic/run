@@ -3,10 +3,13 @@
 export HOME=/config
 export PYTHONPATH="${PYTHONPATH}:/app"
 
+PUID=${PUID:-911}
+PGID=${PGID:-911}
+
 if [[ -e /app/unmanic/service.py ]]; then
     echo "Running Unmanic from source"
-    exec s6-setuidgid docker /usr/bin/python3 /app/unmanic/service.py
+    exec s6-setuidgid ${PUID}:${PGID} /usr/bin/python3 /app/unmanic/service.py
 else
     echo "Running Unmanic from installed module"
-    exec s6-setuidgid docker unmanic
+    exec s6-setuidgid ${PUID}:${PGID} unmanic
 fi

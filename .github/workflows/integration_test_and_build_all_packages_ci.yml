@@ -35,10 +35,10 @@ jobs:
         bash -c "tests/scripts_/download_test_files.sh"
 
     # Setup python environment
-    - name: Set up Python 3.7
+    - name: Set up Python 3.6
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
+        python-version: 3.6
 
     # Restore the python cache if it exists
     - name: Restore python cache
@@ -100,10 +100,10 @@ jobs:
         git fetch --prune --unshallow
 
     # Setup python environment
-    - name: Set up Python 3.7
+    - name: Set up Python 3.6
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
+        python-version: 3.6
 
     # Restore the python cache if it exists
     - name: Restore python cache
@@ -129,18 +129,18 @@ jobs:
         python ./setup.py  --quiet --version
         echo "Long version:"
         python ./setup.py  --quiet fullversion
-        python ./setup.py bdist_egg
+        python ./setup.py bdist_wheel
 
     # Read the python package distribution data (save version to file)
     - name: Read python package distribution data
       id: py_build_data
       run: |
         PY_VERSION=$(python ./setup.py  --quiet --version)
-        BDIST_EGG_PATH=$(ls  dist/*.egg | head -n1)
-        BDIST_EGG_FILE=${BDIST_EGG_PATH#*/}
+        PY_BDIST_PATH=$(ls  dist/*.whl | head -n1)
+        PY_BDIST_FILE=${PY_BDIST_PATH#*/}
         echo ::set-output name=py_version::${PY_VERSION}
-        echo ::set-output name=bdist_egg_file::${BDIST_EGG_FILE}
-        echo ::set-output name=bdist_egg_path::${BDIST_EGG_PATH}
+        echo ::set-output name=py_bdist_file::${PY_BDIST_FILE}
+        echo ::set-output name=py_bdist_path::${PY_BDIST_PATH}
         echo ${PY_VERSION} > dist/VERSION.txt
 
     # Upload python package distribution data artifact
@@ -169,7 +169,7 @@ jobs:
       id: py_build_data
       run: |
         mkdir -p ./dist
-        find ./artifacts/ -type f -name "*.egg" -exec cp -n {} ./dist/ \;
+        find ./artifacts/ -type f -name "*.whl" -exec cp -n {} ./dist/ \;
         find ./artifacts/ -type f -name "VERSION.txt" -exec cp -n {} ./dist/ \;
         ls -l ./dist/
         PY_VERSION=$(cat ./dist/VERSION.txt)

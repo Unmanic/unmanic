@@ -34,13 +34,38 @@ PROJECT_BASE=$(realpath ${SCRIPT_PATH}/..);
 PUID=$(id -u);
 PGID=$(id -g);
 
-for arg in ${@}; do
-    if [[ ${arg} == '--debug' ]]; then
-        DEBUGGING=true;
-    fi
+for ARG in ${@}; do
+    case ${ARG} in
+        --debug)
+            DEBUGGING=true;
+            ;;
+        --hw*)
+            HW_ACCELERATION=$(echo ${ARG} | awk -F'=' '{print $2}');
+            ;;
+        *)
+            ;;
+    esac
 done
 
-docker run -ti --rm \
+ADDITIONAL_DOCKER_PARAMS=""
+if [[ ! -z ${HW_ACCELERATION} ]]; then
+    PARAM=""
+    case ${HW_ACCELERATION} in
+        nvidia)
+            PARAM="--gpu=all -e NVIDIA_VISIBLE_DEVICES=all"
+            ;;
+        vaapi)
+            PARAM="--device=/dev/dri:/dev/dri"
+            ;;
+        *)
+            ;;
+    esac
+    ADDITIONAL_DOCKER_PARAMS="${ADDITIONAL_DOCKER_PARAMS} \
+        ${PARAM} \
+        "
+fi
+
+CMD="docker run -ti --rm \
     -p 8888:8888 \
     -v ${PROJECT_BASE}/:/app \
     -v ${PROJECT_BASE}/config:/config \
@@ -49,5 +74,8 @@ docker run -ti --rm \
     -e PUID=${PUID} \
     -e PGID=${PGID} \
     -e DEBUGGING=${DEBUGGING} \
-    josh5/unmanic bash
+    ${ADDITIONAL_DOCKER_PARAMS} \
+    josh5/unmanic bash"
 
+echo "${CMD}"
+bash -c "${CMD}"

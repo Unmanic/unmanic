@@ -1,13 +1,14 @@
 #!/usr/bin/with-contenv bash
 
-CWD=${PWD};
+PUID=${PUID:-911}
+PGID=${PGID:-911}
 
 permissions_config() {
     echo "**** (permissions_config) Settings permissions ****";
     mkdir -p \
         /tmp/unmanic \
         /config/.unmanic
-    chown -R $PUID:$PGID \
+    chown -R ${PUID}:${PGID} \
         /tmp/unmanic \
         /config/.unmanic \
         /app

@@ -33,6 +33,7 @@ SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd );
 PROJECT_BASE=$(realpath ${SCRIPT_PATH}/..);
 PUID=$(id -u);
 PGID=$(id -g);
+DEBUGGING=false;
 
 for ARG in ${@}; do
     case ${ARG} in
@@ -60,9 +61,7 @@ if [[ ! -z ${HW_ACCELERATION} ]]; then
         *)
             ;;
     esac
-    ADDITIONAL_DOCKER_PARAMS="${ADDITIONAL_DOCKER_PARAMS} \
-        ${PARAM} \
-        "
+    ADDITIONAL_DOCKER_PARAMS="${ADDITIONAL_DOCKER_PARAMS} ${PARAM} "
 fi
 
 CMD="docker run -ti --rm \

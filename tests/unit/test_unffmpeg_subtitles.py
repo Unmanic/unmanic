@@ -37,12 +37,12 @@ import pytest
 
 try:
     from unmanic.libs import common, unlogger, unffmpeg
-    from tests.support_.test_data import mkv_ffprobe
+    from tests.support_.test_data import ffprobe_mkv
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
     from unmanic.libs import common, unlogger, unffmpeg
-    from tests.support_.test_data import mkv_ffprobe
+    from tests.support_.test_data import ffprobe_mkv
 
 
 class TestClass(object):
@@ -71,7 +71,7 @@ class TestClass(object):
         # Get the destination container object by it's name
         destination_container = self.get_container('matroska')
         # Fetch a list of args from the unffmpeg subtitle handler
-        subtitle_handle = unffmpeg.SubtitleHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe, destination_container)
+        subtitle_handle = unffmpeg.SubtitleHandle(ffprobe_mkv.mkv_multiple_subtitles_ffprobe, destination_container)
         subtitle_args = subtitle_handle.args()
         # Assert the streams to map array is not empty
         assert subtitle_args['streams_to_map']
@@ -83,7 +83,7 @@ class TestClass(object):
         # Get the destination container object by it's name
         destination_container = self.get_container('matroska')
         # Fetch a list of args from the unffmpeg subtitle handler
-        subtitle_handle = unffmpeg.SubtitleHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe, destination_container)
+        subtitle_handle = unffmpeg.SubtitleHandle(ffprobe_mkv.mkv_multiple_subtitles_ffprobe, destination_container)
         # Remove the subtitles for this (even though the destination supports subtitles)
         subtitle_handle.remove_subtitle_streams = True
         subtitle_args = subtitle_handle.args()
@@ -97,7 +97,7 @@ class TestClass(object):
         # Get the destination container object by it's name
         destination_container = self.get_container('avi')
         # Fetch a list of args from the unffmpeg subtitle handler
-        subtitle_handle = unffmpeg.SubtitleHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe, destination_container)
+        subtitle_handle = unffmpeg.SubtitleHandle(ffprobe_mkv.mkv_multiple_subtitles_ffprobe, destination_container)
         subtitle_args = subtitle_handle.args()
         # Assert the streams to map array is not empty
         assert subtitle_args['streams_to_map']
@@ -109,7 +109,7 @@ class TestClass(object):
         # Get the destination container object by it's name
         destination_container = self.get_container('mp4')
         # Fetch a list of args from the unffmpeg subtitle handler
-        subtitle_handle = unffmpeg.SubtitleHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe, destination_container)
+        subtitle_handle = unffmpeg.SubtitleHandle(ffprobe_mkv.mkv_multiple_subtitles_ffprobe, destination_container)
         subtitle_args = subtitle_handle.args()
         # Assert the streams to map array is not empty
         assert subtitle_args['streams_to_map']

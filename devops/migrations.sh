@@ -12,13 +12,17 @@ if [[ ! -x $(command -v pw_migrate) ]]; then
     exit 1;
 fi
 
-
-DATABASE_FILE=$(realpath "${SCRIPT_DIR}/../tests/tmp/config/.unmanic/config/unmanic.db");
+DATABASE_FILE=$(realpath "${HOME}/.unmanic/config/unmanic.db");
+TEST_DATABASE_FILE=$(realpath "${SCRIPT_DIR}/../tests/tmp/config/.unmanic/config/unmanic.db");
+if [[ -f ${TEST_DATABASE_FILE} ]]; then
+    DATABASE_FILE=${TEST_DATABASE_FILE}
+fi
+MIGRATIONS_PATH=$(realpath "${SCRIPT_DIR}/../unmanic/migrations");
 NAME=$(echo ${@} | awk '{print tolower($0)}' | tr ' ' '_');
 
 
 # Parse args
-ARGS="--database=sqlite:///${DATABASE_FILE}"
+ARGS="--database=sqlite:///${DATABASE_FILE} --directory=${MIGRATIONS_PATH}"
 COMMAND=""
 for ARG in ${@}; do
     if [[ "${ARG}" == "--help" || "${ARG}" == "-h" ]]; then

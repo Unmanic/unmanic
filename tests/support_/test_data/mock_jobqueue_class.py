@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    ${PROJECT_NAME}.${FILE_NAME}
+    unmanic.mock_jobqueue_class.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     ${DAY} ${MONTH_NAME_SHORT} ${YEAR}, (${TIME})
+    Date:                     08 May 2020, (1:00 PM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -29,3 +29,20 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+
+
+class MockJobQueue(object):
+    """
+    MockJobQueue
+
+    A mock job queue object for unit testing
+
+    """
+
+    def __init__(self):
+        self.name = 'JobQueue'
+        self.added_item = None
+
+    def add_item(self, pathname):
+        self.added_item = pathname
+        return True

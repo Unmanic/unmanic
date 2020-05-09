@@ -119,10 +119,13 @@ class JobQueue(object):
         return True
 
     def list_all_incoming_items(self):
+        # TODO: Rename to "pending_tasks"
         return list(self.incoming)
 
     def list_all_processed_items(self):
+        # TODO: Rename to "processed_tasks"
         return list(self.processed)
 
     def list_all_in_progress_paths(self):
+        # TODO: Rename to "in_progress_tasks"
         return list(self.in_progress)

@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    ${PROJECT_NAME}.${FILE_NAME}
+    unmanic.taskprobestreams.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     ${DAY} ${MONTH_NAME_SHORT} ${YEAR}, (${TIME})
+    Date:                     09 May 2020, (8:32 AM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -29,3 +29,25 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+
+from peewee import *
+from unmanic.libs.unmodels.basemodel import BaseModel
+from unmanic.libs.unmodels.taskprobe import TaskProbe
+
+
+class TaskProbeStreams(BaseModel):
+    """
+    TaskProbeStreams
+    """
+    taskprobe_id = ForeignKeyField(TaskProbe, backref='streams', on_delete='CASCADE')
+    codec_type = TextField(null=False)
+    codec_long_name = TextField(null=False)
+    avg_frame_rate = TextField(null=False)
+    bit_rate = TextField(null=False)
+    coded_height = TextField(null=False)
+    coded_width = TextField(null=False)
+    height = TextField(null=False)
+    width = TextField(null=False)
+    duration = TextField(null=False)
+    channels = TextField(null=False)
+    channel_layout = TextField(null=False)

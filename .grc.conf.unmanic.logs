@@ -1,0 +1,29 @@
+# this configuration file is suitable for displaying unmanic logs
+# pipe logs to 
+
+
+# this is probably a pathname
+regexp=/[\w/\.]+
+colours=bold green
+count=more
+======
+# Info Debug
+regexp=[\d(\-|T|\:)]+\:DEBUG:[\w(\.|\-)]+
+colours=bold blue
+count=stop
+======
+# Info Logs
+regexp=[\d(\-|T|\:)]+\:INFO:[\w(\.|\-)]+
+colours=bold magenta
+count=stop
+======
+# Warning Logs
+regexp=[\d(\-|T|\:)]+\:WARNING:[\w(\.|\-)]+
+colours=bold yellow
+count=stop
+======
+# Error Logs
+regexp=[\d(\-|T|\:)]+\:ERROR:[\w(\.|\-)]+
+colours=bold red
+count=stop
+======

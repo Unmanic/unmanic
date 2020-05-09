@@ -107,7 +107,13 @@ class Database:
     def select_database(config):
         # Based on configuration, use a different database.
         if config['TYPE'] == 'SQLITE':
-            database = SqliteDatabase(config['FILE'])
+            database = SqliteDatabase(
+                config['FILE'],
+                pragmas=(
+                    ('foreign_keys', 1),
+                )
+            )
+
             db.initialize(database)
             db.connect()
         return db

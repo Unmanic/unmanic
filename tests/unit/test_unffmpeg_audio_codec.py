@@ -37,12 +37,12 @@ import pytest
 
 try:
     from unmanic.libs import common, unlogger, unffmpeg
-    from tests.support_.test_data import mkv_ffprobe, mp4_ffprobe
+    from tests.support_.test_data import ffprobe_mkv, ffprobe_mp4
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
     from unmanic.libs import common, unlogger, unffmpeg
-    from tests.support_.test_data import mkv_ffprobe, mp4_ffprobe
+    from tests.support_.test_data import ffprobe_mkv, ffprobe_mp4
 
 
 class TestClass(object):
@@ -65,7 +65,7 @@ class TestClass(object):
     @pytest.mark.unittest
     def test_ensure_we_can_generate_audio_codec_stereo_clone_args(self):
         # Fetch a list of args from the unffmpeg audio codec handler
-        audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
+        audio_codec_handle = unffmpeg.AudioCodecHandle(ffprobe_mkv.mkv_multiple_subtitles_ffprobe)
         audio_codec_args = audio_codec_handle.args()
         # Assert the streams to map array is not empty
         assert audio_codec_args['streams_to_map']
@@ -75,7 +75,7 @@ class TestClass(object):
     @pytest.mark.unittest
     def test_ensure_we_can_generate_copy_current_audio_codec_args(self):
         # Fetch a list of args from the unffmpeg audio codec handler
-        audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_multiple_subtitles_ffprobe)
+        audio_codec_handle = unffmpeg.AudioCodecHandle(ffprobe_mkv.mkv_multiple_subtitles_ffprobe)
         # Just copy the current codec (do not re-encode)
         audio_codec_handle.disable_audio_encoding = True
         audio_codec_args = audio_codec_handle.args()
@@ -89,7 +89,7 @@ class TestClass(object):
     @pytest.mark.unittest
     def test_ensure_we_can_generate_a_cloned_stereo_aac_audio_codec_stream_from_ss_audio_stream_args(self):
         # Fetch a list of args from the unffmpeg audio codec handler
-        audio_codec_handle = unffmpeg.AudioCodecHandle(mp4_ffprobe.mp4_dd_plus_audio_ffprobe)
+        audio_codec_handle = unffmpeg.AudioCodecHandle(ffprobe_mp4.mp4_dd_plus_audio_ffprobe)
         # Set the audio codec to aac
         audio_codec_handle.enable_audio_stream_stereo_cloning = True
         audio_codec_handle.set_audio_codec_with_default_encoder_cloning('aac')
@@ -106,7 +106,7 @@ class TestClass(object):
     @pytest.mark.unittest
     def test_ensure_we_can_set_the_bitrate_of_a_stereo_audio_codec_stream(self):
         # Fetch a list of args from the unffmpeg audio codec handler
-        audio_codec_handle = unffmpeg.AudioCodecHandle(mp4_ffprobe.mp4_dd_plus_audio_ffprobe)
+        audio_codec_handle = unffmpeg.AudioCodecHandle(ffprobe_mp4.mp4_dd_plus_audio_ffprobe)
         # Set the audio codec to aac
         audio_codec_handle.enable_audio_stream_stereo_cloning = True
         audio_codec_handle.set_audio_codec_with_default_encoder_cloning('aac')
@@ -123,7 +123,7 @@ class TestClass(object):
     def test_ensure_throws_exception_for_absent_audio_codec_args(self):
         with pytest.raises(ImportError) as excinfo:
             # Fetch a list of args from the unffmpeg audio codec handler
-            audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_stereo_aac_audio_ffprobe)
+            audio_codec_handle = unffmpeg.AudioCodecHandle(ffprobe_mkv.mkv_stereo_aac_audio_ffprobe)
             # Set the audio codec to something that does not exist
             audio_codec_handle.enable_audio_stream_stereo_cloning = True
             audio_codec_handle.set_audio_codec_with_default_encoder_cloning('non_existent_codec')
@@ -131,7 +131,7 @@ class TestClass(object):
     @pytest.mark.unittest
     def test_ensure_args_of_audio_stream_clone_is_copy_if_src_codec_matches_dest_codec(self):
         # Fetch a list of args from the unffmpeg audio codec handler
-        audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_stereo_aac_audio_ffprobe)
+        audio_codec_handle = unffmpeg.AudioCodecHandle(ffprobe_mkv.mkv_stereo_aac_audio_ffprobe)
         audio_codec_handle.enable_audio_stream_stereo_cloning = True
         audio_codec_handle.set_audio_codec_with_default_encoder_cloning(
             'aac')  # Src is aac and dest is aac. Audio stream should just copy
@@ -146,7 +146,7 @@ class TestClass(object):
     @pytest.mark.unittest
     def test_ensure_args_of_audio_stream_transcode_is_copy_if_src_codec_matches_dest_codec(self):
         # Fetch a list of args from the unffmpeg audio codec handler
-        audio_codec_handle = unffmpeg.AudioCodecHandle(mkv_ffprobe.mkv_stereo_aac_audio_ffprobe)
+        audio_codec_handle = unffmpeg.AudioCodecHandle(ffprobe_mkv.mkv_stereo_aac_audio_ffprobe)
         audio_codec_handle.enable_audio_stream_transcoding = True
         audio_codec_handle.set_audio_codec_with_default_encoder_transcoding(
             'aac')  # Src is aac and dest is aac. Audio stream should just copy
@@ -161,7 +161,7 @@ class TestClass(object):
     @pytest.mark.unittest
     def test_ensure_we_can_generate_audio_codec_transcode_args(self):
         # Fetch a list of args from the unffmpeg audio codec handler
-        audio_codec_handle = unffmpeg.AudioCodecHandle(mp4_ffprobe.mp4_dd_plus_audio_ffprobe)
+        audio_codec_handle = unffmpeg.AudioCodecHandle(ffprobe_mp4.mp4_dd_plus_audio_ffprobe)
         audio_codec_handle.enable_audio_stream_transcoding = True
         audio_codec_handle.set_audio_codec_with_default_encoder_transcoding('ac3')
         audio_codec_args = audio_codec_handle.args()

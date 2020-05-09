@@ -11,12 +11,14 @@ CONTAINER_EXT="mkv"
 #   - nvenc_hevc (depreciated)
 #   - hevc_nvenc
 #   - h264_nvenc
-V_ENCODER="hevc_nvenc"
+#   - h264_vaapi
+#   - hevc_vaapi
+V_ENCODER="h264_vaapi"
 # Additional encoder args
 #   EG:
 #       -b:v 5M
 #       -b:v 1M -maxrate 2M -bufsize 4M -preset slow
-V_ENCODER_ARGS=""
+V_ENCODER_ARGS="-vf 'format=nv12|vaapi,hwupload,scale_vaapi=w=1280:h=720' "
 
 
 
@@ -45,12 +47,12 @@ elif [[ ! -z ${1} && "${1}" == "encoders" ]]; then
 else
     mkdir -p ${OUT_DIR}
     CMD="ffmpeg \
+        -vaapi_device /dev/dri/renderD128 \
         -i ${IN_FILE} \
-        -map 0:0 \
-        -map 0:1 \
-        -c:v ${V_ENCODER} \
-        ${V_ENCODER_ARGS} \
-        -c:a copy \
+        -c:v h264_vaapi \
+  -b:v 4M \
+  -vf 'format=nv12|vaapi,hwupload,scale_vaapi=w=1280:h=720' \
+  -c:a copy \
         -y ${OUT_DIR}/outfile.${CONTAINER_EXT}"
 
     start_time=`date +%s`

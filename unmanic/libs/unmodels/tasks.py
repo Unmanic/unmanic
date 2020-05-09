@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    ${PROJECT_NAME}.${FILE_NAME}
+    unmanic.tasks.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     ${DAY} ${MONTH_NAME_SHORT} ${YEAR}, (${TIME})
+    Date:                     08 May 2020, (3:27 PM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -29,3 +29,17 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+
+import datetime
+
+from peewee import *
+from unmanic.libs.unmodels.basemodel import BaseModel
+
+
+class Tasks(BaseModel):
+    """
+    Tasks
+    """
+    abspath = TextField(null=False, unique=True)
+    cache_path = TextField(null=True, unique=True)
+    status = TextField(null=False)  # (pending, in_progress, processed)

@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    ${PROJECT_NAME}.${FILE_NAME}
+    unmanic.taskprobe.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     ${DAY} ${MONTH_NAME_SHORT} ${YEAR}, (${TIME})
+    Date:                     08 May 2020, (6:35 PM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -29,3 +29,21 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+
+from peewee import *
+from unmanic.libs.unmodels.basemodel import BaseModel
+from unmanic.libs.unmodels.tasks import Tasks
+
+
+class TaskProbe(BaseModel):
+    """
+    TaskProbe
+    """
+    task_id = ForeignKeyField(Tasks, backref='probe', on_delete='CASCADE')
+    abspath = TextField(null=False)
+    basename = TextField(null=False)
+    bit_rate = TextField(null=False)
+    format_long_name = TextField(null=False)
+    format_name = TextField(null=False)
+    size = TextField(null=False)
+    duration = TextField(null=False)

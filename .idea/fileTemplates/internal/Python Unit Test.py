@@ -29,3 +29,56 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import pytest
+
+
+class TestClass(object):
+    """
+    TestClass
+
+    """
+
+    def setup_class(self):
+        """
+        Setup any state specific to the execution of the given class
+        (which usually contains tests).
+
+        :return:
+        """
+        pass
+
+    def teardown_class(self):
+        """
+        Teardown any state that was previously setup with a call to
+        setup_class.
+
+        :return:
+        """
+        pass
+        
+    def setup_method(self):
+        """
+        Setup any state tied to the execution of the given method in a
+        class.
+        setup_method is invoked for every test method of a class.
+
+        :return:
+        """
+        pass
+        
+    def teardown_method(self):
+        """ 
+        Teardown any state that was previously setup with a setup_method
+        call.
+
+        :return:
+        """
+        pass
+
+    @pytest.mark.unittest
+    def test_something(self):
+        assert ('condition' == 'expected')
+
+
+if __name__ == '__main__':
+    pytest.main(['-s', '--log-cli-level=INFO', __file__])

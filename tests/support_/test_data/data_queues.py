@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    ${PROJECT_NAME}.${FILE_NAME}
+    unmanic.data_queues.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     ${DAY} ${MONTH_NAME_SHORT} ${YEAR}, (${TIME})
+    Date:                     08 May 2020, (12:32 PM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -29,3 +29,16 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import queue
+
+from unmanic.libs import unlogger
+
+unmanic_logging = unlogger.UnmanicLogger.__call__(False)
+unmanic_logging.get_logger()
+
+data_queues = {
+    "scheduledtasks":   queue.Queue(),
+    "inotifytasks":     queue.Queue(),
+    "progress_reports": queue.Queue(),
+    "logging":          unmanic_logging
+}

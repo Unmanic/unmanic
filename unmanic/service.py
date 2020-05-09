@@ -3,23 +3,23 @@
 
 """
     unmanic.service.py
- 
+
     Written by:               Josh.5 <jsunnex@gmail.com>
     Date:                     06 Dec 2018, (7:21 AM)
- 
+
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
- 
+
            Permission is hereby granted, free of charge, to any person obtaining a copy
            of this software and associated documentation files (the "Software"), to deal
            in the Software without restriction, including without limitation the rights
            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
            copies of the Software, and to permit persons to whom the Software is
            furnished to do so, subject to the following conditions:
-  
-           The above copyright notice and this permission notice shall be included in all
+
+           The above copyright notice and this permission notice shall be includeed in all
            copies or substantial portions of the Software.
-  
+
            THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
            EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
            MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -44,63 +44,12 @@ from unmanic import config
 from unmanic.libs import unlogger, common, ffmpeg
 from unmanic.libs.jobqueue import JobQueue
 from unmanic.libs.postprocessor import PostProcessor
+from unmanic.libs.taskhandler import TaskHandler
 from unmanic.libs.uiserver import UIServer
 from unmanic.libs.worker import Worker
 
 unmanic_logging = unlogger.UnmanicLogger.__call__()
 main_logger = unmanic_logging.get_logger()
-
-
-# The TaskHandler reads all items in the queues and passes them to the appropriate locations in the application.
-# All messages are passed to the logger and all tasks are added to the job queue
-class TaskHandler(threading.Thread):
-    def __init__(self, data_queues, settings, job_queue):
-        super(TaskHandler, self).__init__(name='TaskHandler')
-        self.settings = settings
-        self.logger = data_queues["logging"].get_logger(self.name)
-        self.job_queue = job_queue
-        self.inotifytasks = data_queues["inotifytasks"]
-        self.scheduledtasks = data_queues["scheduledtasks"]
-        self.abort_flag = threading.Event()
-        self.abort_flag.clear()
-
-    def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
-
-    def stop(self):
-        self.abort_flag.set()
-
-    def run(self):
-        self._log("Starting TaskHandler Monitor loop")
-        while not self.abort_flag.is_set():
-            while not self.abort_flag.is_set() and not self.scheduledtasks.empty():
-                try:
-                    pathname = self.scheduledtasks.get_nowait()
-                    if self.job_queue.add_item(pathname):
-                        self._log("Adding job to queue", pathname, level='info')
-                    else:
-                        self._log("Skipping job already in the queue", pathname, level='info')
-                except queue.Empty:
-                    continue
-                except Exception as e:
-                    self._log("Exception in processing scheduledtasks", str(e), level='exception')
-            while not self.abort_flag.is_set() and not self.inotifytasks.empty():
-                try:
-                    pathname = self.inotifytasks.get_nowait()
-                    # TODO: Ensure the file is not still being modified at this point.
-                    #  If it is still being modified here, it is ok to wait for that to finish (should not matter much)
-                    if self.job_queue.add_item(pathname):
-                        self._log("Adding inotify job to queue", pathname, level='info')
-                    else:
-                        self._log("Skipping inotify job already in the queue", pathname, level='info')
-                except queue.Empty:
-                    continue
-                except Exception as e:
-                    self._log("Exception in processing inotifytasks", str(e), level='exception')
-            time.sleep(.2)
-
-        self._log("Leaving TaskHandler Monitor loop...")
 
 
 class LibraryScanner(threading.Thread):

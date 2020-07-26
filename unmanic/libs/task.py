@@ -212,11 +212,16 @@ class Task(object):
         """
         Read the task settings from the database
 
+        Note:
+            Even though there are faster ways to fetch the data from the DB
+            There is no point making this complicated.
+            Multiple selects will not take long in this application
+
         :return:
         """
         if not self.task:
             raise Exception('Unable to set task settings. Task has not been set!')
-        # No point making this complicated. multiple selects will not take long in this application
+        # Select the settings for this task
         self.settings = self.task.settings.limit(1).get()
 
     def read_task_source_from_db(self):

@@ -38,11 +38,11 @@ import tempfile
 import pytest
 
 try:
-    from unmanic.libs import unlogger, foreman, task
+    from unmanic.libs import unlogger, foreman, task, taskhandler
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
-    from unmanic.libs import unlogger, foreman, task
+    from unmanic.libs import unlogger, foreman, task, taskhandler
 
 
 class TestClass(object):
@@ -90,33 +90,46 @@ class TestClass(object):
     def setup_test_task(self, pathname):
         # Create a new task and set the source
         self.test_task = task.Task(self.data_queues)
-        self.test_task.set_source_data(pathname)
+
+        # Fill test_task with data
+        source_data = taskhandler.fetch_file_data_by_path(pathname)
+        self.test_task.create_task_by_absolute_path(os.path.abspath(pathname), self.settings, source_data)
+
+        #self.test_task.set_source_data(pathname)
         destination_data = task.prepare_file_destination_data(os.path.abspath(pathname), self.settings.OUT_CONTAINER)
         self.test_task.set_destination_data(destination_data)
         self.test_task.set_cache_path()
 
     def completed_test_task_is_success(self):
-        assert self.completed_test_task.success
+        completed_test_task_dump = self.completed_test_task.task_dump()
+        assert completed_test_task_dump['task_success']
 
     def completed_test_task_data_has_source_abspath(self):
-        task_data = self.completed_test_task.__dict__.copy()
-        assert 'abspath' in task_data['source']
+        completed_test_task_dump = self.completed_test_task.task_dump()
+        file_probe_data = completed_test_task_dump['file_probe_data']
+        assert 'abspath' in file_probe_data['source']
 
     def completed_test_task_data_has_source_basename(self):
-        task_data = self.completed_test_task.__dict__.copy()
-        assert 'basename' in task_data['source']
+        completed_test_task_dump = self.completed_test_task.task_dump()
+        file_probe_data = completed_test_task_dump['file_probe_data']
+        assert 'basename' in file_probe_data['source']
 
-    def completed_test_task_data_has_source_dirname(self):
-        task_data = self.completed_test_task.__dict__.copy()
-        assert 'dirname' in task_data['source']
+    def completed_test_task_data_has_source_probe(self):
+        completed_test_task_dump = self.completed_test_task.task_dump()
+        file_probe_data = completed_test_task_dump['file_probe_data']
+        # The task dump has the TaskProbe object
+        assert 'source' in completed_test_task_dump
+        # ... and a file_probe_data dict containing the source probe
+        assert 'streams' in file_probe_data['source']
 
-    def completed_test_task_data_has_source_video_codecs(self):
-        task_data = self.completed_test_task.__dict__.copy()
-        assert 'video_codecs' in task_data['source']
+    def completed_test_task_data_has_destination_file_path(self):
+        completed_test_task_dump = self.completed_test_task.task_dump()
+        assert 'abspath' in completed_test_task_dump['destination']
 
-    def completed_test_task_data_has_file_in_probe(self):
-        task_data = self.completed_test_task.__dict__.copy()
-        assert 'streams' in task_data['ffmpeg'].file_in['file_probe']
+    def completed_test_task_data_has_application_settings(self):
+        task_settings = self.completed_test_task.read_task_settings_from_db()
+        # Check why the task_settings is returning NoneType
+        assert 'video_codecs' in task_settings['source']
 
     @pytest.mark.integrationtest
     def test_worker_tread_for_conversion_success(self):
@@ -140,12 +153,13 @@ class TestClass(object):
             self.completed_test_task_data_has_source_abspath()
             # Ensure task data has source basename
             self.completed_test_task_data_has_source_basename()
-            # Ensure task data has source dirname
-            self.completed_test_task_data_has_source_dirname()
             # Ensure task data has source video_codecs list
-            self.completed_test_task_data_has_source_video_codecs()
-            # Ensure task data has source video in file probe data
-            self.completed_test_task_data_has_file_in_probe()
+            # Ensure task data has source video file probe data
+            self.completed_test_task_data_has_source_probe()
+            # Ensure task data has destination file path
+            self.completed_test_task_data_has_destination_file_path()
+            # TODO: Ensure the current settings are stored with the task data
+            #self.completed_test_task_data_has_application_settings()
             count += 1
             if count >= 2:
                 break

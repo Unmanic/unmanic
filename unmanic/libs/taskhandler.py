@@ -94,18 +94,18 @@ class TaskHandler(threading.Thread):
         TODO:
             - All tasks are added to the database tasks table (no key to historical tasks.
                 Row to be deleted once task is added to historical record)
-            - Task Handler to monitor idle workers rather than idle workers looking for tasks in the JobQueue object.
+            - Task Handler to monitor idle workers rather than idle workers looking for tasks in the TaskQueue object.
                 - When a worker thread is idle, the TaskHandler needs to read a select query on the database and add that
-                    item to the JobQueue
-            - Workers should request a job from the TaskHandler rather than reading the JobQueue directly ??
+                    item to the TaskQueue
+            - Workers should request a job from the TaskHandler rather than reading the TaskQueue directly ??
     """
 
-    def __init__(self, data_queues, settings, job_queue):
+    def __init__(self, data_queues, settings, task_queue):
         super(TaskHandler, self).__init__(name='TaskHandler')
         self.settings = settings
         self.data_queues = data_queues
         self.logger = data_queues["logging"].get_logger(self.name)
-        self.job_queue = job_queue
+        self.task_queue = task_queue
         self.inotifytasks = data_queues["inotifytasks"]
         self.scheduledtasks = data_queues["scheduledtasks"]
         self.abort_flag = threading.Event()
@@ -133,7 +133,7 @@ class TaskHandler(threading.Thread):
         while not self.abort_flag.is_set() and not self.scheduledtasks.empty():
             try:
                 pathname = self.scheduledtasks.get_nowait()
-                if self.add_path_to_job_queue(pathname):
+                if self.add_path_to_task_queue(pathname):
                     self._log("Adding job to queue", pathname, level='info')
                 else:
                     self._log("Skipping job already in the queue", pathname, level='info')
@@ -148,7 +148,7 @@ class TaskHandler(threading.Thread):
                 pathname = self.inotifytasks.get_nowait()
                 # TODO: Ensure the file is not still being modified at this point.
                 #  If it is still being modified here, it is ok to wait for that to finish (should not matter much)
-                if self.add_path_to_job_queue(pathname):
+                if self.add_path_to_task_queue(pathname):
                     self._log("Adding inotify job to queue", pathname, level='info')
                 else:
                     self._log("Skipping inotify job already in the queue", pathname, level='info')
@@ -161,7 +161,13 @@ class TaskHandler(threading.Thread):
         rows_deleted_count = Tasks.delete().execute()
         self._log("Deleted {} items from tasks list".format(rows_deleted_count), level='debug')
 
-    def add_path_to_job_queue(self, pathname):
+    def add_path_to_task_queue(self, pathname):
+        # Check if file exists in task queue based on it's absolute path
+        abspath = os.path.abspath(pathname)
+        existing_task_query = Tasks.select().where((Tasks.abspath == abspath)).limit(1)
+        if existing_task_query.count() > 0:
+            return False
+        # Create the new task from the provide path
         new_task = self.create_task_from_path(pathname)
         if not new_task:
             return False
@@ -176,7 +182,7 @@ class TaskHandler(threading.Thread):
         """
         abspath = os.path.abspath(pathname)
         # Create a new task
-        new_task = task.Task(self.settings, self.data_queues)
+        new_task = task.Task(self.data_queues)
 
         source_data = fetch_file_data_by_path(pathname)
 

@@ -70,7 +70,7 @@ class TestClass(object):
         pass
 
     def teardown_method(self):
-        """ 
+        """
         Teardown any state that was previously setup with a setup_method
         call.
 

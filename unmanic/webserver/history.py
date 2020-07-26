@@ -42,14 +42,12 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
     name = None
     config = None
     data_queues = None
-    worker_handle = None
     data = None
 
-    def initialize(self, data_queues, worker_handle, settings):
+    def initialize(self, data_queues, settings):
         self.name = 'history'
         self.config = settings
         self.data_queues = data_queues
-        self.worker_handle = worker_handle
         self.data = {}
 
     def get(self, path):

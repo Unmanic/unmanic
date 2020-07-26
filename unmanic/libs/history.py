@@ -282,10 +282,11 @@ class History(object):
             raise Exception('Function param missing ffmpeg_log')
 
         ffmpeg_log = task_dump.get('ffmpeg_log')
-        ffmpeg_log = ''.join(ffmpeg_log)
 
-        HistoricTaskFfmpegLog.create(historictask_id=historic_task,
-                                     dump=ffmpeg_log)
+        HistoricTaskFfmpegLog.create(
+            historictask_id=historic_task,
+            dump=ffmpeg_log
+        )
 
     def create_historic_task_entry(self, task_data):
         """
@@ -331,30 +332,34 @@ class History(object):
         :param task_dump:
         :return:
         """
-        probe_data = task_dump.get(probe_type, None)
+        probe_data = task_dump.get('file_probe_data', None)
 
         if not probe_data:
-            self._log('Task dump dict missing {} data'.format(probe_type), json.dumps(probe_data), level="debug")
+            self._log('Task dump dict missing ffprobe data', json.dumps(task_dump), level="debug")
             raise Exception('Function param missing {} data'.format(probe_type))
 
-        file_probe = probe_data.get('file_probe', None)
+        file_probe = probe_data.get(probe_type, None)
+
         if not file_probe:
             if historic_task.task_success:
-                raise Exception(
-                    'Exception: Successful task data missing {} probe data. Something is wrong'.format(probe_type))
-            self._log('Task dump probe data for {} file does not exist possibly due to task failure'.format(probe_type),
-                      level="debug")
+                raise Exception('Exception: Successful task data missing {} probe data. Something is wrong'.format(probe_type))
+            message = 'Task dump probe data for {} file does not exist possibly due to task failure'.format(probe_type)
+            self._log(message, level="debug")
             return
-        file_probe_format = file_probe.get('format', None)
 
-        historic_task_probe = HistoricTaskProbe.create(historictask_id=historic_task,
-                                                       type=probe_type,
-                                                       abspath=task_dump[probe_type]['abspath'],
-                                                       basename=task_dump[probe_type]['basename'],
-                                                       bit_rate=file_probe_format.get('bit_rate', ''),
-                                                       format_long_name=file_probe_format.get('format_long_name', ''),
-                                                       format_name=file_probe_format.get('format_name', ''),
-                                                       size=file_probe_format.get('size', ''))
+        abspath = file_probe.get('abspath', None)
+        basename = file_probe.get('basename', None)
+
+        historic_task_probe = HistoricTaskProbe.create(
+            historictask_id=historic_task,
+            type=probe_type,
+            abspath=abspath,
+            basename=basename,
+            bit_rate=file_probe.get('bit_rate', ''),
+            format_long_name=file_probe.get('format_long_name', ''),
+            format_name=file_probe.get('format_name', ''),
+            size=file_probe.get('size', '')
+        )
 
         self.create_historic_task_probe_streams_entries(probe_type, historic_task_probe, file_probe)
 
@@ -389,15 +394,17 @@ class History(object):
                 self._log('Stream data for {} missing codec_type'.format(probe_type), json.dumps(stream), level="debug")
                 raise Exception('Stream data for {} missing required "codec_type" data'.format(probe_type))
 
-            HistoricTaskProbeStreams.create(historictaskprobe_id=historic_task_probe,
-                                            codec_type=stream.get('codec_type', None),
-                                            codec_long_name=stream.get('codec_long_name', ''),
-                                            avg_frame_rate=stream.get('avg_frame_rate', ''),
-                                            bit_rate=stream.get('bit_rate', ''),
-                                            coded_height=stream.get('coded_height', ''),
-                                            coded_width=stream.get('coded_width', ''),
-                                            height=stream.get('height', ''),
-                                            width=stream.get('width', ''),
-                                            duration=stream.get('duration', ''),
-                                            channels=stream.get('channels', ''),
-                                            channel_layout=stream.get('channel_layout', ''))
+            HistoricTaskProbeStreams.create(
+                historictaskprobe_id=historic_task_probe,
+                codec_type=stream.get('codec_type', None),
+                codec_long_name=stream.get('codec_long_name', ''),
+                avg_frame_rate=stream.get('avg_frame_rate', ''),
+                bit_rate=stream.get('bit_rate', ''),
+                coded_height=stream.get('coded_height', ''),
+                coded_width=stream.get('coded_width', ''),
+                height=stream.get('height', ''),
+                width=stream.get('width', ''),
+                duration=stream.get('duration', ''),
+                channels=stream.get('channels', ''),
+                channel_layout=stream.get('channel_layout', '')
+            )

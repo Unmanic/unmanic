@@ -45,14 +45,14 @@ from unmanic.libs.unmodels.tasks import IntegrityError, Tasks
 from unmanic.libs.unmodels.tasksettings import TaskSettings
 
 
-def prepare_file_destination_data(pathname, settings):
+def prepare_file_destination_data(pathname, out_container):
     basename = os.path.basename(pathname)
     dirname = os.path.dirname(os.path.abspath(pathname))
     # Fetch the file's name without the file extension (this is going to be reset)
     file_name_without_extension = os.path.splitext(basename)[0]
 
     # Get container extension
-    container = containers.grab_module(settings.out_container)
+    container = containers.grab_module(out_container)
     container_extension = container.container_extension()
 
     # Set destination dict
@@ -167,7 +167,7 @@ class Task(object):
             raise Exception('Unable to fetch destination data. Task has not been set!')
         if not self.settings:
             raise Exception('Unable to fetch destination data. Task settings has not been set!')
-        return prepare_file_destination_data(self.task.abspath, self.settings)
+        return prepare_file_destination_data(self.task.abspath, self.settings.out_container)
 
     def get_source_data(self):
         # TODO: Rename to probe

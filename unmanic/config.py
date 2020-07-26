@@ -58,7 +58,7 @@ DEFAULT_DB_CONFIG = {
 class CONFIG(object):
     app_version = ''
 
-    def __init__(self):
+    def __init__(self, db_file=None):
         # Non config items (objects)
         self.name = "Config"
         self.settings = None
@@ -66,6 +66,9 @@ class CONFIG(object):
         # Set default db config
         self.DATABASE = None
         self.apply_default_db_settings()
+        # Overwrite default DB config
+        if db_file:
+            self.DATABASE['FILE'] = db_file
         # Run DB migrations
         self.run_db_migrations()
         # Init DB connection and read settings

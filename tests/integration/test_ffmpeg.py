@@ -33,6 +33,7 @@
 import os
 import shutil
 import sys
+import tempfile
 
 import pytest
 
@@ -42,6 +43,25 @@ except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
     from unmanic.libs import common, unlogger, unffmpeg, ffmpeg
+
+
+def build_ffmpeg_handle_settings(settings):
+    return {
+        'audio_codec':                        settings.AUDIO_CODEC,
+        'audio_codec_cloning':                settings.AUDIO_CODEC_CLONING,
+        'audio_stereo_stream_bitrate':        settings.AUDIO_STEREO_STREAM_BITRATE,
+        'audio_stream_encoder':               settings.AUDIO_STREAM_ENCODER,
+        'cache_path':                         settings.CACHE_PATH,
+        'debugging':                          settings.DEBUGGING,
+        'enable_audio_encoding':              settings.ENABLE_AUDIO_ENCODING,
+        'enable_audio_stream_stereo_cloning': settings.ENABLE_AUDIO_STREAM_STEREO_CLONING,
+        'enable_audio_stream_transcoding':    settings.ENABLE_AUDIO_STREAM_TRANSCODING,
+        'enable_video_encoding':              settings.ENABLE_VIDEO_ENCODING,
+        'out_container':                      settings.OUT_CONTAINER,
+        'remove_subtitle_streams':            settings.REMOVE_SUBTITLE_STREAMS,
+        'video_codec':                        settings.VIDEO_CODEC,
+        'video_stream_encoder':               settings.VIDEO_STREAM_ENCODER,
+    }
 
 
 class TestClass(object):
@@ -66,9 +86,10 @@ class TestClass(object):
         unmanic_logging.get_logger()
         # import config
         from unmanic import config
-        self.settings = config.CONFIG()
+        self.settings = config.CONFIG(os.path.join(tempfile.mkdtemp(), 'unmanic_test.db'))
         self.settings.DEBUGGING = True
-        self.ffmpeg = ffmpeg.FFMPEGHandle(self.settings)
+        ffmpeg_settings = build_ffmpeg_handle_settings(self.settings)
+        self.ffmpeg = ffmpeg.FFMPEGHandle(ffmpeg_settings)
 
     def _log(self, message, message2='', level="info"):
         unmanic_logging = unlogger.UnmanicLogger.__call__()
@@ -212,8 +233,10 @@ class TestClass(object):
                         self.settings.VIDEO_CODEC = stream['codec_name']
             # Reset file in
             self.ffmpeg.file_in = {}
+            # Fetch ffmpeg settings
+            ffmpeg_settings = build_ffmpeg_handle_settings(self.settings)
             # Check that the check_file_to_be_processed function correctly identifies the file to be converted
-            convert = self.ffmpeg.check_file_to_be_processed(pathname)
+            convert = self.ffmpeg.check_file_to_be_processed(pathname, ffmpeg_settings)
             assert (should_convert == convert)
         self.setup_class()
 

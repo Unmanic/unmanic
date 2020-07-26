@@ -29,7 +29,7 @@ if [[ ! -z ${1} && "${1}" == "probe" ]]; then
         -print_format json \
         -show_format \
         -show_streams \
-        -show_error\
+        -show_error \
         ${IN_FILE}"
 
     echo "${CMD}"

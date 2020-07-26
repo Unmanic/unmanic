@@ -140,6 +140,9 @@ class TestClass(object):
         """
         This will test the FFMPEGHandle for processing a file automatically using configured settings.
 
+        TODO: ffmpeg.process_file_with_configured_settings() is never run.
+            Deprecate the call to this method and write a test that uses the correct used methods
+
         :return:
         """
         # Set project root path

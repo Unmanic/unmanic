@@ -42,11 +42,11 @@ import signal
 
 from unmanic import config
 from unmanic.libs import unlogger, common, ffmpeg
-from unmanic.libs.jobqueue import JobQueue
+from unmanic.libs.taskqueue import TaskQueue
 from unmanic.libs.postprocessor import PostProcessor
 from unmanic.libs.taskhandler import TaskHandler
 from unmanic.libs.uiserver import UIServer
-from unmanic.libs.worker import Worker
+from unmanic.libs.foreman import Foreman
 
 unmanic_logging = unlogger.UnmanicLogger.__call__()
 main_logger = unmanic_logging.get_logger()
@@ -62,11 +62,29 @@ class LibraryScanner(threading.Thread):
         self.scheduledtasks = data_queues["scheduledtasks"]
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
-        self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
+        self.ffmpeg = None
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
+
+    def init_ffmpeg_handle_settings(self):
+        return {
+            'audio_codec':                        self.settings.AUDIO_CODEC,
+            'audio_codec_cloning':                self.settings.AUDIO_CODEC_CLONING,
+            'audio_stereo_stream_bitrate':        self.settings.AUDIO_STEREO_STREAM_BITRATE,
+            'audio_stream_encoder':               self.settings.AUDIO_STREAM_ENCODER,
+            'cache_path':                         self.settings.CACHE_PATH,
+            'debugging':                          self.settings.DEBUGGING,
+            'enable_audio_encoding':              self.settings.ENABLE_AUDIO_ENCODING,
+            'enable_audio_stream_stereo_cloning': self.settings.ENABLE_AUDIO_STREAM_STEREO_CLONING,
+            'enable_audio_stream_transcoding':    self.settings.ENABLE_AUDIO_STREAM_TRANSCODING,
+            'enable_video_encoding':              self.settings.ENABLE_VIDEO_ENCODING,
+            'out_container':                      self.settings.OUT_CONTAINER,
+            'remove_subtitle_streams':            self.settings.REMOVE_SUBTITLE_STREAMS,
+            'video_codec':                        self.settings.VIDEO_CODEC,
+            'video_stream_encoder':               self.settings.VIDEO_STREAM_ENCODER,
+        }
 
     def stop(self):
         self.abort_flag.set()
@@ -112,10 +130,13 @@ class LibraryScanner(threading.Thread):
         self.scheduledtasks.put(pathname)
 
     def file_not_target_format(self, pathname):
+        # init FFMPEG handle
+        ffmpeg_settings = self.init_ffmpeg_handle_settings()
+        ffmpeg_handle = ffmpeg.FFMPEGHandle(ffmpeg_settings)
         # Reset file in
-        self.ffmpeg.file_in = {}
+        ffmpeg_handle.file_in = {}
         # Check if file matches configured codec and format
-        if not self.ffmpeg.check_file_to_be_processed(pathname):
+        if not ffmpeg_handle.check_file_to_be_processed(pathname, ffmpeg_settings):
             if self.settings.DEBUGGING:
                 self._log("File does not need to be processed - {}".format(pathname))
             return False
@@ -148,11 +169,29 @@ class EventProcessor(pyinotify.ProcessEvent):
         self.inotifytasks = data_queues["inotifytasks"]
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
-        self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
+        self.ffmpeg = None
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
+
+    def init_ffmpeg_handle_settings(self):
+        return {
+            'audio_codec':                        self.settings.AUDIO_CODEC,
+            'audio_codec_cloning':                self.settings.AUDIO_CODEC_CLONING,
+            'audio_stereo_stream_bitrate':        self.settings.AUDIO_STEREO_STREAM_BITRATE,
+            'audio_stream_encoder':               self.settings.AUDIO_STREAM_ENCODER,
+            'cache_path':                         self.settings.CACHE_PATH,
+            'debugging':                          self.settings.DEBUGGING,
+            'enable_audio_encoding':              self.settings.ENABLE_AUDIO_ENCODING,
+            'enable_audio_stream_stereo_cloning': self.settings.ENABLE_AUDIO_STREAM_STEREO_CLONING,
+            'enable_audio_stream_transcoding':    self.settings.ENABLE_AUDIO_STREAM_TRANSCODING,
+            'enable_video_encoding':              self.settings.ENABLE_VIDEO_ENCODING,
+            'out_container':                      self.settings.OUT_CONTAINER,
+            'remove_subtitle_streams':            self.settings.REMOVE_SUBTITLE_STREAMS,
+            'video_codec':                        self.settings.VIDEO_CODEC,
+            'video_stream_encoder':               self.settings.VIDEO_STREAM_ENCODER,
+        }
 
     def inotify_enabled(self):
         if self.settings.ENABLE_INOTIFY:
@@ -163,10 +202,13 @@ class EventProcessor(pyinotify.ProcessEvent):
         self.inotifytasks.put(pathname)
 
     def file_not_target_format(self, pathname):
+        # init FFMPEG handle
+        ffmpeg_settings = self.init_ffmpeg_handle_settings()
+        ffmpeg_handle = ffmpeg.FFMPEGHandle(ffmpeg_settings)
         # Reset file in
-        self.ffmpeg.file_in = {}
+        ffmpeg_handle.file_in = {}
         # Check if file matches configured codec and format
-        if not self.ffmpeg.check_file_to_be_processed(pathname):
+        if not ffmpeg_handle.check_file_to_be_processed(pathname, ffmpeg_settings):
             if self.settings.DEBUGGING:
                 self._log("File does not need to be processed - {}".format(pathname))
             return False
@@ -211,9 +253,9 @@ class Service:
         self.threads = []
         self.run_threads = True
 
-    def start_handler(self, data_queues, settings, job_queue):
+    def start_handler(self, data_queues, settings, task_queue):
         main_logger.info("Starting TaskHandler")
-        handler = TaskHandler(data_queues, settings, job_queue)
+        handler = TaskHandler(data_queues, settings, task_queue)
         handler.daemon = True
         handler.start()
         self.threads.append({
@@ -222,9 +264,9 @@ class Service:
         })
         return handler
 
-    def start_post_processor(self, data_queues, settings, job_queue):
+    def start_post_processor(self, data_queues, settings, task_queue):
         main_logger.info("Starting PostProcessor")
-        postprocessor = PostProcessor(data_queues, settings, job_queue)
+        postprocessor = PostProcessor(data_queues, settings, task_queue)
         postprocessor.daemon = True
         postprocessor.start()
         self.threads.append({
@@ -233,16 +275,16 @@ class Service:
         })
         return postprocessor
 
-    def start_workers(self, data_queues, settings, job_queue):
-        main_logger.info("Starting Workers")
-        worker = Worker(data_queues, settings, job_queue)
-        worker.daemon = True
-        worker.start()
+    def start_foreman(self, data_queues, settings, task_queue):
+        main_logger.info("Starting Foreman")
+        foreman = Foreman(data_queues, settings, task_queue)
+        foreman.daemon = True
+        foreman.start()
         self.threads.append({
-            'name':   'Workers',
-            'thread': worker
+            'name':   'Foreman',
+            'thread': foreman
         })
-        return worker
+        return foreman
 
     def start_library_scanner_manager(self, data_queues, settings):
         main_logger.info("Starting LibraryScanner")
@@ -270,9 +312,9 @@ class Service:
         })
         return notifier
 
-    def start_ui_server(self, data_queues, settings, worker_handle):
+    def start_ui_server(self, data_queues, settings, foreman):
         main_logger.info("Starting UIServer")
-        uiserver = UIServer(data_queues, settings, worker_handle)
+        uiserver = UIServer(data_queues, settings, foreman)
         uiserver.daemon = True
         uiserver.start()
         self.threads.append({
@@ -301,19 +343,19 @@ class Service:
         common.clean_files_in_dir(settings.CACHE_PATH)
 
         # Setup job queue
-        job_queue = JobQueue(settings, data_queues)
+        task_queue = TaskQueue(settings, data_queues)
 
         # Setup post-processor thread
-        self.start_post_processor(data_queues, settings, job_queue)
+        self.start_post_processor(data_queues, settings, task_queue)
 
-        # Start the worker threads
-        worker_handle = self.start_workers(data_queues, settings, job_queue)
+        # Start the foreman thread
+        foreman = self.start_foreman(data_queues, settings, task_queue)
 
         # Start new thread to handle messages from service
-        self.start_handler(data_queues, settings, job_queue)
+        self.start_handler(data_queues, settings, task_queue)
 
         # Start new thread to run the web UI
-        self.start_ui_server(data_queues, settings, worker_handle)
+        self.start_ui_server(data_queues, settings, foreman)
 
         # Start scheduled thread
         self.start_library_scanner_manager(data_queues, settings)

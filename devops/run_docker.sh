@@ -64,7 +64,7 @@ if [[ ! -z ${HW_ACCELERATION} ]]; then
     ADDITIONAL_DOCKER_PARAMS="${ADDITIONAL_DOCKER_PARAMS} ${PARAM} "
 fi
 
-CMD="docker run -ti --rm \
+CMD="docker run -ti --rm --name=unmanic \
     -p 8888:8888 \
     -v ${PROJECT_BASE}/:/app \
     -v ${PROJECT_BASE}/config:/config \

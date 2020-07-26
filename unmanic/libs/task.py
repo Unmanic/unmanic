@@ -34,6 +34,8 @@ import json
 import os
 import time
 
+from playhouse.shortcuts import model_to_dict, dict_to_model
+
 from unmanic.libs import common, ffmpeg
 from unmanic.libs.unffmpeg import containers
 from unmanic.libs.unmodels import Settings
@@ -72,24 +74,22 @@ class Task(object):
 
     """
 
-    def __init__(self, settings, data_queues):
-        # TODO: Remove settings (should not be required)
+    def __init__(self, data_queues):
         # TODO: Remove data_queues and replace with logging
         self.name = 'Task'
         self.task = None
+        self.task_dict = None
         self.settings = None
+        # TODO: Rename to probe
         self.source = None
-        self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
         self.logger = data_queues["logging"].get_logger(self.name)
         self.destination = None
-        self.success = False
-        self.cache_path = None
         self.statistics = {}
         self.errors = []
-        self.ffmpeg_log = []
 
         # Reset all ffmpeg info
-        self.ffmpeg.set_info_defaults()
+        # TODO: Remove ffmpeg
+        # self.ffmpeg.set_info_defaults()
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -123,12 +123,18 @@ class Task(object):
         for attribute in settings.__dict__:
             # Ensure the settings attribute is in the TaskSettings object also
             attribute_lower = attribute.lower()
+            # Remove the ID from the settings
+            #   or else it will set the id of the newly created settings entry and cause an error
+            if attribute_lower == 'id':
+                continue
             if hasattr(TaskSettings, attribute_lower):
                 task_settings_dict[attribute_lower] = settings.__dict__[attribute]
                 continue
         self.settings = TaskSettings.create(**task_settings_dict)
 
     def set_cache_path(self):
+        if not self.task:
+            raise Exception('Unable to set cache path. Task has not been set!')
         # Fetch the file's name without the file extension (this is going to be reset)
         file_name_without_extension = os.path.splitext(self.source.basename)[0]
 
@@ -139,59 +145,92 @@ class Task(object):
         # Parse an output cache path
         out_folder = "unmanic_file_conversion-{}".format(time.time())
         out_file = "{}-{}.{}".format(file_name_without_extension, time.time(), container_extension)
-        self.cache_path = os.path.join(self.settings.cache_path, out_folder, out_file)
-        # TODO: Remove the cache_path variable and only use self.task.cache_path
-        #   if not self.task:
-        #       raise Exception('Unable to set cache_path. Task has not been set!')
+        cache_path = os.path.join(self.settings.cache_path, out_folder, out_file)
         if self.task:
-            self.task.cache_path = self.cache_path
+            self.task.cache_path = cache_path
+
+    def get_task_data(self):
+        if not self.task:
+            raise Exception('Unable to fetch task dictionary. Task has not been set!')
+        self.task_dict = model_to_dict(self.task, backrefs=True)
+        return self.task_dict
+
+    def get_cache_path(self):
+        if not self.task:
+            raise Exception('Unable to fetch cache path. Task has not been set!')
+        if not self.task.cache_path:
+            raise Exception('Unable to fetch cache path. Task cache path has not been set!')
+        return self.task.cache_path
+
+    def get_destination_data(self):
+        if not self.task:
+            raise Exception('Unable to fetch destination data. Task has not been set!')
+        if not self.settings:
+            raise Exception('Unable to fetch destination data. Task settings has not been set!')
+        return prepare_file_destination_data(self.task.abspath, self.settings)
+
+    def get_source_data(self):
+        # TODO: Rename to probe
+        if not self.source:
+            raise Exception('Unable to fetch source dictionary. Task source has not been set!')
+        task_data = self.get_task_data()
+        probe_data = task_data.get('probe', [])
+        if probe_data:
+            return probe_data[0]
+        return {}
 
     def get_source_basename(self):
         if not self.source:
-            return False
-        return self.source['basename']
+            raise Exception('Unable to fetch file basename. Task source has not been set!')
+        return self.source.basename
 
     def get_source_abspath(self):
         if not self.source:
-            return False
-        return self.source['abspath']
-
-    def get_source_video_codecs(self):
-        if not self.source:
-            return False
-        return self.source['video_codecs']
+            raise Exception('Unable to fetch file absolute path. Task source has not been set!')
+        return self.source.abspath
 
     def task_dump(self):
         # Generate a copy of this class as a dict
         task_dict = {
-            'success':     self.success,
-            'source':      self.source,
-            'destination': self.destination,
-            'statistics':  self.statistics,
-            'errors':      self.errors,
-            'ffmpeg_log':  self.ffmpeg_log
+            'task_label':          self.source.basename,
+            'task_success':        self.task.success,
+            'start_time':          self.task.start_time,
+            'finish_time':         self.task.finish_time,
+            'processed_by_worker': self.task.processed_by_worker,
+            'source':              self.source,
+            'destination':         self.destination,
+            'statistics':          self.statistics,
+            'errors':              self.errors,
+            'ffmpeg_log':          self.task.ffmpeg_log,
+            'file_probe_data':     {
+                'source': self.get_source_data()
+            }
         }
-        # Append the ffmpeg probe data
-        if self.ffmpeg.file_in:
-            task_dict['source']['file_probe'] = self.ffmpeg.file_in.get('file_probe', {})
-        if self.ffmpeg.file_in:
-            task_dict['destination']['file_probe'] = self.ffmpeg.file_out.get('file_probe', {})
-        # Append file size data
         return task_dict
 
-    def set_task_stats(self, statistics):
-        if 'processed_by_worker' in statistics:
-            self.statistics['processed_by_worker'] = statistics['processed_by_worker']
-        if 'start_time' in statistics:
-            self.statistics['start_time'] = statistics['start_time']
-        if 'finish_time' in statistics:
-            self.statistics['finish_time'] = statistics['finish_time']
-        if 'video_encoder' in statistics:
-            self.statistics['video_encoder'] = statistics['video_encoder']
-        if 'audio_encoder' in statistics:
-            self.statistics['audio_encoder'] = statistics['audio_encoder']
+    def read_task_settings_from_db(self):
+        """
+        Read the task settings from the database
 
-    def set_task_by_absolute_path(self, abspath):
+        :return:
+        """
+        if not self.task:
+            raise Exception('Unable to set task settings. Task has not been set!')
+        # No point making this complicated. multiple selects will not take long in this application
+        self.settings = self.task.settings.limit(1).get()
+
+    def read_task_source_from_db(self):
+        """
+        Read the task source data from the database
+
+        :return:
+        """
+        if not self.task:
+            raise Exception('Unable to set task source data. Task has not been set!')
+        # Fetch source data
+        self.source = self.task.probe.limit(1).get()
+
+    def read_and_set_task_by_absolute_path(self, abspath):
         """
         Sets the task by it's absolute path.
         If the task already exists in the list, then return that task.
@@ -202,20 +241,28 @@ class Task(object):
         """
         # Get task matching the abspath
         self.task = Tasks.get(abspath=abspath)
-        # No point making this complicated. multiple selects will not take long in this application
-        self.settings = self.task.settings.limit(1).get()
-        # Fetch source data
-        self.source = self.task.probe.limit(1).get()
+        self.read_task_settings_from_db()
+        self.read_task_source_from_db()
 
-        # for stream in self.source.streams:
-        #     print(stream.codec_type)
+    def set_task_by_fetching_first_in_filtered_list(self, status, sort_by='id', sort_order='asc'):
+        task_query = Tasks.select().where((Tasks.status == status)).limit(1)
+        # Add sort params
+        if sort_order == 'asc':
+            task_query.order_by(sort_by.asc())
+        else:
+            task_query.order_by(sort_by.desc())
+        self.task = task_query.first()
+        if not self.task:
+            return False
+        self.read_task_settings_from_db()
+        self.read_task_source_from_db()
 
     def create_task_by_absolute_path(self, abspath, settings, source_data):
         """
         Creates the task by it's absolute path.
         If the task already exists in the list, then this will throw an exception and return false
 
-        Calls to set_task_by_absolute_path() to read back all data out of the database.
+        Calls to read_and_set_task_by_absolute_path() to read back all data out of the database.
 
         :param source_data:
         :param settings:
@@ -224,8 +271,11 @@ class Task(object):
         """
         try:
             self.task = Tasks.create(abspath=abspath, status='pending')
-            self.create_task_settings_entry(settings, self.task)
+            self.task.save()
             self._log("Created new task with ID: {} for {}".format(self.task, abspath), level="debug")
+
+            # Save the current settings against this task
+            self.create_task_settings_entry(settings, self.task)
 
             # Fetch the current file data and apply it to the task
             self.create_task_probe_entry(source_data, self.task)
@@ -234,7 +284,7 @@ class Task(object):
             # Read application settings and apply it to the task
             # Destination data is generated based on the settings saved against this task
             #   (not necessarily the current settings)
-            destination_data = prepare_file_destination_data(self.task.abspath, self.settings)
+            destination_data = self.get_destination_data()
             self.set_destination_data(destination_data)
             self._log("Set the destination data", level="debug")
 
@@ -244,7 +294,7 @@ class Task(object):
             self.task.save()
 
             # Read back the task from the database (ensures that our data has been recorded correctly)
-            self.set_task_by_absolute_path(abspath)
+            self.read_and_set_task_by_absolute_path(abspath)
             self._log("Task read from database", level="debug")
             return True
         except IntegrityError as e:
@@ -252,11 +302,45 @@ class Task(object):
             return False
 
     def set_status(self, status):
-        if not status in ['pending', 'in_progress', 'processed']:
+        """
+        Sets the task status to either 'pending', 'in_progress' or 'processed'
+
+        :param status:
+        :return:
+        """
+        if status not in ['pending', 'in_progress', 'processed', 'complete']:
             raise Exception('Unable to set status to "{}". Status must be either "pending", "in_progress", or "processed".')
         if not self.task:
             raise Exception('Unable to set status. Task has not been set!')
         self.task.status = status
+        self.save()
+
+    def set_success(self, success):
+        """
+        Sets the task success flag to either 'true' or 'false'
+
+        :param success:
+        :return:
+        """
+        if not self.task:
+            raise Exception('Unable to set status. Task has not been set!')
+        if success:
+            self.task.success = True
+        else:
+            self.task.success = False
+        self.save()
+
+    def set_ffmpeg_log(self, ffmpeg_log):
+        """
+        Sets the task ffmpeg_log
+
+        :param ffmpeg_log:
+        :return:
+        """
+        if not self.task:
+            raise Exception('Unable to set status. Task has not been set!')
+        self.task.ffmpeg_log = ''.join(ffmpeg_log)
+        self.save()
 
     def save(self):
         """
@@ -275,6 +359,11 @@ class Task(object):
         self.source.save()
         for stream in self.source.streams:
             stream.save()
+
+    def delete(self):
+        if not self.task:
+            raise Exception('Unable to save Task. Task has not been set!')
+        self.task.delete_instance()
 
     def create_task_probe_entry(self, source_data, task):
         """

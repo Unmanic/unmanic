@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.worker.py
+    unmanic.foreman.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
     Date:                     02 Jan 2019, (7:21 AM)
@@ -44,6 +44,7 @@ except ImportError:
     from unmanic.libs import common, history
 
 
+# TODO: Move this WorkerThread class to it's own workers.py file
 class WorkerThread(threading.Thread):
     def __init__(self, thread_id, name, settings, data_queues, task_queue, complete_queue):
         super(WorkerThread, self).__init__(name=name)
@@ -60,6 +61,9 @@ class WorkerThread(threading.Thread):
         self.logger = data_queues["logging"].get_logger(self.name)
         self.start_time = None
         self.finish_time = None
+        # Worker handles connection to ffmpeg
+        self.ffmpeg = None
+        self.ffmpeg_log = None
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -76,22 +80,25 @@ class WorkerThread(threading.Thread):
             'start_time':   self.start_time
         }
         if self.current_task:
-            status['current_file'] = self.current_task.get_source_basename()
+            try:
+                status['current_file'] = self.current_task.get_source_basename()
+            except Exception as e:
+                self._log("Exception in fetching status of worker {}:".format(self.name), message2=str(e), level="exception")
         return status
 
     def get_job_progress(self):
         progress = {}
-        if self.current_task:
-            progress['duration'] = str(self.current_task.ffmpeg.duration)
-            progress['src_fps'] = str(self.current_task.ffmpeg.src_fps)
-            progress['elapsed'] = str(self.current_task.ffmpeg.elapsed)
-            progress['time'] = str(self.current_task.ffmpeg.time)
-            progress['percent'] = str(self.current_task.ffmpeg.percent)
-            progress['frame'] = str(self.current_task.ffmpeg.frame)
-            progress['fps'] = str(self.current_task.ffmpeg.fps)
-            progress['speed'] = str(self.current_task.ffmpeg.speed)
-            progress['bitrate'] = str(self.current_task.ffmpeg.bitrate)
-            progress['file_size'] = str(self.current_task.ffmpeg.file_size)
+        if self.current_task and self.ffmpeg:
+            progress['duration'] = str(self.ffmpeg.duration)
+            progress['src_fps'] = str(self.ffmpeg.src_fps)
+            progress['elapsed'] = str(self.ffmpeg.elapsed)
+            progress['time'] = str(self.ffmpeg.time)
+            progress['percent'] = str(self.ffmpeg.percent)
+            progress['frame'] = str(self.ffmpeg.frame)
+            progress['fps'] = str(self.ffmpeg.fps)
+            progress['speed'] = str(self.ffmpeg.speed)
+            progress['bitrate'] = str(self.ffmpeg.bitrate)
+            progress['file_size'] = str(self.ffmpeg.file_size)
         return progress
 
     def set_current_task(self, current_task):
@@ -99,53 +106,70 @@ class WorkerThread(threading.Thread):
 
     def unset_current_task(self):
         self.current_task = None
+        self.ffmpeg = None
 
     def start_task_stats(self):
         self.start_time = time.time()
         self.finish_time = None
-        # Format our final statistics data
-        statistics = {
-            'processed_by_worker': self.name,
-            'start_time':          self.start_time,
-            'finish_time':         self.finish_time,
-            'video_encoder':       self.settings.get_configured_video_encoder(),
-            'audio_encoder':       self.settings.get_configured_audio_encoder()
-        }
-        # TODO: If this was a clone/copy, add clone/copied encoder info to stats
-        # Send statistic data to task to be applied
-        self.current_task.set_task_stats(statistics)
+        # Format our starting statistics data
+        self.current_task.task.processed_by_worker = self.name
+        self.current_task.task.start_time = self.start_time
+        self.current_task.task.finish_time = self.finish_time
 
     def finish_task_stats(self):
         self.finish_time = time.time()
-        # Format our final statistics data
-        statistics = {
-            'processed_by_worker': self.name,
-            'start_time':          self.start_time,
-            'finish_time':         self.finish_time
+        # Set the finish time in the statistics data
+        self.current_task.task.finish_time = self.finish_time
+
+    def setup_ffmpeg(self):
+        """
+        Configure ffmpeg object.
+
+        :return:
+        """
+        settings = {
+            'audio_codec':                        self.current_task.settings.audio_codec,
+            'audio_codec_cloning':                self.current_task.settings.audio_codec_cloning,
+            'audio_stereo_stream_bitrate':        self.current_task.settings.audio_stereo_stream_bitrate,
+            'audio_stream_encoder':               self.current_task.settings.audio_stream_encoder,
+            'cache_path':                         self.current_task.settings.cache_path,
+            'debugging':                          self.current_task.settings.debugging,
+            'enable_audio_encoding':              self.current_task.settings.enable_audio_encoding,
+            'enable_audio_stream_stereo_cloning': self.current_task.settings.enable_audio_stream_stereo_cloning,
+            'enable_audio_stream_transcoding':    self.current_task.settings.enable_audio_stream_transcoding,
+            'enable_video_encoding':              self.current_task.settings.enable_video_encoding,
+            'out_container':                      self.current_task.settings.out_container,
+            'remove_subtitle_streams':            self.current_task.settings.remove_subtitle_streams,
+            'video_codec':                        self.current_task.settings.video_codec,
+            'video_stream_encoder':               self.current_task.settings.video_stream_encoder,
         }
-        # Send statistic data to task to be applied
-        self.current_task.set_task_stats(statistics)
+        self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
+        self.ffmpeg_log = None
 
     def process_item(self):
+        # Reset the ffmpeg class when a new item is received
+        self.setup_ffmpeg()
+
         abspath = self.current_task.get_source_abspath()
         self._log("{} processing job - {}".format(self.name, abspath))
 
         # Create output path if not exists
-        common.ensure_dir(self.current_task.cache_path)
+        common.ensure_dir(self.current_task.task.cache_path)
 
         # Convert file
         success = False
         try:
-            ffmpeg_args = self.current_task.ffmpeg.generate_ffmpeg_args()
+            # Fetch source file info
+            self.ffmpeg.set_file_in(abspath)
+            # Create args from
+            ffmpeg_args = self.ffmpeg.generate_ffmpeg_args()
             if ffmpeg_args:
-                success = self.current_task.ffmpeg.convert_file_and_fetch_progress(abspath,
-                                                                                   self.current_task.cache_path,
-                                                                                   ffmpeg_args)
-            self.current_task.ffmpeg_log = self.current_task.ffmpeg.ffmpeg_cmd_stdout
+                success = self.ffmpeg.convert_file_and_fetch_progress(abspath, self.current_task.task.cache_path, ffmpeg_args)
+            self.current_task.set_ffmpeg_log(self.ffmpeg.ffmpeg_cmd_stdout)
 
         except ffmpeg.FFMPEGHandleConversionError as e:
             # Fetch ffmpeg stdout and append it to the current task object (to be saved during post process)
-            self.current_task.ffmpeg_log = self.current_task.ffmpeg.ffmpeg_cmd_stdout
+            self.current_task.set_ffmpeg_log(self.ffmpeg.ffmpeg_cmd_stdout)
             self._log("Error while executing the FFMPEG command {}. "
                       "Download FFMPEG command dump from history for more information.".format(abspath),
                       message2=str(e), level="error")
@@ -159,17 +183,23 @@ class WorkerThread(threading.Thread):
 
     def process_task_queue_item(self):
         self.idle = False
+
         abspath = self.current_task.get_source_abspath()
         self._log("{} picked up job - {}".format(self.name, abspath))
+
+        # mark as being "in progress"
+        self.current_task.set_status('in_progress')
 
         # Start current task stats
         self.start_task_stats()
 
         # Process the file. Will return true if success, otherwise false
-        self.current_task.success = self.process_item()
+        self.current_task.set_success(self.process_item())
 
         # Mark task completion statistics
         self.finish_task_stats()
+
+        # TODO: Pass file to postprocessor thread with socket the task
 
         # Log completion of job
         self._log("{} finished job - {}".format(self.name, abspath))
@@ -195,14 +225,14 @@ class WorkerThread(threading.Thread):
         self._log("Stopping {}".format(self.name))
 
 
-class Worker(threading.Thread):
-    def __init__(self, data_queues, settings, job_queue):
-        super(Worker, self).__init__(name='Worker')
+class Foreman(threading.Thread):
+    def __init__(self, data_queues, settings, task_queue):
+        super(Foreman, self).__init__(name='Foreman')
         self.settings = settings
-        self.job_queue = job_queue
+        self.task_queue = task_queue
         self.data_queues = data_queues
         self.logger = data_queues["logging"].get_logger(self.name)
-        self.task_queue = queue.Queue(maxsize=1)
+        self.workers_pending_task_queue = queue.Queue(maxsize=1)
         self.complete_queue = queue.Queue()
         self.worker_threads = {}
         self.remove_list = []
@@ -229,7 +259,7 @@ class Worker(threading.Thread):
 
         # Check that we have enough workers running. Spawn new ones as required.
         if len(self.worker_threads) < int(self.settings.NUMBER_OF_WORKERS):
-            self._log("Worker Threads under the configured limit. Spawning more...")
+            self._log("Foreman Threads under the configured limit. Spawning more...")
             # Not enough workers, create some
             for i in range(int(self.settings.NUMBER_OF_WORKERS)):
                 if i not in self.worker_threads:
@@ -238,7 +268,7 @@ class Worker(threading.Thread):
 
         # Check if we have to many workers running and stop the ones that are idle
         if len(self.worker_threads) > int(self.settings.NUMBER_OF_WORKERS):
-            self._log("Worker Threads exceed the configured limit. Marking some for removal...")
+            self._log("Foreman Threads exceed the configured limit. Marking some for removal...")
             # Too many workers, stop any idle ones
             for thread in self.worker_threads:
                 if self.worker_threads[thread].idle:
@@ -247,7 +277,7 @@ class Worker(threading.Thread):
 
     def start_worker_thread(self, worker_id):
         thread = WorkerThread(worker_id, "Worker-{}".format(worker_id), self.settings, self.data_queues,
-                              self.task_queue, self.complete_queue)
+                              self.workers_pending_task_queue, self.complete_queue)
         thread.daemon = True
         thread.start()
         self.worker_threads[worker_id] = thread
@@ -263,10 +293,10 @@ class Worker(threading.Thread):
         self.remove_list.append(worker_id)
 
     def add_to_task_queue(self, item):
-        self.task_queue.put(item)
+        self.workers_pending_task_queue.put(item)
 
     def run(self):
-        self._log("Starting Worker Monitor loop")
+        self._log("Starting Foreman Monitor loop")
         while not self.abort_flag.is_set():
             time.sleep(1)
 
@@ -274,7 +304,7 @@ class Worker(threading.Thread):
                 time.sleep(.2)
                 try:
                     task_item = self.complete_queue.get_nowait()
-                    self.job_queue.mark_item_as_processed(task_item)
+                    task_item.set_status('processed')
                 except queue.Empty:
                     continue
                 except Exception as e:
@@ -284,25 +314,30 @@ class Worker(threading.Thread):
             # First setup the correct number of workers
             self.init_worker_threads()
 
-            # Check if there are any free workers
-            if not self.check_for_idle_workers():
-                # All workers are currently busy
-                time.sleep(5)
-                continue
-
-            if not self.job_queue.incoming_is_empty():
+            if not self.task_queue.task_list_pending_is_empty():
                 time.sleep(.2)
-                # Check if we are able to start up a worker for another encoding job
-                if self.task_queue.full():
+
+                # Check if there are any free workers
+                if not self.check_for_idle_workers():
+                    # All workers are currently busy
+                    time.sleep(1)
                     continue
-                next_item_to_process = self.job_queue.get_next_incoming_item()
+
+                # Check if we are able to start up a worker for another encoding job
+                if self.workers_pending_task_queue.full():
+                    continue
+
+                next_item_to_process = self.task_queue.get_next_pending_tasks()
                 if next_item_to_process:
-                    self._log("Processing item - {}".format(next_item_to_process.get_source_abspath()))
+                    try:
+                        self._log("Processing item - {}".format(next_item_to_process.get_source_abspath()))
+                    except Exception as e:
+                        self._log("Exception in fetching task absolute path", message2=str(e), level="exception")
                     self.add_to_task_queue(next_item_to_process)
 
             # TODO: Add abort flag to terminate all workers
 
-        self._log("Leaving Worker Monitor loop...")
+        self._log("Leaving Foreman Monitor loop...")
 
     def get_all_worker_status(self):
         all_status = []

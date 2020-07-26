@@ -43,6 +43,11 @@ def migrate(migrator, database, fake=False, **kwargs):
         abspath = pw.TextField(null=False, unique=True)
         cache_path = pw.TextField(null=True, unique=True)
         status = pw.TextField(null=False)
+        success = pw.BooleanField(null=True)
+        start_time = pw.DateTimeField(null=True, default=dt.datetime.now)
+        finish_time = pw.DateTimeField(null=True, default=dt.datetime.now)
+        processed_by_worker = pw.TextField(null=True)
+        ffmpeg_log = pw.TextField(null=False, default='')
 
     @migrator.create_model
     class TaskSettings(pw.Model):

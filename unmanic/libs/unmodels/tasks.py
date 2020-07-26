@@ -43,3 +43,8 @@ class Tasks(BaseModel):
     abspath = TextField(null=False, unique=True)
     cache_path = TextField(null=True, unique=True)
     status = TextField(null=False)  # (pending, in_progress, processed)
+    success = BooleanField(null=True)
+    start_time = DateTimeField(null=True, default=datetime.datetime.now)
+    finish_time = DateTimeField(null=True, default=datetime.datetime.now)
+    processed_by_worker = TextField(null=True)
+    ffmpeg_log = TextField(null=False, default='')

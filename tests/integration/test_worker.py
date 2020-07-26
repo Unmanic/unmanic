@@ -37,18 +37,18 @@ import sys
 import pytest
 
 try:
-    from unmanic.libs import unlogger, worker, task
+    from unmanic.libs import unlogger, foreman, task
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
-    from unmanic.libs import unlogger, worker, task
+    from unmanic.libs import unlogger, foreman, task
 
 
 class TestClass(object):
     """
     TestClass
 
-    Runs unit tests against the Worker and Worker Thread classes
+    Runs unit tests against the Foreman and Worker Thread classes
 
     """
     project_dir = None
@@ -88,7 +88,7 @@ class TestClass(object):
 
     def setup_test_task(self, pathname):
         # Create a new task and set the source
-        self.test_task = task.Task(self.settings, self.data_queues)
+        self.test_task = task.Task(self.data_queues)
         self.test_task.set_source_data(pathname)
         self.test_task.set_destination_data()
         self.test_task.set_cache_path()
@@ -119,7 +119,7 @@ class TestClass(object):
     @pytest.mark.integrationtest
     def test_worker_tread_for_conversion_success(self):
         worker_id = 'test'
-        worker_thread = worker.WorkerThread(worker_id, "Worker-{}".format(worker_id), self.settings, self.data_queues,
+        worker_thread = worker.WorkerThread(worker_id, "Foreman-{}".format(worker_id), self.settings, self.data_queues,
                                             self.task_queue, self.complete_queue)
         # Test 2 of the small files
         count = 0

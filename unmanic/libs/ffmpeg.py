@@ -60,29 +60,62 @@ class FFMPEGHandleConversionError(Exception):
         self.command = command
 
 
+class FFMPEGHandleConfigurationError(Exception):
+    def __init___(self, required_setting, settings_dict):
+        Exception.__init__(self, "Missing required setting {} in settings dict - {}".format(required_setting, settings_dict))
+        self.required_setting = required_setting
+        self.settings_dict = settings_dict
+
+
 class FFMPEGHandle(object):
+    process = None
+    file_in = None
+    file_out = None
+    start_time = None
+    total_frames = None
+    duration = None
+    src_fps = None
+    elapsed = None
+    time = None
+    percent = None
+    frame = None
+    fps = None
+    speed = None
+    bitrate = None
+    file_size = None
+    ffmpeg_cmd_stdout = None
+
     def __init__(self, settings):
         self.name = 'FFMPEGHandle'
-        # TODO: Modify to have a static configuration dictionary passed to it rather than reading directly from the config object
+        # Ensure settings are complete
         self.settings = settings
-        self.process = None
-        self.file_in = None
-        self.file_out = None
-        self.start_time = None
-        self.total_frames = None
-        self.duration = None
-        self.src_fps = None
-        self.elapsed = None
-        self.time = None
-        self.percent = None
-        self.frame = None
-        self.fps = None
-        self.speed = None
-        self.bitrate = None
-        self.file_size = None
-        self.ffmpeg_cmd_stdout = None
-
+        self.validate_settings()
+        # Fetch supported containers
+        self.supported_containers = unffmpeg.containers.get_all_containers()
+        # Set class info to default values
         self.set_info_defaults()
+
+    def validate_settings(self):
+        required_settings = [
+            'audio_codec',
+            'audio_codec_cloning',
+            'audio_stereo_stream_bitrate',
+            'audio_stream_encoder',
+            'cache_path',
+            'debugging',
+            'enable_audio_encoding',
+            'enable_audio_stream_stereo_cloning',
+            'enable_audio_stream_transcoding',
+            'enable_video_encoding',
+            'out_container',
+            'remove_subtitle_streams',
+            'video_codec',
+            'video_stream_encoder',
+        ]
+        setting_keys = self.settings.keys()
+        for required_setting in required_settings:
+            if required_setting not in self.settings:
+                raise FFMPEGHandleConfigurationError(required_setting, self.settings)
 
     def set_info_defaults(self):
         self.file_in = {}
@@ -188,11 +221,12 @@ class FFMPEGHandle(object):
                 codecs.append(stream['codec_name'])
         return codecs
 
-    def check_file_to_be_processed(self, vid_file_path):
+    def check_file_to_be_processed(self, vid_file_path, settings):
         """
         Check if this file is already in the configured destination format.
 
         :param vid_file_path:
+        :param settings:
         :return:
         """
         # TODO: Add variable to force conversion based on audio config also
@@ -201,17 +235,15 @@ class FFMPEGHandle(object):
         try:
             if not self.file_in and not self.set_file_in(vid_file_path):
                 # Failed to fetch properties
-                if self.settings.DEBUGGING:
-                    self._log("Failed to fetch properties of file {}".format(vid_file_path), level='debug')
-                    self._log("Marking file not to be processed", level='debug')
+                self._log("Failed to fetch properties of file {}".format(vid_file_path), level='debug')
+                self._log("Marking file not to be processed", level='debug')
                 return False
             file_probe = self.file_in['file_probe']
         except Exception as e:
             self._log("Exception in method check_file_to_be_processed when reading file in", str(e), level='exception')
             # Failed to fetch properties
-            if self.settings.DEBUGGING:
-                self._log("Failed to fetch properties of file {}".format(vid_file_path), level='debug')
-                self._log("Marking file not to be processed", level='debug')
+            self._log("Failed to fetch properties of file {}".format(vid_file_path), level='debug')
+            self._log("Marking file not to be processed", level='debug')
             return False
 
         # Check if the file container from it's properties matches the configured container
@@ -219,66 +251,57 @@ class FFMPEGHandle(object):
         try:
             # Get the list of possible file extensions from the ffprobe
             current_possible_format_names = file_probe['format']['format_name'].split(",")
-            if self.settings.DEBUGGING:
-                self._log("Current file format names:", current_possible_format_names, level='debug')
+            self._log("Current file format names:", current_possible_format_names, level='debug')
 
             # Get container extension
-            container = unffmpeg.containers.grab_module(self.settings.OUT_CONTAINER)
+            container = unffmpeg.containers.grab_module(settings['out_container'])
             container_extension = container.container_extension()
 
             # Loop over file extensions to check if it is already one used by our configured container.
             for format_name in current_possible_format_names:
                 extension = 'NONE SELECTED'
-                if format_name in self.settings.SUPPORTED_CONTAINERS:
-                    extension = self.settings.SUPPORTED_CONTAINERS[format_name]['extension']
+                if format_name in self.supported_containers:
+                    extension = self.supported_containers[format_name]['extension']
                 if extension == container_extension:
-                    if self.settings.DEBUGGING:
-                        self._log("File already in container format {} - {}".format(container_extension,
-                                                                                    vid_file_path), level='debug')
+                    self._log("File already in container format {} - {}".format(container_extension, vid_file_path),
+                              level='debug')
                     # This extension is used by our configured container.
                     # We will assume that we are already the correct container
                     correct_extension = True
 
             # If this is not in the correct extension, then log it. This file may be added to the conversion list
-            if not correct_extension and self.settings.DEBUGGING:
-                self._log("Current file format names do not match the configured extension {}".format(
-                    container_extension), level='debug')
+            self._log("Current file format names do not match the configured extension {}".format(container_extension),
+                      level='debug')
         except Exception as e:
             self._log("Exception in method check_file_to_be_processed. check file container", str(e), level='exception')
             # Failed to fetch properties
-            if self.settings.DEBUGGING:
-                self._log("Failed to read format of file {}".format(vid_file_path), level='debug')
-                self._log("Marking file not to be processed", level='debug')
+            self._log("Failed to read format of file {}".format(vid_file_path), level='debug')
+            self._log("Marking file not to be processed", level='debug')
             return False
 
         # Check if the file video codec from it's properties matches the configured video codec
         correct_video_codec = False
-        if self.settings.ENABLE_VIDEO_ENCODING:
+        if settings['enable_video_encoding']:
             try:
                 video_streams_codecs = ""
                 for stream in file_probe['streams']:
                     if stream['codec_type'] == 'video':
                         # Check if this file is already the right format
                         video_streams_codecs += "{},{}".format(video_streams_codecs, stream['codec_name'])
-                        if stream['codec_name'] == self.settings.VIDEO_CODEC:
-                            if self.settings.DEBUGGING:
-                                self._log(
-                                    "File already has {} codec video stream - {}".format(self.settings.VIDEO_CODEC,
-                                                                                         vid_file_path),
-                                    level='debug')
+                        if stream['codec_name'] == settings['video_codec']:
+                            self._log(
+                                "File already has {} codec video stream - {}".format(settings['video_codec'], vid_file_path),
+                                level='debug')
                             correct_video_codec = True
                 if not correct_video_codec:
-                    if self.settings.DEBUGGING:
-                        self._log(
-                            "The current file's video streams ({}) do not match the configured video codec ({})".format(
-                                video_streams_codecs, self.settings.VIDEO_CODEC), level='debug')
+                    self._log("The current file's video streams ({}) do not match the configured video codec ({})".format(
+                        video_streams_codecs, settings['video_codec']), level='debug')
             except Exception as e:
                 # Failed to fetch properties
                 self._log("Exception in method check_file_to_be_processed. Check video codec.", str(e),
                           level='exception')
-                if self.settings.DEBUGGING:
-                    self._log("Failed to read codec info of file {}".format(vid_file_path), level='debug')
-                    self._log("Marking file not to be processed", level='debug')
+                self._log("Failed to read codec info of file {}".format(vid_file_path), level='debug')
+                self._log("Marking file not to be processed", level='debug')
                 return False
         else:
             correct_video_codec = True
@@ -305,11 +328,10 @@ class FFMPEGHandle(object):
         for stream in self.file_out['streams']:
             if stream['codec_type'] == 'video':
                 # Check if this file is the right codec
-                if stream['codec_name'] == self.settings.VIDEO_CODEC:
+                if stream['codec_name'] == self.settings['video_codec']:
                     result = True
-                elif self.settings.DEBUGGING:
-                    self._log("File is the not correct codec {} - {}".format(self.settings.VIDEO_CODEC, vid_file_path))
-                    raise FFMPEGHandlePostProcessError(self.settings.VIDEO_CODEC, stream['codec_name'])
+                else:
+                    raise FFMPEGHandlePostProcessError(self.settings['video_codec'], stream['codec_name'])
                 # TODO: Test duration is the same as src
         return result
 
@@ -320,13 +342,13 @@ class FFMPEGHandle(object):
         src_folder = os.path.dirname(src_path)
 
         # Get container extension
-        container = unffmpeg.containers.grab_module(self.settings.OUT_CONTAINER)
+        container = unffmpeg.containers.grab_module(self.settings['out_container'])
         container_extension = container.container_extension()
 
         # Parse an output cache path
         out_folder = "unmanic_file_conversion-{}".format(time.time())
         out_file = "{}-{}.{}".format(os.path.splitext(src_file)[0], time.time(), container_extension)
-        out_path = os.path.join(self.settings.CACHE_PATH, out_folder, out_file)
+        out_path = os.path.join(self.settings['cache_path'], out_folder, out_file)
 
         # Create output path if not exists
         common.ensure_dir(out_path)
@@ -351,7 +373,8 @@ class FFMPEGHandle(object):
                 shutil.move(out_path, destPath)
                 try:
                     self.post_process_file(destPath)
-                except FFMPEGHandlePostProcessError:
+                except FFMPEGHandlePostProcessError as e:
+                    self._log("File is the not correct codec. {}".format(e), level='exception')
                     success = False
                 if success:
                     # If successful move, remove source
@@ -386,8 +409,8 @@ class FFMPEGHandle(object):
         if not file_probe:
             return False
 
-        # current_container = unffmpeg.containers.grab_module(self.settings.OUT_CONTAINER)
-        destination_container = unffmpeg.containers.grab_module(self.settings.OUT_CONTAINER)
+        # current_container = unffmpeg.containers.grab_module(self.settings['out_container'])
+        destination_container = unffmpeg.containers.grab_module(self.settings['out_container'])
 
         # Suppress printing banner. (-hide_banner)
         # Set loglevel to info ("-loglevel", "info")
@@ -401,27 +424,27 @@ class FFMPEGHandle(object):
 
         # Set video encoding args
         video_codec_handle = unffmpeg.VideoCodecHandle(file_probe)
-        if not self.settings.ENABLE_VIDEO_ENCODING:
+        if not self.settings['enable_video_encoding']:
             video_codec_handle.disable_video_encoding = True
         # Set video codec and encoder
-        video_codec_handle.video_codec = self.settings.VIDEO_CODEC
-        video_codec_handle.video_encoder = self.settings.VIDEO_STREAM_ENCODER
+        video_codec_handle.video_codec = self.settings['video_codec']
+        video_codec_handle.video_encoder = self.settings['video_stream_encoder']
         video_codec_args = video_codec_handle.args()
         streams_to_map = streams_to_map + video_codec_args['streams_to_map']
         streams_to_encode = streams_to_encode + video_codec_args['streams_to_encode']
 
         # Set audio encoding args
         audio_codec_handle = unffmpeg.AudioCodecHandle(file_probe)
-        if not self.settings.ENABLE_AUDIO_ENCODING:
+        if not self.settings['enable_audio_encoding']:
             audio_codec_handle.disable_audio_encoding = True
         # Are we transcoding audio streams to a configured codec?
-        audio_codec_handle.enable_audio_stream_transcoding = self.settings.ENABLE_AUDIO_STREAM_TRANSCODING
-        audio_codec_handle.audio_codec_transcoding = self.settings.AUDIO_CODEC
-        audio_codec_handle.audio_encoder_transcoding = self.settings.AUDIO_STREAM_ENCODER
+        audio_codec_handle.enable_audio_stream_transcoding = self.settings['enable_audio_stream_transcoding']
+        audio_codec_handle.audio_codec_transcoding = self.settings['audio_codec']
+        audio_codec_handle.audio_encoder_transcoding = self.settings['audio_stream_encoder']
         # Are we cloning audio streams to stereo streams?
-        audio_codec_handle.enable_audio_stream_stereo_cloning = self.settings.ENABLE_AUDIO_STREAM_STEREO_CLONING
-        audio_codec_handle.set_audio_codec_with_default_encoder_cloning(self.settings.AUDIO_CODEC_CLONING)
-        audio_codec_handle.audio_stereo_stream_bitrate = self.settings.AUDIO_STEREO_STREAM_BITRATE
+        audio_codec_handle.enable_audio_stream_stereo_cloning = self.settings['enable_audio_stream_stereo_cloning']
+        audio_codec_handle.set_audio_codec_with_default_encoder_cloning(self.settings['audio_codec_cloning'])
+        audio_codec_handle.audio_stereo_stream_bitrate = self.settings['audio_stereo_stream_bitrate']
         # Fetch args
         audio_codec_args = audio_codec_handle.args()
         streams_to_map = streams_to_map + audio_codec_args['streams_to_map']
@@ -429,7 +452,7 @@ class FFMPEGHandle(object):
 
         # Set subtitle encoding args
         subtitle_handle = unffmpeg.SubtitleHandle(file_probe, destination_container)
-        if self.settings.REMOVE_SUBTITLE_STREAMS:
+        if self.settings['remove_subtitle_streams']:
             subtitle_handle.remove_subtitle_streams = True
         subtitle_args = subtitle_handle.args()
         streams_to_map = streams_to_map + subtitle_args['streams_to_map']
@@ -458,8 +481,7 @@ class FFMPEGHandle(object):
 
         # Create command with infile, outfile and the arguments
         command = ['ffmpeg', '-y', '-i', infile] + args + ['-y', outfile]
-        if self.settings.DEBUGGING:
-            self._log("Executing: {}".format(' '.join(command)), level='debug')
+        self._log("Executing: {}".format(' '.join(command)), level='debug')
 
         # Log the start time
         self.start_time = time.time()
@@ -479,7 +501,7 @@ class FFMPEGHandle(object):
         while True:
             line_text = self.process.stdout.readline()
             # Add line to stdout list. This is used for debugging the process if something goes wrong
-            if self.settings.DEBUGGING:
+            if self.settings['debugging']:
                 # Fetch ffmpeg stdout and append it to the current task object (to be saved during post process)
                 # This adds a fair amount of data to the database. It is not ideal to do this
                 # for every task unless the user really needs it.

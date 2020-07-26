@@ -36,7 +36,7 @@ import threading
 import time
 
 from unmanic.libs.fileinfo import FileInfo
-from unmanic.libs import common, history, unffmpeg
+from unmanic.libs import common, history, ffmpeg, unffmpeg
 
 """
 
@@ -57,24 +57,57 @@ class PostProcessError(Exception):
         self.result_var = result_var
 
 
+class PostProcessError(Exception):
+    def __init___(self, expected_var, result_var):
+        Exception.__init__(self, "Errors found during post process checks. Expected {}, but instead found {}".format(
+            expected_var, result_var))
+        self.expected_var = expected_var
+        self.result_var = result_var
+
+
 class PostProcessor(threading.Thread):
     """
     PostProcessor
 
     """
 
-    def __init__(self, data_queues, settings, job_queue):
+    def __init__(self, data_queues, settings, task_queue):
         super(PostProcessor, self).__init__(name='PostProcessor')
         self.logger = data_queues["logging"].get_logger(self.name)
         self.settings = settings
-        self.job_queue = job_queue
+        self.task_queue = task_queue
         self.abort_flag = threading.Event()
         self.current_task = None
+        self.ffmpeg = None
         self.abort_flag.clear()
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
+
+    def setup_ffmpeg(self):
+        """
+        Configure ffmpeg object.
+
+        :return:
+        """
+        settings = {
+            'audio_codec':                        self.current_task.settings.audio_codec,
+            'audio_codec_cloning':                self.current_task.settings.audio_codec_cloning,
+            'audio_stereo_stream_bitrate':        self.current_task.settings.audio_stereo_stream_bitrate,
+            'audio_stream_encoder':               self.current_task.settings.audio_stream_encoder,
+            'cache_path':                         self.current_task.settings.cache_path,
+            'debugging':                          self.current_task.settings.debugging,
+            'enable_audio_encoding':              self.current_task.settings.enable_audio_encoding,
+            'enable_audio_stream_stereo_cloning': self.current_task.settings.enable_audio_stream_stereo_cloning,
+            'enable_audio_stream_transcoding':    self.current_task.settings.enable_audio_stream_transcoding,
+            'enable_video_encoding':              self.current_task.settings.enable_video_encoding,
+            'out_container':                      self.current_task.settings.out_container,
+            'remove_subtitle_streams':            self.current_task.settings.remove_subtitle_streams,
+            'video_codec':                        self.current_task.settings.video_codec,
+            'video_stream_encoder':               self.current_task.settings.video_stream_encoder,
+        }
+        self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
 
     def stop(self):
         self.abort_flag.set()
@@ -84,60 +117,69 @@ class PostProcessor(threading.Thread):
         while not self.abort_flag.is_set():
             time.sleep(1)
 
-            while not self.abort_flag.is_set() and not self.job_queue.processed_is_empty():
+            while not self.abort_flag.is_set() and not self.task_queue.task_list_processed_is_empty():
                 time.sleep(.2)
-                self.current_task = self.job_queue.get_next_processed_item()
+                self.current_task = self.task_queue.get_next_processed_tasks()
                 if self.current_task:
-                    self._log("Post-processing task - {}".format(self.current_task.get_source_abspath()))
+                    try:
+                        self._log("Post-processing task - {}".format(self.current_task.get_source_abspath()))
+                    except Exception as e:
+                        self._log("Exception in fetching task absolute path", message2=str(e), level="exception")
+                    self.setup_ffmpeg()
+                    # Post process the converted file (return it to original directory etc.)
                     self.post_process_file()
+                    # Write source and destination data to historic log
                     self.write_history_log()
+                    # Remove file from task queue
+                    # self.current_task.set_status('complete')
+                    self.current_task.delete()
 
         self._log("Leaving PostProcessor Monitor loop...")
 
     def post_process_file(self):
         # Check if the job was a success
-        if not self.current_task.success:
+        if not self.current_task.task.success:
             self._log("Task was marked as failed.", level='debug')
-            self._log("Removing cached file", self.current_task.cache_path, level='debug')
+            self._log("Removing cached file", self.current_task.task.cache_path, level='debug')
             self.remove_current_task_cache_file()
-            return False
+            return
         # Ensure file is correct format
-        self.current_task.success = self.validate_streams(self.current_task.cache_path)
+        self.current_task.task.success = self.validate_streams(self.current_task.task.cache_path)
+        # Read current task data
+        # task_data = self.current_task.get_task_data()
+        cache_path = self.current_task.get_cache_path()
+        source_data = self.current_task.get_source_data()
+        destination_data = self.current_task.get_destination_data()
         # Move file back to original folder and remove source
-        if self.current_task.success:
+        if self.current_task.task.success:
             # Move the file
-            self._log(
-                "Moving file {} --> {}".format(self.current_task.cache_path, self.current_task.destination['abspath']))
-            shutil.move(self.current_task.cache_path, self.current_task.destination['abspath'])
-
-            # Set file out
-            self.current_task.ffmpeg.set_file_out(self.current_task.destination['abspath'])
+            self._log("Moving file {} --> {}".format(cache_path, destination_data['abspath']))
+            shutil.move(cache_path, destination_data['abspath'])
 
             # Run another validation on the moved file to ensure it is correct
-            self.current_task.success = self.validate_streams(self.current_task.destination['abspath'])
-            if self.current_task.success:
+            self.current_task.task.success = self.validate_streams(destination_data['abspath'])
+            if self.current_task.task.success:
                 # If successfully moved the cached re-encoded copy, remove source
                 # TODO: Add env variable option to keep src
-                if self.current_task.source['abspath'] != self.current_task.destination['abspath']:
-                    self._log("Removing source: {}".format(self.current_task.source['abspath']))
+                if source_data['abspath'] != destination_data['abspath']:
+                    self._log("Removing source: {}".format(source_data['abspath']))
                     if self.settings.KEEP_FILENAME_HISTORY:
-                        self.keep_filename_history(self.current_task.source["dirname"],
-                                                   self.current_task.destination["basename"],
-                                                   self.current_task.source["basename"])
-                    os.remove(self.current_task.source['abspath'])
+                        dirname = os.path.dirname(source_data['abspath'])
+                        self.keep_filename_history(dirname, destination_data["basename"], source_data["basename"])
+                    os.remove(source_data['abspath'])
             else:
-                self._log("Copy / Replace failed during post processing '{}'".format(self.current_task.cache_path),
+                self._log("Copy / Replace failed during post processing '{}'".format(cache_path),
                           level='warning')
-                return False
+                return
         else:
-            self._log("Encoded file failed post processing test '{}'".format(self.current_task.cache_path),
+            self._log("Encoded file failed post processing test '{}'".format(cache_path),
                       level='warning')
-            return False
+            return
 
     def validate_streams(self, abspath):
         # Read video information for the input file
         try:
-            file_probe = self.current_task.ffmpeg.file_probe(abspath)
+            file_probe = self.ffmpeg.file_probe(abspath)
         except unffmpeg.exceptions.ffprobe.FFProbeError as e:
             self._log("Exception in method process_file", str(e), level='exception')
             return False
@@ -169,20 +211,42 @@ class PostProcessor(threading.Thread):
         self._log("Writing task history log.", level='debug')
         history_logging = history.History(self.settings)
         task_dump = self.current_task.task_dump()
+
+        try:
+            destination_data = self.current_task.get_destination_data()
+            destination_file_probe = self.ffmpeg.file_probe(destination_data['abspath'])
+            file_probe_format = destination_file_probe.get('format', {})
+
+            destination_data.update(
+                {
+                    'bit_rate':         file_probe_format.get('bit_rate', ''),
+                    'format_long_name': file_probe_format.get('format_long_name', ''),
+                    'format_name':      file_probe_format.get('format_name', ''),
+                    'size':             file_probe_format.get('size', ''),
+                    'duration':         file_probe_format.get('duration', ''),
+                    'streams':          destination_file_probe.get('streams', [])
+                }
+            )
+            task_dump['file_probe_data']['destination'] = destination_data
+        except unffmpeg.exceptions.ffprobe.FFProbeError as e:
+            self._log("Exception in method write_history_log", str(e), level='exception')
+        except Exception as e:
+            self._log("Exception in method write_history_log", str(e), level='exception')
+
         history_logging.save_task_history(
             {
-                'task_label':          self.current_task.source['basename'],
-                'task_success':        self.current_task.success,
-                'start_time':          task_dump['statistics']['start_time'],
-                'finish_time':         task_dump['statistics']['finish_time'],
-                'processed_by_worker': task_dump['statistics']['processed_by_worker'],
+                'task_label':          task_dump.get('task_label', ''),
+                'task_success':        task_dump.get('task_success', ''),
+                'start_time':          task_dump.get('start_time', ''),
+                'finish_time':         task_dump.get('finish_time', ''),
+                'processed_by_worker': task_dump.get('processed_by_worker', ''),
                 'task_dump':           task_dump,
             }
         )
 
     def keep_filename_history(self, basedir, newname, originalname):
         """
-        Write filename history in file_info (Filebot pattern usefull for download subtitles using original filename)
+        Write filename history in file_info (Filebot pattern useful for download subtitles using original filename)
 
         :return:
         """
@@ -192,5 +256,5 @@ class PostProcessor(threading.Thread):
         fileinfo.save()
 
     def remove_current_task_cache_file(self):
-        if os.path.exists(self.current_task.cache_path):
-            os.remove(self.current_task.cache_path)
+        if os.path.exists(self.current_task.task.cache_path):
+            os.remove(self.current_task.task.cache_path)

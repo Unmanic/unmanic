@@ -41,6 +41,11 @@ You can also specify the files to run individual. Eg.
 pytest --log-cli-level=INFO lib/common.py
 ```
 
+For more in-depth logging of tests, change the params to:
+```
+pytest --log-cli-level=DEBUG -s
+```
+
 
 -----------------------------------------------------------
 

@@ -33,6 +33,7 @@
 import os
 import queue
 import sys
+import tempfile
 
 import pytest
 
@@ -75,7 +76,7 @@ class TestClass(object):
         self.logging.get_logger()
         # import config
         from unmanic import config
-        self.settings = config.CONFIG()
+        self.settings = config.CONFIG(os.path.join(tempfile.mkdtemp(), 'unmanic_test.db'))
         self.settings.DEBUGGING = True
 
         # Create our test queues
@@ -90,7 +91,8 @@ class TestClass(object):
         # Create a new task and set the source
         self.test_task = task.Task(self.data_queues)
         self.test_task.set_source_data(pathname)
-        self.test_task.set_destination_data()
+        destination_data = task.prepare_file_destination_data(os.path.abspath(pathname), self.settings.OUT_CONTAINER)
+        self.test_task.set_destination_data(destination_data)
         self.test_task.set_cache_path()
 
     def completed_test_task_is_success(self):
@@ -119,7 +121,7 @@ class TestClass(object):
     @pytest.mark.integrationtest
     def test_worker_tread_for_conversion_success(self):
         worker_id = 'test'
-        worker_thread = worker.WorkerThread(worker_id, "Foreman-{}".format(worker_id), self.settings, self.data_queues,
+        worker_thread = foreman.WorkerThread(worker_id, "Foreman-{}".format(worker_id), self.settings, self.data_queues,
                                             self.task_queue, self.complete_queue)
         # Test 2 of the small files
         count = 0

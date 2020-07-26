@@ -56,7 +56,7 @@ tornado_settings = {
 
 
 class UIServer(threading.Thread):
-    def __init__(self, unmanic_data_queues, unmanic_settings, worker_handle):
+    def __init__(self, unmanic_data_queues, unmanic_settings, foreman):
         super(UIServer, self).__init__(name='UIServer')
         self.settings = unmanic_settings
         self.ioloop = None
@@ -64,7 +64,9 @@ class UIServer(threading.Thread):
         self.data_queues = unmanic_data_queues
         self.logger = unmanic_data_queues["logging"].get_logger(self.name)
         self.inotifytasks = unmanic_data_queues["inotifytasks"]
-        self.worker_handle = worker_handle
+        # TODO: Move all logic out of template calling to foreman.
+        #  Create methods here to handle the calls and rename to foreman
+        self.foreman = foreman
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
         self.set_logging()
@@ -132,12 +134,11 @@ class UIServer(threading.Thread):
             )),
             (r"/dashboard/(.*)", MainUIRequestHandler, dict(
                 data_queues=self.data_queues,
-                worker_handle=self.worker_handle,
+                foreman=self.foreman,
                 settings=self.settings
             )),
             (r"/history/(.*)", HistoryUIRequestHandler, dict(
                 data_queues=self.data_queues,
-                worker_handle=self.worker_handle,
                 settings=self.settings
             )),
             (r"/settings/(.*)", SettingsUIRequestHandler, dict(

@@ -40,7 +40,7 @@ class MockJobQueue(object):
     """
 
     def __init__(self):
-        self.name = 'JobQueue'
+        self.name = 'TaskQueue'
         self.added_item = None
 
     def add_item(self, pathname):

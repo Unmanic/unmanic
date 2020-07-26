@@ -5,11 +5,11 @@
     <li>
         <div class="task-title">
             {% try %}
-                <span class="task-title-sp" title="{{ pending_task.get_source_abspath() }}">{{ pending_task.get_source_basename() }} </span>
+                <span class="task-title-sp" title="{{ pending_task['abspath'] }}">{{ pending_task['basename'] }} </span>
             {% except %}
                 <span class="error">(Error fetching pending item information - Please report this as a bug)</span>
             {% end %}
-            <span class="label label-sm label-success">{{ escape(pending_task.get_source_video_codecs()) }}</span>
+            <span class="label label-sm label-success">{{ escape(pending_task['format_long_name']) }}</span>
         </div>
         <div class="task-config">
             <div class="task-config-btn btn-group">

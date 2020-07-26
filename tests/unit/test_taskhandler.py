@@ -57,7 +57,7 @@ class TestClass(object):
         self.inotifytasks = self.data_queues["inotifytasks"]
         self.progress_reports = self.data_queues["progress_reports"]
         self.settings = mock_config_class.MockConfig()
-        self.job_queue = mock_jobqueue_class.MockJobQueue()
+        self.task_queue = mock_jobqueue_class.MockJobQueue()
         self.task_handler = None
 
     def teardown_class(self):
@@ -77,10 +77,10 @@ class TestClass(object):
 
         :return:
         """
-        self.task_handler = TaskHandler(self.data_queues, self.settings, self.job_queue)
+        self.task_handler = TaskHandler(self.data_queues, self.settings, self.task_queue)
         self.task_handler.daemon = True
         self.task_handler.start()
-        self.job_queue.added_item = None
+        self.task_queue.added_item = None
 
     def teardown_method(self):
         """
@@ -107,14 +107,14 @@ class TestClass(object):
         test_path_string = 'scheduledtasks'
         self.scheduledtasks.put(test_path_string)
         self.task_handler.process_scheduledtasks_queue()
-        assert (test_path_string == self.job_queue.added_item)
+        assert (test_path_string == self.task_queue.added_item)
 
     @pytest.mark.unittest
     def test_task_handler_can_process_inotify_tasks_queue(self):
         test_path_string = '/home/josh5/dev/mystuff/unmanic/tests/support_/videos/small/big_buck_bunny_144p_1mb.3gp'
         self.inotifytasks.put(test_path_string)
         self.task_handler.process_inotifytasks_queue()
-        assert (test_path_string == self.job_queue.added_item)
+        assert (test_path_string == self.task_queue.added_item)
 
 
 if __name__ == '__main__':

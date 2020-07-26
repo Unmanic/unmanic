@@ -40,15 +40,15 @@ from unmanic.libs import common, history
 class MainUIRequestHandler(tornado.web.RequestHandler):
     name = None
     data_queues = None
-    worker_handle = None
+    foreman = None
     components = None
     config = None
     historic_task_list = None
 
-    def initialize(self, data_queues, worker_handle, settings):
+    def initialize(self, data_queues, foreman, settings):
         self.name = 'main'
         self.data_queues = data_queues
-        self.worker_handle = worker_handle
+        self.foreman = foreman
         self.components = []
         self.config = settings
         self.historic_task_list = []
@@ -89,16 +89,18 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
 
     def get_workers_info(self, worker_id=None):
         if worker_id is not None:
-            workers_info = self.worker_handle.get_worker_status(worker_id)
+            workers_info = self.foreman.get_worker_status(worker_id)
         else:
-            workers_info = self.worker_handle.get_all_worker_status()
+            workers_info = self.foreman.get_all_worker_status()
         return workers_info
 
     def get_workers_count(self):
-        return len(self.worker_handle.get_all_worker_status())
+        return len(self.foreman.get_all_worker_status())
 
     def get_pending_tasks(self):
-        return self.worker_handle.job_queue.list_all_incoming_items()
+        # TODO: Configure pagination on the UI - limit 5,10,20,50,100 (default to 20)
+        limit = 20
+        return self.foreman.task_queue.list_pending_tasks(limit)
 
     def get_historical_tasks(self):
         self.historic_task_list = []

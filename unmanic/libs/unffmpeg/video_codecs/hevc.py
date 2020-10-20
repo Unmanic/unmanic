@@ -35,6 +35,7 @@ from ..base_codecs import Codecs
 
 class Hevc(Codecs):
     name = 'hevc'
-    encoders = ['hevc_nvenc', 'libx265', 'nvenc_hevc']
+    encoders = ['hevc_nvenc', 'hevc_vaapi', 'libx265']
     default_encoder = 'libx265'
     codec_long_name = 'HEVC (High Efficiency Video Coding)'
+

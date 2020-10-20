@@ -30,6 +30,7 @@ RUN \
             libxcb1 \
             libxext6 \
             libxml2 \
+            vainfo \
     && \
     echo "**** Cleanup ****" \
         && rm -rf \

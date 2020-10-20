@@ -181,7 +181,8 @@ jobs:
       id: buildx
       uses: crazy-max/ghaction-docker-buildx@v1
       with:
-        version: latest
+        buildx-version: latest
+        qemu-version: latest
 
     # List available build platforms
     - name: Available platforms

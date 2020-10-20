@@ -417,6 +417,7 @@ class FFMPEGHandle(object):
         # Allow experimental encoder config ("-strict", "-2")
         #
         command = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "512"]
+        additional_encoder_args = []
 
         # Read stream data
         streams_to_map = []
@@ -457,6 +458,9 @@ class FFMPEGHandle(object):
         subtitle_args = subtitle_handle.args()
         streams_to_map = streams_to_map + subtitle_args['streams_to_map']
         streams_to_encode = streams_to_encode + subtitle_args['streams_to_encode']
+
+        # Add encoder args to command
+        command = command + additional_encoder_args
 
         # Map streams
         command = command + streams_to_map

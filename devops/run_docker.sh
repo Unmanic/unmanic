@@ -74,7 +74,7 @@ CMD="docker run -ti --rm --name=unmanic \
     -e PGID=${PGID} \
     -e DEBUGGING=${DEBUGGING} \
     ${ADDITIONAL_DOCKER_PARAMS} \
-    josh5/unmanic bash"
+    josh5/unmanic:latest bash"
 
 echo "${CMD}"
 bash -c "${CMD}"

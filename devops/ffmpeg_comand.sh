@@ -1,8 +1,8 @@
 #! /bin/bash
 
 SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd );
-OUT_DIR=$(realpath ${SCRIPT_PATH}/../tests/tmp/ffmpeg_tests);
-IN_FILE=$(realpath ${SCRIPT_PATH}/../tests/support_/videos/med/big_buck_bunny_720p_10mb.mp4);
+OUT_DIR=${SCRIPT_PATH}/../tests/tmp/ffmpeg_tests;
+IN_FILE=${SCRIPT_PATH}/../tests/support_/videos/med/big_buck_bunny_720p_10mb.mp4;
 
 # Set the container
 CONTAINER_EXT="mkv"
@@ -13,12 +13,13 @@ CONTAINER_EXT="mkv"
 #   - h264_nvenc
 #   - h264_vaapi
 #   - hevc_vaapi
-V_ENCODER="h264_vaapi"
+V_ENCODER="hevc_vaapi"
 # Additional encoder args
 #   EG:
 #       -b:v 5M
 #       -b:v 1M -maxrate 2M -bufsize 4M -preset slow
-V_ENCODER_ARGS="-vf 'format=nv12|vaapi,hwupload,scale_vaapi=w=1280:h=720' "
+#       -vf 'format=nv12|vaapi,hwupload'
+V_ENCODER_ARGS="-b:v 4M -vaapi_device /dev/dri/renderD128 -vf 'format=nv12|vaapi,hwupload' "
 
 
 
@@ -34,7 +35,6 @@ if [[ ! -z ${1} && "${1}" == "probe" ]]; then
 
     echo "${CMD}"
     bash -c "${CMD}"
-    exit 0
 elif [[ ! -z ${1} && "${1}" == "encoders" ]]; then
     # List encoders
     CMD="ffmpeg \
@@ -43,16 +43,14 @@ elif [[ ! -z ${1} && "${1}" == "encoders" ]]; then
 
     echo "${CMD}"
     bash -c "${CMD}"
-    exit 0
 else
     mkdir -p ${OUT_DIR}
     CMD="ffmpeg \
-        -vaapi_device /dev/dri/renderD128 \
+        -loglevel info \
         -i ${IN_FILE} \
-        -c:v h264_vaapi \
-  -b:v 4M \
-  -vf 'format=nv12|vaapi,hwupload,scale_vaapi=w=1280:h=720' \
-  -c:a copy \
+        ${V_ENCODER_ARGS} \
+        -c:v ${V_ENCODER} \
+        -c:a copy \
         -y ${OUT_DIR}/outfile.${CONTAINER_EXT}"
 
     start_time=`date +%s`
@@ -70,5 +68,7 @@ else
     echo "Output file:"
     du -h ${OUT_DIR}/*.${CONTAINER_EXT}
     echo
-    exit 0
 fi
+
+# ls -la "${OUT_DIR}"
+# echo "${OUT_DIR}"

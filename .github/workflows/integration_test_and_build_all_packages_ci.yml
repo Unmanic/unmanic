@@ -235,7 +235,6 @@ jobs:
         echo ::set-output name=docker_tags::${DOCKER_TAGS}
         echo ::set-output name=docker_platforms::linux/amd64
         echo ::set-output name=docker_push::${DOCKER_PUSH}
-        echo ::set-output name=docker_cache::${DOCKER_IMAGE}
 
     # Generate buildx command
     - name: Docker Login
@@ -252,7 +251,7 @@ jobs:
         docker buildx build \
           --cache-from "type=local,src=/tmp/.buildx-cache" \
           --cache-to "type=local,dest=/tmp/.buildx-cache" \
-          --output type=image,name=${{ steps.prepare.outputs.docker_image }},push=${{ steps.prepare.outputs.docker_cache }} \
+          --output type=image,name=${{ steps.prepare.outputs.docker_image }},push=${{ steps.prepare.outputs.docker_push }} \
           --platform ${{ steps.prepare.outputs.docker_platforms }} \
           ${{ steps.prepare.outputs.docker_tags }} \
           --file docker/Dockerfile .

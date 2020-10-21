@@ -243,17 +243,7 @@ jobs:
       id: login
       env:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: |
-        echo "${DOCKER_PASSWORD}" | docker login --username "${{ steps.prepare.outputs.docker_username }}" --password-stdin docker.io
-        #echo ::set-output name=buildx::$(echo \
-        #  docker buildx build --push \
-        #    --cache-from "type=local,src=/tmp/.buildx-cache" \
-        #    --cache-to "type=local,dest=/tmp/.buildx-cache" \
-        #    --output type=image,name=${{ steps.prepare.outputs.docker_image }},push=true \
-        #    --platform ${{ steps.prepare.outputs.docker_platforms }} \
-        #    --build-arg BUILDKIT_INLINE_CACHE=1 \
-        #    --tag "${{ steps.prepare.outputs.docker_tags }}:${{ steps.prepare.outputs.docker_tag }}" \
-        #  )
+      run: echo "${DOCKER_PASSWORD}" | docker login --username "${{ steps.prepare.outputs.docker_username }}" --password-stdin docker.io
 
     - name: Run Buildx
       if: success()

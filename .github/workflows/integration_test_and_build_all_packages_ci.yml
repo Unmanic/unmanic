@@ -162,7 +162,7 @@ jobs:
 
     # Fetch all artifacts
     - name: Download Artifact
-    - uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v2
       with:
         path: ./artifacts/
 
@@ -256,16 +256,3 @@ jobs:
           --platform ${{ steps.prepare.outputs.docker_platforms }} \
           ${{ steps.prepare.outputs.docker_tags }} \
           --file docker/Dockerfile .
-
-    ## EITHER: Run the docker buildx command for master branch appending a 'latest' tag to docker image
-    #- name: Run Buildx (master)
-    #  if: success() && contains(steps.prepare.outputs.version, 'master')
-    #  run: |
-    #    ${{ steps.login.outputs.buildx }} --tag "${{ steps.prepare.outputs.docker_image }}:latest" --file docker/Dockerfile .
-
-    ## OR: Run the docker buildx command for non-master branches
-    #- name: Run Buildx (non-master)
-    #  if: success() && !contains(steps.prepare.outputs.version, 'master')
-    #  run: |
-    #    echo ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .
-    #    ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .

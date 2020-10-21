@@ -95,9 +95,15 @@ jobs:
 
     steps:
     # Fetch full git repository
-    - uses: actions/checkout@v2
+    - name: Checkout project
+      uses: actions/checkout@v2
+
+    # Checkout tags
+    - name: Fetch tags
       run: |
-        git fetch --prune --unshallow
+        git fetch --prune --unshallow --tags
+        echo exit code $?
+        git tag --list
 
     # Setup python environment
     - name: Set up Python 3.6

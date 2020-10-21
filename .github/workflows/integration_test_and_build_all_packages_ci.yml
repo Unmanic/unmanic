@@ -96,7 +96,7 @@ jobs:
     steps:
     # Fetch full git repository
     - uses: actions/checkout@v2
-    - run: |
+      run: |
         git fetch --prune --unshallow
 
     # Setup python environment

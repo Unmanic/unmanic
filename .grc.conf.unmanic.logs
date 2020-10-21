@@ -4,7 +4,7 @@
 
 
 # this is probably a pathname
-regexp=/[\w/\.]+
+regexp=/[\w/\.-]+
 colours=bold green
 count=more
 ======

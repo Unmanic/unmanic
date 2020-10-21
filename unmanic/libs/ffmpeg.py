@@ -463,7 +463,7 @@ class FFMPEGHandle(object):
 
         # Overwrite additional options
         if self.settings['overwrite_additional_ffmpeg_options']:
-            additional_ffmpeg_options = [self.settings['additional_ffmpeg_options']]
+            additional_ffmpeg_options = self.settings['additional_ffmpeg_options'].split()
 
         # Add encoder args to command
         command = command + additional_ffmpeg_options

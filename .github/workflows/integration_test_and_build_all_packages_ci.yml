@@ -183,8 +183,7 @@ jobs:
       if: success()
       id: buildx
       with:
-        buildx-version: latest
-        qemu-version: latest
+        version: latest
 
     # Cache the build
     - name: Cache Docker layers
@@ -207,6 +206,7 @@ jobs:
       id: prepare
       run: |
         echo  "GITHUB_REF:${GITHUB_REF}"
+        echo  "GITHUB_REPOSITORY:${GITHUB_REPOSITORY}"
         DOCKER_IMAGE=docker.io/${GITHUB_REPOSITORY,,}
         VERSION_TAG=${GITHUB_REF#refs/*/}
 
@@ -224,7 +224,7 @@ jobs:
         fi
 
         DOCKER_PUSH="true"
-        if [[ ${DOCKER_IMAGE} != 'Josh5/unmanic' ]]; then
+        if [[ ${DOCKER_IMAGE} != 'docker.io/josh5/unmanic' ]]; then
           DOCKER_PUSH="false"
         fi
         if [[ ${VERSION_TAG%/merge} =~ ^[0-9]+$ ]]; then

@@ -70,20 +70,22 @@ class LibraryScanner(threading.Thread):
 
     def init_ffmpeg_handle_settings(self):
         return {
-            'audio_codec':                        self.settings.AUDIO_CODEC,
-            'audio_codec_cloning':                self.settings.AUDIO_CODEC_CLONING,
-            'audio_stereo_stream_bitrate':        self.settings.AUDIO_STEREO_STREAM_BITRATE,
-            'audio_stream_encoder':               self.settings.AUDIO_STREAM_ENCODER,
-            'cache_path':                         self.settings.CACHE_PATH,
-            'debugging':                          self.settings.DEBUGGING,
-            'enable_audio_encoding':              self.settings.ENABLE_AUDIO_ENCODING,
-            'enable_audio_stream_stereo_cloning': self.settings.ENABLE_AUDIO_STREAM_STEREO_CLONING,
-            'enable_audio_stream_transcoding':    self.settings.ENABLE_AUDIO_STREAM_TRANSCODING,
-            'enable_video_encoding':              self.settings.ENABLE_VIDEO_ENCODING,
-            'out_container':                      self.settings.OUT_CONTAINER,
-            'remove_subtitle_streams':            self.settings.REMOVE_SUBTITLE_STREAMS,
-            'video_codec':                        self.settings.VIDEO_CODEC,
-            'video_stream_encoder':               self.settings.VIDEO_STREAM_ENCODER,
+            'audio_codec':                          self.settings.AUDIO_CODEC,
+            'audio_codec_cloning':                  self.settings.AUDIO_CODEC_CLONING,
+            'audio_stereo_stream_bitrate':          self.settings.AUDIO_STEREO_STREAM_BITRATE,
+            'audio_stream_encoder':                 self.settings.AUDIO_STREAM_ENCODER,
+            'cache_path':                           self.settings.CACHE_PATH,
+            'debugging':                            self.settings.DEBUGGING,
+            'enable_audio_encoding':                self.settings.ENABLE_AUDIO_ENCODING,
+            'enable_audio_stream_stereo_cloning':   self.settings.ENABLE_AUDIO_STREAM_STEREO_CLONING,
+            'enable_audio_stream_transcoding':      self.settings.ENABLE_AUDIO_STREAM_TRANSCODING,
+            'enable_video_encoding':                self.settings.ENABLE_VIDEO_ENCODING,
+            'out_container':                        self.settings.OUT_CONTAINER,
+            'remove_subtitle_streams':              self.settings.REMOVE_SUBTITLE_STREAMS,
+            'video_codec':                          self.settings.VIDEO_CODEC,
+            'video_stream_encoder':                 self.settings.VIDEO_STREAM_ENCODER,
+            'overwrite_additional_ffmpeg_options':  self.settings.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS,
+            'additional_ffmpeg_options':            self.settings.ADDITIONAL_FFMPEG_OPTIONS,
         }
 
     def stop(self):

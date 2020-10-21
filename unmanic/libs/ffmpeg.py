@@ -111,6 +111,8 @@ class FFMPEGHandle(object):
             'remove_subtitle_streams',
             'video_codec',
             'video_stream_encoder',
+            'overwrite_additional_ffmpeg_options',
+            'additional_ffmpeg_options',
         ]
         setting_keys = self.settings.keys()
         for required_setting in required_settings:
@@ -361,7 +363,12 @@ class FFMPEGHandle(object):
 
         # Convert file
         success = False
-        ffmpeg_args = self.generate_ffmpeg_args()
+        # Read video information for the input file
+        file_probe = self.file_in['file_probe']
+        print(file_probe)
+        if not file_probe:
+            return False
+        ffmpeg_args = self.generate_ffmpeg_args(file_probe)
         if ffmpeg_args:
             success = self.convert_file_and_fetch_progress(src_path, out_path, ffmpeg_args)
         if success:
@@ -395,7 +402,7 @@ class FFMPEGHandle(object):
         self._log("Successfully processed file '{}'".format(src_path))
         return True
 
-    def generate_ffmpeg_args(self,):
+    def generate_ffmpeg_args(self, file_probe):
         # ffmpeg -i /library/XXXXX.mkv \
         #     -c:v libx265 \
         #     -map 0:0 -map 0:1 -map 0:1 \
@@ -403,11 +410,6 @@ class FFMPEGHandle(object):
         #     -c:a:1 libmp3lame -b:a:0 192k -ac 2 \
         #     -y /cache/XXXXX.mkv
         #
-
-        # Read video information for the input file
-        file_probe = self.file_in['file_probe']
-        if not file_probe:
-            return False
 
         # current_container = unffmpeg.containers.grab_module(self.settings['out_container'])
         destination_container = unffmpeg.containers.grab_module(self.settings['out_container'])
@@ -417,7 +419,7 @@ class FFMPEGHandle(object):
         # Allow experimental encoder config ("-strict", "-2")
         #
         command = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "512"]
-        additional_encoder_args = []
+        additional_ffmpeg_options = []
 
         # Read stream data
         streams_to_map = []
@@ -459,8 +461,12 @@ class FFMPEGHandle(object):
         streams_to_map = streams_to_map + subtitle_args['streams_to_map']
         streams_to_encode = streams_to_encode + subtitle_args['streams_to_encode']
 
+        # Overwrite additional options
+        if self.settings['overwrite_additional_ffmpeg_options']:
+            additional_ffmpeg_options = [self.settings['additional_ffmpeg_options']]
+
         # Add encoder args to command
-        command = command + additional_encoder_args
+        command = command + additional_ffmpeg_options
 
         # Map streams
         command = command + streams_to_map

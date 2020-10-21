@@ -128,20 +128,22 @@ class WorkerThread(threading.Thread):
         :return:
         """
         settings = {
-            'audio_codec':                        self.current_task.settings.audio_codec,
-            'audio_codec_cloning':                self.current_task.settings.audio_codec_cloning,
-            'audio_stereo_stream_bitrate':        self.current_task.settings.audio_stereo_stream_bitrate,
-            'audio_stream_encoder':               self.current_task.settings.audio_stream_encoder,
-            'cache_path':                         self.current_task.settings.cache_path,
-            'debugging':                          self.current_task.settings.debugging,
-            'enable_audio_encoding':              self.current_task.settings.enable_audio_encoding,
-            'enable_audio_stream_stereo_cloning': self.current_task.settings.enable_audio_stream_stereo_cloning,
-            'enable_audio_stream_transcoding':    self.current_task.settings.enable_audio_stream_transcoding,
-            'enable_video_encoding':              self.current_task.settings.enable_video_encoding,
-            'out_container':                      self.current_task.settings.out_container,
-            'remove_subtitle_streams':            self.current_task.settings.remove_subtitle_streams,
-            'video_codec':                        self.current_task.settings.video_codec,
-            'video_stream_encoder':               self.current_task.settings.video_stream_encoder,
+            'audio_codec':                          self.current_task.settings.audio_codec,
+            'audio_codec_cloning':                  self.current_task.settings.audio_codec_cloning,
+            'audio_stereo_stream_bitrate':          self.current_task.settings.audio_stereo_stream_bitrate,
+            'audio_stream_encoder':                 self.current_task.settings.audio_stream_encoder,
+            'cache_path':                           self.current_task.settings.cache_path,
+            'debugging':                            self.current_task.settings.debugging,
+            'enable_audio_encoding':                self.current_task.settings.enable_audio_encoding,
+            'enable_audio_stream_stereo_cloning':   self.current_task.settings.enable_audio_stream_stereo_cloning,
+            'enable_audio_stream_transcoding':      self.current_task.settings.enable_audio_stream_transcoding,
+            'enable_video_encoding':                self.current_task.settings.enable_video_encoding,
+            'out_container':                        self.current_task.settings.out_container,
+            'remove_subtitle_streams':              self.current_task.settings.remove_subtitle_streams,
+            'video_codec':                          self.current_task.settings.video_codec,
+            'video_stream_encoder':                 self.current_task.settings.video_stream_encoder,
+            'overwrite_additional_ffmpeg_options':  self.current_task.settings.overwrite_additional_ffmpeg_options,
+            'additional_ffmpeg_options':            self.current_task.settings.additional_ffmpeg_options,
         }
         self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
         self.ffmpeg_log = None
@@ -161,8 +163,12 @@ class WorkerThread(threading.Thread):
         try:
             # Fetch source file info
             self.ffmpeg.set_file_in(abspath)
+            # Read video information for the input file
+            file_probe = self.ffmpeg.file_in['file_probe']
+            if not file_probe:
+                return False
             # Create args from
-            ffmpeg_args = self.ffmpeg.generate_ffmpeg_args()
+            ffmpeg_args = self.ffmpeg.generate_ffmpeg_args(file_probe)
             if ffmpeg_args:
                 success = self.ffmpeg.convert_file_and_fetch_progress(abspath, self.current_task.task.cache_path, ffmpeg_args)
             self.current_task.set_ffmpeg_log(self.ffmpeg.ffmpeg_cmd_stdout)

@@ -47,20 +47,22 @@ except ImportError:
 
 def build_ffmpeg_handle_settings(settings):
     return {
-        'audio_codec':                        settings.AUDIO_CODEC,
-        'audio_codec_cloning':                settings.AUDIO_CODEC_CLONING,
-        'audio_stereo_stream_bitrate':        settings.AUDIO_STEREO_STREAM_BITRATE,
-        'audio_stream_encoder':               settings.AUDIO_STREAM_ENCODER,
-        'cache_path':                         settings.CACHE_PATH,
-        'debugging':                          settings.DEBUGGING,
-        'enable_audio_encoding':              settings.ENABLE_AUDIO_ENCODING,
-        'enable_audio_stream_stereo_cloning': settings.ENABLE_AUDIO_STREAM_STEREO_CLONING,
-        'enable_audio_stream_transcoding':    settings.ENABLE_AUDIO_STREAM_TRANSCODING,
-        'enable_video_encoding':              settings.ENABLE_VIDEO_ENCODING,
-        'out_container':                      settings.OUT_CONTAINER,
-        'remove_subtitle_streams':            settings.REMOVE_SUBTITLE_STREAMS,
-        'video_codec':                        settings.VIDEO_CODEC,
-        'video_stream_encoder':               settings.VIDEO_STREAM_ENCODER,
+        'audio_codec':                          settings.AUDIO_CODEC,
+        'audio_codec_cloning':                  settings.AUDIO_CODEC_CLONING,
+        'audio_stereo_stream_bitrate':          settings.AUDIO_STEREO_STREAM_BITRATE,
+        'audio_stream_encoder':                 settings.AUDIO_STREAM_ENCODER,
+        'cache_path':                           settings.CACHE_PATH,
+        'debugging':                            settings.DEBUGGING,
+        'enable_audio_encoding':                settings.ENABLE_AUDIO_ENCODING,
+        'enable_audio_stream_stereo_cloning':   settings.ENABLE_AUDIO_STREAM_STEREO_CLONING,
+        'enable_audio_stream_transcoding':      settings.ENABLE_AUDIO_STREAM_TRANSCODING,
+        'enable_video_encoding':                settings.ENABLE_VIDEO_ENCODING,
+        'out_container':                        settings.OUT_CONTAINER,
+        'remove_subtitle_streams':              settings.REMOVE_SUBTITLE_STREAMS,
+        'video_codec':                          settings.VIDEO_CODEC,
+        'video_stream_encoder':                 settings.VIDEO_STREAM_ENCODER,
+        'overwrite_additional_ffmpeg_options':  config.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS,
+        'additional_ffmpeg_options':            config.ADDITIONAL_FFMPEG_OPTIONS,
     }
 
 

@@ -40,11 +40,11 @@ def migrate(migrator, database, fake=False, **kwargs):
     # Add additional_ffmpeg_options field to Settings Model
     migrator.add_fields('settings', additional_ffmpeg_options=pw.TextField(null=True, default=''))
     # Add overwrite_additional_ffmpeg_options field to TaskSettings Model
-    migrator.add_fields('tasksettings', overwrite_additional_ffmpeg_options=pw.BooleanField(null=False))
+    migrator.add_fields('tasksettings', overwrite_additional_ffmpeg_options=pw.BooleanField(null=False, default=False))
     # Add additional_ffmpeg_options field to TaskSettings Model
-    migrator.add_fields('tasksettings', additional_ffmpeg_options=pw.TextField(null=True))
+    migrator.add_fields('tasksettings', additional_ffmpeg_options=pw.TextField(null=True, default=''))
     # Add additional_ffmpeg_options field to HistoricTaskSettings Model
-    migrator.add_fields('historictasksettings', additional_ffmpeg_options=pw.TextField(null=True))
+    migrator.add_fields('historictasksettings', additional_ffmpeg_options=pw.TextField(null=True, default=''))
 
 
 

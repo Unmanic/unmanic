@@ -3,6 +3,12 @@
 PUID=${PUID:-911}
 PGID=${PGID:-911}
 
+set_uidgid() {
+    echo "**** (permissions_config) Setting run user uid=${PGID}(abc) gid=${PUID}(abc)  ****";
+    groupmod -o -g "${PGID}" abc
+    usermod -o -u "${PUID}" abc
+}
+
 permissions_config() {
     echo "**** (permissions_config) Setting permissions ****";
     mkdir -p \
@@ -47,5 +53,6 @@ set_permissions_for_hardware_video_group() {
     fi
 }
 
+set_uidgid;
 permissions_config;
 set_permissions_for_hardware_video_group;

@@ -123,6 +123,15 @@
             $('#audio_stream_encoder_cloning_selection').html(data);
         });
     };
+    var showHideFilterGraphSettings = function () {
+        if ($("#overwrite_ffmpeg_options_enabled").prop("checked")) {
+            $("#OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS").val("true");
+            $(".additional_ffmpeg_options_input").removeClass('hidden');
+        } else {
+            $("#OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS").val("false");
+            $(".additional_ffmpeg_options_input").addClass('hidden');
+        }
+    };
 </script>
 {% end %}
 
@@ -131,13 +140,14 @@
     <div class="row">
         {% if 'general' in handler.step %}
             {% include "general/settings-general.html" %}
-            {#{% include "settings-form.html" %}#}
         {% elif 'container' in handler.step %}
             {% include "container/settings-container.html" %}
         {% elif 'video' in handler.step %}
             {% include "video_encoding/settings-video.html" %}
         {% elif 'audio' in handler.step %}
             {% include "audio_encoding/settings-audio.html" %}
+        {% elif 'advanced' in handler.step %}
+            {% include "advanced_options/settings-advanced-options.html" %}
         {% end %}
     </div>
 {% end %}

@@ -64,6 +64,16 @@ class SettingsUIRequestHandler(tornado.web.RequestHandler):
                     self.config.set_config_item(config_item, value[0])
             self.redirect(self.request.uri)
 
+    def current_ffmpeg_command(self):
+        from unmanic.webserver.helpers import ffmpegmediator
+        example_ffmpeg_args = ffmpegmediator.generate_example_ffmpeg_args(self.config)
+
+        # Create command with infile, outfile and the arguments
+        example_command = ['ffmpeg', '-y', '-i', '/path/to/input/video.mkv'] + example_ffmpeg_args + ['-y', '/path/to/output/video.mkv']
+
+        # Return the full example command
+        return  "{}".format(' '.join(example_command))
+
     def handle_ajax_post(self):
         query = self.get_argument('ajax')
         self.set_header("Content-Type", "text/html")

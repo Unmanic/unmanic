@@ -8,7 +8,6 @@ IN_FILE=${SCRIPT_PATH}/../tests/support_/videos/med/big_buck_bunny_720p_10mb.mp4
 CONTAINER_EXT="mkv"
 # Select video encoder:
 #   - libx265
-#   - nvenc_hevc (depreciated)
 #   - hevc_nvenc
 #   - h264_nvenc
 #   - h264_vaapi

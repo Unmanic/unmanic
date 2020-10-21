@@ -4,7 +4,7 @@ PUID=${PUID:-911}
 PGID=${PGID:-911}
 
 permissions_config() {
-    echo "**** (permissions_config) Settings permissions ****";
+    echo "**** (permissions_config) Setting permissions ****";
     mkdir -p \
         /tmp/unmanic \
         /config/.unmanic
@@ -18,4 +18,34 @@ permissions_config() {
         /app
 }
 
+set_permissions_for_hardware_video_group() {
+    # Taken from https://github.com/linuxserver/docker-ffmpeg/blob/master/root/ffmpegwrapper.sh
+    # This is required in order to run Unmanic as a non-root user and give it permission to
+    #   access the hardware decoders/encoders
+    echo "**** (permissions_config) Adding run user to video group ****";
+    FILES=$(find /dev/dri -type c -print 2>/dev/null)
+    for i in $FILES
+    do
+      VIDEO_GID=$(stat -c '%g' "$i")
+      if id -G abc | grep -qw "$VIDEO_GID"; then
+        touch /groupadd
+      else
+        if [ ! "${VIDEO_GID}" == '0' ]; then
+          VIDEO_NAME=$(getent group "${VIDEO_GID}" | awk -F: '{print $1}')
+          if [ -z "${VIDEO_NAME}" ]; then
+            VIDEO_NAME="video$(head /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c8)"
+            groupadd "$VIDEO_NAME"
+            groupmod -g "$VIDEO_GID" "$VIDEO_NAME"
+          fi
+          usermod -a -G "$VIDEO_NAME" abc
+          touch /groupadd
+        fi
+      fi
+    done
+    if [ -n "${FILES}" ] && [ ! -f "/groupadd" ]; then
+      usermod -a -G root abc
+    fi
+}
+
 permissions_config;
+set_permissions_for_hardware_video_group;

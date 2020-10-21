@@ -64,3 +64,4 @@ class HistoricTaskSettings(BaseModel):
     schedule_full_scan_minutes = IntegerField(null=False)
     search_extensions = TextField(null=False)
     video_codec = TextField(null=False)
+    additional_ffmpeg_options = TextField(null=True)

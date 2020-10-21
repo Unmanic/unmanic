@@ -61,8 +61,8 @@ def build_ffmpeg_handle_settings(settings):
         'remove_subtitle_streams':              settings.REMOVE_SUBTITLE_STREAMS,
         'video_codec':                          settings.VIDEO_CODEC,
         'video_stream_encoder':                 settings.VIDEO_STREAM_ENCODER,
-        'overwrite_additional_ffmpeg_options':  config.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS,
-        'additional_ffmpeg_options':            config.ADDITIONAL_FFMPEG_OPTIONS,
+        'overwrite_additional_ffmpeg_options':  settings.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS,
+        'additional_ffmpeg_options':            settings.ADDITIONAL_FFMPEG_OPTIONS,
     }
 
 

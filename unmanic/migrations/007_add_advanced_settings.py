@@ -39,6 +39,12 @@ def migrate(migrator, database, fake=False, **kwargs):
     migrator.add_fields('settings', overwrite_additional_ffmpeg_options=pw.BooleanField(null=False, default=False))
     # Add additional_ffmpeg_options field to Settings Model
     migrator.add_fields('settings', additional_ffmpeg_options=pw.TextField(null=True, default=''))
+    # Add overwrite_additional_ffmpeg_options field to TaskSettings Model
+    migrator.add_fields('tasksettings', overwrite_additional_ffmpeg_options=pw.BooleanField(null=False))
+    # Add additional_ffmpeg_options field to TaskSettings Model
+    migrator.add_fields('tasksettings', additional_ffmpeg_options=pw.TextField(null=True))
+    # Add additional_ffmpeg_options field to HistoricTaskSettings Model
+    migrator.add_fields('historictasksettings', additional_ffmpeg_options=pw.TextField(null=True))
 
 
 
@@ -47,5 +53,11 @@ def rollback(migrator, database, fake=False, **kwargs):
     # Remove the overwrite_additional_ffmpeg_options field from the Settings Model
     migrator.remove_fields('settings', 'overwrite_additional_ffmpeg_options', cascade=True)
     # Remove the additional_ffmpeg_options field from the Settings Model
-    #migrator.remove_fields('settings', 'additional_ffmpeg_options', cascade=True)
+    migrator.remove_fields('settings', 'additional_ffmpeg_options', cascade=True)
+    # Remove the overwrite_additional_ffmpeg_options field from the TaskSettings Model
+    migrator.add_fields('tasksettings', 'overwrite_additional_ffmpeg_options', cascade=True)
+    # Remove the additional_ffmpeg_options field from the TaskSettings Model
+    migrator.add_fields('tasksettings', 'additional_ffmpeg_options', cascade=True)
+    # Remove the additional_ffmpeg_options field from the HistoricTaskSettings Model
+    migrator.add_fields('historictasksettings', 'additional_ffmpeg_options', cascade=True)
 

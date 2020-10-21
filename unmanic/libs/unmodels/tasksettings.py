@@ -66,3 +66,5 @@ class TaskSettings(BaseModel):
     search_extensions = TextField(null=False)
     video_codec = TextField(null=False)
     video_stream_encoder = TextField(null=False)
+    overwrite_additional_ffmpeg_options = BooleanField(null=False)
+    additional_ffmpeg_options = TextField(null=True)

@@ -67,3 +67,5 @@ class Settings(BaseModel):
     search_extensions = TextField(null=False, default='mkv,avi,mov,ts,rmvb,mp4,')
     video_codec = TextField(null=False, default='hevc')
     video_stream_encoder = TextField(null=False, default='libx265')
+    overwrite_additional_ffmpeg_options = BooleanField(null=False, default=False)
+    additional_ffmpeg_options = TextField(null=True, default='')

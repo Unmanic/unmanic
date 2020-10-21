@@ -157,9 +157,11 @@ jobs:
 
     steps:
     # Fetch shallow git repository
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
 
     # Fetch all artifacts
+    - name: Download Artifact
     - uses: actions/download-artifact@v2
       with:
         path: ./artifacts/
@@ -177,12 +179,22 @@ jobs:
 
     # Use docker buildx to build the docker image
     - name: Build the Docker image
+      uses: crazy-max/ghaction-docker-buildx@v3
       if: success()
       id: buildx
-      uses: crazy-max/ghaction-docker-buildx@v1
       with:
         buildx-version: latest
         qemu-version: latest
+
+    # Cache the build
+    - name: Cache Docker layers
+      uses: actions/cache@v2
+      id: cache
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
 
     # List available build platforms
     - name: Available platforms
@@ -194,37 +206,76 @@ jobs:
       if: success()
       id: prepare
       run: |
-        echo ::set-output name=docker_platforms::linux/amd64
-        echo ::set-output name=docker_username::josh5
-        echo ::set-output name=docker_image::docker.io/${GITHUB_REPOSITORY,,}
+        DOCKER_IMAGE=docker.io/${GITHUB_REPOSITORY,,}
         VERSION_TAG=${GITHUB_REF#refs/*/}
-        echo ::set-output name=version::${VERSION_TAG%/merge}
-        echo ::set-output name=docker_cache::docker.io/josh5/unmanic
+
+        DOCKER_TAGS=""
+        if [[ ${VERSION_TAG%/merge} == 'master' ]]; then
+          DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_IMAGE}:latest"
+        elif [[ ${VERSION_TAG%/merge} =~ "dev-"* ]]; then
+          DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_IMAGE}:${VERSION_TAG%/merge}"
+        fi
+        if [[ ${GITHUB_REF} == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+          if [[ ${VERSION} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}[-\w]*$ ]]; then
+            DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_IMAGE}:${VERSION}"
+          fi
+        fi
+
+        DOCKER_PUSH="true"
+        if [[ ${DOCKER_IMAGE} != 'Josh5/unmanic'; then
+          DOCKER_PUSH="false"
+        fi
+        if [[ ${VERSION_TAG%/merge} =~ ^[0-9]+$ ]]; then
+          DOCKER_PUSH="false"
+        fi
+
+        echo ::set-output name=docker_username::josh5
+        echo ::set-output name=docker_image::${DOCKER_IMAGE}
+        echo ::set-output name=docker_tags::${DOCKER_TAGS}
+        echo ::set-output name=docker_platforms::linux/amd64
+        echo ::set-output name=docker_push::${DOCKER_PUSH}
+        echo ::set-output name=docker_cache::${DOCKER_IMAGE}
 
     # Generate buildx command
-    - name: Docker Login and set build command
+    - name: Docker Login
       if: success()
       id: login
       env:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
         echo "${DOCKER_PASSWORD}" | docker login --username "${{ steps.prepare.outputs.docker_username }}" --password-stdin docker.io
+        #echo ::set-output name=buildx::$(echo \
+        #  docker buildx build --push \
+        #    --cache-from "type=local,src=/tmp/.buildx-cache" \
+        #    --cache-to "type=local,dest=/tmp/.buildx-cache" \
+        #    --output type=image,name=${{ steps.prepare.outputs.docker_image }},push=true \
+        #    --platform ${{ steps.prepare.outputs.docker_platforms }} \
+        #    --build-arg BUILDKIT_INLINE_CACHE=1 \
+        #    --tag "${{ steps.prepare.outputs.docker_tags }}:${{ steps.prepare.outputs.docker_tag }}" \
+        #  )
+
+    - name: Run Buildx
+      if: success()
+      run: |
         echo  "Platform targets: ${{ steps.buildx.outputs.docker_platforms }}"
-        echo ::set-output name=buildx::$(echo docker buildx build --push \
+        docker buildx build \
+          --cache-from "type=local,src=/tmp/.buildx-cache" \
+          --cache-to "type=local,dest=/tmp/.buildx-cache" \
+          --output type=image,name=${{ steps.prepare.outputs.docker_image }},push=${{ steps.prepare.outputs.docker_cache }} \
           --platform ${{ steps.prepare.outputs.docker_platforms }} \
-          --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --cache-from="type=registry,ref=${{ steps.prepare.outputs.docker_cache }}:${{ steps.prepare.outputs.version }},mode=max" \
-          --tag "${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}")
+          ${{ steps.prepare.outputs.docker_tags }} \
+          --file docker/Dockerfile .
 
-    # EITHER: Run the docker buildx command for master branch appending a 'latest' tag to docker image
-    - name: Run Buildx (master)
-      if: success() && contains(steps.prepare.outputs.version, 'master')
-      run: |
-        ${{ steps.login.outputs.buildx }} --tag "${{ steps.prepare.outputs.docker_image }}:latest" --file docker/Dockerfile .
+    ## EITHER: Run the docker buildx command for master branch appending a 'latest' tag to docker image
+    #- name: Run Buildx (master)
+    #  if: success() && contains(steps.prepare.outputs.version, 'master')
+    #  run: |
+    #    ${{ steps.login.outputs.buildx }} --tag "${{ steps.prepare.outputs.docker_image }}:latest" --file docker/Dockerfile .
 
-    # OR: Run the docker buildx command for non-master branches
-    - name: Run Buildx (non-master)
-      if: success() && !contains(steps.prepare.outputs.version, 'master')
-      run: |
-        echo ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .
-        ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .
+    ## OR: Run the docker buildx command for non-master branches
+    #- name: Run Buildx (non-master)
+    #  if: success() && !contains(steps.prepare.outputs.version, 'master')
+    #  run: |
+    #    echo ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .
+    #    ${{ steps.login.outputs.buildx }} --file docker/Dockerfile .

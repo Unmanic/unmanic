@@ -134,9 +134,9 @@ class TaskHandler(threading.Thread):
             try:
                 pathname = self.scheduledtasks.get_nowait()
                 if self.add_path_to_task_queue(pathname):
-                    self._log("Adding job to queue", pathname, level='info')
+                    self._log("Adding file to task queue", pathname, level='info')
                 else:
-                    self._log("Skipping job already in the queue", pathname, level='info')
+                    self._log("Skipping file as it is already in the queue", pathname, level='info')
             except queue.Empty:
                 continue
             except Exception as e:

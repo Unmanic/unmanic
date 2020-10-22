@@ -89,9 +89,9 @@ LIBRARY_DIR=/library
 CACHE_DIR=/tmp/unmanic
 
 docker run -ti --rm \
-    -e PUID:${PUID} \
-    -e PGID:${PGID} \
-    -e TZ:${TZ} \
+    -e PUID=${PUID} \
+    -e PGID=${PGID} \
+    -e TZ=${TZ} \
     -p 8888:8888 \
     -v ${CONFIG_DIR}:/config \
     -v ${LIBRARY_DIR}:/library \

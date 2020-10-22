@@ -31,6 +31,7 @@
 """
 
 from peewee import *
+from playhouse.sqliteq import SqliteQueueDatabase
 from datetime import datetime
 from base64 import b64decode
 from playhouse.shortcuts import model_to_dict, dict_to_model
@@ -107,8 +108,11 @@ class Database:
     def select_database(config):
         # Based on configuration, use a different database.
         if config['TYPE'] == 'SQLITE':
-            database = SqliteDatabase(
+            # use SqliteDatabase
+            database = SqliteQueueDatabase(
                 config['FILE'],
+                use_gevent=False,
+                results_timeout=10.0,
                 pragmas=(
                     ('foreign_keys', 1),
                 )

@@ -29,3 +29,60 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+
+command_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://example.com/example.json",
+    "type": "object",
+    "title": "The root schema",
+    "description": "The root schema comprises the entire JSON document.",
+    "default": {},
+    "required": [
+        "ffmpeg",
+        "-i",
+    ],
+    "properties": {
+        "ffmpeg": {
+            "type": "string",
+            "title": "The main command.",
+            "description": "The main command."
+        },
+        "-i": {
+            "type": "string",
+            "title": "The main command.",
+            "description": "The main command.",
+            "minLength": 1
+        },
+        "-hide_banner": {
+            "type": "string",
+            "title": "The -hide_banner schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                ""
+            ]
+        },
+        "-loglevel": {
+            "type": "string",
+            "title": "The -loglevel schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "info",
+            "examples": [
+                "info",
+                "warning",
+                "debug",
+                "verbose"
+            ]
+        },
+        "-max_muxing_queue_size": {
+            "type": "string",
+            "title": "The -max_muxing_queue_size schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "512",
+            "examples": [
+                "512"
+            ]
+        }
+    },
+    "additionalProperties": True
+}

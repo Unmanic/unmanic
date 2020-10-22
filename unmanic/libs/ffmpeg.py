@@ -417,9 +417,11 @@ class FFMPEGHandle(object):
         # Suppress printing banner. (-hide_banner)
         # Set loglevel to info ("-loglevel", "info")
         # Allow experimental encoder config ("-strict", "-2")
+        # Fix issue - 'Too many packets buffered for output stream 0:1' ("-max_muxing_queue_siz", "512") [https://trac.ffmpeg.org/ticket/6375]
         #
-        command = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "512"]
+        default_ffmpeg_options = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "512"]
         additional_ffmpeg_options = []
+        command = []
 
         # Read stream data
         streams_to_map = []
@@ -464,6 +466,8 @@ class FFMPEGHandle(object):
         # Overwrite additional options
         if self.settings['overwrite_additional_ffmpeg_options']:
             additional_ffmpeg_options = self.settings['additional_ffmpeg_options'].split()
+        else:
+            additional_ffmpeg_options = default_ffmpeg_options
 
         # Add encoder args to command
         command = command + additional_ffmpeg_options
@@ -490,7 +494,7 @@ class FFMPEGHandle(object):
                 return False
 
         # Create command with infile, outfile and the arguments
-        command = ['ffmpeg', '-y', '-i', infile] + args + ['-y', outfile]
+        command = ['ffmpeg', '-i', infile] + args + ['-y', outfile]
         self._log("Executing: {}".format(' '.join(command)), level='debug')
 
         # Log the start time

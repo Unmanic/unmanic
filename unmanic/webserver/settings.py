@@ -69,7 +69,7 @@ class SettingsUIRequestHandler(tornado.web.RequestHandler):
         example_ffmpeg_args = ffmpegmediator.generate_example_ffmpeg_args(self.config)
 
         # Create command with infile, outfile and the arguments
-        example_command = ['ffmpeg', '-y', '-i', '/path/to/input/video.mkv'] + example_ffmpeg_args + ['-y', '/path/to/output/video.mkv']
+        example_command = ['ffmpeg', '-i', '/path/to/input/video.mkv'] + example_ffmpeg_args + ['-y', '/path/to/output/video.mkv']
 
         # Return the full example command
         return  "{}".format(' '.join(example_command))

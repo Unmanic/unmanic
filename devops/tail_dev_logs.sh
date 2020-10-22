@@ -37,6 +37,12 @@ unmanic_dev_logs_dir=${config_dir}/.unmanic/logs
 
 
 # Tail all current log files:
-tail -fn10 ${unmanic_dev_logs_dir}/*.log | grcat ${SCRIPT_PATH}/../.grc.conf.unmanic.logs
+#filters=":DEBUG:"
+filters=""
+if [[ -z ${filters} ]]; then
+    tail -fn10 ${unmanic_dev_logs_dir}/*.log | grcat ${SCRIPT_PATH}/../.grc.conf.unmanic.logs
+else
+    tail -fn10 ${unmanic_dev_logs_dir}/*.log | stdbuf -o0 grep -v "${filters}" | grcat ${SCRIPT_PATH}/../.grc.conf.unmanic.logs
+fi
 
 

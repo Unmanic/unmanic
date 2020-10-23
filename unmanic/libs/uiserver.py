@@ -44,6 +44,7 @@ from unmanic.libs import common
 from unmanic.webserver.history import HistoryUIRequestHandler
 from unmanic.webserver.main import MainUIRequestHandler
 from unmanic.webserver.settings import SettingsUIRequestHandler
+from unmanic.webserver.helpers.element_filebrowser import ElementFileBrowserUIRequestHandler
 
 templates_dir = os.path.abspath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'webserver', 'templates'))
@@ -142,6 +143,10 @@ class UIServer(threading.Thread):
                 settings=self.settings
             )),
             (r"/settings/(.*)", SettingsUIRequestHandler, dict(
+                data_queues=self.data_queues,
+                settings=self.settings
+            )),
+            (r"/filebrowser/(.*)", ElementFileBrowserUIRequestHandler, dict(
                 data_queues=self.data_queues,
                 settings=self.settings
             )),

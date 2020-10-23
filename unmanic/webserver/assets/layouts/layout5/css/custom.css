@@ -1,1 +1,20 @@
 /* here you can put your own css to customize and override the theme */
+
+
+.unmanic-file-browser-list-item-folder {
+    cursor: pointer;
+}
+
+.unmanic-file-browser-list-item-folder a {
+    display: block;
+    text-decoration: none;
+}
+
+.unmanic-file-browser-list-item-folder:hover .icon-folder,
+.unmanic-file-browser-list-item-folder .icon-folder-alt {
+    display: none;
+}
+
+.unmanic-file-browser-list-item-folder:hover .icon-folder-alt {
+    display: inline;
+}

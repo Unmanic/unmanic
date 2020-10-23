@@ -1,9 +1,44 @@
-
 {% extends "../page_layout.html" %}
 {% block title %}Settings | Unmanic{% end %}
 {% block page %}settings{% end %}
 
+
+{% block style %}
+<link href="/assets/global/plugins/bootstrap-select/css/bootstrap-select.min.css" rel="stylesheet" type="text/css"/>
+{% end %}
+
+{% block plugins %}
+<script src="/assets/global/plugins/bootstrap-select/js/bootstrap-select.min.js" type="text/javascript"></script>
+{% end %}
+
 {% block scripts %}
+<script src="/assets/pages/scripts/components-bootstrap-select.min.js" type="text/javascript"></script>
+<script src="/assets/pages/scripts/file-browser.js" type="text/javascript"></script>
+{% end %}
+
+{% block inline_scripts %}
+{# File Browser Popup #}
+<script type="text/javascript">
+    const updateFileBrowserHTML = function (data) {
+        $("#unmanic-file-browser-body").empty();
+        $("#unmanic-file-browser-body").append(data);
+        $(this).updateFileBrowser();
+    };
+    const generateFileBrowserPopupContent = function (input_field, list_type, title) {
+        $("#unmanic-file-browser-body").empty();
+        const current_path = $('input[name ="' + input_field + '"]').val();
+        //const current_path = $("#" + input_field).val();
+        console.log(current_path);
+        const params = {
+            current_path: current_path,
+            list_type: list_type,
+            input_field: input_field,
+            title: title,
+        };
+        const result = fetchFileBrowserTemplate(params, updateFileBrowserHTML);
+    };
+</script>
+{# General #}
 <script type="text/javascript">
     var toggleRunScanOnStart = function () {
         if ($("#run_scan_on_start_enabled").prop("checked")) {
@@ -33,6 +68,9 @@
             $("#DEBUGGING").val("false");
         }
     };
+</script>
+{# Container #}
+<script type="text/javascript">
     var showHideSubtitleSettings = function () {
         var supports_subtitles = $("#out_container option:selected").data('supports_subtitles');
         console.log(supports_subtitles);
@@ -49,6 +87,9 @@
             $("#REMOVE_SUBTITLE_STREAMS").val("false");
         }
     };
+</script>
+{# Video Encoding #}
+<script type="text/javascript">
     var toggleEnableVideoEncoding = function () {
         if ($("#video_encoding_enabled").prop("checked")) {
             $("#ENABLE_VIDEO_ENCODING").val("true");
@@ -60,6 +101,9 @@
             $(".video_encoding_settings_disabled_notice").removeClass('hidden');
         }
     };
+</script>
+{# Audio Encoding #}
+<script type="text/javascript">
     var toggleEnableAudioEncoding = function () {
         if ($("#audio_encoding_enabled").prop("checked")) {
             $("#ENABLE_AUDIO_ENCODING").val("true");
@@ -123,6 +167,9 @@
             $('#audio_stream_encoder_cloning_selection').html(data);
         });
     };
+</script>
+{# Advanced Options #}
+<script type="text/javascript">
     var showHideFilterGraphSettings = function () {
         if ($("#overwrite_ffmpeg_options_enabled").prop("checked")) {
             $("#OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS").val("true");
@@ -137,17 +184,17 @@
 
 
 {% block content %}
-    <div class="row">
-        {% if 'general' in handler.step %}
-            {% include "general/settings-general.html" %}
-        {% elif 'container' in handler.step %}
-            {% include "container/settings-container.html" %}
-        {% elif 'video' in handler.step %}
-            {% include "video_encoding/settings-video.html" %}
-        {% elif 'audio' in handler.step %}
-            {% include "audio_encoding/settings-audio.html" %}
-        {% elif 'advanced' in handler.step %}
-            {% include "advanced_options/settings-advanced-options.html" %}
-        {% end %}
-    </div>
+<div class="row">
+    {% if 'general' in handler.step %}
+    {% include "general/settings-general.html" %}
+    {% elif 'container' in handler.step %}
+    {% include "container/settings-container.html" %}
+    {% elif 'video' in handler.step %}
+    {% include "video_encoding/settings-video.html" %}
+    {% elif 'audio' in handler.step %}
+    {% include "audio_encoding/settings-audio.html" %}
+    {% elif 'advanced' in handler.step %}
+    {% include "advanced_options/settings-advanced-options.html" %}
+    {% end %}
+</div>
 {% end %}

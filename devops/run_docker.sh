@@ -65,6 +65,7 @@ if [[ ! -z ${HW_ACCELERATION} ]]; then
 fi
 
 CMD="docker run -ti --rm --name=unmanic \
+    -e TZ=Pacific/Auckland \
     -p 8888:8888 \
     -v ${PROJECT_BASE}/:/app \
     -v ${PROJECT_BASE}/config:/config \

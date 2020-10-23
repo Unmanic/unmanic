@@ -123,4 +123,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
+This project contains libraries imported from external authors.
+Please refer to the source of these libraries for more information on their respective licenses.
+
 See [CONTRIBUTING.md](docs/CONTRIBUTING.md) to learn how to contribute to Unmanic.

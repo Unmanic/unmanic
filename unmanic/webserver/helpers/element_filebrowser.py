@@ -110,6 +110,12 @@ class ElementFileBrowserUIRequestHandler(tornado.web.RequestHandler):
         return path_data
 
     def fetch_directories(self, path):
+        """
+        Fetch a list of directory objects based on a given path
+
+        :param path:
+        :return:
+        """
         results = []
         if os.path.exists(path):
             # check if this is a root path or if it has a parent
@@ -134,6 +140,12 @@ class ElementFileBrowserUIRequestHandler(tornado.web.RequestHandler):
         return results
 
     def fetch_files(self, path):
+        """
+        Fetch a list of file objects based on a given path
+
+        :param path:
+        :return:
+        """
         results = []
         if os.path.exists(path):
             for item in sorted(os.listdir(path)):

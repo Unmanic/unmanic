@@ -17,27 +17,6 @@
 {% end %}
 
 {% block inline_scripts %}
-{# File Browser Popup #}
-<script type="text/javascript">
-    const updateFileBrowserHTML = function (data) {
-        $("#unmanic-file-browser-body").empty();
-        $("#unmanic-file-browser-body").append(data);
-        $(this).updateFileBrowser();
-    };
-    const generateFileBrowserPopupContent = function (input_field, list_type, title) {
-        $("#unmanic-file-browser-body").empty();
-        const current_path = $('input[name ="' + input_field + '"]').val();
-        //const current_path = $("#" + input_field).val();
-        console.log(current_path);
-        const params = {
-            current_path: current_path,
-            list_type: list_type,
-            input_field: input_field,
-            title: title,
-        };
-        const result = fetchFileBrowserTemplate(params, updateFileBrowserHTML);
-    };
-</script>
 {# General #}
 <script type="text/javascript">
     var toggleRunScanOnStart = function () {

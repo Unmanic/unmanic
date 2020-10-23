@@ -128,7 +128,6 @@ const fetchFileBrowserTemplate = function (params, callbackSuccess) {
 
     const updateFileBrowserList = function (data) {
         console.debug("Updating browser popup - " + data);
-        console.log(data);
         $("#unmanic-file-browser-list-items").empty();
         $.each(data, (key, value) => {
             if (key == 'current_path') {
@@ -164,3 +163,20 @@ const fetchFileBrowserTemplate = function (params, callbackSuccess) {
         $('input[name ="' + input_field_name + '"]').val(selected_item)
     };
 })(jQuery);
+
+const updateFileBrowserHTML = function (data) {
+    $("#unmanic-file-browser-body").empty();
+    $("#unmanic-file-browser-body").append(data);
+    $(this).updateFileBrowser();
+};
+const generateFileBrowserPopupContent = function (input_field, list_type, title) {
+    $("#unmanic-file-browser-body").empty();
+    const current_path = $('input[name ="' + input_field + '"]').val();
+    const params = {
+        current_path: current_path,
+        list_type: list_type,
+        input_field: input_field,
+        title: title,
+    };
+    const result = fetchFileBrowserTemplate(params, updateFileBrowserHTML);
+};

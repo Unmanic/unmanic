@@ -163,7 +163,8 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
                 'id':         task['id'],
                 'success':    task['task_success'],
                 'selected':   False,
-                'task_label': task['task_label']
+                'task_label': task['task_label'],
+                'finish_date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(task['finish_time'])),
             }
 
             # Check if this item is meant to be selected

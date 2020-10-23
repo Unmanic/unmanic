@@ -104,7 +104,7 @@
 {% if job_data['statistics']['task_success'] %}
 <div class="row">
     <div class="col-md-12">
-        <div class="portlet box {{ portlet_colour }}">
+        <div class="portlet box {{ portlet_colour }} portlet-fit bordered">
             <div class="portlet-title">
                 <div class="caption">
                     <i class="fa fa-bar-chart"></i> File Size Comparison
@@ -172,13 +172,6 @@
                 }
             }
         },
-        series: [{
-            name: 'Original',
-            data: [source_file_size, 0]
-        },{
-            name: 'New',
-            data: [0, destination_file_size]
-        }],
 
         plotOptions: {
             series: {
@@ -191,7 +184,15 @@
                 return '<b>' + this.series.name + '</b><br/>' +
                     'File Size: ' + formatBytes(Math.abs(this.point.y));
             }
-        }
+        },
+
+        series: [{
+            name: 'Original',
+            data: [source_file_size, 0]
+        },{
+            name: 'New',
+            data: [0, destination_file_size]
+        }],
     });
 </script>
 {% end %}

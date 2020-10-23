@@ -29,6 +29,9 @@ var reloadCompletedTaskList = function() {
     $.get('?ajax=reloadCompletedTaskList&jobId=' + jobId, function (data) {
         // update/set the conversion details list
         $('#completed_tasks').html(data);
+        jQuery(document).ready(function() {
+            TableDatatablesManaged.init();
+        });
     });
 };
 

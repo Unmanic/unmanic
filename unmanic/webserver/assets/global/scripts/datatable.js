@@ -90,6 +90,7 @@ var Datatable = function() {
                                 cenrerY: true,
                                 boxed: true
                             });
+                            return JSON.stringify( data );
                         },
                         "dataSrc": function(res) { // Manipulate the data returned from the server
                             if (res.customActionMessage) {

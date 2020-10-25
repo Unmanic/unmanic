@@ -37,10 +37,12 @@ import tornado.ioloop
 import tornado.log as tornado_log
 import tornado.web
 import tornado.template
+import tornado.routing
 import asyncio
 import logging
 
 from unmanic.libs import common
+from unmanic.webserver.api_request_router import APIRequestRouter
 from unmanic.webserver.history import HistoryUIRequestHandler
 from unmanic.webserver.main import MainUIRequestHandler
 from unmanic.webserver.settings import SettingsUIRequestHandler
@@ -120,6 +122,14 @@ class UIServer(threading.Thread):
 
         # Load the app
         self.app = self.make_web_app()
+
+        # Add API routes
+        self.app.add_handlers(r'.*', [(
+            tornado.routing.PathMatches(r"/api/.*"),
+            APIRequestRouter(self.app, settings=self.settings)
+        ), ])
+
+        # Start app
         self._log("Listening on port 8888")
         self._log(tornado_settings['static_path'])
         self.app.listen(8888)

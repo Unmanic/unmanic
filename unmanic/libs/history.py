@@ -33,6 +33,7 @@
 import os
 import json
 import time
+from operator import attrgetter
 
 from unmanic.libs import common, unlogger
 from unmanic.libs.unmodels import db, HistoricTasks, \
@@ -210,6 +211,36 @@ class History(object):
             historic_tasks = []
 
         return historic_tasks.dicts()
+
+    def get_total_historic_task_list_count(self):
+        query = HistoricTasks.select().order_by(HistoricTasks.id.desc())
+        return query.count()
+
+    def get_historic_task_list_filtered_and_sorted(self, start, length, order, search_value):
+        try:
+            query = (HistoricTasks.select())
+
+            self._log(search_value)
+            if search_value:
+                query = query.where(HistoricTasks.task_label.contains(search_value))
+
+            # Get order by
+            if order.get("dir") == "asc":
+                order_by = attrgetter(order.get("column"))(HistoricTasks).asc()
+            else:
+                order_by = attrgetter(order.get("column"))(HistoricTasks).desc()
+
+            if length:
+                self._log("Paginating - Start {}, Length {}".format(start, length))
+                query = query.order_by(order_by).limit(length).offset(start)
+
+        except HistoricTasks.DoesNotExist:
+            # No historic entries exist yet
+            self._log("No historic tasks exist yet.", level="warning")
+            query = []
+
+        self._log(query)
+        return query.dicts()
 
     def get_historic_task_data_dictionary(self, task_id):
         """

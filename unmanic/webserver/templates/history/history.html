@@ -34,7 +34,9 @@
 {% end %}
 
 {% block content %}
-                    <div class="row">
+
+                    {# Remove filters for now #}
+                   {# <div class="row">
                         <div class="col-md-12 col-sm-12">
                             <div class="clearfix">
 
@@ -44,7 +46,7 @@
                                 <a href="javascript:filterCompletedTasks('failure');" class="btn default"> Failure ({{ data['failed_count'] }}) </a>
                             </div>
                         </div>
-                    </div>
+                    </div>#}
 
                     <div class="row">
                         <div class="col-md-12 col-sm-12">
@@ -54,13 +56,13 @@
                                         <i class="fa fa-tasks font-blue"></i>
                                         <span class="caption-subject font-blue bold uppercase">Completed Tasks</span>
                                     </div>
-                                    <div class="actions">
+                                    <div class="actions pull-right">
                                         <div class="btn-group">
                                             <a class="btn btn-default btn-sm" href="javascript:;" data-toggle="dropdown">
                                                 <i class="fa fa-check-square-o"></i> Options
                                                 <i class="fa fa-angle-down"></i>
                                             </a>
-                                            <ul class="dropdown-menu">
+                                            <ul class="dropdown-menu pull-right">
                                                 <li>
                                                     <a href="javascript:;">
                                                         <i class="fa fa-pencil"></i> Add Selected to Pending Tasks List </a>
@@ -73,15 +75,16 @@
                                             </ul>
                                         </div>
                                     </div>
-                                    <div class="tools">
+                                    {#Remove reload for now (May readd later on..) If readded, float actions left#}
+                                    {#<div class="tools">
                                         <a href="javascript:;" onClick="reloadCompletedTaskList();" class="reload"
                                            data-original-title="" title=""> </a>
-                                    </div>
+                                    </div>#}
                                 </div>
 
                                 <!-- START TASK LIST -->
                                 <div class="portlet-body">
-                                    <div id="completed_tasks">{% include "history-completed-tasks-list.html" %}</div>
+                                    <div id="completed_tasks" >{% include "history-completed-tasks-list.html" %}</div>
                                 </div>
                                 <!-- END TASK LIST -->
 

@@ -305,6 +305,28 @@ class History(object):
         # Return task data dictionary
         return historic_task
 
+    def delete_historic_tasks_recursively(self, id_list=None):
+        if not id_list:
+            return False
+        try:
+            query = (HistoricTasks.select())
+
+            if id_list:
+                query = query.where(HistoricTasks.id.in_(id_list))
+
+            for task_id in query:
+                result = common.delete_model_recursively(task_id)
+                if not result:
+                    # break there and return
+                    self._log("Failed to delete task ID: {}.".format(task_id), level="warning")
+                    return False
+
+            return True
+
+        except HistoricTasks.DoesNotExist:
+            # No historic entries exist yet
+            self._log("No historic tasks exist yet.", level="warning")
+
     def save_task_history(self, task_data):
         """
         Record a task's data and state to the database.

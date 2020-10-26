@@ -2,7 +2,7 @@ name: Build All Packages CI
 
 on:
   push:
-    branches: [ 'dev-**', master ]
+    branches: [ 'dev-**', 'pr-**', master ]
     tags: [ '**' ]
   pull_request:
     branches: [ master ]
@@ -231,6 +231,9 @@ jobs:
 
         DOCKER_PUSH="true"
         if [[ ${DOCKER_IMAGE} != 'docker.io/josh5/unmanic' ]]; then
+          DOCKER_PUSH="false"
+        fi
+        if [[ ${VERSION_TAG%/merge} =~ "pr-"* ]]; then
           DOCKER_PUSH="false"
         fi
         if [[ ${VERSION_TAG%/merge} =~ ^[0-9]+$ ]]; then

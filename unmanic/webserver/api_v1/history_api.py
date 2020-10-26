@@ -50,20 +50,20 @@ class ApiHistoryHandler(BaseApiHandler):
 
     routes = [
         {
-            "method": "fetch_by_id",
-            "path_pattern":   r"/api/v1/history/id/(?P<id>[0-9]+)?",
+            "method":       "fetch_by_id",
+            "path_pattern": r"/api/v1/history/id/(?P<id>[0-9]+)?",
         },
         {
-            "method": "fetch_filtered_historic_tasks",
-            "path_pattern":   r"/api/v1/history/list",
+            "method":       "fetch_filtered_historic_tasks",
+            "path_pattern": r"/api/v1/history/list",
         },
         {
-            "method": "add_tasks_to_pending_tasks_list",
-            "path_pattern":   r"/api/v1/history/list/process",
+            "method":       "add_tasks_to_pending_tasks_list",
+            "path_pattern": r"/api/v1/history/list/process",
         },
         {
-            "method": "add_tasks_to_pending_tasks_list",
-            "path_pattern":   r"/api/v1/history/list/delete",
+            "method":       "add_tasks_to_pending_tasks_list",
+            "path_pattern": r"/api/v1/history/list/delete",
         },
     ]
 
@@ -77,14 +77,6 @@ class ApiHistoryHandler(BaseApiHandler):
         self.set_header("Content-Type", 'application/json; charset="utf-8"')
 
     def post(self, path):
-
-        from unmanic.libs.uiserver import UnmanicDataQueues
-        unmanic_data_queues  = UnmanicDataQueues()
-        tornado.log.app_log.warning(unmanic_data_queues, exc_info=True)
-
-        tmp_data_queues = unmanic_data_queues.get_unmanic_data_queues()
-        tornado.log.app_log.warning(tmp_data_queues, exc_info=True)
-
         self.action_route()
 
     def fetch_by_id(self, *args, **kwargs):
@@ -93,15 +85,48 @@ class ApiHistoryHandler(BaseApiHandler):
 
     def fetch_filtered_historic_tasks(self, *args, **kwargs):
         request_dict = json.loads(self.request.body)
+
+        # Return a list of historical tasks to the pending task list.
+        #   (on success will continue to return the current list of historical tasks)
         if request_dict.get("customActionName") == "add-to-pending":
-            self.prepare_single_historic_task_by_ids(request_dict.get("id"))
+            success = self.add_historic_tasks_to_pending_tasks_list(request_dict.get("id"))
+            if not success:
+                self.write(json.dumps({"success": False}))
+                return
+
+        # Delete a list of historical tasks.
+        #   (on success will continue to return the current list of historical tasks)
+        if request_dict.get("customActionName") == "delete-from-history":
+            success = self.delete_historic_tasks(request_dict.get("id"))
+            tornado.log.app_log.warning("fetch_filtered_historic_tasks - success:  {}".format(success), exc_info=True)
+            if not success:
+                self.write(json.dumps({"success": False}))
+                return
+
+        # Return a list of historical tasks based on the request JSON body
         results = self.prepare_filtered_historic_tasks(request_dict)
         self.write(json.dumps(results))
 
-    def prepare_single_historic_task_by_ids(self, historic_task_ids):
-        return_dict = {
-            "success": True
-        }
+    def delete_historic_tasks(self, historic_task_ids):
+        """
+        Deletes a list of historic tasks
+
+        :param historic_task_ids:
+        :return:
+        """
+        # Fetch historical tasks
+        history_logging = history.History(self.config)
+        # Delete by ID
+        return history_logging.delete_historic_tasks_recursively(id_list=historic_task_ids)
+
+    def add_historic_tasks_to_pending_tasks_list(self, historic_task_ids):
+        """
+        Adds a list of historical tasks to the pending tasks list.
+
+        :param historic_task_ids:
+        :return:
+        """
+        success = True
         # Fetch historical tasks
         history_logging = history.History(self.config)
         # Get total count
@@ -113,7 +138,7 @@ class ApiHistoryHandler(BaseApiHandler):
 
             # Ensure path exists
             if not os.path.exists(abspath):
-                return_dict['success'] = False
+                success = False
                 continue
 
             # Create a new task
@@ -125,9 +150,10 @@ class ApiHistoryHandler(BaseApiHandler):
             if not new_task.create_task_by_absolute_path(abspath, self.config, source_data):
                 # If file exists in task queue already this will return false.
                 # Do not carry on.
-                return_dict['success'] = False
+                success = False
 
             continue
+        return success
 
     def prepare_filtered_historic_tasks(self, request_dict):
         """
@@ -195,26 +221,3 @@ class ApiHistoryHandler(BaseApiHandler):
 
         # Return results
         return return_data
-
-    # TODO
-    def add_tasks_to_pending_tasks_list(self, *args, **kwargs):
-        """
-        Add the given list of tasks to the pending task list
-
-        :param args:
-        :param kwargs:
-        :return:
-        """
-        #TODO: add items to pending tasks list
-        pass
-
-    def delete_tasks_from_historical_tasks_list(self, *args, **kwargs):
-        """
-        Delete a list of tasks from the historical tasks list
-
-        :param args:
-        :param kwargs:
-        :return:
-        """
-        #TODO: add items to pending tasks list
-        pass

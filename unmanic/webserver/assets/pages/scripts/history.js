@@ -71,9 +71,9 @@ var formatBytes = function (bytes, decimals) {
 /**
  *
  */
-var addSelectedCompletedTasksToPendingTasksList = function() {
+var addSelectedCompletedTasksToPendingTasksList = function () {
     var table = $("#history_completed_tasks_table");
-    var count = table.rows( { selected: true } ).count();
+    var count = table.rows({selected: true}).count();
     console.log(count)
 };
 
@@ -183,11 +183,39 @@ var CompletedTasksDatatablesManaged = function () {
                     "contentType": "application/json",
                 },
                 "aoColumns": [
-                    {mData: null, "sName": 0, bSortable: false, bSearchable: false, mRender: recordSelectedCheckbox, sClass: ""},
-                    {mData: "task_label", sName: 1, bSortable: true, bSearchable: true},
-                    {mData: "finish_time", sName: 2, bSortable: true},
-                    {mData: null, sName: 3, bSortable: false, bSearchable: false, mRender: recordSuccessStatus},
-                    {mData: null, sName: 4, bSortable: false, bSearchable: false, mRender: recordActionButton},
+                    {
+                        mData: null,
+                        "sName": 0,
+                        bSortable: false,
+                        bSearchable: false,
+                        mRender: recordSelectedCheckbox,
+                        sClass: ""
+                    },
+                    {
+                        mData: "task_label",
+                        sName: 1,
+                        bSortable: true,
+                        bSearchable: true
+                    },
+                    {
+                        mData: "finish_time",
+                        sName: 2,
+                        bSortable: true
+                    },
+                    {
+                        mData: null,
+                        sName: 3,
+                        bSortable: false,
+                        bSearchable: false,
+                        mRender: recordSuccessStatus
+                    },
+                    {
+                        mData: null,
+                        sName: 4,
+                        bSortable: false,
+                        bSearchable: false,
+                        mRender: recordActionButton
+                    },
                 ],
 
                 // Internationalisation. For more info refer to http://datatables.net/manual/i18n
@@ -228,7 +256,7 @@ var CompletedTasksDatatablesManaged = function () {
         // Remove overflow
         grid.getTableWrapper().css("overflow-x", "hidden");
 
-        var processAction = function(action) {
+        var processAction = function (action) {
             if (grid.getSelectedRowsCount() > 0) {
                 grid.setAjaxParam("customActionType", "group_action");
                 grid.setAjaxParam("customActionName", action);
@@ -247,8 +275,13 @@ var CompletedTasksDatatablesManaged = function () {
         };
         grid.getTableWrapper().on('click', '.add-to-pending', function (e) {
             e.preventDefault();
-            console.log( grid.getSelectedRows());
+            console.debug(grid.getSelectedRows());
             processAction('add-to-pending');
+        });
+        grid.getTableWrapper().on('click', '.delete-from-history', function (e) {
+            e.preventDefault();
+            console.debug(grid.getSelectedRows());
+            processAction('delete-from-history');
         });
 
         grid.setAjaxParam("customActionType", "group_action");

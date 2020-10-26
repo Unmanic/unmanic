@@ -30,14 +30,9 @@
 
 """
 
-import sys
-import json
-import time
+import importlib
 import tornado.web
 import tornado.log
-
-# Import api handlers
-from unmanic.webserver.api.api_history_handler import ApiHistoryHandler
 
 
 class Handle404(tornado.web.RequestHandler):
@@ -55,17 +50,23 @@ class APIRequestRouter(tornado.routing.Router):
         self.config = kwargs.get("settings")
 
     def find_handler(self, request, **kwargs):
-        endpoint = request.path.split('/')[2]  # last part of the path
+        api_version = request.path.split('/')[2]  # Set API version
+        endpoint = request.path.split('/')[3]  # Set the endpoint
+        params = list(filter(None, request.path.split('/')[4:]))  # Set the request params
 
-        fallback_handler = 'Api%sHandler' % endpoint.title()
+        endpoint_handler = 'Api%sHandler' % endpoint.title()
 
         # Check if the handler exists - Otherwise set it to 404
         try:
-            handler = getattr(sys.modules[__name__], fallback_handler)
+            # Fetch handler class from api module matching api version
+            handler = getattr(importlib.import_module("unmanic.webserver.api_{}".format(api_version)), endpoint_handler)
         except KeyError:
-            tornado.log.app_log.warning("Unable to find handler for path: {}".format(fallback_handler), exc_info=True)
+            tornado.log.app_log.warning("Unable to find handler for path: {}".format(endpoint_handler), exc_info=True)
             handler = Handle404
 
         # Return handler
-        return self.app.get_handler_delegate(request, handler, target_kwargs=dict(settings=self.config),
+        return self.app.get_handler_delegate(request, handler,
+                                             target_kwargs=dict(
+                                                 settings=self.config,
+                                             ),
                                              path_args=[request.path])

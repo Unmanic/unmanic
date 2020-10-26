@@ -216,22 +216,24 @@ class History(object):
         query = HistoricTasks.select().order_by(HistoricTasks.id.desc())
         return query.count()
 
-    def get_historic_task_list_filtered_and_sorted(self, start, length, order, search_value):
+    def get_historic_task_list_filtered_and_sorted(self, order=None, start=0, length=None, search_value=None, id_list=None):
         try:
             query = (HistoricTasks.select())
 
-            self._log(search_value)
+            if id_list:
+                query = query.where(HistoricTasks.id.in_(id_list))
+
             if search_value:
                 query = query.where(HistoricTasks.task_label.contains(search_value))
 
             # Get order by
-            if order.get("dir") == "asc":
-                order_by = attrgetter(order.get("column"))(HistoricTasks).asc()
-            else:
-                order_by = attrgetter(order.get("column"))(HistoricTasks).desc()
+            if order:
+                if order.get("dir") == "asc":
+                    order_by = attrgetter(order.get("column"))(HistoricTasks).asc()
+                else:
+                    order_by = attrgetter(order.get("column"))(HistoricTasks).desc()
 
             if length:
-                self._log("Paginating - Start {}, Length {}".format(start, length))
                 query = query.order_by(order_by).limit(length).offset(start)
 
         except HistoricTasks.DoesNotExist:
@@ -239,7 +241,50 @@ class History(object):
             self._log("No historic tasks exist yet.", level="warning")
             query = []
 
-        self._log(query)
+        return query.dicts()
+
+    def get_current_path_of_historic_tasks_by_id(self, id_list=[]):
+        """
+        Returns a list of HistoricTasks filtered by id_list and joined with the current absolute path of that file.
+        For failures this will be the the source path
+        For success, this will be the destination path
+
+        :param id_list:
+        :return:
+        """
+        """
+            SELECT
+                t1.*,
+                t2.type,
+                t2.abspath
+            FROM historictasks AS "t1"
+            INNER JOIN "historictaskprobe" AS "t2"
+                ON (
+                    ("t2"."historictask_id" = "t1"."id" AND t1.task_success AND t2.type = "source")
+                    OR
+                    ("t2"."historictask_id" = "t1"."id" AND NOT t1.task_success AND t2.type = "destination")
+                )
+            WHERE t1.id IN ( %s)
+        """
+        query = (
+            HistoricTasks.select(HistoricTasks.id, HistoricTasks.task_label, HistoricTasks.task_success,
+                                 HistoricTaskProbe.type,
+                                 HistoricTaskProbe.abspath))
+
+        if id_list:
+            query = query.where(HistoricTasks.id.in_(id_list))
+
+        predicate = (
+            (HistoricTaskProbe.historictask_id == HistoricTasks.id) &
+            (
+                ((HistoricTasks.task_success == True) & (HistoricTaskProbe.type == "destination"))
+                |
+                ((HistoricTasks.task_success != True) & (HistoricTaskProbe.type == "source"))
+            )
+        )
+
+        query = query.join(HistoricTaskProbe, on=predicate)
+
         return query.dicts()
 
     def get_historic_task_data_dictionary(self, task_id):

@@ -151,7 +151,7 @@ class TaskQueue(object):
         if not task_item:
             return False
         # Set the task object by the abspath and return it
-        next_task = task.Task(self.data_queues)
+        next_task = task.Task(self.data_queues["logging"].get_logger("Task"))
         next_task.read_and_set_task_by_absolute_path(task_item.abspath)
         return next_task
 

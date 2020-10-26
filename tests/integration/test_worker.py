@@ -92,7 +92,8 @@ class TestClass(object):
         self.test_task = task.Task(self.data_queues["logging"].get_logger("Task"))
 
         # Fill test_task with data
-        source_data = taskhandler.fetch_file_data_by_path(pathname)
+        from unmanic.libs import common
+        source_data = common.fetch_file_data_by_path(pathname)
         self.test_task.create_task_by_absolute_path(os.path.abspath(pathname), self.settings, source_data)
 
         #self.test_task.set_source_data(pathname)

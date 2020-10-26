@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.api_history_handler.py
+    unmanic.history_api.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
     Date:                     25 Oct 2020, (8:49 PM)
@@ -31,32 +31,105 @@
 """
 
 import json
+import os
 import time
 import tornado.web
 import tornado.log
+import tornado.routing
 
-from unmanic.libs import history
+from unmanic.webserver.api_v1.base_api_handler import BaseApiHandler
+
+from unmanic.libs import history, task, common
 
 
-class ApiHistoryHandler(tornado.web.RequestHandler):
+class ApiHistoryHandler(BaseApiHandler):
     SUPPORTED_METHODS = ["GET", "POST"]
     name = None
     config = None
+    params = None
+
+    routes = [
+        {
+            "method": "fetch_by_id",
+            "path_pattern":   r"/api/v1/history/id/(?P<id>[0-9]+)?",
+        },
+        {
+            "method": "fetch_filtered_historic_tasks",
+            "path_pattern":   r"/api/v1/history/list",
+        },
+        {
+            "method": "add_tasks_to_pending_tasks_list",
+            "path_pattern":   r"/api/v1/history/list/process",
+        },
+        {
+            "method": "add_tasks_to_pending_tasks_list",
+            "path_pattern":   r"/api/v1/history/list/delete",
+        },
+    ]
 
     def initialize(self, **kwargs):
-        self.name = 'api'
+        self.name = 'history_api'
         self.config = kwargs.get("settings")
+        self.params = kwargs.get("params")
 
     def set_default_headers(self):
         """Set the default response header to be JSON."""
         self.set_header("Content-Type", 'application/json; charset="utf-8"')
 
     def post(self, path):
+
+        from unmanic.libs.uiserver import UnmanicDataQueues
+        unmanic_data_queues  = UnmanicDataQueues()
+        tornado.log.app_log.warning(unmanic_data_queues, exc_info=True)
+
+        tmp_data_queues = unmanic_data_queues.get_unmanic_data_queues()
+        tornado.log.app_log.warning(tmp_data_queues, exc_info=True)
+
+        self.action_route()
+
+    def fetch_by_id(self, *args, **kwargs):
+        # TODO: add ability to fetch by id
+        pass
+
+    def fetch_filtered_historic_tasks(self, *args, **kwargs):
         request_dict = json.loads(self.request.body)
-        results = self.fetch_filtered_historic_tasks(request_dict)
+        if request_dict.get("customActionName") == "add-to-pending":
+            self.prepare_single_historic_task_by_ids(request_dict.get("id"))
+        results = self.prepare_filtered_historic_tasks(request_dict)
         self.write(json.dumps(results))
 
-    def fetch_filtered_historic_tasks(self, request_dict):
+    def prepare_single_historic_task_by_ids(self, historic_task_ids):
+        return_dict = {
+            "success": True
+        }
+        # Fetch historical tasks
+        history_logging = history.History(self.config)
+        # Get total count
+        records_by_id = history_logging.get_current_path_of_historic_tasks_by_id(id_list=historic_task_ids)
+        # records_by_id = history_logging.get_historic_task_list_filtered_and_sorted(id_list=historic_task_ids)
+        for record in records_by_id:
+            # Fetch the abspath name
+            abspath = os.path.abspath(record.get("abspath"))
+
+            # Ensure path exists
+            if not os.path.exists(abspath):
+                return_dict['success'] = False
+                continue
+
+            # Create a new task
+            new_task = task.Task(tornado.log.app_log)
+
+            # Run a probe on the file for current data
+            source_data = common.fetch_file_data_by_path(abspath)
+
+            if not new_task.create_task_by_absolute_path(abspath, self.config, source_data):
+                # If file exists in task queue already this will return false.
+                # Do not carry on.
+                return_dict['success'] = False
+
+            continue
+
+    def prepare_filtered_historic_tasks(self, request_dict):
         """
         Returns a object of historical records filtered and sorted
         according to the provided request.
@@ -89,10 +162,9 @@ class ApiHistoryHandler(tornado.web.RequestHandler):
         # Get total count
         records_total_count = history_logging.get_total_historic_task_list_count()
         # Get quantity after filters (without pagination)
-        records_filtered_count = history_logging.get_historic_task_list_filtered_and_sorted(0, 0, order, search_value).count()
+        records_filtered_count = history_logging.get_historic_task_list_filtered_and_sorted(order, 0, 0, search_value).count()
         # Get filtered/sorted results
-        task_results = history_logging.get_historic_task_list_filtered_and_sorted(start, length, order, search_value)
-        tornado.log.app_log.warning(search, exc_info=True)
+        task_results = history_logging.get_historic_task_list_filtered_and_sorted(order, start, length, search_value)
 
         # Build return data
         return_data = {
@@ -123,3 +195,26 @@ class ApiHistoryHandler(tornado.web.RequestHandler):
 
         # Return results
         return return_data
+
+    # TODO
+    def add_tasks_to_pending_tasks_list(self, *args, **kwargs):
+        """
+        Add the given list of tasks to the pending task list
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        #TODO: add items to pending tasks list
+        pass
+
+    def delete_tasks_from_historical_tasks_list(self, *args, **kwargs):
+        """
+        Delete a list of tasks from the historical tasks list
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        #TODO: add items to pending tasks list
+        pass

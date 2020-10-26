@@ -39,53 +39,6 @@ from unmanic.libs.unffmpeg import Info, containers
 from unmanic.libs.unmodels.tasks import Tasks
 
 
-def extract_video_codecs_from_file_properties(file_properties: dict):
-    """
-    Read a dictionary of file properties
-    Extract a list of video codecs from the video streams
-
-    :param file_properties:
-    :return:
-    """
-    codecs = []
-    for stream in file_properties['streams']:
-        if stream['codec_type'] == 'video':
-            codecs.append(stream['codec_name'])
-    return codecs
-
-
-def fetch_file_data_by_path(pathname):
-    """
-    Returns a dictionary of file data for a given path.
-
-    Will throw an exception if pathname is not a valid file
-
-    :param pathname:
-    :return:
-    """
-    # Set source dict
-    file_data = {
-        'abspath':  os.path.abspath(pathname),
-        'basename': os.path.basename(pathname),
-        'dirname':  os.path.dirname(os.path.abspath(pathname))
-    }
-
-    # Probe file
-    probe_info = Info().file_probe(file_data['abspath'])
-
-    # Extract only the video codec list
-    video_codecs_list = extract_video_codecs_from_file_properties(probe_info)
-
-    # Make comma separated string from the list of video codecs used in this file
-    file_data['video_codecs'] = ','.join(video_codecs_list)
-
-    # Merge file probe with file_data
-    file_data.update(probe_info)
-
-    # return the file data
-    return file_data
-
-
 class TaskHandler(threading.Thread):
     """
     TaskHandler
@@ -98,6 +51,7 @@ class TaskHandler(threading.Thread):
                 - When a worker thread is idle, the TaskHandler needs to read a select query on the database and add that
                     item to the TaskQueue
             - Workers should request a job from the TaskHandler rather than reading the TaskQueue directly ??
+            -
     """
 
     def __init__(self, data_queues, settings, task_queue):
@@ -182,9 +136,9 @@ class TaskHandler(threading.Thread):
         """
         abspath = os.path.abspath(pathname)
         # Create a new task
-        new_task = task.Task(self.data_queues)
+        new_task = task.Task(self.data_queues["logging"].get_logger("Task"))
 
-        source_data = fetch_file_data_by_path(pathname)
+        source_data = common.fetch_file_data_by_path(pathname)
 
         if not new_task.create_task_by_absolute_path(abspath, self.settings, source_data):
             # If file exists in task queue already this will return false.

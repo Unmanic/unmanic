@@ -74,15 +74,14 @@ class Task(object):
 
     """
 
-    def __init__(self, data_queues):
-        # TODO: Remove data_queues and replace with logging
+    def __init__(self, logger):
         self.name = 'Task'
         self.task = None
         self.task_dict = None
         self.settings = None
         # TODO: Rename to probe
         self.source = None
-        self.logger = data_queues["logging"].get_logger(self.name)
+        self.logger = logger
         self.destination = None
         self.statistics = {}
         self.errors = []

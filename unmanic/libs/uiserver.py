@@ -42,6 +42,7 @@ import asyncio
 import logging
 
 from unmanic.libs import common
+from unmanic.libs.singleton import SingletonType
 from unmanic.webserver.api_request_router import APIRequestRouter
 from unmanic.webserver.history import HistoryUIRequestHandler
 from unmanic.webserver.main import MainUIRequestHandler
@@ -56,6 +57,19 @@ tornado_settings = {
     'static_path':     os.path.join(os.path.dirname(__file__), "..", "webserver", "assets"),
     'debug':           True
 }
+
+
+class UnmanicDataQueues(object, metaclass=SingletonType):
+    _unmanic_data_queues = []
+
+    def __init__(self):
+        pass
+
+    def set_unmanic_data_queues(self, unmanic_data_queues):
+        self._unmanic_data_queues = unmanic_data_queues
+
+    def get_unmanic_data_queues(self):
+        return self._unmanic_data_queues
 
 
 class UIServer(threading.Thread):
@@ -73,6 +87,9 @@ class UIServer(threading.Thread):
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
         self.set_logging()
+        # Add a singleton for handling the data queues for sending data to unmanic's other processes
+        udq = UnmanicDataQueues()
+        udq.set_unmanic_data_queues(unmanic_data_queues)
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -123,12 +140,6 @@ class UIServer(threading.Thread):
         # Load the app
         self.app = self.make_web_app()
 
-        # Add API routes
-        self.app.add_handlers(r'.*', [(
-            tornado.routing.PathMatches(r"/api/.*"),
-            APIRequestRouter(self.app, settings=self.settings)
-        ), ])
-
         # Start app
         self._log("Listening on port 8888")
         self._log(tornado_settings['static_path'])
@@ -139,7 +150,8 @@ class UIServer(threading.Thread):
         self._log("Leaving UIServer loop...")
 
     def make_web_app(self):
-        return tornado.web.Application([
+        # Start with web application routes
+        app = tornado.web.Application([
             (r"/assets/(.*)", tornado.web.StaticFileHandler, dict(
                 path=tornado_settings['static_path']
             )),
@@ -164,6 +176,14 @@ class UIServer(threading.Thread):
                 url="/dashboard/"
             )),
         ], **tornado_settings)
+
+        # Add API routes
+        app.add_handlers(r'.*', [(
+            tornado.routing.PathMatches(r"/api/.*"),
+            APIRequestRouter(app, settings=self.settings)
+        ), ])
+
+        return app
 
 
 if __name__ == "__main__":

@@ -159,3 +159,51 @@ def json_dump_to_file(json_data, out_file, check=True, rollback_on_fail=True):
             os.remove(out_file)
             shutil.copy2(result['temp_path'], out_file)
     return result
+
+
+def extract_video_codecs_from_file_properties(file_properties: dict):
+    """
+    Read a dictionary of file properties
+    Extract a list of video codecs from the video streams
+
+    :param file_properties:
+    :return:
+    """
+    codecs = []
+    for stream in file_properties['streams']:
+        if stream['codec_type'] == 'video':
+            codecs.append(stream['codec_name'])
+    return codecs
+
+
+def fetch_file_data_by_path(pathname):
+    """
+    Returns a dictionary of file data for a given path.
+
+    Will throw an exception if pathname is not a valid file
+
+    :param pathname:
+    :return:
+    """
+    # Set source dict
+    file_data = {
+        'abspath':  os.path.abspath(pathname),
+        'basename': os.path.basename(pathname),
+        'dirname':  os.path.dirname(os.path.abspath(pathname))
+    }
+
+    # Probe file
+    from unmanic.libs.unffmpeg import Info
+    probe_info = Info().file_probe(file_data['abspath'])
+
+    # Extract only the video codec list
+    video_codecs_list = extract_video_codecs_from_file_properties(probe_info)
+
+    # Make comma separated string from the list of video codecs used in this file
+    file_data['video_codecs'] = ','.join(video_codecs_list)
+
+    # Merge file probe with file_data
+    file_data.update(probe_info)
+
+    # return the file data
+    return file_data

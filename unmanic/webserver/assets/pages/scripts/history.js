@@ -68,12 +68,31 @@ var formatBytes = function (bytes, decimals) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
+/**
+ *
+ */
+var addSelectedCompletedTasksToPendingTasksList = function() {
+    var table = $("#history_completed_tasks_table");
+    var count = table.rows( { selected: true } ).count();
+    console.log(count)
+};
+
 
 var CompletedTasksDatatablesManaged = function () {
 
+    var emptySpan = function (oObj) {
+        return '<span></span>';
+    };
+    var recordNameCellContents = function (task_label) {
+        //return '<span style="margin-left: 20px;" class="hidden-xs">' + $.trim(task_label) + '<span>';
+        return '<span style="margin-left: 20px;" class="">' + $.trim(task_label) + '<span>';
+    };
     var recordSelectedCheckbox = function (oObj) {
         var row_id = oObj.id;
-        return '<input type="checkbox" id="checkbox_' + $.trim(row_id) + '" class="md-check checkboxes">';
+        var task_label = oObj.task_label;
+        return '<input class="" type="checkbox" id="checkbox_' + $.trim(row_id) + '" class="md-check checkboxes" value="' + $.trim(row_id) + '">';
+        /*return '<input class="hidden-xs hidden-sm" type="checkbox" id="checkbox_' + $.trim(row_id) + '" class="md-check checkboxes">' +
+            '<span style="margin-left: 20px;" class="text-left visible-xs hidden-md">' + $.trim(task_label) + '<span>';*/
     };
     var recordSuccessStatus = function (oObj) {
         var html = '';
@@ -117,17 +136,56 @@ var CompletedTasksDatatablesManaged = function () {
                 // So when dropdowns used the scrollable div should be removed.
                 //"dom": "<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'<'table-group-actions pull-right'>>r>t<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'>>",
                 //"dom": "<'row'<'col-md-6 col-sm-12'l><'col-md-6 col-sm-12'f>r>t<'row'<'col-md-5 col-sm-12'i><'col-md-7 col-sm-12'p>>",
-                "dom": "<'row'<'col-md-8 col-sm-12'li><'col-md-4 col-sm-12'f>r>t<'row'<'col-md-8 col-sm-12'li><'col-md-4 col-sm-12'p>>",
+                //"dom": "<'row'<'col-md-8 col-sm-12'li><'col-md-4 col-sm-12'f>r>t<'row'<'col-md-8 col-sm-12'li><'col-md-4 col-sm-12'p>>",
+                "dom": "" +
+                    "<'row'" +
+                        "<'col-md-6 col-sm-12'" +
+                            "<'row'" +
+                                "<'col-md-12 col-sm-12'" +
+                                    "f" +
+                                ">" +
+                                "<'col-md-12 col-sm-12'" +
+                                    "li" +
+                                ">" +
+                            ">" +
+                        ">" +
+                        "<'col-md-6 col-sm-12'" +
+                            "<'row'" +
+                                "<'col-md-12 col-sm-12'" +
+                                    "" +
+                                ">" +
+                                "<'col-md-12 col-sm-12'" +
+                                    "<'table-group-actions pull-right'>" +
+                                ">" +
+                            ">" +
+                        ">" +
+                        "r" +
+                    ">" +
+                    "<'row'" +
+                        "<'col-md-12 col-sm-12'" +
+                            "t" +
+                        ">" +
+                    ">" +
+                    "<'row'" +
+                        "<'col-md-8 col-sm-12'" +
+                            "li" +
+                        ">" +
+                        "<'col-md-4 col-sm-12'" +
+                            "p" +
+                        ">" +
+                    ">" +
+                "",
+                "responsive": true,
 
                 "bStateSave": true, // save datatable state(pagination, sort, etc) in cookie.
                 "ajax": {
-                    "url": '/api/history/', // ajax source
+                    "url": '/api/v1/history/list', // ajax source
                     "contentType": "application/json",
                 },
                 "aoColumns": [
-                    {mData: null, "sName": 0, bSortable: false, bSearchable: false, mRender: recordSelectedCheckbox},
-                    {mData: "finish_time", sName: 1, bSortable: true},
-                    {mData: "task_label", sName: 2, bSortable: true, bSearchable: true},
+                    {mData: null, "sName": 0, bSortable: false, bSearchable: false, mRender: recordSelectedCheckbox, sClass: ""},
+                    {mData: "task_label", sName: 1, bSortable: true, bSearchable: true},
+                    {mData: "finish_time", sName: 2, bSortable: true},
                     {mData: null, sName: 3, bSortable: false, bSearchable: false, mRender: recordSuccessStatus},
                     {mData: null, sName: 4, bSortable: false, bSearchable: false, mRender: recordActionButton},
                 ],
@@ -160,10 +218,42 @@ var CompletedTasksDatatablesManaged = function () {
                 ],
                 "pageLength": 10, // default record count per page
                 "order": [
-                    [1, "desc"]
+                    [2, "desc"]
                 ]// set first column as a default sort by asc
             }
         });
+
+        $('.dataTables_filter').addClass('pull-left');
+
+        // Remove overflow
+        grid.getTableWrapper().css("overflow-x", "hidden");
+
+        var processAction = function(action) {
+            if (grid.getSelectedRowsCount() > 0) {
+                grid.setAjaxParam("customActionType", "group_action");
+                grid.setAjaxParam("customActionName", action);
+                grid.setAjaxParam("id", grid.getSelectedRows());
+                grid.getDataTable().ajax.reload();
+                grid.clearAjaxParams();
+            } else {
+                App.alert({
+                    type: 'danger',
+                    icon: 'warning',
+                    message: 'No record selected',
+                    container: grid.getTableWrapper(),
+                    place: 'prepend'
+                });
+            }
+        };
+        grid.getTableWrapper().on('click', '.add-to-pending', function (e) {
+            e.preventDefault();
+            console.log( grid.getSelectedRows());
+            processAction('add-to-pending');
+        });
+
+        grid.setAjaxParam("customActionType", "group_action");
+        grid.getDataTable().ajax.reload();
+        grid.clearAjaxParams();
     };
 
     return {

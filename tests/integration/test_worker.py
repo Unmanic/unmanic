@@ -89,7 +89,7 @@ class TestClass(object):
 
     def setup_test_task(self, pathname):
         # Create a new task and set the source
-        self.test_task = task.Task(self.data_queues)
+        self.test_task = task.Task(self.data_queues["logging"].get_logger("Task"))
 
         # Fill test_task with data
         source_data = taskhandler.fetch_file_data_by_path(pathname)

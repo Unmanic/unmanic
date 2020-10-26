@@ -34,6 +34,7 @@ import os
 import logging
 
 
+# TODO: Refactor to use new singleton global metaclass
 class SingletonType(type):
     _instances = {}
 

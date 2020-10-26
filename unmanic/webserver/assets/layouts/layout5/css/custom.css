@@ -50,3 +50,19 @@
         padding: 6px 0;
     }
 }
+
+.table-group-actions > span {
+    margin-left: 10px;
+}
+.table-group-actions > .table-group-action-input {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+.table-group-actions > .table-group-action-submit {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+tr.child > td.child {
+    text-align: left;
+}

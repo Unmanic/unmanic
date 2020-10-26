@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.singleton.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     25 Oct 2020, (9:07 PM)
+    Date:                     26 Oct 2020, (2:51 PM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -29,3 +29,14 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+
+
+"""
+Singleton metaclass
+"""
+class SingletonType(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(SingletonType, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]

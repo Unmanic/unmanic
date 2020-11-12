@@ -1,6 +1,30 @@
-# Unmanic - Library Optimiser
+Unmanic - Library Optimiser  
+===========================
 
-Unmanic is a simple tool for optimising your video library to a single format. The ultimate goal of Unmanic is to take the complexity out of converting your whole media library. The idea is to simply point Unmanic at your library and let it manage it.
+![UNMANIC - Library Optimiser](https://github.com/Josh5/unmanic/raw/master/logo.png)
+
+<a href='https://ko-fi.com/I2I21F8E1' target='_blank'><img height='26' style='border:0px;height:26px;' src='https://cdn.ko-fi.com/cdn/kofi1.png?v=2' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
+[![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/josh5/unmanic?color=009dc7&label=latest%20release&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/releases)
+[![GitHub issues](https://img.shields.io/github/issues-raw/josh5/unmanic?color=009dc7&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/issues?q=is%3Aopen+is%3Aissue)
+[![GitHub closed issues](https://img.shields.io/github/issues-closed-raw/josh5/unmanic?color=009dc7&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/issues?q=is%3Aissue+is%3Aclosed)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr-raw/josh5/unmanic?color=009dc7&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/pulls?q=is%3Aopen+is%3Apr)
+[![GitHub closed pull requests](https://img.shields.io/github/issues-pr-closed-raw/josh5/unmanic?color=009dc7&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/pulls?q=is%3Apr+is%3Aclosed)
+
+[![Docker Stars](https://img.shields.io/docker/stars/josh5/unmanic?color=009dc7&logo=docker&logoColor=%23403d3d&style=for-the-badge)](https://hub.docker.com/r/josh5/unmanic)
+[![Docker Pulls](https://img.shields.io/docker/pulls/josh5/unmanic?color=009dc7&logo=docker&logoColor=%23403d3d&style=for-the-badge)](https://hub.docker.com/r/josh5/unmanic)
+[![Docker Image Size (tag)](https://img.shields.io/docker/image-size/josh5/unmanic/latest?color=009dc7&label=docker%20image%20size&logo=docker&logoColor=%23403d3d&style=for-the-badge)](https://hub.docker.com/r/josh5/unmanic)
+
+
+
+
+[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/josh5/unmanic/Python%20Lint%20&%20Run%20Unit%20Tests/master?label=Unit%20Tests&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/actions?query=workflow%3A%22Python+Lint+%26+Run+Unit+Tests%22+branch%3Amaster)
+[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/josh5/unmanic/Build%20All%20Packages%20CI/master?label=Package%20Build&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/actions?query=workflow%3A%22Build+All+Packages+CI%22+branch%3Amaster)
+
+[![GitHub license](https://img.shields.io/github/license/josh5/unmanic?color=009dc7&style=flat-square)]()
+---
+
+Unmanic is a simple tool for optimising your video library to a single, uniform format. 
 
 Unmanic provides you with the following main functions:
 
@@ -12,8 +36,7 @@ Unmanic provides you with the following main functions:
 
  - A Web UI to easily configure your preferred video presets and monitor the progress of your library conversion.
 
-
-![UNMANIC - Library Optimiser](https://github.com/Josh5/unmanic/raw/master/logo.png)
+Simply point Unmanic at your library and let it manage it.
 
 ### Table Of Contents
 
@@ -66,9 +89,9 @@ LIBRARY_DIR=/library
 CACHE_DIR=/tmp/unmanic
 
 docker run -ti --rm \
-    -e PUID:${PUID} \
-    -e PGID:${PGID} \
-    -e TZ:${TZ} \
+    -e PUID=${PUID} \
+    -e PGID=${PGID} \
+    -e TZ=${TZ} \
     -p 8888:8888 \
     -v ${CONFIG_DIR}:/config \
     -v ${LIBRARY_DIR}:/library \
@@ -79,7 +102,9 @@ docker run -ti --rm \
 Otherwise install the dependencies listed above and then run:
 
 ```
-python3 ./service.py
+python3 ./setup.py install --user
+
+unmanic
 ```
 
 ## License and Contribution
@@ -98,6 +123,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
-This project contains 'plugins' imported from external authors. Please refer to the source of these plugins for more information on their respective licenses.
+This project contains libraries imported from external authors.
+Please refer to the source of these libraries for more information on their respective licenses.
 
 See [CONTRIBUTING.md](docs/CONTRIBUTING.md) to learn how to contribute to Unmanic.

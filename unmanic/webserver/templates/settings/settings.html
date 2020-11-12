@@ -1,0 +1,179 @@
+{% extends "../page_layout.html" %}
+{% block title %}Settings | Unmanic{% end %}
+{% block page %}settings{% end %}
+
+
+{% block style %}
+<link href="/assets/global/plugins/bootstrap-select/css/bootstrap-select.min.css" rel="stylesheet" type="text/css"/>
+{% end %}
+
+{% block plugins %}
+<script src="/assets/global/plugins/bootstrap-select/js/bootstrap-select.min.js" type="text/javascript"></script>
+{% end %}
+
+{% block scripts %}
+<script src="/assets/pages/scripts/components-bootstrap-select.min.js" type="text/javascript"></script>
+<script src="/assets/pages/scripts/file-browser.js?version={{ escape(handler.config.read_version()) }}" type="text/javascript"></script>
+{% end %}
+
+{% block inline_scripts %}
+{# General #}
+<script type="text/javascript">
+    var toggleRunScanOnStart = function () {
+        if ($("#run_scan_on_start_enabled").prop("checked")) {
+            $("#RUN_FULL_SCAN_ON_START").val("true");
+        } else {
+            $("#RUN_FULL_SCAN_ON_START").val("false");
+        }
+    };
+    var toggleInotify = function () {
+        if ($("#inotify_enabled").prop("checked")) {
+            $("#ENABLE_INOTIFY").val("true");
+        } else {
+            $("#ENABLE_INOTIFY").val("false");
+        }
+    };
+    var toggleKeepFilenameHistory = function () {
+        if ($("#keep_filename_history_enabled").prop("checked")) {
+            $("#KEEP_FILENAME_HISTORY").val("true");
+        } else {
+            $("#KEEP_FILENAME_HISTORY").val("false");
+        }
+    };
+    var toggleDebugging = function () {
+        if ($("#debugging_enabled").prop("checked")) {
+            $("#DEBUGGING").val("true");
+        } else {
+            $("#DEBUGGING").val("false");
+        }
+    };
+</script>
+{# Container #}
+<script type="text/javascript">
+    var showHideSubtitleSettings = function () {
+        var supports_subtitles = $("#out_container option:selected").data('supports_subtitles');
+        console.log(supports_subtitles);
+        if (supports_subtitles) {
+            $(".subtitle_settings").show()
+        } else {
+            $(".subtitle_settings").hide()
+        }
+    };
+    var toggleStripSubtitles = function () {
+        if ($("#remove_subtitles_enabled").prop("checked")) {
+            $("#REMOVE_SUBTITLE_STREAMS").val("true");
+        } else {
+            $("#REMOVE_SUBTITLE_STREAMS").val("false");
+        }
+    };
+</script>
+{# Video Encoding #}
+<script type="text/javascript">
+    var toggleEnableVideoEncoding = function () {
+        if ($("#video_encoding_enabled").prop("checked")) {
+            $("#ENABLE_VIDEO_ENCODING").val("true");
+            $(".video_encoding_settings").removeClass('hidden');
+            $(".video_encoding_settings_disabled_notice").addClass('hidden');
+        } else {
+            $("#ENABLE_VIDEO_ENCODING").val("false");
+            $(".video_encoding_settings").addClass('hidden');
+            $(".video_encoding_settings_disabled_notice").removeClass('hidden');
+        }
+    };
+</script>
+{# Audio Encoding #}
+<script type="text/javascript">
+    var toggleEnableAudioEncoding = function () {
+        if ($("#audio_encoding_enabled").prop("checked")) {
+            $("#ENABLE_AUDIO_ENCODING").val("true");
+            $(".audio_encoding_settings").removeClass('hidden');
+            $(".audio_encoding_settings_disabled_notice").addClass('hidden');
+        } else {
+            $("#ENABLE_AUDIO_ENCODING").val("false");
+            $(".audio_encoding_settings").addClass('hidden');
+            $(".audio_encoding_settings_disabled_notice").removeClass('hidden');
+        }
+    };
+    var toggleEnableAudioStreamTrascoding = function () {
+        if ($("#audio_stream_transcoding_enabled").prop("checked")) {
+            $("#ENABLE_AUDIO_STREAM_TRANSCODING").val("true");
+            $(".audio_stream_transcoding_settings").removeClass('hidden');
+            $(".audio_stream_transcoding_settings_disabled_notice").addClass('hidden');
+        } else {
+            $("#ENABLE_AUDIO_STREAM_TRANSCODING").val("false");
+            $(".audio_stream_transcoding_settings").addClass('hidden');
+            $(".audio_stream_transcoding_settings_disabled_notice").removeClass('hidden');
+        }
+    };
+    var setVideoStreamEncoderListForTranscoding = function () {
+        var query = {
+            ajax: 'reload_video_stream_encoder_selection',
+            selected_video_codec: $("#VIDEO_CODEC :selected").val()
+        };
+        $.post('/settings/?step=video', query, function (data) {
+            // update the encoders list
+            $('#video_stream_encoder_selection').html(data);
+        });
+    };
+    var setAudioStreamEncoderListForTranscoding = function () {
+        var query = {
+            ajax: 'reload_audio_stream_encoder_selection',
+            selected_audio_codec: $("#AUDIO_CODEC :selected").val()
+        };
+        $.post('/settings/?step=audio', query, function (data) {
+            // update the encoders list
+            $('#audio_stream_encoder_selection').html(data);
+        });
+    };
+    var toggleEnableAudioStreamStereoCloning = function () {
+        if ($("#audio_stream_stereo_cloning_enabled").prop("checked")) {
+            $("#ENABLE_AUDIO_STREAM_STEREO_CLONING").val("true");
+            $(".audio_stream_stereo_cloning_settings").removeClass('hidden');
+            $(".audio_stream_stereo_cloning_settings_disabled_notice").addClass('hidden');
+        } else {
+            $("#ENABLE_AUDIO_STREAM_STEREO_CLONING").val("false");
+            $(".audio_stream_stereo_cloning_settings").addClass('hidden');
+            $(".audio_stream_stereo_cloning_settings_disabled_notice").removeClass('hidden');
+        }
+    };
+    var setAudioStreamEncoderListForCloning = function () {
+        var query = {
+            ajax: 'reload_audio_stream_encoder_cloning_selection',
+            selected_audio_codec_cloning: $("#AUDIO_CODEC_CLONING :selected").val()
+        };
+        $.post('/settings/?step=audio', query, function (data) {
+            // update the encoders list
+            $('#audio_stream_encoder_cloning_selection').html(data);
+        });
+    };
+</script>
+{# Advanced Options #}
+<script type="text/javascript">
+    var showHideFilterGraphSettings = function () {
+        if ($("#overwrite_ffmpeg_options_enabled").prop("checked")) {
+            $("#OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS").val("true");
+            $(".additional_ffmpeg_options_input").removeClass('hidden');
+        } else {
+            $("#OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS").val("false");
+            $(".additional_ffmpeg_options_input").addClass('hidden');
+        }
+    };
+</script>
+{% end %}
+
+
+{% block content %}
+<div class="row">
+    {% if 'general' in handler.step %}
+    {% include "general/settings-general.html" %}
+    {% elif 'container' in handler.step %}
+    {% include "container/settings-container.html" %}
+    {% elif 'video' in handler.step %}
+    {% include "video_encoding/settings-video.html" %}
+    {% elif 'audio' in handler.step %}
+    {% include "audio_encoding/settings-audio.html" %}
+    {% elif 'advanced' in handler.step %}
+    {% include "advanced_options/settings-advanced-options.html" %}
+    {% end %}
+</div>
+{% end %}

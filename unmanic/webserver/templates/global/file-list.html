@@ -1,0 +1,37 @@
+{#
+To use include:
+<script src="/assets/pages/scripts/file-browser.js" type="text/javascript"></script>
+#}
+<div class="modal-dialog">
+    <div class="modal-content">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+            <h4 class="modal-title">{{ escape(title) }}</h4>
+        </div>
+        <div class="modal-body">
+            <div class="mt-element-list" id="unmanic-file-browser-content">
+                <input type="hidden" name="unmanic-file-browser-list-type"
+                       value="{{ escape(path_data.get("list_type")) }}">
+                <input type="hidden" name="unmanic-file-browser-original-input-field"
+                       value="{{ escape(input_field) }}">
+                <div class="mt-list-head list-simple font-white">
+                    <input type="text" class="form-control input-inline input-xlarge"
+                           id="unmanic-file-browser-current-path"
+                           name="unmanic-file-browser-current-path"
+                           value="{{ escape(path_data.get('current_path')) }}">
+                </div>
+                <div class="mt-list-container list-simple">
+                    <ul id="unmanic-file-browser-list-items">
+                        {# Contents in here will be overwritten by calls to updateFileBrowser #}
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button class="btn grey-salsa btn-outline" data-dismiss="modal" aria-hidden="true">Close
+            </button>
+            <button class="btn green" data-dismiss="modal" onclick="$(this).updateInputFromFileBrowser();">Save changes</button>
+        </div>
+    </div>
+</div>

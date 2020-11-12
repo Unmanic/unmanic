@@ -1,0 +1,40 @@
+# this configuration file is suitable for displaying unmanic logs
+# pipe logs to this file.
+# Eg. `tail -f ~/.unmanic/logs/*.log | grcat .grc.conf.unmanic.logs`
+
+
+# this is probably a pathname
+regexp=\/[\s\w.-]+
+colours=bold green
+count=more
+======
+# Ignore GET requests from tornado's log
+regexp=[\d]+ GET /.*$
+colours=none
+count=more
+======
+# Info Debug
+regexp=[\d(\-|T|\:)]+\:DEBUG:[\w(\.|\-)]+
+colours=bold blue
+count=stop
+======
+# Info Logs
+regexp=[\d(\-|T|\:)]+\:INFO:[\w(\.|\-)]+
+colours=bold cyan
+count=stop
+======
+# Warning Logs
+regexp=[\d(\-|T|\:)]+\:WARNING:[\w(\.|\-)]+
+colours=bold yellow
+count=stop
+======
+# Error Logs
+regexp=[\d(\-|T|\:)]+\:ERROR:[\w(\.|\-)]+
+colours=bold red
+count=stop
+======
+# Switch logfile
+regexp=[=]+[>].*[<][=]+
+colours=bold magenta on_black
+count=stop
+======

@@ -1,0 +1,43 @@
+
+
+<ul class="feeds">
+    {% for historical_item in historic_task_list %}
+    <li>
+        <div class="col1">
+            <div class="cont">
+                <div class="cont-col1">
+                    {% if 'task_success' in historical_item and historical_item['task_success'] %}
+                        <div class="label label-sm label-info">
+                                <i class="fa fa-check"></i>
+                        </div>
+                    {% else %}
+                        <div class="label label-sm label-danger">
+                                <i class="fa fa-times"></i>
+                        </div>
+                    {%end%}
+                </div>
+                <div class="cont-col2">
+                    <div class="desc"> 
+                    {% try %}
+                        {{ historical_item['task_label'] }}
+                    {% except %}
+                        <span class="error">(Error fetching historical item information - Please report this as a bug)</span>
+                    {% end %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col2">
+            <div class="date">
+                {% import time %}
+                {% if ((int(historical_item['finish_time']) + 60) > int(time.time())) %}
+                    Just Now
+                {% else %}
+                    {{ escape( historical_item['human_readable_time'] ) }}
+                {%end%}
+                    
+            </div>
+        </div>
+    </li>
+    {% end %}
+</ul>

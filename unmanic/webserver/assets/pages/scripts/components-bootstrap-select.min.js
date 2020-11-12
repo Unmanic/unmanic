@@ -1,0 +1,1 @@
+var ComponentsBootstrapSelect=function(){var n=function(){$(".bs-select").selectpicker({iconBase:"fa",tickIcon:"fa-check"})};return{init:function(){n()}}}();App.isAngularJsApp()===!1&&jQuery(document).ready(function(){ComponentsBootstrapSelect.init()});

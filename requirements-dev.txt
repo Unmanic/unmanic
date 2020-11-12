@@ -1,0 +1,4 @@
+flake8>=3.7.9
+pycodestyle>=2.5.0
+pytest>=5.4.1
+teamcity-messages==1.25

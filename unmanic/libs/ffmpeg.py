@@ -324,7 +324,7 @@ class FFMPEGHandle(object):
                     if settings['debugging']:
                         self._log(
                             "The current file's audio streams ({}) do not match the configured audio codec ({})".format(
-                                audio_streams_codecs, settings['audio_codec'], level='debug')
+                                audio_streams_codecs, settings['audio_codec']), level='debug')
             except Exception as e:
                 # Failed to fetch properties
                 self._log("Exception in method check_file_to_be_processed. Check audio codec.", str(e),

@@ -1,0 +1,238 @@
+
+
+{% extends "../page_layout.html" %}
+{% block title %}Dashboard | Unmanic{% end %}
+{% block page %}main{% end %}
+
+
+{% block head %}
+<link href="/assets/pages/css/dashboard.css?version={{ escape(handler.config.read_version()) }}" rel="stylesheet" type="text/css" />
+{% end %}
+
+{# TODO: Change to 'plugins' #}
+{% block scripts %}
+<script src="../assets/global/plugins/moment.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-daterangepicker/daterangepicker.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/morris/morris.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/morris/raphael-min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/counterup/jquery.waypoints.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/counterup/jquery.counterup.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/amcharts/amcharts/amcharts.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/amcharts/amcharts/serial.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/amcharts/amcharts/pie.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/amcharts/amcharts/radar.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/amcharts/amcharts/themes/light.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/amcharts/amcharts/themes/patterns.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/amcharts/amcharts/themes/chalk.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/amcharts/ammap/ammap.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/amcharts/ammap/maps/js/worldLow.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/amcharts/amstockcharts/amstock.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/fullcalendar/fullcalendar.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/flot/jquery.flot.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/flot/jquery.flot.resize.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/flot/jquery.flot.categories.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-easypiechart/jquery.easypiechart.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery.sparkline.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jqvmap/jqvmap/jquery.vmap.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jqvmap/jqvmap/maps/jquery.vmap.russia.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jqvmap/jqvmap/maps/jquery.vmap.world.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jqvmap/jqvmap/maps/jquery.vmap.europe.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jqvmap/jqvmap/maps/jquery.vmap.germany.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jqvmap/jqvmap/maps/jquery.vmap.usa.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jqvmap/jqvmap/data/jquery.vmap.sampledata.js" type="text/javascript"></script>
+<script src="../assets/pages/scripts/dashboard.js?version={{ escape(handler.config.read_version()) }}" type="text/javascript"></script>
+{% end %}
+
+
+{% block content %}
+                    <div class="row">
+                        <!-- BEGIN JOB STATISTICS -->
+                        <div class="col-md-12 col-sm-12 ">
+                            <div class="portlet light bordered">
+                                <div class="portlet-title">
+                                    <div class="caption">
+                                        <i class="icon-disc font-purple"></i>
+                                        <span class="caption-subject font-purple bold uppercase" 
+                                                title="Each worker can process one re-encoding job.
+                                                This allows you to process more than one task at a time.
+                                                Configure the number of Workers in the General Settings screen" >Workers</span>
+                                        <span class="caption-helper">   </span>
+                                    </div>
+                                    <!-- <div class="actions">
+                                        <a href="javascript:;" class="btn btn-sm btn-circle red worker-pie-chart-reload">
+                                            <i class="fa fa-repeat"></i> Reload </a>
+                                    </div> -->
+                                </div>
+                                <div class="portlet-body">
+                                    <!--                                     
+                                        all_worker_info = [0,1,2,3,4,5,6,7,8]
+                                        all_worker_info = [0,1,2,3,4,5,6,7,8,9,10,11,12,13]
+                                        #all_worker_info = [0,1,2]
+                                        print("LEN", len(all_worker_info))
+                                        row_count = round( ( len(all_worker_info) / 6 ) + .4)
+                                        print (row_count)
+                                        if row_count < 1:
+                                            row_count = 1
+                                        print (row_count)
+                                        
+                                        for x in range(0, row_count):
+                                            range_start = (x * 6)
+                                            range_end = (x * 6) + 6
+                                            print ('ROW', x)
+                                            for worker_info in range(range_start, range_end):
+                                                if len(all_worker_info) <= worker_info:
+                                                    break
+                                                print(worker_info)
+                                     -->
+                                    {#{% set all_worker_info = handler.get_workers_info() %}
+                                    {% set row_count = round( ( len(all_worker_info) / 6 ) + .4) %}
+                                    {% if row_count < 1 %}
+                                        {% set row_count = 1 %}
+                                    {% end %}
+                                    {% for x in range(0, row_count) %}
+                                        {% set range_start = (x * 6) %}
+                                        {% set range_end = (x * 6) + 6 %}
+                                    {% end %}#}
+
+                                    <div class="row" id="worker_pie_chart"> </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- END JOB STATISTICS -->
+                        <!-- BEGIN SERVER STATISTICS -->
+                        <!-- TODO: Implement stats -->
+                        <!-- <div class="col-md-6 col-sm-6">
+                            <div class="portlet light bordered">
+                                <div class="portlet-title">
+                                    <div class="caption">
+                                        <i class="icon-equalizer font-yellow"></i>
+                                        <span class="caption-subject font-yellow bold uppercase">Server Stats</span>
+                                        <span class="caption-helper">monthly stats...</span>
+                                    </div>
+                                    <div class="tools">
+                                        <a href="" class="collapse"> </a>
+                                        <a href="#portlet-config" data-toggle="modal" class="config"> </a>
+                                        <a href="" class="reload"> </a>
+                                        <a href="" class="remove"> </a>
+                                    </div>
+                                </div>
+                                <div class="portlet-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="sparkline-chart">
+                                                <div class="number" id="sparkline_bar5"></div>
+                                                <a class="title" href="javascript:;"> Disk I/O
+                                                    <i class="icon-arrow-right"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="margin-bottom-10 visible-sm"> </div>
+                                        <div class="col-md-4">
+                                            <div class="sparkline-chart">
+                                                <div class="number" id="sparkline_bar6"></div>
+                                                <a class="title" href="javascript:;"> CPU Load
+                                                    <i class="icon-arrow-right"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="margin-bottom-10 visible-sm"> </div>
+                                        <div class="col-md-4">
+                                            <div class="sparkline-chart">
+                                                <div class="number" id="sparkline_line"></div>
+                                                <a class="title" href="javascript:;"> Load Rate
+                                                    <i class="icon-arrow-right"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> -->
+                        <!-- END SERVER STATISTICS -->
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 col-sm-6">
+                            <div class="portlet light tasks-widget bordered">
+                                <div class="portlet-title">
+                                    <div class="caption">
+                                        <i class="fa fa-tasks font-yellow"></i>
+                                        <span class="caption-subject font-yellow bold uppercase">Pending Tasks</span>
+                                        <span class="caption-helper">   files queued for re-encoding...</span>
+                                    </div>
+                                    <div class="actions">
+                                        <!-- <div class="btn-group">
+                                            
+                                            <ul class="dropdown-menu pull-right">
+                                                <li>
+                                                    <a href="javascript:;"> All Project </a>
+                                                </li>
+                                                <li class="divider"> </li>
+                                                <li>
+                                                    <a href="javascript:;"> AirAsia </a>
+                                                </li>
+                                                <li>
+                                                    <a href="javascript:;"> Cruise </a>
+                                                </li>
+                                                <li>
+                                                    <a href="javascript:;"> HSBC </a>
+                                                </li>
+                                                <li class="divider"> </li>
+                                                <li>
+                                                    <a href="javascript:;"> Pending
+                                                        <span class="badge badge-danger"> 4 </span>
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a href="javascript:;"> Completed
+                                                        <span class="badge badge-success"> 12 </span>
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a href="javascript:;"> Overdue
+                                                        <span class="badge badge-warning"> 9 </span>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div> -->
+                                        <!-- <a class="btn btn-circle btn-icon-only btn-default fullscreen" href="javascript:;" data-original-title="" title=""> </a> -->
+                                    </div>
+                                </div>
+                                <div class="portlet-body">
+                                    <div class="task-content">
+                                        <div class="scroller" style="height: 330px;" data-always-visible="1" data-rail-visible1="1">
+                                            <!-- START TASK LIST -->
+                                            <div id="pending_tasks">{% include "main-pending-tasks.html" %}</div>
+                                            <!-- END START TASK LIST -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-sm-6">
+                            <div class="portlet light bordered">
+                                <div class="portlet-title">
+                                    <div class="caption">
+                                        <i class="fa fa-tasks font-blue"></i>
+                                        <span class="caption-subject font-blue bold uppercase">Completed Tasks</span>
+                                    </div>
+                                    <!-- <div class="actions">
+                                        <a class="btn btn-circle btn-icon-only btn-default fullscreen" href="javascript:;" data-original-title="" title=""> </a>
+                                    </div> -->
+                                </div>
+                                <div class="portlet-body">
+                                    <div class="scroller" style="height: 300px;" data-always-visible="1" data-rail-visible="0">
+                                        <!-- START TASK LIST -->
+                                        <div id="completed_tasks">{% include "main-completed-tasks-list.html" %}</div>
+                                        <!-- END START TASK LIST -->
+                                    </div>
+                                    <div class="scroller-footer">
+                                        <div class="btn-arrow-link pull-right">
+                                            <a href="/history/">See All Records</a>
+                                            <i class="icon-arrow-right"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+{% end %}

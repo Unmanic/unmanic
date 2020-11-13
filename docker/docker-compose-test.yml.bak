@@ -1,0 +1,34 @@
+################
+# Test environment Docker Compose file
+#
+# This compose file is only good for automated testing.
+#
+# docker exec --workdir=/app unmanic-testenv pytest --log-cli-level=INFO
+#
+
+
+version: '2'
+
+services:
+  unmanic-testenv:
+    container_name: unmanic-testenv
+    image: josh5/unmanic:latest
+    ports:
+      - 8888:8888
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - DEBUGGING=false
+      - NUMBER_OF_WORKERS=2
+      - SCHEDULE_FULL_SCAN_MINUTES=10
+      - RUN_FULL_SCAN_ON_START=false
+      - TZ=Pacific/Auckland
+    volumes:
+      - ../tests/tmp/cache:/tmp/unmanic
+      - ../tests/tmp/library:/library
+      - ../tests:/app/tests
+      - ../:/app
+      # Uncomment for debugging of tests within the docker container
+      # Note that some tests are setup to only succeed with a particular configuration
+      # and modifying the configuration may cause tests to fail unexpectedly.
+      # - ../tests/tmp/config:/config

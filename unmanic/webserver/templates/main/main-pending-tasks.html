@@ -1,0 +1,31 @@
+
+
+<ul class="task-list">
+    {% for pending_task in handler.get_pending_tasks() %}
+    <li>
+        <div class="task-title">
+            {% try %}
+                <span class="task-title-sp" title="{{ pending_task['abspath'] }}">{{ pending_task['basename'] }} </span>
+            {% except %}
+                <span class="error">(Error fetching pending item information - Please report this as a bug)</span>
+            {% end %}
+            <span class="label label-sm label-success">{{ escape(pending_task['format_long_name']) }}</span>
+        </div>
+        <div class="task-config">
+            <div class="task-config-btn btn-group">
+                <a class="btn btn-sm default" href="javascript:;" data-toggle="dropdown" data-hover="dropdown" data-close-others="true">
+                    <i class="fa fa-cog"></i>
+                    <i class="fa fa-angle-down"></i>
+                </a>
+                <ul class="dropdown-menu pull-right">
+                    <li>
+                        <a href="javascript:;">
+                            <i class="fa fa-trash-o"></i> Remove </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </li>
+    {% end %}
+</ul>
+

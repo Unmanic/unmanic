@@ -1,0 +1,68 @@
+/* here you can put your own css to customize and override the theme */
+
+
+.unmanic-file-browser-list-item-folder {
+    cursor: pointer;
+}
+
+.unmanic-file-browser-list-item-folder a {
+    display: block;
+    text-decoration: none;
+}
+
+.unmanic-file-browser-list-item-folder:hover .icon-folder,
+.unmanic-file-browser-list-item-folder .icon-folder-alt {
+    display: none;
+}
+
+.unmanic-file-browser-list-item-folder:hover .icon-folder-alt {
+    display: inline;
+}
+
+.historic-list-row label > span {
+    left: 15px;
+    top: 7px;
+}
+
+.historic-list-row label > .check {
+    top: 1px;
+    left: 22px;
+}
+
+.historic-list-row label > .box {
+    top: 6px;
+}
+
+@media (max-width: 767px) {
+    /* 767px */
+    .portlet > .completed-tasks > .actions {
+        float: left;
+        margin-left: 0;
+    }
+}
+
+@media (min-width: 768px) {
+    /* 768px */
+    .portlet > .completed-tasks > .actions {
+        float: left;
+        margin-left: 10px;
+        display: inline-block;
+        padding: 6px 0;
+    }
+}
+
+.table-group-actions > span {
+    margin-left: 10px;
+}
+.table-group-actions > .table-group-action-input {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+.table-group-actions > .table-group-action-submit {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+tr.child > td.child {
+    text-align: left;
+}

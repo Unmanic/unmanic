@@ -1,0 +1,200 @@
+
+
+
+        <div class="col-md-4 ">
+                <h3 class="list-heading">General</h3>
+                Some general options (Will fill in more text later on)
+        </div>
+        <div class="col-md-6 ">
+            <!-- BEGIN SAMPLE FORM PORTLET-->
+            <div class="portlet light bordered">
+                <div class="portlet-body form">
+
+                    {# Form body #}
+                    <form class="form-horizontal" role="form" method="POST">
+                        <div class="form-body">
+
+
+                            <hr/>
+                            <div class="caption">
+                                <span class="caption-subject font-dark sbold uppercase">Paths</span>
+                                <br>
+                                <span class="help-inline">
+                                </span>
+                            </div>
+                            <br>
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Library path</label>
+                                <div class="col-md-9">
+                                    <div class="input-group input-xlarge">
+                                        <input type="text" class="form-control" name="LIBRARY_PATH"
+                                               value="{{ escape(config.LIBRARY_PATH) }}">
+                                        <span class="input-group-btn">
+                                            <a class="btn green sbold upppercase" href="#unmanic-filebrowser-popup"
+                                               data-toggle="modal"
+                                               onclick="generateFileBrowserPopupContent('LIBRARY_PATH', 'directories', 'Select library path')"> Browse…
+                                                <i class="fa fa-share"></i>
+                                            </a>
+                                        </span>
+                                    </div>
+                                    <span class="help-inline"> The full path to your video library that you wish to scan for files to convert </span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Cache path</label>
+                                <div class="col-md-9">
+                                    <div class="input-group input-xlarge">
+                                        <input type="text" class="form-control" name="CACHE_PATH"
+                                               value="{{ escape(config.CACHE_PATH) }}">
+                                        <span class="input-group-btn">
+                                            <a class="btn green sbold upppercase" href="#unmanic-filebrowser-popup"
+                                               data-toggle="modal"
+                                               onclick="generateFileBrowserPopupContent('CACHE_PATH', 'directories', 'Select cache path')"> Browse…
+                                                <i class="fa fa-share"></i>
+                                            </a>
+                                        </span>
+                                    </div>
+                                    <span class="help-inline"> The full path to the folder where temporary files will be stored during conversion </span>
+                                </div>
+                            </div>
+                            <hr/>
+                            <div class="caption">
+                                <span class="caption-subject font-dark sbold uppercase">Workers</span>
+                                <br>
+                                <span class="help-inline">
+                                </span>
+                            </div>
+                            <br>
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Number of workers to spawn</label>
+                                <div class="col-md-6">
+                                    <select class="form-control" name="NUMBER_OF_WORKERS">
+                                        {% for i in range(1,13) %}
+                                        <option value="{{ escape(str(i)) }}" {% if int(config.NUMBER_OF_WORKERS) == i %}
+                                                selected {% end %}>
+                                            {{ escape(str(i)) }}
+                                        </option>
+                                        {% end %}
+                                    </select>
+                                </div>
+                            </div>
+                            <hr/>
+                            <div class="caption">
+                                <span class="caption-subject font-dark sbold uppercase">Library Watcher</span>
+                                <br>
+                                <span class="help-inline">
+                                </span>
+                            </div>
+                            <br>
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Enable watcher</label>
+                                <div class="col-md-9">
+                                    <div class="checkbox-list">
+                                        <input type="hidden" name="ENABLE_INOTIFY" id="ENABLE_INOTIFY"
+                                               value="{% if config.ENABLE_INOTIFY %}true{% end %}">
+                                        <label>
+                                            <input type="checkbox" id="inotify_enabled"
+                                                   onchange="toggleInotify();" {% if config.ENABLE_INOTIFY %}
+                                                   checked {% end %} />
+                                        </label>
+                                        <span class="help-inline"> If enabled, any file modifications or additions to the library will trigger that file to be processed </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr/>
+                            <div class="caption">
+                                <span class="caption-subject font-dark sbold uppercase">Library Scanner</span>
+                                <br>
+                                <span class="help-inline">
+                                </span>
+                            </div>
+                            <br>
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Library scan schedule</label>
+                                <div class="col-md-9">
+                                    <input type="text" class="form-control input-inline input-medium"
+                                           name="SCHEDULE_FULL_SCAN_MINUTES"
+                                           value="{{ escape(str(config.SCHEDULE_FULL_SCAN_MINUTES)) }}">
+                                    <span class="help-inline"> The time (in minutes) between full library scans. Set to 0 to disable </span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Run scan on start</label>
+                                <div class="col-md-9">
+                                    <div class="checkbox-list">
+                                        <input type="hidden" name="RUN_FULL_SCAN_ON_START" id="RUN_FULL_SCAN_ON_START"
+                                               value="{% if config.RUN_FULL_SCAN_ON_START %}true{% end %}">
+                                        <label>
+                                            <input type="checkbox" id="run_scan_on_start_enabled"
+                                                   onchange="toggleRunScanOnStart();" {% if config.RUN_FULL_SCAN_ON_START %}
+                                                   checked {% end %} />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr/>
+                            <div class="caption">
+                                <span class="caption-subject font-dark sbold uppercase">Keep Filename History</span>
+                                <br>
+                                <span class="help-inline">
+                                </span>
+                            </div>
+                            <br>
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Keep Filename History</label>
+                                <div class="col-md-9">
+                                    <div class="checkbox-list">
+                                        <input type="hidden" name="KEEP_FILENAME_HISTORY" id="KEEP_FILENAME_HISTORY"
+                                               value="{% if config.KEEP_FILENAME_HISTORY %}true{% end %}">
+                                        <label>
+                                            <input type="checkbox" id="keep_filename_history_enabled"
+                                                   onchange="toggleKeepFilenameHistory();" {% if config.KEEP_FILENAME_HISTORY %}
+                                                   checked {% end %} />
+                                        </label>
+                                        <span class="help-inline">If enabled, unmanic will keep a filename history using FileBot pattern (file_info). Useful for Sub-Zero Plex Plugin and other subtitles downloaders.</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr/>
+                            <div class="caption">
+                                <span class="caption-subject font-dark sbold uppercase">Debugging</span>
+                                <br>
+                                <span class="help-inline">
+                                </span>
+                            </div>
+                            <br>
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Enable debugging</label>
+                                <div class="col-md-9">
+                                    <div class="checkbox-list">
+                                        <input type="hidden" name="DEBUGGING" id="DEBUGGING"
+                                               value="{% if config.DEBUGGING %}true{% end %}">
+                                        <label>
+                                            <input type="checkbox" id="debugging_enabled"
+                                                   onchange="toggleDebugging();" {% if config.DEBUGGING %} checked {% end %} />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="form-actions">
+                            <div class="row">
+                                <div class="col-md-offset-3 col-md-9">
+                                    <button type="submit" class="btn green">Submit</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    {# Popups #}
+                    {# :components_bootstrap_select: #}
+                    <div id="unmanic-filebrowser-popup" class="modal fade" role="dialog" aria-labelledby="myModalLabel10"
+                         aria-hidden="true">
+                        <div id="unmanic-file-browser-body">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+

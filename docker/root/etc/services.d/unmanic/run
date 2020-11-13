@@ -1,6 +1,14 @@
 #!/usr/bin/with-contenv bash
 
 export HOME=/config
+export PYTHONPATH="${PYTHONPATH}:/app"
 
-cd /app
-exec s6-setuidgid docker /usr/bin/python3 /app/service.py
+RUN_USER=abc
+
+if [[ -e /app/unmanic/service.py ]]; then
+    echo "Running Unmanic from source"
+    exec s6-setuidgid ${RUN_USER} /usr/bin/python3 /app/unmanic/service.py
+else
+    echo "Running Unmanic from installed module"
+    exec s6-setuidgid ${RUN_USER} unmanic
+fi

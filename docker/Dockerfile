@@ -78,7 +78,6 @@ RUN \
 
 # Build and install application
 # Must first run `python3 ./setup.py bdist_wheel` to build package
-# COPY /dist/      /src/
 RUN \
     echo "**** Build and install unmanic ****" \
         && ls -l /src/ \

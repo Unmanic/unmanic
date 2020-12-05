@@ -135,7 +135,7 @@ jobs:
         python ./setup.py  --quiet --version
         echo "Long version:"
         python ./setup.py  --quiet fullversion
-        python ./setup.py bdist_wheel
+        python ./setup.py sdist bdist_wheel
 
     # Read the python package distribution data (save version to file)
     - name: Read python package distribution data
@@ -266,3 +266,36 @@ jobs:
           --platform ${{ steps.prepare.outputs.docker_platforms }} \
           ${{ steps.prepare.outputs.docker_tags }} \
           --file docker/Dockerfile .
+
+  build_pypi:
+
+    name: Publish package to PyPI
+    needs: py_build
+    runs-on: ubuntu-latest
+
+    steps:
+    # Fetch shallow git repository
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    # Fetch all artifacts
+    - name: Download Artifact
+      uses: actions/download-artifact@v2
+      with:
+        path: ./artifacts/
+
+    # Restore python package distribution data
+    - name: Restore python package distribution data
+      id: py_build_data
+      run: |
+        mkdir -p ./dist
+        find ./artifacts/ -type f -name "*.whl" -exec cp -n {} ./dist/ \;
+        find ./artifacts/ -type f -name "*.tar.gz" -exec cp -n {} ./dist/ \;
+        ls -l ./dist/
+
+    # Push the artifacts to PyPI repo
+    - name: Publish distribution package to PyPI
+      #if: startsWith(github.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.PYPI_TOKEN }}

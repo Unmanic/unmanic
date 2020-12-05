@@ -61,11 +61,11 @@ Simply point Unmanic at your library and let it manage it.
 
 #### Desktop:
 
-![Screen-shot - Desktop](docs/images/dashboard-1.png)
+![Screen-shot - Desktop](https://raw.githubusercontent.com/Josh5/unmanic/master/docs/images/dashboard-1.png)
 
 #### Mobile:
 
-![Screen-shot - Mobile](docs/images/dashboard-mobile-1.png)
+![Screen-shot - Mobile](https://raw.githubusercontent.com/Josh5/unmanic/master/docs/images/dashboard-mobile-1.png)
 
 
 ## Install and Run

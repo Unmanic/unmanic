@@ -318,9 +318,10 @@ class Foreman(threading.Thread):
                               level="exception")
 
             # First setup the correct number of workers
-            self.init_worker_threads()
+            if not self.abort_flag.is_set():
+                self.init_worker_threads()
 
-            if not self.task_queue.task_list_pending_is_empty():
+            if not self.abort_flag.is_set() and not self.task_queue.task_list_pending_is_empty():
                 time.sleep(.2)
 
                 # Check if there are any free workers

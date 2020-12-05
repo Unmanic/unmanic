@@ -154,7 +154,7 @@ def get_git_version_info():
     Returns a long and short version string:
         eg. short   - 0.0.1                         (full release)
         eg. short   - 0.0.1b2                       (beta release)
-        eg. short   - 0.0.1b2.dev3                  (beta release with commits since the last tag)
+        eg. short   - 0.0.1b2.post3                 (beta release with commits since the last tag)
         eg. long    - 0.0.1~68b3db6                 (full release)
         eg. long    - 0.0.1-beta2~68b3db6           (beta release)
         eg. long    - 0.0.1-beta2+68b3db6           (beta release with commits since the last tag)
@@ -185,11 +185,11 @@ def get_git_version_info():
     elif '-rc' in short_version_string.lower():
         short_version_string = short_version_string.replace("-rc", "rc")
 
-    # Append a dev tag if this is not a clean tagged build
+    # Append a post tag if this is not a clean tagged build
     if int(distance_since_last_tag) > 0:
         # There are commits since the last tag
         # Modify the version strings
-        short_version_string = '{}.dev{}'.format(short_version_string, distance_since_last_tag)
+        short_version_string = '{}.post{}'.format(short_version_string, distance_since_last_tag)
         long_version_string = '{}+{}'.format(long_version_string, current_commit)
     else:
         long_version_string = '{}~{}'.format(long_version_string, current_commit)

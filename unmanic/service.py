@@ -17,7 +17,7 @@
            copies of the Software, and to permit persons to whom the Software is
            furnished to do so, subject to the following conditions:
 
-           The above copyright notice and this permission notice shall be includeed in all
+           The above copyright notice and this permission notice shall be included in all
            copies or substantial portions of the Software.
 
            THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
@@ -331,7 +331,7 @@ class Service:
         main_logger.info("SIGTERM Received")
         self.run_threads = False
 
-    def run(self):
+    def start_threads(self):
         # Read settings
         settings = config.CONFIG()
 
@@ -366,6 +366,10 @@ class Service:
 
         # Start inotify watch manager
         self.start_inotify_watch_manager(data_queues, settings)
+
+    def run(self):
+        # Start all threads
+        self.start_threads()
 
         # Watch for the term signal
         signal.signal(signal.SIGINT, self.sig_handle)

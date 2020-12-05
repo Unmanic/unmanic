@@ -344,7 +344,10 @@ class Service:
         }
 
         # Clear cache directory
+        main_logger.info("Clearing previous cache")
         common.clean_files_in_dir(settings.CACHE_PATH)
+
+        main_logger.info("Starting all threads")
 
         # Setup job queue
         task_queue = TaskQueue(settings, data_queues)
@@ -367,6 +370,14 @@ class Service:
         # Start inotify watch manager
         self.start_inotify_watch_manager(data_queues, settings)
 
+    def stop_threads(self):
+        main_logger.info("Stopping all threads")
+        for thread in self.threads:
+            main_logger.info("Sending thread {} abort signal".format(thread['name']))
+            thread['thread'].stop()
+            main_logger.info("Waiting for thread {} to stop".format(thread['name']))
+            thread['thread'].join()
+
     def run(self):
         # Start all threads
         self.start_threads()
@@ -378,12 +389,7 @@ class Service:
             signal.pause()
 
         # Received term signal. Stop everything
-        main_logger.info("Stopping all threads")
-        for thread in self.threads:
-            main_logger.info("Sending thread {} abort signal".format(thread['name']))
-            thread['thread'].stop()
-            main_logger.info("Waiting for thread {} to stop".format(thread['name']))
-            thread['thread'].join()
+        self.stop_threads()
         main_logger.info("Exit Unmanic")
 
 

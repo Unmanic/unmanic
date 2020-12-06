@@ -375,8 +375,11 @@ class Service:
         for thread in self.threads:
             main_logger.info("Sending thread {} abort signal".format(thread['name']))
             thread['thread'].stop()
+        for thread in self.threads:
             main_logger.info("Waiting for thread {} to stop".format(thread['name']))
             thread['thread'].join()
+            main_logger.info("Thread {} has successfully stopped".format(thread['name']))
+        self.threads = []
 
     def run(self):
         # Start all threads

@@ -141,9 +141,9 @@ class UIServer(threading.Thread):
         self.app = self.make_web_app()
 
         # Start app
-        self._log("Listening on port 8888")
+        self._log("Listening on port {}".format(self.settings.UI_PORT))
         self._log(tornado_settings['static_path'])
-        self.app.listen(8888)
+        self.app.listen(int(self.settings.UI_PORT))
 
         self.ioloop.start()
 

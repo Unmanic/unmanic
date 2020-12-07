@@ -42,7 +42,9 @@ try:
 except ImportError:
     JSONDecodeError = ValueError
 
-HOME_DIR = os.path.expanduser("~")
+HOME_DIR = os.environ.get('HOME_DIR')
+if HOME_DIR is None:
+    HOME_DIR = os.path.expanduser("~")
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULT_DB_CONFIG = {
@@ -63,19 +65,26 @@ class CONFIG(object):
         self.name = "Config"
         self.settings = None
 
+        # Set default UI port
+        self.UI_PORT = 8888
+        # Set default config directory
+        self.CONFIG_PATH = os.path.join(HOME_DIR, '.unmanic', 'config')
         # Set default db config
         self.DATABASE = None
         self.apply_default_db_settings()
         # Overwrite default DB config
         if db_file:
             self.DATABASE['FILE'] = db_file
+
+        # Import env variables and override all previous settings.
+        self.import_settings_from_env()
+        # Read config from file and override all previous settings (this may include the DB location).
+        self.import_settings_from_file()
         # Run DB migrations
         self.run_db_migrations()
         # Init DB connection and read settings
         self.import_settings_from_db()
-        # Import env variables
-        self.import_settings_from_env()
-        # Finally, read config from file and override all above settings.
+        # Finally, re-read config from file and override all previous settings.
         self.import_settings_from_file()
         # Apply settings to the unmanic logger
         self.setup_unmanic_logger()
@@ -105,19 +114,26 @@ class CONFIG(object):
         else:
             print("Unmanic.{} - ERROR!!! Failed to find logger".format(self.name))
 
+    def get_empty_settings_model(self):
+        """
+        Return a settings Model object
+        :return:
+        """
+        if self.settings:
+            return self.settings
+        else:
+            # Fetch blank settings Model object
+            return unmodels.Settings()
+
     def get_config_as_dict(self):
         """
         Return a dictionary of configuration fields and their current values
 
         :return:
         """
-        config_dict = {}
         # Create a copy of this class's dict
-        if self.settings:
-            config_dict = self.settings.get_current_field_values_dict()
-        else:
-            # TODO: Set this to debug logging
-            self._log("Something went wrong. The settings variable is not set.", level="info")
+        settings = self.get_empty_settings_model()
+        config_dict = settings.get_current_field_values_dict()
         # Return dictionary of config items
         return config_dict
 
@@ -180,7 +196,7 @@ class CONFIG(object):
             # Create settings (defaults will be applied)
             self.settings = db_settings.create()
         # Check if key is a valid setting
-        current_settings = self.settings.get_current_field_values_dict()
+        current_settings = self.get_config_as_dict()
         for setting in current_settings:
             # Import settings
             self.set_config_item(setting.upper(), current_settings[setting], save_settings=False)
@@ -202,9 +218,6 @@ class CONFIG(object):
 
         :return:
         """
-        # TODO: If DATABASE settings have changed, then rerun
-        #       self.run_db_migrations()
-        #       self.import_settings_from_db()
         if not os.path.exists(self.CONFIG_PATH):
             os.makedirs(self.CONFIG_PATH)
         settings_file = os.path.join(self.CONFIG_PATH, 'settings.json')
@@ -215,10 +228,16 @@ class CONFIG(object):
                     data = json.load(infile)
             except Exception as e:
                 self._log("Exception in reading saved settings from file:", message2=str(e), level="exception")
+            # Set values that match the settings model attributes
             current_config = self.get_config_keys()
             for item in current_config:
                 if item in data:
                     self.set_config_item(item, data[item], save_settings=False)
+            # Set config values that are in the 'DATABASE' or 'UI_PORT' keys (if provided)
+            if 'DATABASE' in data:
+                setattr(self, 'DATABASE', data['DATABASE'])
+            if 'UI_PORT' in data:
+                setattr(self, 'UI_PORT', data['UI_PORT'])
 
     def write_settings_to_file(self):
         """
@@ -261,20 +280,23 @@ class CONFIG(object):
             # Get lowercase value of key
             field_id = key.lower()
             # Check if key is a valid setting
-            if field_id not in self.settings.get_current_field_values_dict().keys():
+            if field_id not in self.get_config_as_dict().keys():
                 self._log("Attempting to save unknown key", message2=str(key), level="warning")
                 # Do not proceed if this is any key other than the database
                 return
+            settings_model = self.get_empty_settings_model()
             # Parse field value by it's type for this setting (bool, string, etc.)
-            parsed_field_value = self.settings.parse_field_value_by_type(field_id, value)
-            # Assign value to setting field
-            setattr(self.settings, field_id, parsed_field_value)
+            parsed_field_value = settings_model.parse_field_value_by_type(field_id, value)
+            if self.settings:
+                # Assign value to setting field
+                setattr(self.settings, field_id, parsed_field_value)
             # Assign field type converted value to class variable
             setattr(self, key, parsed_field_value)
             # Save settings (if requested)
             if save_settings:
                 self.write_settings_to_file()
-                self.settings.save()
+                if self.settings:
+                    self.settings.save()
 
     def allowed_search_extensions(self):
         """

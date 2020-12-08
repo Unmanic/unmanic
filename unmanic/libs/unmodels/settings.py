@@ -34,7 +34,9 @@ import os
 from peewee import *
 from unmanic.libs.unmodels.basemodel import BaseModel
 
-HOME_DIR = os.path.expanduser("~")
+HOME_DIR = os.environ.get('HOME_DIR')
+if HOME_DIR is None:
+    HOME_DIR = os.path.expanduser("~")
 
 
 class Settings(BaseModel):

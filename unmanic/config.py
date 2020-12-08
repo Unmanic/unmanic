@@ -65,10 +65,6 @@ class CONFIG(object):
         self.name = "Config"
         self.settings = None
 
-        # Set default UI port
-        self.UI_PORT = 8888
-        # Set default config directory
-        self.CONFIG_PATH = os.path.join(HOME_DIR, '.unmanic', 'config')
         # Set default db config
         self.DATABASE = None
         self.apply_default_db_settings()
@@ -236,6 +232,8 @@ class CONFIG(object):
             # Set config values that are in the 'DATABASE' or 'UI_PORT' keys (if provided)
             if 'DATABASE' in data:
                 setattr(self, 'DATABASE', data['DATABASE'])
+            if 'LOG_PATH' in data:
+                setattr(self, 'LOG_PATH', data['LOG_PATH'])
             if 'UI_PORT' in data:
                 setattr(self, 'UI_PORT', data['UI_PORT'])
 

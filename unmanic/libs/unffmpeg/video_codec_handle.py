@@ -43,6 +43,7 @@ class VideoCodecHandle(object):
     def __init__(self, file_probe):
         self.file_probe = file_probe
         self.encoding_args = {}
+        self.video_tracks_count = 0
 
         # Configurable settings
         self.disable_video_encoding = False
@@ -85,13 +86,15 @@ class VideoCodecHandle(object):
                 if just_copy_video_stream:
                     # Video stream just needs to be copied
                     self.encoding_args['streams_to_encode'] = self.encoding_args['streams_to_encode'] + [
-                        "-c:v", "copy"
+                        "-c:v:{}".format(self.video_tracks_count), "copy"
                     ]
                 else:
                     # Video stream to be re-encoded
                     self.encoding_args['streams_to_encode'] = self.encoding_args['streams_to_encode'] + [
-                        "-c:v", self.video_encoder
+                        "-c:v:{}".format(self.video_tracks_count), self.video_encoder
                     ]
+                
+                self.video_tracks_count += 1
 
                 # Map this video stream to be processed
                 self.encoding_args['streams_to_map'] = self.encoding_args['streams_to_map'] + [

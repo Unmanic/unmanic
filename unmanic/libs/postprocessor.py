@@ -186,19 +186,19 @@ class PostProcessor(threading.Thread):
             self._log("Exception in method process_file", str(e), level='exception')
             return False
 
-        result = True
+        result = False
         for stream in file_probe['streams']:
             if stream['codec_type'] == 'video':
                 if self.settings.ENABLE_VIDEO_ENCODING:
                     # Check if this file is the right codec
                     if stream['codec_name'] == self.settings.VIDEO_CODEC:
-                        continue
+                        result = True
                     elif self.settings.DEBUGGING:
-                        self._log("File is the not correct codec {} - {}".format(self.settings.VIDEO_CODEC, abspath))
+                        self._log("File is the not correct codec {} - {} :: {}".format(self.settings.VIDEO_CODEC, abspath, stream['codec_name']))
                         # TODO: If settings are modified during a conversion, the file being converted should not fail.
                         #  Modify ffmpeg.py to have settings passed to it rather than reading directly from the config object
                         #  Test against the task's configured video codec
-                        result = False
+                        continue
                     # TODO: Test duration is the same as src
                     # TODO: Add file checksum from before and after move
 

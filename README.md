@@ -107,6 +107,8 @@ python3 ./setup.py install --user
 unmanic
 ```
 
+For docker-compose templates, take a look at the templates in the [/docker/](/docker/) directory
+
 ## License and Contribution
 
 This projected is licensed under th GPL version 3. 

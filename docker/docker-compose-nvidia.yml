@@ -1,0 +1,35 @@
+################
+# Unmanic Docker Compose template
+#
+# Use this template when enabling NVENC Hardware accelerated encoding
+#
+# Variables that will need to be changed:
+#     <PUID>                            -  User id for folder/file permissions
+#     <PGID>                            -  Group id for folder/file permissions
+#     <TZ>                              -  Your time zone, eg - Pacific/Auckland
+#     <NVIDIA_VISIBLE_DEVICES>          -  The GPUs that will be accessible to the container
+#                                          Options: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/user-guide.html#gpu-enumeration
+#     <PATH_TO_CONFIG>                  -  Path where Unmanic will store config files
+#     <PATH_TO_LIBRARY>                 -  Path where you store the files that Unmanic will scan
+#     <PATH_TO_ENCODE_CACHE>            -  Cache path for in-progress encoding tasks
+#
+
+
+version: '2.4'
+
+services:
+  unmanic:
+    container_name: unmanic
+    image: josh5/unmanic:latest
+    ports:
+      - 8888:8888
+    environment:
+      - PUID=<PUID>
+      - PGID=<PGID>
+      - TZ=<TZ>
+      - NVIDIA_VISIBLE_DEVICES=<NVIDIA_VISIBLE_DEVICES>
+    volumes:
+      - <PATH_TO_CONFIG>:/config
+      - <PATH_TO_LIBRARY>:/library
+      - <PATH_TO_ENCODE_CACHE>:/tmp/unmanic
+    runtime: nvidia       # For H/W transcoding using the NVENC encoder

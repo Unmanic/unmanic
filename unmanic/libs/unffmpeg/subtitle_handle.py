@@ -85,10 +85,15 @@ class SubtitleHandle(object):
                     # Transcode the stream to a format that the destination container does support
                     # TODO: Check if it can be re-encoded. It is not possible to switch between image and text format
                     # If dest container supports the current subtitle codec, just copy it
-                    self.subtitle_args['streams_to_encode'] = self.subtitle_args['streams_to_encode'] + [
-                        "-c:s:{}".format(subtitle_tracks_count), "{}".format(supported_subtitles[0])
-                    ]
-                    subtitle_tracks_count += 1
+                    # unsupported subtitles will need to be removed, otherwise ffmpeg will not convert
+                    unsupported_subtitles = self.container.unsupported_subtitles()
+                    if stream['codec_name'] in unsupported_subtitles:
+                        continue
+                    else:
+                        self.subtitle_args['streams_to_encode'] = self.subtitle_args['streams_to_encode'] + [
+                            "-c:s:{}".format(subtitle_tracks_count), "{}".format(supported_subtitles[0])
+                        ]
+                        subtitle_tracks_count += 1
 
                 # Map this stream if it was marked above as compatible with the destination
                 self.subtitle_args['streams_to_map'] = self.subtitle_args['streams_to_map'] + [

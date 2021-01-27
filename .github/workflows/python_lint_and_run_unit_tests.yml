@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - 'master'
+      - 'staging'
 
 jobs:
   py_lint_and_unit_test:

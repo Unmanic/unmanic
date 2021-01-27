@@ -74,3 +74,14 @@ class Containers(object):
         if self.container_supports_subtitles():
             return self.subtitle_codecs
         return []
+
+    def unsupported_subtitles(self):
+        """
+        Check if this Container supports subtitles
+
+        :return:
+        """
+        if hasattr(self, 'unsupports_codecs'):
+            return self.unsubtitle_codecs
+        # HDMV streams cannont be written by FFMPEG
+        return ['hdmv_pgs_subtitle']

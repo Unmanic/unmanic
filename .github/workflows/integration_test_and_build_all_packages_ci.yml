@@ -2,10 +2,10 @@ name: Build All Packages CI
 
 on:
   push:
-    branches: [ 'dev-**', 'pr-**', master ]
+    branches: [ 'dev-**', 'pr-**', staging, master ]
     tags: [ '**' ]
   pull_request:
-    branches: [ master ]
+    branches: [ staging, master ]
 
 jobs:
 

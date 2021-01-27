@@ -43,8 +43,13 @@ except ImportError:
     JSONDecodeError = ValueError
 
 HOME_DIR = os.environ.get('HOME_DIR')
+CONFIG_PATH = os.environ.get('CONFIG_PATH')
+
 if HOME_DIR is None:
     HOME_DIR = os.path.expanduser("~")
+if CONFIG_PATH is None:
+    CONFIG_PATH = os.path.join(HOME_DIR, '.unmanic', 'config')
+
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULT_DB_CONFIG = {
@@ -64,6 +69,11 @@ class CONFIG(object):
         # Non config items (objects)
         self.name = "Config"
         self.settings = None
+
+        # Set default UI port
+        self.UI_PORT = 8888
+        # Set default config directory
+        self.CONFIG_PATH = CONFIG_PATH
 
         # Set default db config
         self.DATABASE = None

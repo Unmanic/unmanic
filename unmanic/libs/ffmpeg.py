@@ -316,22 +316,19 @@ class FFMPEGHandle(object):
                         # Check if this file is already the right format
                         audio_streams_codecs += "{},{}".format(audio_streams_codecs, stream['codec_name'])
                         if stream['codec_name'] == settings['audio_codec']:
-                            if settings['debugging']:
-                                self._log("File already has {} codec audio stream - {}".format(settings['audio_codec'], vid_file_path),
-                                          level='debug')
+                            self._log("File already has {} codec audio stream - {}".format(settings['audio_codec'], vid_file_path),
+                                      level='debug')
                             correct_audio_codec = True
                 if not correct_audio_codec:
-                    if settings['debugging']:
-                        self._log(
-                            "The current file's audio streams ({}) do not match the configured audio codec ({})".format(
-                                audio_streams_codecs, settings['audio_codec']), level='debug')
+                    self._log(
+                        "The current file's audio streams ({}) do not match the configured audio codec ({})".format(
+                            audio_streams_codecs, settings['audio_codec']), level='debug')
             except Exception as e:
                 # Failed to fetch properties
                 self._log("Exception in method check_file_to_be_processed. Check audio codec.", str(e),
                           level='exception')
-                if settings['debugging']:
-                    self._log("Failed to read codec info of file {}".format(vid_file_path), level='debug')
-                    self._log("Marking file not to be processed", level='debug')
+                self._log("Failed to read codec info of file {}".format(vid_file_path), level='debug')
+                self._log("Marking file not to be processed", level='debug')
                 return False
         else:
             correct_audio_codec = True

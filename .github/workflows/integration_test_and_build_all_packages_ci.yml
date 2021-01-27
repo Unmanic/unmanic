@@ -219,6 +219,8 @@ jobs:
         DOCKER_TAGS=""
         if [[ ${VERSION_TAG%/merge} == 'master' ]]; then
           DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_IMAGE}:latest"
+        elif [[ ${VERSION_TAG%/merge} == 'staging' ]]; then
+          DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_IMAGE}:staging"
         elif [[ ${VERSION_TAG%/merge} =~ "dev-"* ]]; then
           DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_IMAGE}:${VERSION_TAG%/merge}"
         fi

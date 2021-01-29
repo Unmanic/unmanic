@@ -107,7 +107,9 @@ python3 ./setup.py install --user
 unmanic
 ```
 
-For docker-compose templates, take a look at the templates in the [/docker/](/docker/) directory
+For docker-compose templates, take a look at the templates in the [/docker/](/docker/) directory.
+
+For information on configuration such as enabling hardware acceleration, see the [Configuration Docs](docs/configuration/README.md).
 
 ## License and Contribution
 

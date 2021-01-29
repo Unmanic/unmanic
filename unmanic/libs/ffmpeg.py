@@ -271,8 +271,9 @@ class FFMPEGHandle(object):
                     correct_extension = True
 
             # If this is not in the correct extension, then log it. This file may be added to the conversion list
-            self._log("Current file format names do not match the configured extension {}".format(container_extension),
-                      level='debug')
+            if not correct_extension:
+                self._log("Current file format names do not match the configured extension {}".format(container_extension),
+                          level='debug')
         except Exception as e:
             self._log("Exception in method check_file_to_be_processed. check file container", str(e), level='exception')
             # Failed to fetch properties
@@ -288,7 +289,10 @@ class FFMPEGHandle(object):
                 for stream in file_probe['streams']:
                     if stream['codec_type'] == 'video':
                         # Check if this file is already the right format
-                        video_streams_codecs += "{},{}".format(video_streams_codecs, stream['codec_name'])
+                        if video_streams_codecs:
+                            video_streams_codecs += "{},{}".format(video_streams_codecs, stream['codec_name'])
+                        else:
+                            video_streams_codecs += "{}".format(stream['codec_name'])
                         if stream['codec_name'] == settings['video_codec']:
                             self._log(
                                 "File already has {} codec video stream - {}".format(settings['video_codec'], vid_file_path),
@@ -314,7 +318,10 @@ class FFMPEGHandle(object):
                 for stream in file_probe['streams']:
                     if stream['codec_type'] == 'audio':
                         # Check if this file is already the right format
-                        audio_streams_codecs += "{},{}".format(audio_streams_codecs, stream['codec_name'])
+                        if audio_streams_codecs:
+                            audio_streams_codecs += "{},{}".format(audio_streams_codecs, stream['codec_name'])
+                        else:
+                            audio_streams_codecs += "{}".format(stream['codec_name'])
                         if stream['codec_name'] == settings['audio_codec']:
                             self._log("File already has {} codec audio stream - {}".format(settings['audio_codec'], vid_file_path),
                                       level='debug')

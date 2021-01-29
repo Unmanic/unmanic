@@ -32,7 +32,7 @@
 
 SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd );
 PROJECT_BASE=$(realpath ${SCRIPT_PATH}/../../);
-TEST_VIDEOS_DIRECTORY=$(realpath ${SCRIPT_PATH}/../_support/videos);
+TEST_VIDEOS_DIRECTORY=$(realpath ${SCRIPT_PATH}/../support_/videos);
 TEMP_ENV=$(realpath ${SCRIPT_PATH}/../tmp/test_env);
 PUID=$(id -u);
 PGID=$(id -g);

@@ -147,7 +147,7 @@ class LibraryScanner(threading.Thread):
     def get_convert_files(self, search_folder):
         if self.settings.DEBUGGING:
             self._log("Scanning directory - '{}'".format(search_folder), level="debug")
-        for root, subFolders, files in os.walk(search_folder):
+        for root, subFolders, files in os.walk(search_folder, followlinks=True):
             if self.settings.DEBUGGING:
                 self._log(json.dumps(files, indent=2), level="debug")
             # Add all files in this path that match our container filter

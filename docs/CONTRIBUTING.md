@@ -37,6 +37,9 @@ Your contribution becomes licensed under the same license as the project and own
 is handed over to the project owner. 
 This extends upon paragraph 11 of the Terms & Conditions stipulated in the GPL v3.0
 
+All pull requests must be opened to merge into the staging branch. No pull requests 
+will be merged into the master branch.
+
 All new python file contributions must contain the following header:
 
 ```

@@ -168,9 +168,9 @@ class WorkerThread(threading.Thread):
             if not file_probe:
                 return False
             # Create args from
-            ffmpeg_args = self.ffmpeg.generate_ffmpeg_args(file_probe)
+            ffmpeg_args = self.ffmpeg.generate_ffmpeg_args(file_probe, abspath, self.current_task.task.cache_path)
             if ffmpeg_args:
-                success = self.ffmpeg.convert_file_and_fetch_progress(abspath, self.current_task.task.cache_path, ffmpeg_args)
+                success = self.ffmpeg.convert_file_and_fetch_progress(abspath, ffmpeg_args)
             self.current_task.set_ffmpeg_log(self.ffmpeg.ffmpeg_cmd_stdout)
 
         except ffmpeg.FFMPEGHandleConversionError as e:

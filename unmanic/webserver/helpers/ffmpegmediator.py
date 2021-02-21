@@ -181,7 +181,7 @@ def generate_example_ffmpeg_args(config):
     ffmpeg_obj = ffmpeg.FFMPEGHandle(settings)
 
     # Create commandline args from ffmpeg object
-    ffmpeg_args = ffmpeg_obj.generate_ffmpeg_args(dummy_probe)
+    ffmpeg_args = ffmpeg_obj.generate_ffmpeg_args(dummy_probe, '/path/to/input/video.mkv', '/path/to/output/video.mkv')
 
     # Return args
     return ffmpeg_args

@@ -152,7 +152,7 @@ class TestClass(object):
         self._log("Converting {} -> {}".format(infile, outfile))
         # Fetch file info
         self.ffmpeg.set_file_in(infile)
-        assert self.ffmpeg.convert_file_and_fetch_progress(infile, outfile, built_args)
+        assert self.ffmpeg.convert_file_and_fetch_progress(infile, built_args)
         if not test_for_failure:
             assert self.ffmpeg.post_process_file(outfile)
         elif test_for_failure:

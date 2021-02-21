@@ -40,6 +40,7 @@ from . import subtitle_codecs
 from . import video_codecs
 from .info import Info
 from .audio_codec_handle import AudioCodecHandle
+from .hardware_acceleration_handle import HardwareAccelerationHandle
 from .subtitle_handle import SubtitleHandle
 from .video_codec_handle import VideoCodecHandle
 
@@ -53,6 +54,7 @@ __all__ = (
     'video_codecs',
     'Info',
     'AudioCodecHandle',
+    'HardwareAccelerationHandle',
     'SubtitleHandle',
     'VideoCodecHandle',
 )

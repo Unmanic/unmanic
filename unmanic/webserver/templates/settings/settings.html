@@ -158,6 +158,13 @@
             $(".additional_ffmpeg_options_input").addClass('hidden');
         }
     };
+    var toggleEnableHardwareAcceleratedDecoding = function () {
+        if ($("#enable_hardware_accelerated_decoding").prop("checked")) {
+            $("#ENABLE_HARDWARE_ACCELERATED_DECODING").val("true");
+        } else {
+            $("#ENABLE_HARDWARE_ACCELERATED_DECODING").val("false");
+        }
+    };
 </script>
 {% end %}
 

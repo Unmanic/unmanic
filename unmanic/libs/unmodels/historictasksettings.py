@@ -65,3 +65,4 @@ class HistoricTaskSettings(BaseModel):
     search_extensions = TextField(null=False)
     video_codec = TextField(null=False)
     additional_ffmpeg_options = TextField(null=True)
+    enable_hardware_accelerated_decoding = BooleanField(null=False, default=False)

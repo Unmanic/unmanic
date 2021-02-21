@@ -9,11 +9,12 @@
         <br>
         <span class="bold">ADDITIONAL COMMANDLINE OPTIONS</span>:
         <br>
-        Additional commandline options refer to options that are not affected by the input file.
+        If <span class="sbold">`Enable HW Decoding`</span> is selected, Unmanic will attempt to use hardware acceleration when decoding video.
+        <br>
+        Hardware acceleration can make transcoding faster, but it can also reduce video quality and compatibility.
         <br>
         <br>
         If <span class="sbold">`Overwrite Additional FFMPEG Options`</span> is not selected, Unmanic will handle all additional FFMPEG commandline options automatically.
-        <br>
         <br>
         Selecting the <span class="sbold">`Overwrite Additional FFMPEG Options`</span> checkbox will give you the option to specify your own custom options..
         <br>
@@ -38,7 +39,7 @@
                             <hr/>
                         </div>
 
-                        <div class="additional_ffmpeg_options}">
+                        <div class="additional_ffmpeg_options">
                             <div class="caption">
                                 <span class="caption-subject font-dark sbold uppercase">Additional Commandline Options</span>
                                 <br>
@@ -47,6 +48,21 @@
                                 </span>
                             </div>
                             <br>
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Enable HW Decoding</label>
+                                <div class="col-md-9">
+                                    <div class="checkbox-list">
+                                        <input type="hidden" name="ENABLE_HARDWARE_ACCELERATED_DECODING" id="ENABLE_HARDWARE_ACCELERATED_DECODING"
+                                               value="{% if config.ENABLE_HARDWARE_ACCELERATED_DECODING %}true{% end %}">
+                                        <label>
+                                            <input type="checkbox" id="enable_hardware_accelerated_decoding"
+                                                   onchange="toggleEnableHardwareAcceleratedDecoding();"
+                                                   {% if config.ENABLE_HARDWARE_ACCELERATED_DECODING %} checked {% end %} />
+                                        </label>
+                                    </div>
+                                    <span class="help-inline">Use hardware acceleration to decode files when available.</span>
+                                </div>
+                            </div>
                             <div class="form-group">
                                 <label class="col-md-3 control-label">Overwrite Additional FFMPEG Options</label>
                                 <div class="col-md-9">

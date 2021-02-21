@@ -162,3 +162,4 @@ class MockConfig(object):
         self.SEARCH_EXTENSIONS = 'mkv,avi,mov,ts,rmvb,mp4,'
         self.VIDEO_CODEC = 'hevc'
         self.VIDEO_STREAM_ENCODER = 'libx265'
+        self.ENABLE_HARDWARE_ACCELERATED_DECODING = False

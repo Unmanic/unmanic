@@ -71,3 +71,4 @@ class Settings(BaseModel):
     video_stream_encoder = TextField(null=False, default='libx265')
     overwrite_additional_ffmpeg_options = BooleanField(null=False, default=False)
     additional_ffmpeg_options = TextField(null=True, default='')
+    enable_hardware_accelerated_decoding = BooleanField(null=False, default=False)

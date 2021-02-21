@@ -86,6 +86,7 @@ class LibraryScanner(threading.Thread):
             'video_stream_encoder':                 self.settings.VIDEO_STREAM_ENCODER,
             'overwrite_additional_ffmpeg_options':  self.settings.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS,
             'additional_ffmpeg_options':            self.settings.ADDITIONAL_FFMPEG_OPTIONS,
+            'enable_hardware_accelerated_decoding': self.settings.ENABLE_HARDWARE_ACCELERATED_DECODING,
         }
 
     def stop(self):
@@ -195,6 +196,7 @@ class EventProcessor(pyinotify.ProcessEvent):
             'video_stream_encoder':                 self.settings.VIDEO_STREAM_ENCODER,
             'overwrite_additional_ffmpeg_options':  self.settings.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS,
             'additional_ffmpeg_options':            self.settings.ADDITIONAL_FFMPEG_OPTIONS,
+            'enable_hardware_accelerated_decoding': self.settings.ENABLE_HARDWARE_ACCELERATED_DECODING,
         }
 
     def inotify_enabled(self):

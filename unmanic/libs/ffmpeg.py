@@ -457,16 +457,18 @@ class FFMPEGHandle(object):
         additional_ffmpeg_options = []
         command = []
 
-        # Hardware accelerated decoding
-        hardware_decoders = unffmpeg.HardwareAccelerationHandle(file_probe)
-        hardware_decoders.video_encoder = self.settings['video_stream_encoder']
-        # TODO: Set config option to enable hardware decoding
-        for hardware_decoder in hardware_decoders.get_decoders():
-            # Just select the first one in the list.
-            # TODO: in the future perhaps add a feature to be able to select which decoder to use.
-            # hardware_decoders.hardware_decoder = hardware_decoder
-            break
-        decoder_ffmpeg_options = hardware_decoders.args()
+        # Hardware acceleration args
+        hardware_acceleration = unffmpeg.HardwareAccelerationHandle(file_probe)
+        hardware_acceleration.video_encoder = self.settings['video_stream_encoder']
+        # Check if hardware decoding is enabled
+        if self.settings['enable_hardware_accelerated_decoding']:
+            # Loop over available decoders...
+            for hardware_decoder in hardware_acceleration.get_decoders():
+                # Just select the first one in the list.
+                # TODO: in the future perhaps add a feature to be able to select which decoder to use.
+                hardware_acceleration.hardware_decoder = hardware_decoder
+                break
+        hardware_acceleration_args = hardware_acceleration.args()
 
         # Read stream data
         streams_to_map = []
@@ -515,7 +517,7 @@ class FFMPEGHandle(object):
             additional_ffmpeg_options = default_ffmpeg_options
 
         # Add decoder args to command
-        command = command + decoder_ffmpeg_options
+        command = command + hardware_acceleration_args
 
         # Add input file
         command = command + ['-i', in_file]

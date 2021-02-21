@@ -144,6 +144,7 @@ class WorkerThread(threading.Thread):
             'video_stream_encoder':                 self.current_task.settings.video_stream_encoder,
             'overwrite_additional_ffmpeg_options':  self.current_task.settings.overwrite_additional_ffmpeg_options,
             'additional_ffmpeg_options':            self.current_task.settings.additional_ffmpeg_options,
+            'enable_hardware_accelerated_decoding': self.current_task.settings.enable_hardware_accelerated_decoding,
         }
         self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
         self.ffmpeg_log = None

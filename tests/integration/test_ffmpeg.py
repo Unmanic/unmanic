@@ -63,6 +63,7 @@ def build_ffmpeg_handle_settings(settings):
         'video_stream_encoder':                 settings.VIDEO_STREAM_ENCODER,
         'overwrite_additional_ffmpeg_options':  settings.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS,
         'additional_ffmpeg_options':            settings.ADDITIONAL_FFMPEG_OPTIONS,
+        'enable_hardware_accelerated_decoding': settings.ENABLE_HARDWARE_ACCELERATED_DECODING,
     }
 
 
@@ -102,7 +103,7 @@ class TestClass(object):
         else:
             print("Unmanic.{} - ERROR!!! Failed to find logger".format('TestClass'))
 
-    def build_ffmpeg_args(self, test_for_failure=False):
+    def build_ffmpeg_args(self, infile, outfile, test_for_failure=False):
         configured_video_encoder = self.settings.get_configured_video_encoder()
         failure_vencoder = None
         for x in self.settings.SUPPORTED_CODECS['video']:
@@ -117,6 +118,8 @@ class TestClass(object):
             self._log("Using encoder {} to setup success condition".format(vencoder))
         # Setup default args
         args = [
+            '-i',
+            infile,
             '-hide_banner',
             '-loglevel',
             'info',
@@ -134,6 +137,8 @@ class TestClass(object):
             '128k',
             '-ac',
             '2',
+            '-y',
+            outfile,
         ]
         return args
 
@@ -147,7 +152,7 @@ class TestClass(object):
         if os.path.exists(outfile):
             os.remove(outfile)
         # Setup ffmpeg args
-        built_args = self.build_ffmpeg_args(test_for_failure)
+        built_args = self.build_ffmpeg_args(infile, outfile, test_for_failure)
         # Run conversion process
         self._log("Converting {} -> {}".format(infile, outfile))
         # Fetch file info

@@ -68,3 +68,4 @@ class TaskSettings(BaseModel):
     video_stream_encoder = TextField(null=False)
     overwrite_additional_ffmpeg_options = BooleanField(null=False)
     additional_ffmpeg_options = TextField(null=True)
+    enable_hardware_accelerated_decoding = BooleanField(null=False, default=False)

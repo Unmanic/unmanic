@@ -262,6 +262,7 @@ jobs:
       run: |
         echo  "Platform targets: ${{ steps.buildx.outputs.docker_platforms }}"
         docker buildx build \
+          --pull \
           --cache-from "type=local,src=/tmp/.buildx-cache" \
           --cache-to "type=local,dest=/tmp/.buildx-cache" \
           --output type=image,name=${{ steps.prepare.outputs.docker_image }},push=${{ steps.prepare.outputs.docker_push }} \

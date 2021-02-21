@@ -401,9 +401,9 @@ class FFMPEGHandle(object):
         print(file_probe)
         if not file_probe:
             return False
-        ffmpeg_args = self.generate_ffmpeg_args(file_probe)
+        ffmpeg_args = self.generate_ffmpeg_args(file_probe, src_path, out_path)
         if ffmpeg_args:
-            success = self.convert_file_and_fetch_progress(src_path, out_path, ffmpeg_args)
+            success = self.convert_file_and_fetch_progress(src_path, ffmpeg_args)
         if success:
             # Move file back to original folder and remove source
             success = self.post_process_file(out_path)
@@ -435,7 +435,7 @@ class FFMPEGHandle(object):
         self._log("Successfully processed file '{}'".format(src_path))
         return True
 
-    def generate_ffmpeg_args(self, file_probe):
+    def generate_ffmpeg_args(self, file_probe, in_file, out_file):
         # ffmpeg -i /library/XXXXX.mkv \
         #     -c:v libx265 \
         #     -map 0:0 -map 0:1 -map 0:1 \
@@ -456,6 +456,17 @@ class FFMPEGHandle(object):
         default_ffmpeg_options = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "512"]
         additional_ffmpeg_options = []
         command = []
+
+        # Hardware accelerated decoding
+        hardware_decoders = unffmpeg.HardwareAccelerationHandle(file_probe)
+        hardware_decoders.video_encoder = self.settings['video_stream_encoder']
+        # TODO: Set config option to enable hardware decoding
+        for hardware_decoder in hardware_decoders.get_decoders():
+            # Just select the first one in the list.
+            # TODO: in the future perhaps add a feature to be able to select which decoder to use.
+            # hardware_decoders.hardware_decoder = hardware_decoder
+            break
+        decoder_ffmpeg_options = hardware_decoders.args()
 
         # Read stream data
         streams_to_map = []
@@ -503,6 +514,12 @@ class FFMPEGHandle(object):
         else:
             additional_ffmpeg_options = default_ffmpeg_options
 
+        # Add decoder args to command
+        command = command + decoder_ffmpeg_options
+
+        # Add input file
+        command = command + ['-i', in_file]
+
         # Add encoder args to command
         command = command + additional_ffmpeg_options
 
@@ -512,11 +529,14 @@ class FFMPEGHandle(object):
         # Add arguments for creating streams
         command = command + streams_to_encode
 
+        # Add output file
+        command = command + ['-y', out_file]
+
         self._log(" ".join(command), level='debug')
 
         return command
 
-    def convert_file_and_fetch_progress(self, infile, outfile, args):
+    def convert_file_and_fetch_progress(self, infile, args):
         if not self.file_in['file_probe']:
             try:
                 self.file_in['file_probe'] = self.file_probe(infile)
@@ -528,7 +548,7 @@ class FFMPEGHandle(object):
                 return False
 
         # Create command with infile, outfile and the arguments
-        command = ['ffmpeg', '-i', infile] + args + ['-y', outfile]
+        command = ['ffmpeg'] + args
         self._log("Executing: {}".format(' '.join(command)), level='debug')
 
         # Log the start time

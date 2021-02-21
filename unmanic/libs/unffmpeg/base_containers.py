@@ -83,5 +83,5 @@ class Containers(object):
         """
         if hasattr(self, 'unsupports_codecs'):
             return self.unsubtitle_codecs
-        # HDMV streams cannont be written by FFMPEG
+        # HDMV streams cannot be written by FFMPEG
         return ['hdmv_pgs_subtitle']

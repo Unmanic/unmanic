@@ -47,9 +47,10 @@ To enable the VAAPI FFMpeg encoder, you must select it in the Unmanic's settings
   6. Add the following lines:
 
 ```
--vaapi_device /dev/dri/renderD128
 -vf format=nv12|vaapi,hwupload 
 ```
+> NOTE: For more details on filtering for VAAPI encoders, see the [FFMPEG VAAPI Docs](https://trac.ffmpeg.org/wiki/Hardware/VAAPI) 
+> and the [FFMPEG Filtering Guide Docs](https://trac.ffmpeg.org/wiki/FilteringGuide).
 
   7. Click **SUBMIT**
 

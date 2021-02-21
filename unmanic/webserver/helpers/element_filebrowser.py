@@ -137,6 +137,15 @@ class ElementFileBrowserUIRequestHandler(tornado.web.RequestHandler):
                             "full_path": abspath,
                         }
                     )
+        else:
+            # Path doesn't exist!
+            # Just return the root dir as the first directory option
+            results.append(
+                {
+                    "name":      "/",
+                    "full_path": "/",
+                }
+            )
         return results
 
     def fetch_files(self, path):

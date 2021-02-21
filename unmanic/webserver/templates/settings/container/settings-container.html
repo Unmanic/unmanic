@@ -1,10 +1,10 @@
 
 
-    <div class="col-md-4 ">
+    <div class="col-lg-4 col-md-4">
         <h3 class="list-heading">Container</h3>
         Some more settings.
     </div>
-    <div class="col-md-6 ">
+    <div class="col-lg-6 col-md-8">
         <!-- BEGIN FORM PORTLET-->
         <div class="portlet light bordered">
             <div class="portlet-body form">
@@ -14,7 +14,7 @@
                         <div class="form-group">
                             <label class="col-md-3 control-label">Search for extensions</label>
                             <div class="col-md-9">
-                                <input type="text" class="form-control input-inline input-xlarge"
+                                <input type="text" class="form-control"
                                        name="SEARCH_EXTENSIONS"
                                        value="{{ ','.join(config.allowed_search_extensions()) }}">
                                 <span class="help-inline"> Comma separated list of file extensions to search for during library scans and new file event triggers </span>

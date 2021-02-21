@@ -148,7 +148,7 @@ class HardwareAccelerationHandle(object):
                 continue
             device_data = {
                 'hwaccel':        'cuda',
-                'hwaccel_device': i,
+                'hwaccel_device': "{}".format(i),
             }
             decoders.append(device_data)
 

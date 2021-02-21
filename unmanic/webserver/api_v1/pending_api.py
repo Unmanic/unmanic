@@ -51,8 +51,8 @@ class ApiPendingHandler(BaseApiHandler):
 
     routes = [
         {
-            "method": "add_tasks_to_pending_tasks_list",
-            "path_pattern":   r"/api/v1/pending/add/",
+            "method":       "add_tasks_to_pending_tasks_list",
+            "path_pattern": r"/api/v1/pending/add/",
         },
     ]
 
@@ -80,7 +80,6 @@ class ApiPendingHandler(BaseApiHandler):
         :return:
         """
         pass
-
 
     def create_task_from_path(self, pathname):
         """

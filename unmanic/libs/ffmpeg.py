@@ -323,8 +323,9 @@ class FFMPEGHandle(object):
                         else:
                             audio_streams_codecs += "{}".format(stream['codec_name'])
                         if stream['codec_name'] == settings['audio_codec']:
-                            self._log("File already has {} codec audio stream - {}".format(settings['audio_codec'], vid_file_path),
-                                      level='debug')
+                            self._log(
+                                "File already has {} codec audio stream - {}".format(settings['audio_codec'], vid_file_path),
+                                level='debug')
                             correct_audio_codec = True
                 if not correct_audio_codec:
                     self._log(
@@ -449,7 +450,8 @@ class FFMPEGHandle(object):
         # Suppress printing banner. (-hide_banner)
         # Set loglevel to info ("-loglevel", "info")
         # Allow experimental encoder config ("-strict", "-2")
-        # Fix issue - 'Too many packets buffered for output stream 0:1' ("-max_muxing_queue_siz", "512") [https://trac.ffmpeg.org/ticket/6375]
+        # Fix issue - 'Too many packets buffered for output stream 0:1' ("-max_muxing_queue_siz", "512")
+        #       REF: [https://trac.ffmpeg.org/ticket/6375]
         #
         default_ffmpeg_options = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "512"]
         additional_ffmpeg_options = []

@@ -92,22 +92,22 @@ class PostProcessor(threading.Thread):
         :return:
         """
         settings = {
-            'audio_codec':                          self.current_task.settings.audio_codec,
-            'audio_codec_cloning':                  self.current_task.settings.audio_codec_cloning,
-            'audio_stereo_stream_bitrate':          self.current_task.settings.audio_stereo_stream_bitrate,
-            'audio_stream_encoder':                 self.current_task.settings.audio_stream_encoder,
-            'cache_path':                           self.current_task.settings.cache_path,
-            'debugging':                            self.current_task.settings.debugging,
-            'enable_audio_encoding':                self.current_task.settings.enable_audio_encoding,
-            'enable_audio_stream_stereo_cloning':   self.current_task.settings.enable_audio_stream_stereo_cloning,
-            'enable_audio_stream_transcoding':      self.current_task.settings.enable_audio_stream_transcoding,
-            'enable_video_encoding':                self.current_task.settings.enable_video_encoding,
-            'out_container':                        self.current_task.settings.out_container,
-            'remove_subtitle_streams':              self.current_task.settings.remove_subtitle_streams,
-            'video_codec':                          self.current_task.settings.video_codec,
-            'video_stream_encoder':                 self.current_task.settings.video_stream_encoder,
-            'overwrite_additional_ffmpeg_options':  self.current_task.settings.overwrite_additional_ffmpeg_options,
-            'additional_ffmpeg_options':            self.current_task.settings.additional_ffmpeg_options,
+            'audio_codec':                         self.current_task.settings.audio_codec,
+            'audio_codec_cloning':                 self.current_task.settings.audio_codec_cloning,
+            'audio_stereo_stream_bitrate':         self.current_task.settings.audio_stereo_stream_bitrate,
+            'audio_stream_encoder':                self.current_task.settings.audio_stream_encoder,
+            'cache_path':                          self.current_task.settings.cache_path,
+            'debugging':                           self.current_task.settings.debugging,
+            'enable_audio_encoding':               self.current_task.settings.enable_audio_encoding,
+            'enable_audio_stream_stereo_cloning':  self.current_task.settings.enable_audio_stream_stereo_cloning,
+            'enable_audio_stream_transcoding':     self.current_task.settings.enable_audio_stream_transcoding,
+            'enable_video_encoding':               self.current_task.settings.enable_video_encoding,
+            'out_container':                       self.current_task.settings.out_container,
+            'remove_subtitle_streams':             self.current_task.settings.remove_subtitle_streams,
+            'video_codec':                         self.current_task.settings.video_codec,
+            'video_stream_encoder':                self.current_task.settings.video_stream_encoder,
+            'overwrite_additional_ffmpeg_options': self.current_task.settings.overwrite_additional_ffmpeg_options,
+            'additional_ffmpeg_options':           self.current_task.settings.additional_ffmpeg_options,
         }
         self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
 
@@ -195,7 +195,8 @@ class PostProcessor(threading.Thread):
                         result = True
                         continue
                     elif self.settings.DEBUGGING:
-                        self._log("File is the not correct codec {} - {} :: {}".format(self.settings.VIDEO_CODEC, abspath, stream['codec_name']))
+                        self._log("File is the not correct codec {} - {} :: {}".format(self.settings.VIDEO_CODEC, abspath,
+                                                                                       stream['codec_name']))
                         # TODO: If settings are modified during a conversion, the file being converted should not fail.
                         #  Modify ffmpeg.py to have settings passed to it rather than reading directly from the config object
                         #  Test against the task's configured video codec

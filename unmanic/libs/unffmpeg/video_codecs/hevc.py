@@ -38,4 +38,3 @@ class Hevc(Codecs):
     encoders = ['hevc_nvenc', 'hevc_vaapi', 'libx265']
     default_encoder = 'libx265'
     codec_long_name = 'HEVC (High Efficiency Video Coding)'
-

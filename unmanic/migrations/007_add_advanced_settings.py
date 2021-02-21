@@ -47,7 +47,6 @@ def migrate(migrator, database, fake=False, **kwargs):
     migrator.add_fields('historictasksettings', additional_ffmpeg_options=pw.TextField(null=True, default=''))
 
 
-
 def rollback(migrator, database, fake=False, **kwargs):
     """Write your rollback migrations here."""
     # Remove the overwrite_additional_ffmpeg_options field from the Settings Model
@@ -60,4 +59,3 @@ def rollback(migrator, database, fake=False, **kwargs):
     migrator.add_fields('tasksettings', 'additional_ffmpeg_options', cascade=True)
     # Remove the additional_ffmpeg_options field from the HistoricTaskSettings Model
     migrator.add_fields('historictasksettings', 'additional_ffmpeg_options', cascade=True)
-

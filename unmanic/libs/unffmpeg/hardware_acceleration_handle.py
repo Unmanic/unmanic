@@ -68,7 +68,7 @@ class HardwareAccelerationHandle(object):
         if self.hardware_decoder:
             hwaccel = self.hardware_decoder.get('hwaccel')
             hwaccel_device = self.hardware_decoder.get('hwaccel_device')
-            if hwaccel and hwaccel_device:
+            if hwaccel is not None and hwaccel_device is not None:
                 if hwaccel == 'vaapi':
                     # Return decoder args for VAAPI
                     self.acceleration_args = self.generate_vaapi_args()
@@ -178,4 +178,8 @@ class HardwareAccelerationHandle(object):
 
 if __name__ == "__main__":
     hw_a = HardwareAccelerationHandle('blah')
-    print(hw_a.decoders())
+    print(hw_a.get_decoders())
+    for hardware_decoder in hw_a.get_decoders():
+        hw_a.hardware_decoder = hardware_decoder
+        break
+    print(hw_a.args())

@@ -466,8 +466,20 @@ class FFMPEGHandle(object):
             for hardware_decoder in hardware_acceleration.get_decoders():
                 # Just select the first one in the list.
                 # TODO: in the future perhaps add a feature to be able to select which decoder to use.
-                hardware_acceleration.hardware_decoder = hardware_decoder
-                break
+
+                # First select the first one in the list
+                if hardware_acceleration.hardware_decoder is None:
+                    hardware_acceleration.hardware_decoder = hardware_decoder
+
+                # If we have enabled a HW accelerated encoder, then attempt to match the decoder with it.
+                hwaccel = hardware_acceleration.hardware_decoder.get('hwaccel')
+                if "vaapi" in self.settings['video_stream_encoder'] and hwaccel == "vaapi":
+                    hardware_acceleration.hardware_decoder = hardware_decoder
+                    break
+                elif "nvenc" in self.settings['video_stream_encoder'] and hwaccel == "cuda":
+                    hardware_acceleration.hardware_decoder = hardware_decoder
+                    break
+                continue
         hardware_acceleration_args = hardware_acceleration.args()
 
         # Read stream data

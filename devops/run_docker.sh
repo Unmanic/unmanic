@@ -68,9 +68,9 @@ CMD="docker run -ti --rm --name=unmanic \
     -e TZ=Pacific/Auckland \
     -p 8888:8888 \
     -v ${PROJECT_BASE}/:/app \
-    -v ${PROJECT_BASE}/config:/config \
-    -v ${PROJECT_BASE}/library:/library \
-    -v ${PROJECT_BASE}/cache:/tmp/unmanic \
+    -v ${PROJECT_BASE}/dev_environment/config:/config \
+    -v ${PROJECT_BASE}/dev_environment/library:/library \
+    -v ${PROJECT_BASE}/dev_environment/cache:/tmp/unmanic \
     -e PUID=${PUID} \
     -e PGID=${PGID} \
     -e DEBUGGING=${DEBUGGING} \

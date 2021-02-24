@@ -4,9 +4,7 @@
 .idea/workspace.xml
 
 # Files used for testing
-config/**
-cache
-library
+dev_environment/**
 tests/support_/videos/*
 tests/tmp/*
 tests/.vstats_file

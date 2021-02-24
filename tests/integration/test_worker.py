@@ -76,7 +76,7 @@ class TestClass(object):
         self.logging.get_logger()
         # import config
         from unmanic import config
-        self.settings = config.CONFIG(os.path.join(tempfile.mkdtemp(), 'unmanic_test.db'))
+        self.settings = config.CONFIG(tempfile.mkdtemp())
         self.settings.set_config_item('debugging', True, save_settings=False)
 
         # Create our test queues

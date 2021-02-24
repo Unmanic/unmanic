@@ -43,59 +43,60 @@ except ImportError:
     JSONDecodeError = ValueError
 
 HOME_DIR = os.environ.get('HOME_DIR')
-CONFIG_PATH = os.environ.get('CONFIG_PATH')
-
 if HOME_DIR is None:
     HOME_DIR = os.path.expanduser("~")
+
+CONFIG_PATH = os.environ.get('CONFIG_PATH')
 if CONFIG_PATH is None:
     CONFIG_PATH = os.path.join(HOME_DIR, '.unmanic', 'config')
-
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
-
-DEFAULT_DB_CONFIG = {
-    # Database config
-    "DATABASE": {
-        "TYPE":           "SQLITE",
-        "FILE":           os.path.join(HOME_DIR, '.unmanic', 'config', 'unmanic.db'),
-        "MIGRATIONS_DIR": os.path.join(APP_DIR, 'migrations'),
-    }
-}
 
 
 class CONFIG(object):
     app_version = ''
 
-    def __init__(self, db_file=None):
+    # Set the home directory
+    HOME_DIR = HOME_DIR
+
+    # Set the default UI Port
+    UI_PORT = 8888
+
+    # Set default config directory
+    CONFIG_PATH = CONFIG_PATH
+
+    # Set default db config
+    DATABASE = None
+
+    def __init__(self, config_path=None):
         # Non config items (objects)
         self.name = "Config"
         self.settings = None
 
-        # Set default UI port
-        self.UI_PORT = 8888
-        # Set default config directory
-        self.CONFIG_PATH = CONFIG_PATH
-
-        # Set default db config
-        self.DATABASE = None
-        self.apply_default_db_settings()
-        # Overwrite default DB config
-        if db_file:
-            self.DATABASE['FILE'] = db_file
+        # Apply default DB settings
+        self.apply_default_db_settings(config_path)
 
         # Import env variables and override all previous settings.
         self.import_settings_from_env()
         # Read config from file and override all previous settings (this may include the DB location).
-        self.import_settings_from_file()
+        self.import_settings_from_file(config_path)
+
         # Run DB migrations
         self.run_db_migrations()
         # Init DB connection and read settings
         self.import_settings_from_db()
         # Finally, re-read config from file and override all previous settings.
-        self.import_settings_from_file()
+        self.import_settings_from_file(config_path)
+
+        # Overwrite current settings
+        if config_path:
+            self.set_config_item('config_path', config_path, save_settings=False)
+
         # Apply settings to the unmanic logger
         self.setup_unmanic_logger()
-        # Set the supported codecs (for destination)
-        self.SUPPORTED_CODECS = unffmpeg.Info().get_all_supported_codecs()
+
+        # Save settings
+        if self.settings:
+            self.settings.save()
+
         # TODO: Remove temporary beta data migration
         history_logging = history.History(self)
         history_logging.migrate_old_beta_data()
@@ -160,16 +161,20 @@ class CONFIG(object):
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         unmanic_logging.setup_logger(self)
 
-    def apply_default_db_settings(self):
+    def apply_default_db_settings(self, config_path=None):
         """
-        Read default DB settings.
-        These may be overwritten by what is read from the settings.json file
+        Apply the default DB settings.
 
         :return:
         """
-
-        for setting in DEFAULT_DB_CONFIG:
-            setattr(self, setting, DEFAULT_DB_CONFIG[setting])
+        if not config_path:
+            config_path = os.path.join(self.HOME_DIR, '.unmanic', 'config')
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        self.DATABASE = {
+            "TYPE":           "SQLITE",
+            "FILE":           os.path.join(config_path, 'unmanic.db'),
+            "MIGRATIONS_DIR": os.path.join(app_dir, 'migrations'),
+        }
 
     def run_db_migrations(self):
         """
@@ -216,15 +221,19 @@ class CONFIG(object):
             if setting in os.environ:
                 self.set_config_item(setting, os.environ.get(setting), save_settings=False)
 
-    def import_settings_from_file(self):
+    def import_settings_from_file(self, config_path=None):
         """
         Read configuration from the settings JSON file.
 
         :return:
         """
-        if not os.path.exists(self.get_config_path()):
-            os.makedirs(self.get_config_path())
-        settings_file = os.path.join(self.get_config_path(), 'settings.json')
+        # If config path was not passed as variable, use the default one
+        if not config_path:
+            config_path = self.get_config_path()
+        # Ensure the config path exists
+        if not os.path.exists(config_path):
+            os.makedirs(config_path)
+        settings_file = os.path.join(config_path, 'settings.json')
         if os.path.exists(settings_file):
             data = {}
             try:
@@ -240,8 +249,6 @@ class CONFIG(object):
             # Set config values that are in the 'DATABASE' or 'UI_PORT' keys (if provided)
             if 'DATABASE' in data:
                 setattr(self, 'DATABASE', data['DATABASE'])
-            if 'LOG_PATH' in data:
-                setattr(self, 'LOG_PATH', data['LOG_PATH'])
             if 'UI_PORT' in data:
                 setattr(self, 'UI_PORT', data['UI_PORT'])
 
@@ -262,6 +269,23 @@ class CONFIG(object):
         if not result['success']:
             for message in result['errors']:
                 self._log("Exception in writing settings to file:", message2=str(message), level="exception")
+
+    def get_config_item(self, key):
+        """
+        Get setting from either this class or the Settings model
+
+        :param key:
+        :return:
+        """
+        # First attempt to fetch it from this class' get functions
+        if hasattr(self, "get_{}".format(key)):
+            getter = getattr(self, "get_{}".format(key))
+            if callable(getter):
+                return getter()
+
+        # Second attempt to fetch it from the Settings Model
+        if hasattr(self.settings, key):
+            return getattr(self.settings, key)
 
     def set_config_item(self, key, value, save_settings=True):
         """
@@ -296,8 +320,11 @@ class CONFIG(object):
             if self.settings:
                 # Assign value to setting field
                 setattr(self.settings, field_id, parsed_field_value)
+
             # Assign field type converted value to class variable
+            # TODO: Remove this once we have migrated to using only the settings model object
             setattr(self, key, parsed_field_value)
+
             # Save settings (if requested)
             if save_settings:
                 self.write_settings_to_file()
@@ -382,14 +409,6 @@ class CONFIG(object):
         if 'video' not in supported_codecs:
             return {}
         return supported_codecs['video']
-
-    def get_audio_codec(self):
-        """
-        Get setting - audio_codec
-
-        :return:
-        """
-        return self.AUDIO_CODEC
 
     def get_audio_stream_encoder(self):
         """
@@ -568,7 +587,7 @@ class CONFIG(object):
 
         :return:
         """
-        return self.VIDEO_CODEC
+        return self.settings.video_codec
 
     def get_video_stream_encoder(self):
         """

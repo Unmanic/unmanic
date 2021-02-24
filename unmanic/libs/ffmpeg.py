@@ -398,7 +398,6 @@ class FFMPEGHandle(object):
         success = False
         # Read video information for the input file
         file_probe = self.file_in['file_probe']
-        print(file_probe)
         if not file_probe:
             return False
         ffmpeg_args = self.generate_ffmpeg_args(file_probe, src_path, out_path)

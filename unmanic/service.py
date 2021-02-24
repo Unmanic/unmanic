@@ -70,7 +70,7 @@ class LibraryScanner(threading.Thread):
 
     def init_ffmpeg_handle_settings(self):
         return {
-            'audio_codec':                          self.settings.get_audio_codec(),
+            'audio_codec':                          self.settings.get_config_item('audio_codec'),
             'audio_stream_encoder':                 self.settings.get_audio_stream_encoder(),
             'audio_codec_cloning':                  self.settings.get_audio_codec_cloning(),
             'audio_stereo_stream_bitrate':          self.settings.get_audio_stereo_stream_bitrate(),
@@ -180,7 +180,7 @@ class EventProcessor(pyinotify.ProcessEvent):
 
     def init_ffmpeg_handle_settings(self):
         return {
-            'audio_codec':                          self.settings.get_audio_codec(),
+            'audio_codec':                          self.settings.get_config_item('audio_codec'),
             'audio_stream_encoder':                 self.settings.get_audio_stream_encoder(),
             'audio_codec_cloning':                  self.settings.get_audio_codec_cloning(),
             'audio_stereo_stream_bitrate':          self.settings.get_audio_stereo_stream_bitrate(),
@@ -336,6 +336,7 @@ class Service:
     def start_threads(self):
         # Read settings
         settings = config.CONFIG()
+        #print(settings.get_config_item('video_codec'))
 
         # Create our data queues
         data_queues = {

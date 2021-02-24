@@ -131,7 +131,7 @@
                                                 onchange="setAudioStreamEncoderListForTranscoding();">
                                             {% set supported_audio_codecs = config.get_supported_audio_codecs() %}
                                             {% for option in supported_audio_codecs %}
-                                            <option value="{{ escape(option) }}" {% if option == config.get_audio_codec() %}
+                                            <option value="{{ escape(option) }}" {% if option == config.get_config_item('audio_codec') %}
                                                     selected {% end %}>
                                                 {{ escape(supported_audio_codecs[option]['description']) }}
                                             </option>

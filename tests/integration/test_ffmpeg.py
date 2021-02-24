@@ -47,7 +47,7 @@ except ImportError:
 
 def build_ffmpeg_handle_settings(settings):
     return {
-        'audio_codec':                          settings.get_audio_codec(),
+        'audio_codec':                          settings.get_config_item('audio_codec'),
         'audio_stream_encoder':                 settings.get_audio_stream_encoder(),
         'audio_codec_cloning':                  settings.get_audio_codec_cloning(),
         'audio_stereo_stream_bitrate':          settings.get_audio_stereo_stream_bitrate(),
@@ -89,7 +89,7 @@ class TestClass(object):
         unmanic_logging.get_logger()
         # import config
         from unmanic import config
-        self.settings = config.CONFIG(os.path.join(tempfile.mkdtemp(), 'unmanic_test.db'))
+        self.settings = config.CONFIG(tempfile.mkdtemp())
         self.settings.set_config_item('debugging', True, save_settings=False)
         ffmpeg_settings = build_ffmpeg_handle_settings(self.settings)
         self.ffmpeg = ffmpeg.FFMPEGHandle(ffmpeg_settings)
@@ -106,7 +106,8 @@ class TestClass(object):
     def build_ffmpeg_args(self, infile, outfile, test_for_failure=False):
         configured_video_encoder = self.settings.get_video_stream_encoder()
         failure_vencoder = None
-        for x in self.settings.SUPPORTED_CODECS['video']:
+        supported_codecs = self.settings.get_all_supported_codecs()
+        for x in supported_codecs['video']:
             if x != self.settings.get_video_codec():
                 supported_codecs = self.settings.get_all_supported_codecs()
                 failure_vencoder = supported_codecs['video'][x]['encoders'][0]
@@ -165,6 +166,7 @@ class TestClass(object):
             with pytest.raises(ffmpeg.FFMPEGHandlePostProcessError):
                 self.ffmpeg.post_process_file(outfile)
 
+    @pytest.mark.integrationtest
     def test_process_file_for_success(self):
         """
         This will test the FFMPEGHandle for processing a file automatically using configured settings.
@@ -188,6 +190,7 @@ class TestClass(object):
             assert self.ffmpeg.process_file_with_configured_settings(testfile)
             break
 
+    @pytest.mark.integrationtest
     def test_read_file_info_for_success(self):
         """
         Ensure that ffprobe is able to read a video file.
@@ -199,6 +202,7 @@ class TestClass(object):
             infile = os.path.join(self.tests_videos_dir, 'small', video_file)
             assert self.ffmpeg.file_probe(infile)
 
+    @pytest.mark.integrationtest
     def test_read_file_info_for_failure(self):
         """
         Ensure that and exception is thrown if ffprobe is unable to read a file.
@@ -214,6 +218,7 @@ class TestClass(object):
         with pytest.raises(unffmpeg.exceptions.ffprobe.FFProbeError):
             self.ffmpeg.file_probe(fail_file)
 
+    @pytest.mark.integrationtest
     def test_file_not_target_format_for_success(self):
         """
         This modifies the self.settings.video_codec to an incorrect video codec.
@@ -238,7 +243,7 @@ class TestClass(object):
                 should_convert = False
                 for stream in file_probe['streams']:
                     if stream['codec_type'] == 'video':
-                        self.settings.set_config_item('video_codec', stream['codec_name'], False)
+                        self.settings.set_config_item('video_codec', stream['codec_name'], save_settings=False)
             # Reset file in
             self.ffmpeg.file_in = {}
             # Fetch ffmpeg settings
@@ -263,6 +268,7 @@ class TestClass(object):
             common.ensure_dir(outfile)
             self.convert_single_file(infile, outfile)
 
+    @pytest.mark.integrationtest
     def test_convert_all_faulty_files_for_success(self):
         """
         Ensure all faulty test files are able to be converted.
@@ -277,3 +283,4 @@ class TestClass(object):
             outfile = os.path.join(self.tests_tmp_dir, filename + '.mkv')
             common.ensure_dir(outfile)
             self.convert_single_file(infile, outfile)
+            break

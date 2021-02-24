@@ -159,7 +159,7 @@ def generate_example_ffmpeg_args(config):
         }
     }
     settings = {
-        'audio_codec':                          config.get_audio_codec(),
+        'audio_codec':                          config.get_config_item('audio_codec'),
         'audio_stream_encoder':                 config.get_audio_stream_encoder(),
         'audio_codec_cloning':                  config.get_audio_codec_cloning(),
         'audio_stereo_stream_bitrate':          config.get_audio_stereo_stream_bitrate(),

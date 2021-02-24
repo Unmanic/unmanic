@@ -39,6 +39,7 @@ if HOME_DIR is None:
     HOME_DIR = os.path.expanduser("~")
 
 
+# TODO: Re-order model to match UI layout for easier debugging
 class Settings(BaseModel):
     """
     Settings

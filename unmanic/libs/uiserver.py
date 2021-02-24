@@ -100,13 +100,13 @@ class UIServer(threading.Thread):
         self.ioloop.stop()
 
     def set_logging(self):
-        if self.settings and self.settings.LOG_PATH:
+        if self.settings and self.settings.get_log_path():
             # Create directory if not exists
-            if not os.path.exists(self.settings.LOG_PATH):
-                os.makedirs(self.settings.LOG_PATH)
+            if not os.path.exists(self.settings.get_log_path()):
+                os.makedirs(self.settings.get_log_path())
 
             # Create file handler
-            log_file = os.path.join(self.settings.LOG_PATH, 'tornado.log')
+            log_file = os.path.join(self.settings.get_log_path(), 'tornado.log')
             file_handler = logging.handlers.TimedRotatingFileHandler(log_file, when='midnight', interval=1,
                                                                      backupCount=7)
             file_handler.setLevel(logging.INFO)

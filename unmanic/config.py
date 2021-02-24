@@ -96,8 +96,6 @@ class CONFIG(object):
         self.setup_unmanic_logger()
         # Set the supported codecs (for destination)
         self.SUPPORTED_CODECS = unffmpeg.Info().get_all_supported_codecs()
-        # Set the supported containers (for destination)
-        self.SUPPORTED_CONTAINERS = unffmpeg.containers.get_all_containers()
         # TODO: Remove temporary beta data migration
         history_logging = history.History(self)
         history_logging.migrate_old_beta_data()
@@ -224,9 +222,9 @@ class CONFIG(object):
 
         :return:
         """
-        if not os.path.exists(self.CONFIG_PATH):
-            os.makedirs(self.CONFIG_PATH)
-        settings_file = os.path.join(self.CONFIG_PATH, 'settings.json')
+        if not os.path.exists(self.get_config_path()):
+            os.makedirs(self.get_config_path())
+        settings_file = os.path.join(self.get_config_path(), 'settings.json')
         if os.path.exists(settings_file):
             data = {}
             try:
@@ -253,9 +251,9 @@ class CONFIG(object):
 
         :return:
         """
-        if not os.path.exists(self.CONFIG_PATH):
-            os.makedirs(self.CONFIG_PATH)
-        settings_file = os.path.join(self.CONFIG_PATH, 'settings.json')
+        if not os.path.exists(self.get_config_path()):
+            os.makedirs(self.get_config_path())
+        settings_file = os.path.join(self.get_config_path(), 'settings.json')
         data = self.get_config_as_dict()
         data = {k.upper(): v for k, v in data.items()}
         # Append database settings
@@ -312,15 +310,16 @@ class CONFIG(object):
 
         :return:
         """
-        if isinstance(self.SEARCH_EXTENSIONS, str):
+        search_extensions = self.get_search_extensions()
+        if isinstance(search_extensions, str):
             # Split the comma separated sting into a list
-            value = self.SEARCH_EXTENSIONS.split(",")
+            value = search_extensions.split(",")
             # Strip all whitespace (including within the item as extensions dont have any whitespace)
             value = [item.replace(' ', '') for item in value]
             # Remove empty values from the list
             value = [item for item in value if item]
             return value
-        return list(self.SEARCH_EXTENSIONS)
+        return list(search_extensions)
 
     def file_ends_in_allowed_search_extensions(self, file_name):
         # Get the file extension
@@ -336,36 +335,6 @@ class CONFIG(object):
             return True
         return False
 
-    def get_supported_audio_codecs(self):
-        """
-        Return a list of audio codecs supported by unmanic
-
-        :return:
-        """
-        if 'audio' not in self.SUPPORTED_CODECS:
-            return {}
-        return self.SUPPORTED_CODECS['audio']
-
-    def get_supported_video_codecs(self):
-        """
-        Return a list of video codecs supported by unmanic
-
-        :return:
-        """
-        if 'video' not in self.SUPPORTED_CODECS:
-            return {}
-        return self.SUPPORTED_CODECS['video']
-
-    def get_configured_audio_encoder(self):
-        if 'audio' not in self.SUPPORTED_CODECS:
-            return ''
-        return self.AUDIO_STREAM_ENCODER
-
-    def get_configured_video_encoder(self):
-        if 'video' not in self.SUPPORTED_CODECS:
-            return ''
-        return self.VIDEO_STREAM_ENCODER
-
     def read_version(self):
         """
         Return the application's version number as a string
@@ -375,3 +344,263 @@ class CONFIG(object):
         if not self.app_version:
             self.app_version = metadata.read_version_string('long')
         return self.app_version
+
+    def get_supported_containers(self):
+        """
+        Return a list of containers supported by unmanic
+
+        :return:
+        """
+        return unffmpeg.containers.get_all_containers()
+
+    def get_all_supported_codecs(self):
+        """
+        Return a list of all codecs supported by unmanic
+
+        :return:
+        """
+        return unffmpeg.Info().get_all_supported_codecs()
+
+    def get_supported_audio_codecs(self):
+        """
+        Return a list of audio codecs supported by unmanic
+
+        :return:
+        """
+        supported_codecs = self.get_all_supported_codecs()
+        if 'audio' not in supported_codecs:
+            return {}
+        return supported_codecs['audio']
+
+    def get_supported_video_codecs(self):
+        """
+        Return a list of video codecs supported by unmanic
+
+        :return:
+        """
+        supported_codecs = self.get_all_supported_codecs()
+        if 'video' not in supported_codecs:
+            return {}
+        return supported_codecs['video']
+
+    def get_audio_codec(self):
+        """
+        Get setting - audio_codec
+
+        :return:
+        """
+        return self.AUDIO_CODEC
+
+    def get_audio_stream_encoder(self):
+        """
+        Get setting - audio_stream_encoder
+
+        :return:
+        """
+        supported_codecs = self.get_all_supported_codecs()
+        if 'audio' not in supported_codecs:
+            return ''
+        return self.AUDIO_STREAM_ENCODER
+
+    def get_audio_codec_cloning(self):
+        """
+        Get setting - audio_codec_cloning
+
+        :return:
+        """
+        return self.AUDIO_CODEC_CLONING
+
+    def get_audio_stream_encoder_cloning(self):
+        """
+        Get setting - audio_stream_encoder_cloning
+
+        :return:
+        """
+        return self.AUDIO_STREAM_ENCODER_CLONING
+
+    def get_audio_stereo_stream_bitrate(self):
+        """
+        Get setting - audio_stereo_stream_bitrate
+
+        :return:
+        """
+        return self.AUDIO_STEREO_STREAM_BITRATE
+
+    def get_cache_path(self):
+        """
+        Get setting - cache_path
+
+        :return:
+        """
+        return self.CACHE_PATH
+
+    def get_config_path(self):
+        """
+        Get setting - config_path
+
+        :return:
+        """
+        return self.CONFIG_PATH
+
+    def get_keep_filename_history(self):
+        """
+        Get setting - keep_filename_history
+
+        :return:
+        """
+        return self.KEEP_FILENAME_HISTORY
+
+    def get_debugging(self):
+        """
+        Get setting - debugging
+
+        :return:
+        """
+        return self.DEBUGGING
+
+    def get_enable_audio_encoding(self):
+        """
+        Get setting - enable_audio_encoding
+
+        :return:
+        """
+        return self.ENABLE_AUDIO_ENCODING
+
+    def get_enable_audio_stream_transcoding(self):
+        """
+        Get setting - enable_audio_stream_transcoding
+
+        :return:
+        """
+        return self.ENABLE_AUDIO_STREAM_TRANSCODING
+
+    def get_enable_audio_stream_stereo_cloning(self):
+        """
+        Get setting - enable_audio_stream_stereo_cloning
+
+        :return:
+        """
+        return self.ENABLE_AUDIO_STREAM_STEREO_CLONING
+
+    def get_enable_inotify(self):
+        """
+        Get setting - enable_inotify
+
+        :return:
+        """
+        return self.ENABLE_INOTIFY
+
+    def get_enable_video_encoding(self):
+        """
+        Get setting - enable_video_encoding
+
+        :return:
+        """
+        return self.ENABLE_VIDEO_ENCODING
+
+    def get_library_path(self):
+        """
+        Get setting - library_path
+
+        :return:
+        """
+        return self.LIBRARY_PATH
+
+    def get_log_path(self):
+        """
+        Get setting - log_path
+
+        :return:
+        """
+        return self.LOG_PATH
+
+    def get_number_of_workers(self):
+        """
+        Get setting - number_of_workers
+
+        :return:
+        """
+        return self.NUMBER_OF_WORKERS
+
+    def get_out_container(self):
+        """
+        Get setting - out_container
+
+        :return:
+        """
+        return self.OUT_CONTAINER
+
+    def get_remove_subtitle_streams(self):
+        """
+        Get setting - remove_subtitle_streams
+
+        :return:
+        """
+        return self.REMOVE_SUBTITLE_STREAMS
+
+    def get_run_full_scan_on_start(self):
+        """
+        Get setting - run_full_scan_on_start
+
+        :return:
+        """
+        return self.RUN_FULL_SCAN_ON_START
+
+    def get_schedule_full_scan_minutes(self):
+        """
+        Get setting - schedule_full_scan_minutes
+
+        :return:
+        """
+        return self.SCHEDULE_FULL_SCAN_MINUTES
+
+    def get_search_extensions(self):
+        """
+        Get setting - search_extensions
+
+        :return:
+        """
+        return self.SEARCH_EXTENSIONS
+
+    def get_video_codec(self):
+        """
+        Get setting - video_codec
+
+        :return:
+        """
+        return self.VIDEO_CODEC
+
+    def get_video_stream_encoder(self):
+        """
+        Get setting - video_stream_encoder
+
+        :return:
+        """
+        supported_codecs = self.get_all_supported_codecs()
+        if 'video' not in supported_codecs:
+            return ''
+        return self.VIDEO_STREAM_ENCODER
+
+    def get_overwrite_additional_ffmpeg_options(self):
+        """
+        Get setting - overwrite_additional_ffmpeg_options
+
+        :return:
+        """
+        return self.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS
+
+    def get_additional_ffmpeg_options(self):
+        """
+        Get setting - additional_ffmpeg_options
+
+        :return:
+        """
+        return self.ADDITIONAL_FFMPEG_OPTIONS
+
+    def get_enable_hardware_accelerated_decoding(self):
+        """
+        Get setting - enable_hardware_accelerated_decoding
+
+        :return:
+        """
+        return self.ENABLE_HARDWARE_ACCELERATED_DECODING

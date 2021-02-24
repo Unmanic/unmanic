@@ -39,10 +39,10 @@
                             <div class="col-md-9">
                                 <div class="checkbox-list">
                                     <input type="hidden" name="ENABLE_VIDEO_ENCODING" id="ENABLE_VIDEO_ENCODING"
-                                           value="{% if config.ENABLE_VIDEO_ENCODING %}true{% end %}">
+                                           value="{% if config.get_enable_video_encoding() %}true{% end %}">
                                     <label>
                                         <input type="checkbox" id="video_encoding_enabled"
-                                               onchange="toggleEnableVideoEncoding();" {% if config.ENABLE_VIDEO_ENCODING %}
+                                               onchange="toggleEnableVideoEncoding();" {% if config.get_enable_video_encoding() %}
                                                checked {% end %} />
                                     </label>
                                 </div>
@@ -50,7 +50,7 @@
                         </div>
                         <hr/>
 
-                        <div class="video_encoding_settings_disabled_notice {% if config.ENABLE_VIDEO_ENCODING %}hidden{% end %}">
+                        <div class="video_encoding_settings_disabled_notice {% if config.get_enable_video_encoding() %}hidden{% end %}">
                             <div class="note note-info caption">
                                 <span class="caption-subject font-dark sbold uppercase">Video streams will be copied</span>
                                 <br>
@@ -61,7 +61,7 @@
                             <hr/>
                         </div>
 
-                        <div class="video_encoding_settings {% if not config.ENABLE_VIDEO_ENCODING %}hidden{% end %}">
+                        <div class="video_encoding_settings {% if not config.get_enable_video_encoding() %}hidden{% end %}">
 
                             {# Transcoding video streams #}
                             <div class="caption">
@@ -82,7 +82,7 @@
                                                 onchange="setVideoStreamEncoderListForTranscoding();">
                                             {% set supported_video_configs = config.get_supported_video_codecs() %}
                                             {% for option in supported_video_configs %}
-                                            <option value="{{ escape(option) }}" {% if option == config.VIDEO_CODEC %}
+                                            <option value="{{ escape(option) }}" {% if option == config.get_video_codec() %}
                                                     selected {% end %}>
                                                 {{ escape(supported_video_configs[option]['description']) }}
                                             </option>

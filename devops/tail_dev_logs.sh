@@ -32,9 +32,19 @@
 
 SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd );
 
-config_dir=${SCRIPT_PATH}/../config
+config_dir=${SCRIPT_PATH}/../dev_environment/config
 unmanic_dev_logs_dir=${config_dir}/.unmanic/logs
 
+
+if ! command -v grcat; then
+    echo "This script needs 'grcat' for formatting the logs."
+    echo "You must first install the 'grc' package..."
+    echo
+    echo "  Debian/Ubuntu:  apt-get install grc"
+    echo "  Arch Linux:     pacman -S grc"
+    echo "  Fedora:         dnf install grc"
+    exit 1
+fi
 
 # Tail all current log files:
 #filters=":DEBUG:"

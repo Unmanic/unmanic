@@ -78,9 +78,9 @@ class History(object):
         self._log("read_history_log function is depreciated", level="warning")
         self._log("Reading history from file:", level="debug")
         data = []
-        if not os.path.exists(self.settings.CONFIG_PATH):
-            os.makedirs(self.settings.CONFIG_PATH)
-        history_file = os.path.join(self.settings.CONFIG_PATH, 'history.json')
+        if not os.path.exists(self.settings.get_config_path()):
+            os.makedirs(self.settings.get_config_path())
+        history_file = os.path.join(self.settings.get_config_path(), 'history.json')
         if os.path.exists(history_file):
             try:
                 with open(history_file) as infile:
@@ -103,7 +103,7 @@ class History(object):
         self._log("Reading completed job data from file:", level="debug")
         data = []
         # Create completed job details path in not exists
-        completed_job_details_dir = os.path.join(self.settings.CONFIG_PATH, 'completed_job_details')
+        completed_job_details_dir = os.path.join(self.settings.get_config_path(), 'completed_job_details')
         if not os.path.exists(completed_job_details_dir):
             os.makedirs(completed_job_details_dir)
         # Set path of conversion details file
@@ -128,10 +128,10 @@ class History(object):
         self._log("migrate_old_beta_data function is temporary. To be removed post release.", level="warning")
 
         # Get paths to old historical json files. These are needed for the cleanup
-        if not os.path.exists(self.settings.CONFIG_PATH):
-            os.makedirs(self.settings.CONFIG_PATH)
-        history_file = os.path.join(self.settings.CONFIG_PATH, 'history.json')
-        completed_job_details_dir = os.path.join(self.settings.CONFIG_PATH, 'completed_job_details')
+        if not os.path.exists(self.settings.get_config_path()):
+            os.makedirs(self.settings.get_config_path())
+        history_file = os.path.join(self.settings.get_config_path(), 'history.json')
+        completed_job_details_dir = os.path.join(self.settings.get_config_path(), 'completed_job_details')
 
         # Check if we need to execute this migration
         if not os.path.exists(history_file):

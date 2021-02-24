@@ -265,16 +265,16 @@ class Foreman(threading.Thread):
                     del self.worker_threads[thread]
 
         # Check that we have enough workers running. Spawn new ones as required.
-        if len(self.worker_threads) < int(self.settings.NUMBER_OF_WORKERS):
+        if len(self.worker_threads) < int(self.settings.get_number_of_workers()):
             self._log("Foreman Threads under the configured limit. Spawning more...")
             # Not enough workers, create some
-            for i in range(int(self.settings.NUMBER_OF_WORKERS)):
+            for i in range(int(self.settings.get_number_of_workers())):
                 if i not in self.worker_threads:
                     # This worker does not yet exists, create it
                     self.start_worker_thread(i)
 
         # Check if we have to many workers running and stop the ones that are idle
-        if len(self.worker_threads) > int(self.settings.NUMBER_OF_WORKERS):
+        if len(self.worker_threads) > int(self.settings.get_number_of_workers()):
             self._log("Foreman Threads exceed the configured limit. Marking some for removal...")
             # Too many workers, stop any idle ones
             for thread in self.worker_threads:

@@ -53,11 +53,11 @@
                                 <div class="col-md-9">
                                     <div class="checkbox-list">
                                         <input type="hidden" name="ENABLE_HARDWARE_ACCELERATED_DECODING" id="ENABLE_HARDWARE_ACCELERATED_DECODING"
-                                               value="{% if config.ENABLE_HARDWARE_ACCELERATED_DECODING %}true{% end %}">
+                                               value="{% if config.get_enable_hardware_accelerated_decoding() %}true{% end %}">
                                         <label>
                                             <input type="checkbox" id="enable_hardware_accelerated_decoding"
                                                    onchange="toggleEnableHardwareAcceleratedDecoding();"
-                                                   {% if config.ENABLE_HARDWARE_ACCELERATED_DECODING %} checked {% end %} />
+                                                   {% if config.get_enable_hardware_accelerated_decoding() %} checked {% end %} />
                                         </label>
                                     </div>
                                     <span class="help-inline">Use hardware acceleration to decode files when available.</span>
@@ -68,21 +68,21 @@
                                 <div class="col-md-9">
                                     <div class="checkbox-list">
                                         <input type="hidden" name="OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS" id="OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS"
-                                               value="{% if config.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS %}true{% end %}">
+                                               value="{% if config.get_overwrite_additional_ffmpeg_options() %}true{% end %}">
                                         <label>
                                             <input type="checkbox" id="overwrite_ffmpeg_options_enabled"
                                                    onchange="showHideFilterGraphSettings();"
-                                                   {% if config.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS %} checked {% end %} />
+                                                   {% if config.get_overwrite_additional_ffmpeg_options() %} checked {% end %} />
                                         </label>
                                     </div>
                                     <span class="help-inline">Enable additional FFMPEG command line options.</span>
                                 </div>
                             </div>
-                            <div class="form-group additional_ffmpeg_options_input {% if not config.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS %}hidden{% end %}">
+                            <div class="form-group additional_ffmpeg_options_input {% if not config.get_overwrite_additional_ffmpeg_options() %}hidden{% end %}">
                                 <label class="col-md-3 control-label">Custom FFMPEG Options</label>
                                 <div class="col-md-9">
                                     <textarea class="form-control" name="ADDITIONAL_FFMPEG_OPTIONS" rows="4">
-                                        {{ config.ADDITIONAL_FFMPEG_OPTIONS }}
+                                        {{ config.get_additional_ffmpeg_options() }}
                                     </textarea>
                                     <br>
                                     <div class="note note-warning note-bordered">

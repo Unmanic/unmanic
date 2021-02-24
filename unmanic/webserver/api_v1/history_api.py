@@ -54,16 +54,8 @@ class ApiHistoryHandler(BaseApiHandler):
             "path_pattern": r"/api/v1/history/id/(?P<id>[0-9]+)?",
         },
         {
-            "method":       "fetch_filtered_historic_tasks",
+            "method":       "manage_historic_tasks_list",
             "path_pattern": r"/api/v1/history/list",
-        },
-        {
-            "method":       "add_tasks_to_pending_tasks_list",
-            "path_pattern": r"/api/v1/history/list/process",
-        },
-        {
-            "method":       "add_tasks_to_pending_tasks_list",
-            "path_pattern": r"/api/v1/history/list/delete",
         },
     ]
 
@@ -83,7 +75,7 @@ class ApiHistoryHandler(BaseApiHandler):
         # TODO: add ability to fetch by id
         pass
 
-    def fetch_filtered_historic_tasks(self, *args, **kwargs):
+    def manage_historic_tasks_list(self, *args, **kwargs):
         request_dict = json.loads(self.request.body)
 
         # Return a list of historical tasks to the pending task list.
@@ -174,23 +166,24 @@ class ApiHistoryHandler(BaseApiHandler):
 
         # Get sort order
         filter_order = request_dict.get('order')[0]
+        order_direction = filter_order.get('dir')
+        columns = request_dict.get('columns')
+        order_column_name = columns[filter_order.get('column')].get('name')
         order = {
-            "column": filter_order.get('column'),
-            "dir":    filter_order.get('dir'),
+            "column": order_column_name,
+            "dir":    order_direction,
         }
-        for column in request_dict.get('columns'):
-            column_name = column.get("name")
-            if column_name == order["column"]:
-                order["column"] = column.get("data")
 
         # Fetch historical tasks
         history_logging = history.History(self.config)
         # Get total count
         records_total_count = history_logging.get_total_historic_task_list_count()
         # Get quantity after filters (without pagination)
-        records_filtered_count = history_logging.get_historic_task_list_filtered_and_sorted(order, 0, 0, search_value).count()
+        records_filtered_count = history_logging.get_historic_task_list_filtered_and_sorted(order=order, start=0, length=0,
+                                                                                            search_value=search_value).count()
         # Get filtered/sorted results
-        task_results = history_logging.get_historic_task_list_filtered_and_sorted(order, start, length, search_value)
+        task_results = history_logging.get_historic_task_list_filtered_and_sorted(order=order, start=start, length=length,
+                                                                                  search_value=search_value)
 
         # Build return data
         return_data = {

@@ -77,7 +77,7 @@ class TestClass(object):
         # import config
         from unmanic import config
         self.settings = config.CONFIG(os.path.join(tempfile.mkdtemp(), 'unmanic_test.db'))
-        self.settings.DEBUGGING = True
+        self.settings.set_config_item('debugging', True, save_settings=False)
 
         # Create our test queues
         self.data_queues = {
@@ -97,7 +97,7 @@ class TestClass(object):
         self.test_task.create_task_by_absolute_path(os.path.abspath(pathname), self.settings, source_data)
 
         #self.test_task.set_source_data(pathname)
-        destination_data = task.prepare_file_destination_data(os.path.abspath(pathname), self.settings.OUT_CONTAINER)
+        destination_data = task.prepare_file_destination_data(os.path.abspath(pathname), self.settings.get_out_container())
         self.test_task.set_destination_data(destination_data)
         self.test_task.set_cache_path()
 

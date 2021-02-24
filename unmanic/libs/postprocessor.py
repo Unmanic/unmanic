@@ -166,7 +166,7 @@ class PostProcessor(threading.Thread):
                 # TODO: Add env variable option to keep src
                 if source_data['abspath'] != destination_data['abspath']:
                     self._log("Removing source: {}".format(source_data['abspath']))
-                    if self.settings.KEEP_FILENAME_HISTORY:
+                    if self.settings.get_keep_filename_history():
                         dirname = os.path.dirname(source_data['abspath'])
                         self.keep_filename_history(dirname, destination_data["basename"], source_data["basename"])
                     os.remove(source_data['abspath'])
@@ -190,13 +190,13 @@ class PostProcessor(threading.Thread):
         result = False
         for stream in file_probe['streams']:
             if stream['codec_type'] == 'video':
-                if self.settings.ENABLE_VIDEO_ENCODING:
+                if self.settings.get_enable_video_encoding():
                     # Check if this file is the right codec
-                    if stream['codec_name'] == self.settings.VIDEO_CODEC:
+                    if stream['codec_name'] == self.settings.get_video_codec():
                         result = True
                         continue
-                    elif self.settings.DEBUGGING:
-                        self._log("File is the not correct codec {} - {} :: {}".format(self.settings.VIDEO_CODEC, abspath,
+                    elif self.settings.get_debugging():
+                        self._log("File is the not correct codec {} - {} :: {}".format(self.settings.get_video_codec(), abspath,
                                                                                        stream['codec_name']))
                         # TODO: If settings are modified during a conversion, the file being converted should not fail.
                         #  Modify ffmpeg.py to have settings passed to it rather than reading directly from the config object

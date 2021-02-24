@@ -78,11 +78,11 @@ class SettingsUIRequestHandler(tornado.web.RequestHandler):
         query = self.get_argument('ajax')
         self.set_header("Content-Type", "text/html")
         if query == 'reload_video_stream_encoder_selection':
-            self.config.VIDEO_CODEC = self.get_argument('selected_video_codec')
+            self.config.set_config_item('video_codec', self.get_argument('selected_video_codec'))
             self.render("settings/video_encoding/video_stream_encoder.html", config=self.config)
         elif query == 'reload_audio_stream_encoder_selection':
-            self.config.AUDIO_CODEC = self.get_argument('selected_audio_codec')
+            self.config.set_config_item('audio_codec', self.get_argument('selected_audio_codec'))
             self.render("settings/audio_encoding/audio_stream_encoder.html", config=self.config)
         elif query == 'reload_audio_stream_encoder_cloning_selection':
-            self.config.AUDIO_CODEC_CLONING = self.get_argument('selected_audio_codec_cloning')
+            self.config.set_config_item('audio_codec_cloning', self.get_argument('selected_audio_codec_cloning'))
             self.render("settings/audio_encoding/audio_stream_encoder_cloning.html", config=self.config)

@@ -34,7 +34,7 @@ import pytest
 import time
 import tempfile
 
-from tests.support_.test_data import data_queues, mock_config_class, mock_jobqueue_class
+from tests.support_.test_data import data_queues, mock_jobqueue_class
 from unmanic.libs.taskhandler import TaskHandler
 from unmanic.libs.unmodels.tasks import Tasks
 
@@ -58,14 +58,13 @@ class TestClass(object):
         self.scheduledtasks = self.data_queues["scheduledtasks"]
         self.inotifytasks = self.data_queues["inotifytasks"]
         self.progress_reports = self.data_queues["progress_reports"]
-        #self.settings = mock_config_class.MockConfig()
         self.task_queue = mock_jobqueue_class.MockJobQueue()
         self.task_handler = None
 
         # import config
         from unmanic import config
         self.settings = config.CONFIG(os.path.join(tempfile.mkdtemp(), 'unmanic_test.db'))
-        self.settings.DEBUGGING = True
+        self.settings.set_config_item('debugging', True, save_settings=False)
 
     def teardown_class(self):
         """

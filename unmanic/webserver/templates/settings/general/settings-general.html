@@ -28,7 +28,7 @@
                                 <div class="col-md-9">
                                     <div class="input-group">
                                         <input type="text" class="form-control" name="LIBRARY_PATH"
-                                               value="{{ escape(config.LIBRARY_PATH) }}">
+                                               value="{{ escape(config.get_library_path()) }}">
                                         <span class="input-group-btn">
                                             <a class="btn green sbold upppercase" href="#unmanic-filebrowser-popup"
                                                data-toggle="modal"
@@ -45,7 +45,7 @@
                                 <div class="col-md-9">
                                     <div class="input-group">
                                         <input type="text" class="form-control" name="CACHE_PATH"
-                                               value="{{ escape(config.CACHE_PATH) }}">
+                                               value="{{ escape(config.get_cache_path()) }}">
                                         <span class="input-group-btn">
                                             <a class="btn green sbold upppercase" href="#unmanic-filebrowser-popup"
                                                data-toggle="modal"
@@ -70,7 +70,7 @@
                                 <div class="col-md-6">
                                     <select class="form-control" name="NUMBER_OF_WORKERS">
                                         {% for i in range(1,13) %}
-                                        <option value="{{ escape(str(i)) }}" {% if int(config.NUMBER_OF_WORKERS) == i %}
+                                        <option value="{{ escape(str(i)) }}" {% if int(config.get_number_of_workers()) == i %}
                                                 selected {% end %}>
                                             {{ escape(str(i)) }}
                                         </option>
@@ -91,10 +91,10 @@
                                 <div class="col-md-9">
                                     <div class="checkbox-list">
                                         <input type="hidden" name="ENABLE_INOTIFY" id="ENABLE_INOTIFY"
-                                               value="{% if config.ENABLE_INOTIFY %}true{% end %}">
+                                               value="{% if config.get_enable_inotify() %}true{% end %}">
                                         <label>
                                             <input type="checkbox" id="inotify_enabled"
-                                                   onchange="toggleInotify();" {% if config.ENABLE_INOTIFY %}
+                                                   onchange="toggleInotify();" {% if config.get_enable_inotify() %}
                                                    checked {% end %} />
                                         </label>
                                         <span class="help-inline"> If enabled, any file modifications or additions to the library will trigger that file to be processed </span>
@@ -114,7 +114,7 @@
                                 <div class="col-md-9">
                                     <input type="text" class="form-control input-inline input-medium"
                                            name="SCHEDULE_FULL_SCAN_MINUTES"
-                                           value="{{ escape(str(config.SCHEDULE_FULL_SCAN_MINUTES)) }}">
+                                           value="{{ escape(str(config.get_schedule_full_scan_minutes())) }}">
                                     <span class="help-inline"> The time (in minutes) between full library scans. Set to 0 to disable </span>
                                 </div>
                             </div>
@@ -123,10 +123,10 @@
                                 <div class="col-md-9">
                                     <div class="checkbox-list">
                                         <input type="hidden" name="RUN_FULL_SCAN_ON_START" id="RUN_FULL_SCAN_ON_START"
-                                               value="{% if config.RUN_FULL_SCAN_ON_START %}true{% end %}">
+                                               value="{% if config.get_run_full_scan_on_start() %}true{% end %}">
                                         <label>
                                             <input type="checkbox" id="run_scan_on_start_enabled"
-                                                   onchange="toggleRunScanOnStart();" {% if config.RUN_FULL_SCAN_ON_START %}
+                                                   onchange="toggleRunScanOnStart();" {% if config.get_run_full_scan_on_start() %}
                                                    checked {% end %} />
                                         </label>
                                     </div>
@@ -145,10 +145,10 @@
                                 <div class="col-md-9">
                                     <div class="checkbox-list">
                                         <input type="hidden" name="KEEP_FILENAME_HISTORY" id="KEEP_FILENAME_HISTORY"
-                                               value="{% if config.KEEP_FILENAME_HISTORY %}true{% end %}">
+                                               value="{% if config.get_keep_filename_history() %}true{% end %}">
                                         <label>
                                             <input type="checkbox" id="keep_filename_history_enabled"
-                                                   onchange="toggleKeepFilenameHistory();" {% if config.KEEP_FILENAME_HISTORY %}
+                                                   onchange="toggleKeepFilenameHistory();" {% if config.get_keep_filename_history() %}
                                                    checked {% end %} />
                                         </label>
                                         <span class="help-inline">If enabled, unmanic will keep a filename history using FileBot pattern (file_info). Useful for Sub-Zero Plex Plugin and other subtitles downloaders.</span>
@@ -168,10 +168,10 @@
                                 <div class="col-md-9">
                                     <div class="checkbox-list">
                                         <input type="hidden" name="DEBUGGING" id="DEBUGGING"
-                                               value="{% if config.DEBUGGING %}true{% end %}">
+                                               value="{% if config.get_debugging() %}true{% end %}">
                                         <label>
                                             <input type="checkbox" id="debugging_enabled"
-                                                   onchange="toggleDebugging();" {% if config.DEBUGGING %} checked {% end %} />
+                                                   onchange="toggleDebugging();" {% if config.get_debugging() %} checked {% end %} />
                                         </label>
                                     </div>
                                 </div>

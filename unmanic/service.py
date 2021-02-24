@@ -70,23 +70,23 @@ class LibraryScanner(threading.Thread):
 
     def init_ffmpeg_handle_settings(self):
         return {
-            'audio_codec':                          self.settings.AUDIO_CODEC,
-            'audio_codec_cloning':                  self.settings.AUDIO_CODEC_CLONING,
-            'audio_stereo_stream_bitrate':          self.settings.AUDIO_STEREO_STREAM_BITRATE,
-            'audio_stream_encoder':                 self.settings.AUDIO_STREAM_ENCODER,
-            'cache_path':                           self.settings.CACHE_PATH,
-            'debugging':                            self.settings.DEBUGGING,
-            'enable_audio_encoding':                self.settings.ENABLE_AUDIO_ENCODING,
-            'enable_audio_stream_stereo_cloning':   self.settings.ENABLE_AUDIO_STREAM_STEREO_CLONING,
-            'enable_audio_stream_transcoding':      self.settings.ENABLE_AUDIO_STREAM_TRANSCODING,
-            'enable_video_encoding':                self.settings.ENABLE_VIDEO_ENCODING,
-            'out_container':                        self.settings.OUT_CONTAINER,
-            'remove_subtitle_streams':              self.settings.REMOVE_SUBTITLE_STREAMS,
-            'video_codec':                          self.settings.VIDEO_CODEC,
-            'video_stream_encoder':                 self.settings.VIDEO_STREAM_ENCODER,
-            'overwrite_additional_ffmpeg_options':  self.settings.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS,
-            'additional_ffmpeg_options':            self.settings.ADDITIONAL_FFMPEG_OPTIONS,
-            'enable_hardware_accelerated_decoding': self.settings.ENABLE_HARDWARE_ACCELERATED_DECODING,
+            'audio_codec':                          self.settings.get_audio_codec(),
+            'audio_stream_encoder':                 self.settings.get_audio_stream_encoder(),
+            'audio_codec_cloning':                  self.settings.get_audio_codec_cloning(),
+            'audio_stereo_stream_bitrate':          self.settings.get_audio_stereo_stream_bitrate(),
+            'cache_path':                           self.settings.get_cache_path(),
+            'debugging':                            self.settings.get_debugging(),
+            'enable_audio_encoding':                self.settings.get_enable_audio_encoding(),
+            'enable_audio_stream_stereo_cloning':   self.settings.get_enable_audio_stream_stereo_cloning(),
+            'enable_audio_stream_transcoding':      self.settings.get_enable_audio_stream_transcoding(),
+            'enable_video_encoding':                self.settings.get_enable_video_encoding(),
+            'out_container':                        self.settings.get_out_container(),
+            'remove_subtitle_streams':              self.settings.get_remove_subtitle_streams(),
+            'video_codec':                          self.settings.get_video_codec(),
+            'video_stream_encoder':                 self.settings.get_video_stream_encoder(),
+            'overwrite_additional_ffmpeg_options':  self.settings.get_overwrite_additional_ffmpeg_options(),
+            'additional_ffmpeg_options':            self.settings.get_additional_ffmpeg_options(),
+            'enable_hardware_accelerated_decoding': self.settings.get_enable_hardware_accelerated_decoding(),
         }
 
     def stop(self):
@@ -98,15 +98,15 @@ class LibraryScanner(threading.Thread):
         self._log("Starting LibraryScanner Monitor loop")
         while not self.abort_flag.is_set():
             # Main loop to configure the scheduler
-            if int(self.settings.SCHEDULE_FULL_SCAN_MINUTES) != self.interval:
-                self.interval = int(self.settings.SCHEDULE_FULL_SCAN_MINUTES)
+            if int(self.settings.get_schedule_full_scan_minutes()) != self.interval:
+                self.interval = int(self.settings.get_schedule_full_scan_minutes())
             if self.interval and self.interval != 0:
                 self._log("Setting LibraryScanner schedule to scan every {} mins...".format(self.interval))
                 # Configure schedule
                 schedule.every(self.interval).minutes.do(self.scheduled_job)
 
                 # First run the task
-                if self.settings.RUN_FULL_SCAN_ON_START and self.firstrun:
+                if self.settings.get_run_full_scan_on_start() and self.firstrun:
                     self._log("Running LibraryScanner on start")
                     self.scheduled_job()
                 self.firstrun = False
@@ -118,7 +118,7 @@ class LibraryScanner(threading.Thread):
                     time.sleep(1)
                     # If the settings have changed, then break this loop and clear
                     # the scheduled job resetting to the new interval
-                    if int(self.settings.SCHEDULE_FULL_SCAN_MINUTES) != self.interval:
+                    if int(self.settings.get_schedule_full_scan_minutes()) != self.interval:
                         self._log("Resetting LibraryScanner schedule")
                         break
                 schedule.clear()
@@ -127,7 +127,7 @@ class LibraryScanner(threading.Thread):
 
     def scheduled_job(self):
         self._log("Running full library scan")
-        self.get_convert_files(self.settings.LIBRARY_PATH)
+        self.get_convert_files(self.settings.get_library_path())
 
     def add_path_to_queue(self, pathname):
         self.scheduledtasks.put(pathname)
@@ -140,16 +140,16 @@ class LibraryScanner(threading.Thread):
         ffmpeg_handle.file_in = {}
         # Check if file matches configured codec and format
         if not ffmpeg_handle.check_file_to_be_processed(pathname, ffmpeg_settings):
-            if self.settings.DEBUGGING:
+            if self.settings.get_debugging():
                 self._log("File does not need to be processed - {}".format(pathname))
             return False
         return True
 
     def get_convert_files(self, search_folder):
-        if self.settings.DEBUGGING:
+        if self.settings.get_debugging():
             self._log("Scanning directory - '{}'".format(search_folder), level="debug")
         for root, subFolders, files in os.walk(search_folder, followlinks=True):
-            if self.settings.DEBUGGING:
+            if self.settings.get_debugging():
                 self._log(json.dumps(files, indent=2), level="debug")
             # Add all files in this path that match our container filter
             for file_path in files:
@@ -158,9 +158,9 @@ class LibraryScanner(threading.Thread):
                     # Check if this file is already the correct format:
                     if self.file_not_target_format(pathname):
                         self.add_path_to_queue(pathname)
-                    elif self.settings.DEBUGGING:
+                    elif self.settings.get_debugging():
                         self._log("Ignoring file due to already correct format - '{}'".format(file_path))
-                elif self.settings.DEBUGGING:
+                elif self.settings.get_debugging():
                     self._log("Ignoring file due to incorrect suffix - '{}'".format(file_path))
 
 
@@ -180,27 +180,27 @@ class EventProcessor(pyinotify.ProcessEvent):
 
     def init_ffmpeg_handle_settings(self):
         return {
-            'audio_codec':                          self.settings.AUDIO_CODEC,
-            'audio_codec_cloning':                  self.settings.AUDIO_CODEC_CLONING,
-            'audio_stereo_stream_bitrate':          self.settings.AUDIO_STEREO_STREAM_BITRATE,
-            'audio_stream_encoder':                 self.settings.AUDIO_STREAM_ENCODER,
-            'cache_path':                           self.settings.CACHE_PATH,
-            'debugging':                            self.settings.DEBUGGING,
-            'enable_audio_encoding':                self.settings.ENABLE_AUDIO_ENCODING,
-            'enable_audio_stream_stereo_cloning':   self.settings.ENABLE_AUDIO_STREAM_STEREO_CLONING,
-            'enable_audio_stream_transcoding':      self.settings.ENABLE_AUDIO_STREAM_TRANSCODING,
-            'enable_video_encoding':                self.settings.ENABLE_VIDEO_ENCODING,
-            'out_container':                        self.settings.OUT_CONTAINER,
-            'remove_subtitle_streams':              self.settings.REMOVE_SUBTITLE_STREAMS,
-            'video_codec':                          self.settings.VIDEO_CODEC,
-            'video_stream_encoder':                 self.settings.VIDEO_STREAM_ENCODER,
-            'overwrite_additional_ffmpeg_options':  self.settings.OVERWRITE_ADDITIONAL_FFMPEG_OPTIONS,
-            'additional_ffmpeg_options':            self.settings.ADDITIONAL_FFMPEG_OPTIONS,
-            'enable_hardware_accelerated_decoding': self.settings.ENABLE_HARDWARE_ACCELERATED_DECODING,
+            'audio_codec':                          self.settings.get_audio_codec(),
+            'audio_stream_encoder':                 self.settings.get_audio_stream_encoder(),
+            'audio_codec_cloning':                  self.settings.get_audio_codec_cloning(),
+            'audio_stereo_stream_bitrate':          self.settings.get_audio_stereo_stream_bitrate(),
+            'cache_path':                           self.settings.get_cache_path(),
+            'debugging':                            self.settings.get_debugging(),
+            'enable_audio_encoding':                self.settings.get_enable_audio_encoding(),
+            'enable_audio_stream_stereo_cloning':   self.settings.get_enable_audio_stream_stereo_cloning(),
+            'enable_audio_stream_transcoding':      self.settings.get_enable_audio_stream_transcoding(),
+            'enable_video_encoding':                self.settings.get_enable_video_encoding(),
+            'out_container':                        self.settings.get_out_container(),
+            'remove_subtitle_streams':              self.settings.get_remove_subtitle_streams(),
+            'video_codec':                          self.settings.get_video_codec(),
+            'video_stream_encoder':                 self.settings.get_video_stream_encoder(),
+            'overwrite_additional_ffmpeg_options':  self.settings.get_overwrite_additional_ffmpeg_options(),
+            'additional_ffmpeg_options':            self.settings.get_additional_ffmpeg_options(),
+            'enable_hardware_accelerated_decoding': self.settings.get_enable_hardware_accelerated_decoding(),
         }
 
     def inotify_enabled(self):
-        if self.settings.ENABLE_INOTIFY:
+        if self.settings.get_enable_inotify():
             return True
         return False
 
@@ -215,7 +215,7 @@ class EventProcessor(pyinotify.ProcessEvent):
         ffmpeg_handle.file_in = {}
         # Check if file matches configured codec and format
         if not ffmpeg_handle.check_file_to_be_processed(pathname, ffmpeg_settings):
-            if self.settings.DEBUGGING:
+            if self.settings.get_debugging():
                 self._log("File does not need to be processed - {}".format(pathname))
             return False
         return True
@@ -227,9 +227,9 @@ class EventProcessor(pyinotify.ProcessEvent):
                 # Add it to the queue
                 if self.file_not_target_format(event.pathname):
                     self.add_path_to_queue(event.pathname)
-                elif self.settings.DEBUGGING:
+                elif self.settings.get_debugging():
                     self._log("Ignoring file due to already correct format - '{}'".format(event.pathname))
-            elif self.settings.DEBUGGING:
+            elif self.settings.get_debugging():
                 self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
 
     def process_IN_MOVED_TO(self, event):
@@ -239,9 +239,9 @@ class EventProcessor(pyinotify.ProcessEvent):
                 # Add it to the queue
                 if self.file_not_target_format(event.pathname):
                     self.add_path_to_queue(event.pathname)
-                elif self.settings.DEBUGGING:
+                elif self.settings.get_debugging():
                     self._log("Ignoring file due to already correct format - '{}'".format(event.pathname))
-            elif self.settings.DEBUGGING:
+            elif self.settings.get_debugging():
                 self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
 
     def process_IN_DELETE(self, event):
@@ -306,7 +306,7 @@ class Service:
     def start_inotify_watch_manager(self, data_queues, settings):
         main_logger.info("Starting EventProcessor")
         wm = pyinotify.WatchManager()
-        wm.add_watch(settings.LIBRARY_PATH, pyinotify.ALL_EVENTS, rec=True)
+        wm.add_watch(settings.get_library_path(), pyinotify.ALL_EVENTS, rec=True)
         # event processor
         ep = EventProcessor(data_queues, settings)
         # notifier
@@ -347,7 +347,7 @@ class Service:
 
         # Clear cache directory
         main_logger.info("Clearing previous cache")
-        common.clean_files_in_dir(settings.CACHE_PATH)
+        common.clean_files_in_dir(settings.get_cache_path())
 
         main_logger.info("Starting all threads")
 

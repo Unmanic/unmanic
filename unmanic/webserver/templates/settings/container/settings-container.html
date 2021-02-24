@@ -28,19 +28,19 @@
                                         id="out_container"
                                         onchange="showHideSubtitleSettings();">
                                     {% set enable_subtitles = True %}
-                                    {% for option in config.SUPPORTED_CONTAINERS %}data-supportssubtitles=
+                                    {% for option in config.get_supported_containers() %}data-supportssubtitles=
                                     <option value="{{ escape(option) }}"
-                                            {% if config.SUPPORTED_CONTAINERS[option]['supports_subtitles'] %}
+                                            {% if config.get_supported_containers()[option]['supports_subtitles'] %}
                                             data-supports_subtitles="true"
                                             {% else %}
                                             data-supports_subtitles="false"
                                             {% end %}
-                                            {% if config.OUT_CONTAINER == option %}
-                                            {% set enable_subtitles = config.SUPPORTED_CONTAINERS[option]['supports_subtitles'] %}
+                                            {% if config.get_out_container() == option %}
+                                            {% set enable_subtitles = config.get_supported_containers()[option]['supports_subtitles'] %}
                                             selected
                                             {% end %}>
-                                        .{{ escape(config.SUPPORTED_CONTAINERS[option]['extension']) }}
-                                        - {{ escape(config.SUPPORTED_CONTAINERS[option]['description']) }}
+                                        .{{ escape(config.get_supported_containers()[option]['extension']) }}
+                                        - {{ escape(config.get_supported_containers()[option]['description']) }}
                                     </option>
                                     {% end %}
                                 </select>
@@ -52,10 +52,10 @@
                             <div class="col-md-9">
                                 <div class="checkbox-list">
                                     <input type="hidden" name="REMOVE_SUBTITLE_STREAMS" id="REMOVE_SUBTITLE_STREAMS"
-                                           value="{% if config.REMOVE_SUBTITLE_STREAMS %}true{% end %}">
+                                           value="{% if config.get_remove_subtitle_streams() %}true{% end %}">
                                     <label>
                                         <input type="checkbox" id="remove_subtitles_enabled"
-                                               onchange="toggleStripSubtitles();" {% if config.REMOVE_SUBTITLE_STREAMS %}
+                                               onchange="toggleStripSubtitles();" {% if config.get_remove_subtitle_streams() %}
                                                checked {% end %} />
                                     </label>
                                 </div>

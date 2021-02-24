@@ -63,7 +63,7 @@ class TestClass(object):
 
         # import config
         from unmanic import config
-        self.settings = config.CONFIG(os.path.join(tempfile.mkdtemp(), 'unmanic_test.db'))
+        self.settings = config.CONFIG(tempfile.mkdtemp())
         self.settings.set_config_item('debugging', True, save_settings=False)
 
     def teardown_class(self):

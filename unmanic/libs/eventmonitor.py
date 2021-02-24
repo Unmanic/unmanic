@@ -33,7 +33,7 @@ import threading
 import time
 import pyinotify
 
-from unmanic.libs import common, ffmpeg
+from unmanic.libs import common, ffmpeg, history
 
 
 class EventProcessor(pyinotify.ProcessEvent):
@@ -80,6 +80,12 @@ class EventProcessor(pyinotify.ProcessEvent):
         self.inotifytasks.put(pathname)
 
     def file_not_target_format(self, pathname):
+        """
+        Check if file is not the correct format
+
+        :param pathname:
+        :return:
+        """
         # init FFMPEG handle
         ffmpeg_settings = self.init_ffmpeg_handle_settings()
         ffmpeg_handle = ffmpeg.FFMPEGHandle(ffmpeg_settings)
@@ -92,29 +98,45 @@ class EventProcessor(pyinotify.ProcessEvent):
             return False
         return True
 
+    def file_failed_in_history(self, pathname):
+        """
+        Check if file has already failed in history
+
+        :param pathname:
+        :return:
+        """
+        # Fetch historical tasks
+        history_logging = history.History(self.settings)
+        task_results = history_logging.get_historic_tasks_list_with_source_probe(abspath=pathname, task_success=0)
+        if not task_results:
+            # No results were found matching that pathname
+            return False
+        # That pathname was found in the results of failed historic tasks
+        return True
+
+    def handle_event(self, event):
+        if self.settings.file_ends_in_allowed_search_extensions(event.pathname):
+            # Add it to the queue
+            if self.file_not_target_format(event.pathname):
+                # Check if file has failed in history.
+                if self.file_failed_in_history(event.pathname):
+                    self._log("Ignoring file due to file found already failed in history - '{}'".format(event.pathname))
+                else:
+                    self.add_path_to_queue(event.pathname)
+            elif self.settings.get_debugging():
+                self._log("Ignoring file due to already correct format - '{}'".format(event.pathname))
+        elif self.settings.get_debugging():
+            self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
+
     def process_IN_CLOSE_WRITE(self, event):
         if self.inotify_enabled():
             self._log("CLOSE_WRITE event detected:", event.pathname)
-            if self.settings.file_ends_in_allowed_search_extensions(event.pathname):
-                # Add it to the queue
-                if self.file_not_target_format(event.pathname):
-                    self.add_path_to_queue(event.pathname)
-                elif self.settings.get_debugging():
-                    self._log("Ignoring file due to already correct format - '{}'".format(event.pathname))
-            elif self.settings.get_debugging():
-                self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
+            self.handle_event(event)
 
     def process_IN_MOVED_TO(self, event):
         if self.inotify_enabled():
             self._log("MOVED_TO event detected:", event.pathname)
-            if self.settings.file_ends_in_allowed_search_extensions(event.pathname):
-                # Add it to the queue
-                if self.file_not_target_format(event.pathname):
-                    self.add_path_to_queue(event.pathname)
-                elif self.settings.get_debugging():
-                    self._log("Ignoring file due to already correct format - '{}'".format(event.pathname))
-            elif self.settings.get_debugging():
-                self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
+            self.handle_event(event)
 
     def process_IN_DELETE(self, event):
         if self.inotify_enabled():

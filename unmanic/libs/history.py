@@ -216,7 +216,8 @@ class History(object):
         query = HistoricTasks.select().order_by(HistoricTasks.id.desc())
         return query.count()
 
-    def get_historic_task_list_filtered_and_sorted(self, order=None, start=0, length=None, search_value=None, id_list=None):
+    def get_historic_task_list_filtered_and_sorted(self, order=None, start=0, length=None, search_value=None, id_list=None,
+                                                   task_success=None):
         try:
             query = (HistoricTasks.select())
 
@@ -225,6 +226,9 @@ class History(object):
 
             if search_value:
                 query = query.where(HistoricTasks.task_label.contains(search_value))
+
+            if task_success:
+                query = query.where(HistoricTasks.task_success.in_([task_success]))
 
             # Get order by
             if order:
@@ -243,7 +247,7 @@ class History(object):
 
         return query.dicts()
 
-    def get_current_path_of_historic_tasks_by_id(self, id_list=[]):
+    def get_current_path_of_historic_tasks_by_id(self, id_list=None):
         """
         Returns a list of HistoricTasks filtered by id_list and joined with the current absolute path of that file.
         For failures this will be the the source path
@@ -281,6 +285,46 @@ class History(object):
                 |
                 ((HistoricTasks.task_success != True) & (HistoricTaskProbe.type == "source"))
             )
+        )
+
+        query = query.join(HistoricTaskProbe, on=predicate)
+
+        return query.dicts()
+
+    def get_historic_tasks_list_with_source_probe(self, order=None, start=0, length=None, search_value=None, id_list=None,
+                                                  task_success=None, abspath=None):
+        """
+        Return a list of matching historic tasks with their source file's ffmpeg probe.
+
+        :param order:
+        :param start:
+        :param length:
+        :param search_value:
+        :param id_list:
+        :param task_success:
+        :param abspath:
+        :return:
+        """
+        query = (
+            HistoricTasks.select(HistoricTasks.id, HistoricTasks.task_label, HistoricTasks.task_success,
+                                 HistoricTaskProbe.type,
+                                 HistoricTaskProbe.abspath))
+
+        if id_list:
+            query = query.where(HistoricTasks.id.in_(id_list))
+
+        if search_value:
+            query = query.where(HistoricTasks.task_label.contains(search_value))
+
+        if task_success:
+            query = query.where(HistoricTasks.task_success.in_([task_success]))
+
+        if abspath:
+            query = query.where(HistoricTaskProbe.abspath.in_([abspath]))
+
+        predicate = (
+            (HistoricTaskProbe.historictask_id == HistoricTasks.id) &
+            (HistoricTaskProbe.type == "source")
         )
 
         query = query.join(HistoricTaskProbe, on=predicate)

@@ -39,7 +39,7 @@ import schedule
 import signal
 
 from unmanic import config
-from unmanic.libs import unlogger, common, eventmonitor, ffmpeg
+from unmanic.libs import unlogger, common, eventmonitor, ffmpeg, history
 from unmanic.libs.taskqueue import TaskQueue
 from unmanic.libs.postprocessor import PostProcessor
 from unmanic.libs.taskhandler import TaskHandler
@@ -131,6 +131,12 @@ class LibraryScanner(threading.Thread):
         self.scheduledtasks.put(pathname)
 
     def file_not_target_format(self, pathname):
+        """
+        Check if file is not the correct format
+
+        :param pathname:
+        :return:
+        """
         # init FFMPEG handle
         ffmpeg_settings = self.init_ffmpeg_handle_settings()
         ffmpeg_handle = ffmpeg.FFMPEGHandle(ffmpeg_settings)
@@ -141,6 +147,22 @@ class LibraryScanner(threading.Thread):
             if self.settings.get_debugging():
                 self._log("File does not need to be processed - {}".format(pathname))
             return False
+        return True
+
+    def file_failed_in_history(self, pathname):
+        """
+        Check if file has already failed in history
+
+        :param pathname:
+        :return:
+        """
+        # Fetch historical tasks
+        history_logging = history.History(self.settings)
+        task_results = history_logging.get_historic_tasks_list_with_source_probe(abspath=pathname, task_success=0)
+        if not task_results:
+            # No results were found matching that pathname
+            return False
+        # That pathname was found in the results of failed historic tasks
         return True
 
     def get_convert_files(self, search_folder):
@@ -155,6 +177,11 @@ class LibraryScanner(threading.Thread):
                     pathname = os.path.join(root, file_path)
                     # Check if this file is already the correct format:
                     if self.file_not_target_format(pathname):
+                        # Check if file has failed in history.
+                        if self.file_failed_in_history(pathname):
+                            self._log("Ignoring file due to file found already failed in history - '{}'".format(pathname))
+                        else:
+                            self.add_path_to_queue(pathname)
                         self.add_path_to_queue(pathname)
                     elif self.settings.get_debugging():
                         self._log("Ignoring file due to already correct format - '{}'".format(file_path))

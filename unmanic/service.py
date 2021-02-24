@@ -31,17 +31,15 @@
 """
 
 import os
-import sys
 import json
 import time
 import threading
 import queue
-import pyinotify
 import schedule
 import signal
 
 from unmanic import config
-from unmanic.libs import unlogger, common, ffmpeg
+from unmanic.libs import unlogger, common, eventmonitor, ffmpeg
 from unmanic.libs.taskqueue import TaskQueue
 from unmanic.libs.postprocessor import PostProcessor
 from unmanic.libs.taskhandler import TaskHandler
@@ -164,95 +162,6 @@ class LibraryScanner(threading.Thread):
                     self._log("Ignoring file due to incorrect suffix - '{}'".format(file_path))
 
 
-class EventProcessor(pyinotify.ProcessEvent):
-    def __init__(self, data_queues, settings):
-        self.name = "EventProcessor"
-        self.settings = settings
-        self.logger = data_queues["logging"].get_logger(self.name)
-        self.inotifytasks = data_queues["inotifytasks"]
-        self.abort_flag = threading.Event()
-        self.abort_flag.clear()
-        self.ffmpeg = None
-
-    def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
-
-    def init_ffmpeg_handle_settings(self):
-        return {
-            'audio_codec':                          self.settings.get_config_item('audio_codec'),
-            'audio_stream_encoder':                 self.settings.get_audio_stream_encoder(),
-            'audio_codec_cloning':                  self.settings.get_audio_codec_cloning(),
-            'audio_stereo_stream_bitrate':          self.settings.get_audio_stereo_stream_bitrate(),
-            'cache_path':                           self.settings.get_cache_path(),
-            'debugging':                            self.settings.get_debugging(),
-            'enable_audio_encoding':                self.settings.get_enable_audio_encoding(),
-            'enable_audio_stream_stereo_cloning':   self.settings.get_enable_audio_stream_stereo_cloning(),
-            'enable_audio_stream_transcoding':      self.settings.get_enable_audio_stream_transcoding(),
-            'enable_video_encoding':                self.settings.get_enable_video_encoding(),
-            'out_container':                        self.settings.get_out_container(),
-            'remove_subtitle_streams':              self.settings.get_remove_subtitle_streams(),
-            'video_codec':                          self.settings.get_video_codec(),
-            'video_stream_encoder':                 self.settings.get_video_stream_encoder(),
-            'overwrite_additional_ffmpeg_options':  self.settings.get_overwrite_additional_ffmpeg_options(),
-            'additional_ffmpeg_options':            self.settings.get_additional_ffmpeg_options(),
-            'enable_hardware_accelerated_decoding': self.settings.get_enable_hardware_accelerated_decoding(),
-        }
-
-    def inotify_enabled(self):
-        if self.settings.get_enable_inotify():
-            return True
-        return False
-
-    def add_path_to_queue(self, pathname):
-        self.inotifytasks.put(pathname)
-
-    def file_not_target_format(self, pathname):
-        # init FFMPEG handle
-        ffmpeg_settings = self.init_ffmpeg_handle_settings()
-        ffmpeg_handle = ffmpeg.FFMPEGHandle(ffmpeg_settings)
-        # Reset file in
-        ffmpeg_handle.file_in = {}
-        # Check if file matches configured codec and format
-        if not ffmpeg_handle.check_file_to_be_processed(pathname, ffmpeg_settings):
-            if self.settings.get_debugging():
-                self._log("File does not need to be processed - {}".format(pathname))
-            return False
-        return True
-
-    def process_IN_CLOSE_WRITE(self, event):
-        if self.inotify_enabled():
-            self._log("CLOSE_WRITE event detected:", event.pathname)
-            if self.settings.file_ends_in_allowed_search_extensions(event.pathname):
-                # Add it to the queue
-                if self.file_not_target_format(event.pathname):
-                    self.add_path_to_queue(event.pathname)
-                elif self.settings.get_debugging():
-                    self._log("Ignoring file due to already correct format - '{}'".format(event.pathname))
-            elif self.settings.get_debugging():
-                self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
-
-    def process_IN_MOVED_TO(self, event):
-        if self.inotify_enabled():
-            self._log("MOVED_TO event detected:", event.pathname)
-            if self.settings.file_ends_in_allowed_search_extensions(event.pathname):
-                # Add it to the queue
-                if self.file_not_target_format(event.pathname):
-                    self.add_path_to_queue(event.pathname)
-                elif self.settings.get_debugging():
-                    self._log("Ignoring file due to already correct format - '{}'".format(event.pathname))
-            elif self.settings.get_debugging():
-                self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
-
-    def process_IN_DELETE(self, event):
-        if self.inotify_enabled():
-            self._log("DELETE event detected:", event.pathname)
-            self._log("Nothing to do for this event")
-
-    def process_default(self, event):
-        pass
-
-
 class Service:
 
     def __init__(self):
@@ -304,19 +213,15 @@ class Service:
         return scheduler
 
     def start_inotify_watch_manager(self, data_queues, settings):
-        main_logger.info("Starting EventProcessor")
-        wm = pyinotify.WatchManager()
-        wm.add_watch(settings.get_library_path(), pyinotify.ALL_EVENTS, rec=True)
-        # event processor
-        ep = EventProcessor(data_queues, settings)
-        # notifier
-        notifier = pyinotify.ThreadedNotifier(wm, ep)
-        notifier.start()
+        main_logger.info("Starting EventMonitorManager")
+        event_monitor_manager = eventmonitor.EventMonitorManager(data_queues, settings)
+        event_monitor_manager.daemon = True
+        event_monitor_manager.start()
         self.threads.append({
-            'name':   'EventProcessor',
-            'thread': notifier
+            'name':   'EventMonitorManager',
+            'thread': event_monitor_manager
         })
-        return notifier
+        return event_monitor_manager
 
     def start_ui_server(self, data_queues, settings, foreman):
         main_logger.info("Starting UIServer")

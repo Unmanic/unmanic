@@ -193,19 +193,19 @@ var CompletedTasksDatatablesManaged = function () {
                     },
                     {
                         mData: "task_label",
-                        sName: 1,
+                        sName: "task_label",
                         bSortable: true,
                         bSearchable: true
                     },
                     {
                         mData: "finish_time",
-                        sName: 2,
+                        sName: "finish_time",
                         bSortable: true
                     },
                     {
                         mData: null,
-                        sName: 3,
-                        bSortable: false,
+                        sName: "task_success",
+                        bSortable: true,
                         bSearchable: false,
                         mRender: recordSuccessStatus
                     },

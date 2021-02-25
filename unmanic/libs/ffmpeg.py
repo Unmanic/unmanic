@@ -327,6 +327,10 @@ class FFMPEGHandle(object):
                                 "File already has {} codec audio stream - {}".format(settings['audio_codec'], vid_file_path),
                                 level='debug')
                             correct_audio_codec = True
+                if not audio_streams_codecs:
+                    # File does not contain any audio streams
+                    self._log("File does not contain any audio streams - {}".format(vid_file_path), level='debug')
+                    correct_audio_codec = True
                 if not correct_audio_codec:
                     self._log(
                         "The current file's audio streams ({}) do not match the configured audio codec ({})".format(

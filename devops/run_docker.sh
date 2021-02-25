@@ -35,6 +35,7 @@ PUID=$(id -u);
 PGID=$(id -g);
 DEBUGGING=false;
 
+ADDITIONAL_DOCKER_PARAMS=""
 for ARG in ${@}; do
     case ${ARG} in
         --debug)
@@ -43,12 +44,14 @@ for ARG in ${@}; do
         --hw*)
             HW_ACCELERATION=$(echo ${ARG} | awk -F'=' '{print $2}');
             ;;
+        --cpus*)
+            ADDITIONAL_DOCKER_PARAMS="${ADDITIONAL_DOCKER_PARAMS} --cpus='$(echo ${ARG} | awk -F'=' '{print $2}')'";
+            ;;
         *)
             ;;
     esac
 done
 
-ADDITIONAL_DOCKER_PARAMS=""
 if [[ ! -z ${HW_ACCELERATION} ]]; then
     PARAM=""
     case ${HW_ACCELERATION} in

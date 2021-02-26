@@ -1,31 +1,52 @@
 
+<div class="portlet-title">
+    <div class="caption">
+        <i class="fa fa-tasks font-yellow"></i>
+        <span class="caption-subject font-yellow bold uppercase">Pending Tasks</span>
+    </div>
+    <div class="actions">
+        <a class="btn btn-circle btn-icon-only btn-default" href="javascript:;" data-original-title="" title=""
+           id="pending-tasks-fullscreen"><i class="fa fa-expand"></i></a>
+    </div>
+</div>
+<div class="portlet-body">
+    <div class="table-container">
+        <div class="table-actions-wrapper">
+            <span> </span>
 
-<ul class="task-list">
-    {% for pending_task in handler.get_pending_tasks() %}
-    <li>
-        <div class="task-title">
-            {% try %}
-                <span class="task-title-sp" title="{{ pending_task['abspath'] }}">{{ pending_task['basename'] }} </span>
-            {% except %}
-                <span class="error">(Error fetching pending item information - Please report this as a bug)</span>
-            {% end %}
-            <span class="label label-sm label-success">{{ escape(pending_task['format_long_name']) }}</span>
-        </div>
-        <div class="task-config">
-            <div class="task-config-btn btn-group">
-                <a class="btn btn-sm default" href="javascript:;" data-toggle="dropdown" data-hover="dropdown" data-close-others="true">
-                    <i class="fa fa-cog"></i>
-                    <i class="fa fa-angle-down"></i>
-                </a>
-                <ul class="dropdown-menu pull-right">
-                    <li>
-                        <a href="javascript:;">
-                            <i class="fa fa-trash-o"></i> Remove </a>
-                    </li>
-                </ul>
+            <div class="actions pull-right">
+                <div class="btn-group">
+                    <a class="btn btn-default btn-sm" href="javascript:;" data-toggle="dropdown">
+                        <i class="fa fa-check-square-o"></i> Options
+                        <i class="fa fa-angle-down"></i>
+                    </a>
+                    <ul class="dropdown-menu pull-right">
+                        <li>
+                            <a href="javascript:;" class="remove-from-task-list">
+                                <i class="fa fa-trash-o"></i> Remove Selected </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
-    </li>
-    {% end %}
-</ul>
+        <table class="table table-striped table-bordered table-hover dt-responsive table-checkable" width="100%"
+               id="pending_tasks_table">
+            <thead>
+            <tr>
+                <th class="table-checkbox ">
+                    <input type="checkbox" id="checkbox_header" class="md-check group-checkable"
+                           data-set="#pending_tasks_table .checkboxes"/>
+                </th>
+                <th>ID</th>
+                <th>Name</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- ERROR Generating table content. -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
 

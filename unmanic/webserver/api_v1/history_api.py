@@ -90,7 +90,6 @@ class ApiHistoryHandler(BaseApiHandler):
         #   (on success will continue to return the current list of historical tasks)
         if request_dict.get("customActionName") == "delete-from-history":
             success = self.delete_historic_tasks(request_dict.get("id"))
-            tornado.log.app_log.warning("fetch_filtered_historic_tasks - success:  {}".format(success), exc_info=True)
             if not success:
                 self.write(json.dumps({"success": False}))
                 return

@@ -1366,12 +1366,6 @@ var Dashboard = function() {
             }, 5000);
         },
 
-        initPendingTasks: function() {
-            window.setInterval(function(){
-                updatePendingTasksList();
-            }, 5000);
-        },
-
         initHistoricalTasks: function() {
             window.setInterval(function(){
                 updateHistoricalTasksList();
@@ -1398,7 +1392,6 @@ var Dashboard = function() {
             // Init the widgets
             this.initEasyPieCharts();
             this.initEasyPieChartsPolling();
-            this.initPendingTasks();
             this.initHistoricalTasks();
         }
     };

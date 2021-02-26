@@ -1,114 +1,80 @@
-var $state = {};
-
 /**
- * Set the task to view conversion details on
- *
- * @param jobId
- * @param rowId
- */
-var viewConversionDetails = function (jobId) {
-    $state.jobId = jobId;
-    // Get conversion details template for this item
-    $.get('?ajax=conversionDetails&jobId=' + jobId, function (data) {
-        // update/set the conversion details list
-        $('#conversion_details').html(data);
-
-        // Highlight the currently selected task
-        $('.completed_task').css('background', ''); // Remove highlight on all rows
-        $('.completed_task_jobid_' + jobId).css('background', 'rgba(197, 185, 107, 0.20)');
-    });
-};
-
-/**
- * Reload the completed task list.
- */
-var reloadCompletedTaskList = function () {
-    var jobId = (typeof $state.jobId !== 'undefined') ? $state.jobId : 0;
-    // Get conversion details template for this item
-    $.get('?ajax=reloadCompletedTaskList&jobId=' + jobId, function (data) {
-        // update/set the conversion details list
-        $('#completed_tasks').html(data);
-        jQuery(document).ready(function () {
-            TableDatatablesManaged.init();
-        });
-    });
-};
-
-/**
- * Filter completed tasks list
- *
- * @param filter
- */
-var filterCompletedTasks = function (filter) {
-    if (filter === 'all') {
-        $('.completed_task').show();
-    } else if (filter === 'success') {
-        $('.completed_task_success').show();
-        $('.completed_task_failure').hide();
-    } else if (filter === 'failure') {
-        $('.completed_task_success').hide();
-        $('.completed_task_failure').show();
-    }
-};
-
-/**
- * Format a byte integer into the smallest possible number appending a suffix
+ * Build a Pending task datatable
  *
  * @param bytes
  * @param decimals
  * @returns {string}
  */
-var formatBytes = function (bytes, decimals) {
-    decimals = (typeof decimals !== 'undefined') ? decimals : 2;
-    if (bytes === 0) return '0 Bytes';
-    var k = 1024;
-    var dm = decimals < 0 ? 0 : decimals;
-    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-    var i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-};
+var PeningTasksDatatablesManaged = function () {
 
-/**
- *
- */
-var addSelectedCompletedTasksToPendingTasksList = function () {
-    var table = $("#history_completed_tasks_table");
-    var count = table.rows({selected: true}).count();
-    console.log(count)
-};
-
-
-var CompletedTasksDatatablesManaged = function () {
-
-    var emptySpan = function (oObj) {
-        return '<span></span>';
-    };
-    var recordNameCellContents = function (task_label) {
-        //return '<span style="margin-left: 20px;" class="hidden-xs">' + $.trim(task_label) + '<span>';
-        return '<span style="margin-left: 20px;" class="">' + $.trim(task_label) + '<span>';
-    };
     var recordSelectedCheckbox = function (oObj) {
         var row_id = oObj.id;
         var task_label = oObj.task_label;
         return '<input class="" type="checkbox" id="checkbox_' + $.trim(row_id) + '" class="md-check checkboxes" value="' + $.trim(row_id) + '">';
-        /*return '<input class="hidden-xs hidden-sm" type="checkbox" id="checkbox_' + $.trim(row_id) + '" class="md-check checkboxes">' +
-            '<span style="margin-left: 20px;" class="text-left visible-xs hidden-md">' + $.trim(task_label) + '<span>';*/
     };
-    var recordSuccessStatus = function (oObj) {
-        var html = '';
-        if (oObj.task_success) {
-            html = '<span class="label label-sm label-success"> Success </span>';
-        } else {
-            html = '<span class="label label-sm label-danger"> Failed </span>';
-        }
-        return html;
-    };
-    var recordActionButton = function (oObj) {
-        var row_id = oObj.id;
-        return '<a data-toggle="modal" href="#todo-task-modal" class="btn blue m-icon-big" ' +
-            'onclick="viewConversionDetails(' + $.trim(row_id) + ');"> View details\n' +
-            '<i class="m-icon-swapright m-icon-white"></i>\n' +
-            '</a>';
+
+    var datatableInitComplete = function () {
+
+        // Hide footer elements by default
+        $('div.dataTables_length').each(function () {
+            $(this).addClass('hidden');
+            $(this).addClass('pending_tasks_table_footer');
+        });
+        $('div.dataTables_info').each(function () {
+            $(this).addClass('hidden');
+            $(this).addClass('pending_tasks_table_footer');
+        });
+        $('div.dataTables_paginate').each(function () {
+            $(this).addClass('hidden');
+            $(this).addClass('pending_tasks_table_footer');
+        });
+
+        // When the pending-tasks-fullscreen button is clicked, make the footer visible
+        // This is pinched from app.js and expanded to include hiding and showing the footer elements
+        $('#pending-tasks-fullscreen').on('click', function (e) {
+            e.preventDefault();
+            var portlet = $(this).closest(".portlet");
+            if (portlet.hasClass('portlet-fullscreen')) {
+                $(this).removeClass('on');
+                portlet.removeClass('portlet-fullscreen');
+                $('body').removeClass('page-portlet-fullscreen');
+                portlet.children('.portlet-body').css('height', 'auto');
+
+
+                // Hide all footer elements
+                $('.pending_tasks_table_footer').each(function () {
+                    $(this).addClass('hidden');
+                });
+
+                // Set the table to only show 5 items
+                $("div.dataTables_length select").val('5').trigger('change');
+            } else {
+                var height = App.getViewPort().height -
+                    portlet.children('.portlet-title').outerHeight() -
+                    parseInt(portlet.children('.portlet-body').css('padding-top')) -
+                    parseInt(portlet.children('.portlet-body').css('padding-bottom'));
+
+                $(this).addClass('on');
+                portlet.addClass('portlet-fullscreen');
+                $('body').addClass('page-portlet-fullscreen');
+                portlet.children('.portlet-body').css('height', height);
+
+                // Set the table to default to 20 items
+                $("div.dataTables_length select").val('20').trigger('change');
+
+                // Show the footer elements
+                $('.pending_tasks_table_footer').each(function () {
+                    $(this).removeClass('hidden');
+                });
+            }
+        });
+
+        // Set portlet tooltips
+        $('#pending-tasks-fullscreen').tooltip({
+            container: 'body',
+            title: 'Fullscreen'
+        });
+
     };
 
     var handleRecords = function () {
@@ -116,7 +82,7 @@ var CompletedTasksDatatablesManaged = function () {
         var grid = new Datatable();
 
         grid.init({
-            src: $("#history_completed_tasks_table"),
+            src: $("#pending_tasks_table"),
             onSuccess: function (grid, response) {
                 // grid:        grid object
                 // response:    json object of server side ajax response
@@ -143,9 +109,6 @@ var CompletedTasksDatatablesManaged = function () {
                             "<'row'" +
                                 "<'col-md-12 col-sm-12'" +
                                     "f" +
-                                ">" +
-                                "<'col-md-12 col-sm-12'" +
-                                    "li" +
                                 ">" +
                             ">" +
                         ">" +
@@ -175,46 +138,34 @@ var CompletedTasksDatatablesManaged = function () {
                         ">" +
                     ">" +
                 "",
-                "responsive": true,
+                "responsive": false,
 
-                "bStateSave": true, // save datatable state(pagination, sort, etc) in cookie.
+                "bStateSave": false, // save datatable state(pagination, sort, etc) in cookie.
                 "ajax": {
-                    "url": '/api/v1/history/list', // ajax source
+                    "url": '/api/v1/pending/list', // ajax source
                     "contentType": "application/json",
                 },
                 "aoColumns": [
                     {
                         mData: null,
-                        "sName": 0,
+                        sName: 0,
                         bSortable: false,
                         bSearchable: false,
                         mRender: recordSelectedCheckbox,
                         sClass: ""
                     },
                     {
-                        mData: "task_label",
-                        sName: "task_label",
-                        bSortable: true,
-                        bSearchable: true
-                    },
-                    {
-                        mData: "finish_time",
-                        sName: "finish_time",
-                        bSortable: true
-                    },
-                    {
                         mData: null,
-                        sName: "task_success",
-                        bSortable: true,
-                        bSearchable: false,
-                        mRender: recordSuccessStatus
-                    },
-                    {
-                        mData: null,
-                        sName: 4,
+                        sName: "id",
                         bSortable: false,
                         bSearchable: false,
-                        mRender: recordActionButton
+                        bVisible: false,
+                    },
+                    {
+                        mData: "abspath",
+                        sName: "abspath",
+                        bSortable: false,
+                        bSearchable: true,
                     },
                 ],
 
@@ -229,6 +180,7 @@ var CompletedTasksDatatablesManaged = function () {
                     "emptyTable": "No data available in table",
                     "infoEmpty": "<span class='seperator'>|</span><span class='font-sm'>No records found</span>",
                     "search": "Search Name:",
+                    "metronicGroupActions": "",
                     "zeroRecords": "No matching records found",
                     "paginate": {
                         "previous": "Prev",
@@ -240,21 +192,29 @@ var CompletedTasksDatatablesManaged = function () {
 
                 "pagingType": "bootstrap_full_number",
 
+                "sLengthSelect": "pending_tasks_table_footer",
+
                 "lengthMenu": [
                     [5, 10, 20, 50, 100, 500, -1],
                     [5, 10, 20, 50, 100, 500, "All"] // change per page values here
                 ],
-                "pageLength": 10, // default record count per page
+                "pageLength": 5, // default record count per page
                 "order": [
-                    [2, "desc"]
-                ]// set third (finish_time) column as a default sort by desc
+                    [1, "desc"]
+                ],// set id as a default sort by asc
+
+                "initComplete": function (settings, json) {
+                    console.log('DataTables has finished its initialisation.');
+                    datatableInitComplete();
+                }
             }
         });
 
+        // Pull the filters to the top left above the table
         $('.dataTables_filter').addClass('pull-left');
 
         // Remove overflow
-        grid.getTableWrapper().css("overflow-x", "hidden");
+        //grid.getTableWrapper().css("overflow-x", "hidden");
 
         var processAction = function (action) {
             if (grid.getSelectedRowsCount() > 0) {
@@ -273,15 +233,10 @@ var CompletedTasksDatatablesManaged = function () {
                 });
             }
         };
-        grid.getTableWrapper().on('click', '.add-to-pending', function (e) {
+        grid.getTableWrapper().on('click', '.remove-from-task-list', function (e) {
             e.preventDefault();
             console.debug(grid.getSelectedRows());
-            processAction('add-to-pending');
-        });
-        grid.getTableWrapper().on('click', '.delete-from-history', function (e) {
-            e.preventDefault();
-            console.debug(grid.getSelectedRows());
-            processAction('delete-from-history');
+            processAction('remove-from-task-list');
         });
 
         grid.setAjaxParam("customActionType", "group_action");
@@ -302,6 +257,6 @@ var CompletedTasksDatatablesManaged = function () {
 }();
 
 jQuery(document).ready(function () {
-    CompletedTasksDatatablesManaged.init();
+    PeningTasksDatatablesManaged.init();
 });
 

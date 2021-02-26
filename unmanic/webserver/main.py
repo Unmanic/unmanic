@@ -71,12 +71,6 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
                 self.render("main/main-worker-pie-chart.html", worker_info=worker_info)
             else:
                 self.write(json.dumps(self.get_workers_info()))
-        if query == 'pendingTasks':
-            if self.get_query_arguments('format') and 'html' in self.get_query_arguments('format'):
-                self.set_header("Content-Type", "text/html")
-                self.render("main/main-pending-tasks.html", time_now=time.time())
-            else:
-                self.write(json.dumps(self.get_pending_tasks()))
         if query == 'historicalTasks':
             if self.get_query_arguments('format') and 'html' in self.get_query_arguments('format'):
                 self.get_historical_tasks()

@@ -7,7 +7,16 @@
     overflow: hidden;
 }
 
-
 .error {
     color: #e43a45 !important; 
+}
+
+.dashboard-task-list {
+    min-height: 450px;
+}
+
+#pending-tasks-fullscreen {
+    font-family: FontAwesome;
+    color: #a0a0a0;
+    padding-top: 4px;
 }

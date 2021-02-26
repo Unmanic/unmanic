@@ -129,7 +129,7 @@ class TaskQueue(object):
 
         # Sort fields
         self.sort_by = Tasks.id
-        self.sort_order = 'asc'
+        self.sort_order = 'desc'
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)

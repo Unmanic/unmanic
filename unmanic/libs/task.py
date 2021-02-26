@@ -33,6 +33,7 @@ import copy
 import json
 import os
 import time
+from operator import attrgetter
 
 from playhouse.shortcuts import model_to_dict, dict_to_model
 
@@ -452,3 +453,69 @@ class Task(object):
                 channels=stream.get('channels', ''),
                 channel_layout=stream.get('channel_layout', '')
             )
+
+    def get_total_task_list_count(self):
+        task_query = Tasks.select().order_by(Tasks.id.desc())
+        return task_query.count()
+
+    def get_task_list_filtered_and_sorted(self, order=None, start=0, length=None, search_value=None, id_list=None,
+                                                   status=None):
+        try:
+            query = (Tasks.select())
+
+            if id_list:
+                query = query.where(Tasks.id.in_(id_list))
+
+            if search_value:
+                query = query.where(Tasks.abspath.contains(search_value))
+
+            if status:
+                query = query.where(Tasks.status.in_([status]))
+
+            # Get order by
+            order_by = None
+            if order:
+                if order.get("dir") == "asc":
+                    order_by = attrgetter(order.get("column"))(Tasks).asc()
+                else:
+                    order_by = attrgetter(order.get("column"))(Tasks).desc()
+
+            if order_by and length:
+                query = query.order_by(order_by).limit(length).offset(start)
+
+        except Tasks.DoesNotExist:
+            # No task entries exist yet
+            self._log("No tasks exist yet.", level="warning")
+            query = []
+
+        return query.dicts()
+
+    def delete_tasks_recursively(self, id_list):
+        """
+        Deletes a given list of tasks based on their IDs
+
+        :param id_list:
+        :return:
+        """
+        # Prevent running if no list of IDs was given
+        if not id_list:
+            return False
+
+        try:
+            query = (Tasks.select())
+
+            if id_list:
+                query = query.where(Tasks.id.in_(id_list))
+
+            for task_id in query:
+                result = common.delete_model_recursively(task_id)
+                if not result:
+                    # break there and return
+                    self._log("Failed to delete task ID: {}.".format(task_id), level="warning")
+                    return False
+
+            return True
+
+        except Tasks.DoesNotExist:
+            # No task entries exist yet
+            self._log("No tasks currently exist.", level="warning")

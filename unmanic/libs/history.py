@@ -350,8 +350,16 @@ class History(object):
         return historic_task
 
     def delete_historic_tasks_recursively(self, id_list=None):
+        """
+        Deletes a given list of historic tasks based on their IDs
+
+        :param id_list:
+        :return:
+        """
+        # Prevent running if no list of IDs was given
         if not id_list:
             return False
+
         try:
             query = (HistoricTasks.select())
 

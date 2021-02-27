@@ -43,7 +43,6 @@ from unmanic.libs import task, common
 
 
 class ApiPendingHandler(BaseApiHandler):
-    SUPPORTED_METHODS = ["GET", "POST"]
     name = None
     config = None
     params = None
@@ -51,19 +50,25 @@ class ApiPendingHandler(BaseApiHandler):
 
     routes = [
         {
-            "method":       "add_tasks_to_pending_tasks_list",
-            "path_pattern": r"/api/v1/pending/add/",
+            "supported_methods": ["POST"],
+            "call_method":       "add_tasks_to_pending_tasks_list",
+            "path_pattern":      r"/api/v1/pending/add/",
         },
         {
-            "method":       "manage_pending_tasks_list",
-            "path_pattern": r"/api/v1/pending/list",
+            "supported_methods": ["POST"],
+            "call_method":       "manage_pending_tasks_list",
+            "path_pattern":      r"/api/v1/pending/list",
+        },
+        {
+            "supported_methods": ["GET"],
+            "call_method":       "trigger_library_rescan",
+            "path_pattern":      r"/api/v1/pending/rescan",
         },
     ]
 
     def initialize(self, **kwargs):
         self.name = 'pending_api'
         self.config = kwargs.get("settings")
-        self.unmanic_data_queues = kwargs.get("unmanic_data_queues")
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
@@ -71,6 +76,9 @@ class ApiPendingHandler(BaseApiHandler):
     def set_default_headers(self):
         """Set the default response header to be JSON."""
         self.set_header("Content-Type", 'application/json; charset="utf-8"')
+
+    def get(self, path):
+        self.action_route()
 
     def post(self, path):
         self.action_route()
@@ -89,6 +97,26 @@ class ApiPendingHandler(BaseApiHandler):
         # Return a list of historical tasks based on the request JSON body
         results = self.prepare_filtered_pending_tasks(request_dict)
         self.write(json.dumps(results))
+
+    def trigger_library_rescan(self):
+        """
+        Adds a trigger ('library_scan') to the library_scanner_triggers
+        data queue.
+        This data queue is read by the LibraryScanner service which will
+        then execute a library scan.
+
+        :return:
+        """
+        # Handle request to manually trigger a rescan of the library
+        # Check if we are able to start up a worker for another encoding job
+        library_scanner_triggers = self.unmanic_data_queues.get('library_scanner_triggers')
+        if library_scanner_triggers.full():
+            self.write(json.dumps({"success": False}))
+            return
+        else:
+            library_scanner_triggers.put('library_scan')
+            self.write(json.dumps({"success": True}))
+            return
 
     def delete_pending_tasks(self, pending_task_ids):
         """

@@ -185,10 +185,14 @@ class LibraryScanner(threading.Thread):
         if self.settings.get_debugging():
             self._log("Scanning directory - '{}'".format(search_folder), level="debug")
         for root, subFolders, files in os.walk(search_folder, followlinks=True):
+            if self.abort_flag.is_set():
+                break
             if self.settings.get_debugging():
                 self._log(json.dumps(files, indent=2), level="debug")
             # Add all files in this path that match our container filter
             for file_path in files:
+                if self.abort_flag.is_set():
+                    break
                 if self.settings.file_ends_in_allowed_search_extensions(file_path):
                     pathname = os.path.join(root, file_path)
                     # Check if this file is already the correct format:

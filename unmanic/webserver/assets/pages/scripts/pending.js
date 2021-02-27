@@ -15,20 +15,6 @@ var PeningTasksDatatablesManaged = function () {
 
     var datatableInitComplete = function () {
 
-        // Hide footer elements by default
-        $('div.dataTables_length').each(function () {
-            $(this).addClass('hidden');
-            $(this).addClass('pending_tasks_table_footer');
-        });
-        $('div.dataTables_info').each(function () {
-            $(this).addClass('hidden');
-            $(this).addClass('pending_tasks_table_footer');
-        });
-        $('div.dataTables_paginate').each(function () {
-            $(this).addClass('hidden');
-            $(this).addClass('pending_tasks_table_footer');
-        });
-
         // When the pending-tasks-fullscreen button is clicked, make the footer visible
         // This is pinched from app.js and expanded to include hiding and showing the footer elements
         $('#pending-tasks-fullscreen').on('click', function (e) {
@@ -40,10 +26,9 @@ var PeningTasksDatatablesManaged = function () {
                 $('body').removeClass('page-portlet-fullscreen');
                 portlet.children('.portlet-body').css('height', 'auto');
 
-
-                // Hide all footer elements
-                $('.pending_tasks_table_footer').each(function () {
-                    $(this).addClass('hidden');
+                // Set table to preview mode
+                $('.dashboard-task-list-pending').each(function () {
+                    $(this).addClass('dashboard-task-list-preview');
                 });
 
                 // Set the table to only show 5 items
@@ -62,9 +47,9 @@ var PeningTasksDatatablesManaged = function () {
                 // Set the table to default to 20 items
                 $("div.dataTables_length select").val('20').trigger('change');
 
-                // Show the footer elements
-                $('.pending_tasks_table_footer').each(function () {
-                    $(this).removeClass('hidden');
+                // Remove table from preview mode
+                $('.dashboard-task-list-pending').each(function () {
+                    $(this).removeClass('dashboard-task-list-preview');
                 });
             }
         });
@@ -152,7 +137,7 @@ var PeningTasksDatatablesManaged = function () {
                         bSortable: false,
                         bSearchable: false,
                         mRender: recordSelectedCheckbox,
-                        sClass: ""
+                        sClass: "dataTables_select",
                     },
                     {
                         mData: null,
@@ -204,8 +189,16 @@ var PeningTasksDatatablesManaged = function () {
                 ],// set id as a default sort by asc
 
                 "initComplete": function (settings, json) {
-                    console.log('DataTables has finished its initialisation.');
                     datatableInitComplete();
+
+                    // Trigger a refresh of the table every 30 seconds
+                    setInterval(function () {
+                        // Only refresh when no fullscreen
+                        var portlet = $('#pending-tasks-fullscreen').closest(".portlet");
+                        if (!portlet.hasClass('portlet-fullscreen')) {
+                            grid.getDataTable().ajax.reload();
+                        }
+                    }, 30000);
                 }
             }
         });

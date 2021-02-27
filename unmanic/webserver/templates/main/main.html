@@ -6,12 +6,13 @@
 
 
 {% block head %}
-<link href="/assets/pages/css/dashboard.css?version={{ escape(handler.config.read_version()) }}" rel="stylesheet" type="text/css" />
+<link href="/assets/pages/css/dashboard.css?version={{ escape(handler.config.read_version()) }}" rel="stylesheet"
+      type="text/css"/>
 {% end %}
 
 {% block style %}
-<link href="../assets/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css" />
-<link href="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css"/>
+<link href="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css"/>
 {% end %}
 
 {% block plugins %}
@@ -50,116 +51,118 @@
 {% end %}
 
 {% block scripts %}
-<script src="../assets/pages/scripts/dashboard.js?version={{ escape(handler.config.read_version()) }}" type="text/javascript"></script>
+<script src="../assets/pages/scripts/dashboard.js?version={{ escape(handler.config.read_version()) }}"
+        type="text/javascript"></script>
 
 <script src="../assets/pages/scripts/table-datatables-managed.min.js" type="text/javascript"></script>
-<script src="../assets/pages/scripts/pending.js?version={{ escape(handler.config.read_version()) }}" type="text/javascript"></script>
+<script src="../assets/pages/scripts/pending.js?version={{ escape(handler.config.read_version()) }}"
+        type="text/javascript"></script>
 {% end %}
 
 
 {% block content %}
-                    <div class="row">
-                        <!-- BEGIN JOB STATISTICS -->
-                        <div class="col-md-12 col-sm-12 ">
-                            <div class="portlet light bordered">
-                                <div class="portlet-title">
-                                    <div class="caption">
-                                        <i class="icon-disc font-purple"></i>
-                                        <span class="caption-subject font-purple bold uppercase"
-                                                title="Each worker can process one re-encoding job.
+<div class="row">
+    <!-- BEGIN JOB STATISTICS -->
+    <div class="col-md-12 col-sm-12 ">
+        <div class="portlet light bordered">
+            <div class="portlet-title">
+                <div class="caption">
+                    <i class="icon-disc font-purple"></i>
+                    <span class="caption-subject font-purple bold uppercase"
+                          title="Each worker can process one re-encoding job.
                                                 This allows you to process more than one task at a time.
-                                                Configure the number of Workers in the General Settings screen" >Workers</span>
-                                        <span class="caption-helper">   </span>
-                                    </div>
-                                </div>
-                                <div class="portlet-body">
-                                    <div class="row" id="worker_pie_chart"> </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- END JOB STATISTICS -->
-                        <!-- BEGIN SERVER STATISTICS -->
-                        <!-- TODO: Implement stats -->
-                        <!-- <div class="col-md-6 col-sm-6">
-                            <div class="portlet light bordered">
-                                <div class="portlet-title">
-                                    <div class="caption">
-                                        <i class="icon-equalizer font-yellow"></i>
-                                        <span class="caption-subject font-yellow bold uppercase">Server Stats</span>
-                                        <span class="caption-helper">monthly stats...</span>
-                                    </div>
-                                    <div class="tools">
-                                        <a href="" class="collapse"> </a>
-                                        <a href="#portlet-config" data-toggle="modal" class="config"> </a>
-                                        <a href="" class="reload"> </a>
-                                        <a href="" class="remove"> </a>
-                                    </div>
-                                </div>
-                                <div class="portlet-body">
-                                    <div class="row">
-                                        <div class="col-md-4">
-                                            <div class="sparkline-chart">
-                                                <div class="number" id="sparkline_bar5"></div>
-                                                <a class="title" href="javascript:;"> Disk I/O
-                                                    <i class="icon-arrow-right"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <div class="margin-bottom-10 visible-sm"> </div>
-                                        <div class="col-md-4">
-                                            <div class="sparkline-chart">
-                                                <div class="number" id="sparkline_bar6"></div>
-                                                <a class="title" href="javascript:;"> CPU Load
-                                                    <i class="icon-arrow-right"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <div class="margin-bottom-10 visible-sm"> </div>
-                                        <div class="col-md-4">
-                                            <div class="sparkline-chart">
-                                                <div class="number" id="sparkline_line"></div>
-                                                <a class="title" href="javascript:;"> Load Rate
-                                                    <i class="icon-arrow-right"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div> -->
-                        <!-- END SERVER STATISTICS -->
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 col-sm-6">
-                            <div class="portlet light tasks-widget bordered dashboard-task-list"
-                                 id="portlet-pending-tasks-list">
-                                <!-- START TASK LIST -->
-                                {% include "main-pending-tasks.html" %}
-                                <!-- END START TASK LIST -->
-                            </div>
-                        </div>
-                        <div class="col-md-6 col-sm-6">
-                            <div class="portlet light bordered dashboard-task-list">
-                                <div class="portlet-title">
-                                    <div class="caption">
-                                        <i class="fa fa-tasks font-blue"></i>
-                                        <span class="caption-subject font-blue bold uppercase">Completed Tasks</span>
-                                    </div>
-                                </div>
-                                <div class="portlet-body">
-                                    <div class="scroller" style="height: 300px;" data-always-visible="1" data-rail-visible="0">
-                                        <!-- START TASK LIST -->
-                                        <div id="completed_tasks">{% include "main-completed-tasks-list.html" %}</div>
-                                        <!-- END START TASK LIST -->
-                                    </div>
-                                    <div class="scroller-footer">
-                                        <div class="btn-arrow-link pull-right">
-                                            <a href="/history/">See All Records</a>
-                                            <i class="icon-arrow-right"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                                Configure the number of Workers in the General Settings screen">Workers</span>
+                    <span class="caption-helper">   </span>
+                </div>
+            </div>
+            <div class="portlet-body">
+                <div class="row" id="worker_pie_chart"></div>
+            </div>
+        </div>
+    </div>
+    <!-- END JOB STATISTICS -->
+    <!-- BEGIN SERVER STATISTICS -->
+    <!-- TODO: Implement stats -->
+    <!-- <div class="col-md-6 col-sm-6">
+        <div class="portlet light bordered">
+            <div class="portlet-title">
+                <div class="caption">
+                    <i class="icon-equalizer font-yellow"></i>
+                    <span class="caption-subject font-yellow bold uppercase">Server Stats</span>
+                    <span class="caption-helper">monthly stats...</span>
+                </div>
+                <div class="tools">
+                    <a href="" class="collapse"> </a>
+                    <a href="#portlet-config" data-toggle="modal" class="config"> </a>
+                    <a href="" class="reload"> </a>
+                    <a href="" class="remove"> </a>
+                </div>
+            </div>
+            <div class="portlet-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="sparkline-chart">
+                            <div class="number" id="sparkline_bar5"></div>
+                            <a class="title" href="javascript:;"> Disk I/O
+                                <i class="icon-arrow-right"></i>
+                            </a>
                         </div>
                     </div>
+                    <div class="margin-bottom-10 visible-sm"> </div>
+                    <div class="col-md-4">
+                        <div class="sparkline-chart">
+                            <div class="number" id="sparkline_bar6"></div>
+                            <a class="title" href="javascript:;"> CPU Load
+                                <i class="icon-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="margin-bottom-10 visible-sm"> </div>
+                    <div class="col-md-4">
+                        <div class="sparkline-chart">
+                            <div class="number" id="sparkline_line"></div>
+                            <a class="title" href="javascript:;"> Load Rate
+                                <i class="icon-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> -->
+    <!-- END SERVER STATISTICS -->
+</div>
+<div class="row">
+    <div class="col-md-6 col-sm-6">
+        <div class="portlet light tasks-widget bordered dashboard-task-list dashboard-task-list-pending dashboard-task-list-preview"
+             id="portlet-pending-tasks-list">
+            <!-- START TASK LIST -->
+            {% include "main-pending-tasks.html" %}
+            <!-- END START TASK LIST -->
+        </div>
+    </div>
+    <div class="col-md-6 col-sm-6">
+        <div class="portlet light bordered dashboard-task-list">
+            <div class="portlet-title">
+                <div class="caption">
+                    <i class="fa fa-tasks font-blue"></i>
+                    <span class="caption-subject font-blue bold uppercase">Completed Tasks</span>
+                </div>
+            </div>
+            <div class="portlet-body">
+                <div class="scroller" style="height: 300px;" data-always-visible="1" data-rail-visible="0">
+                    <!-- START TASK LIST -->
+                    <div id="completed_tasks">{% include "main-completed-tasks-list.html" %}</div>
+                    <!-- END START TASK LIST -->
+                </div>
+                <div class="scroller-footer">
+                    <div class="btn-arrow-link pull-right">
+                        <a href="/history/">See All Records</a>
+                        <i class="icon-arrow-right"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% end %}

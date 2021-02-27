@@ -12,7 +12,7 @@
 }
 
 .dashboard-task-list {
-    min-height: 450px;
+    min-height: 430px;
 }
 
 #pending-tasks-fullscreen {
@@ -25,6 +25,7 @@
 div.dashboard-task-list-preview .dataTables_select,
 div.dashboard-task-list-preview .dataTables_length,
 div.dashboard-task-list-preview .dataTables_info,
-div.dashboard-task-list-preview .dataTables_paginate {
+div.dashboard-task-list-preview .dataTables_paginate,
+div.dashboard-task-list-preview .remove-from-task-list {
     display: none;
 }

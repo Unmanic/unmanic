@@ -58,6 +58,7 @@ class LibraryScanner(threading.Thread):
         self.settings = settings
         self.logger = data_queues["logging"].get_logger(self.name)
         self.scheduledtasks = data_queues["scheduledtasks"]
+        self.library_scanner_triggers = data_queues["library_scanner_triggers"]
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
         self.ffmpeg = None
@@ -111,8 +112,23 @@ class LibraryScanner(threading.Thread):
 
                 # Then loop and wait for the schedule
                 while not self.abort_flag.is_set():
-                    # TODO: Dont run scheduler if we already have a full queue
+
+                    # Check if a manual library scan was triggered
+                    try:
+                        if not self.library_scanner_triggers.empty():
+                            trigger = self.library_scanner_triggers.get_nowait()
+                            if trigger == "library_scan":
+                                self.scheduled_job()
+                                break
+                    except queue.Empty:
+                        continue
+                    except Exception as e:
+                        self._log("Exception in retrieving library scanner trigger {}:".format(self.name), message2=str(e),
+                                  level="exception")
+
+                    # Check if scheduled task is due
                     schedule.run_pending()
+                    # Delay for 1 second before checking again.
                     time.sleep(1)
                     # If the settings have changed, then break this loop and clear
                     # the scheduled job resetting to the new interval
@@ -272,10 +288,11 @@ class Service:
 
         # Create our data queues
         data_queues = {
-            "scheduledtasks":   queue.Queue(),
-            "inotifytasks":     queue.Queue(),
-            "progress_reports": queue.Queue(),
-            "logging":          unmanic_logging
+            "library_scanner_triggers": queue.Queue(maxsize=1),
+            "scheduledtasks":           queue.Queue(),
+            "inotifytasks":             queue.Queue(),
+            "progress_reports":         queue.Queue(),
+            "logging":                  unmanic_logging
         }
 
         # Clear cache directory

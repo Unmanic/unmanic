@@ -46,11 +46,17 @@ class BaseApiHandler(RequestHandler):
 
     def action_route(self):
         for route in self.routes:
+            # Check if the rout supports the supported http methods
+            supported_methods = route.get("supported_methods")
+            if supported_methods and not self.request.method in supported_methods:
+                # The request's method is not supported by this route.
+                continue
+
             # If the route does not have any params an it matches the current request URI, then route to that method.
             if list(filter(None, self.request.uri.split('/'))) == list(filter(None, route.get("path_pattern").split('/'))):
-                tornado.log.app_log.debug("Routing API to {}.{}()".format(self.__class__.__name__, route.get("method")),
+                tornado.log.app_log.debug("Routing API to {}.{}()".format(self.__class__.__name__, route.get("call_method")),
                                           exc_info=True)
-                getattr(self, route.get("method"))()
+                getattr(self, route.get("call_method"))()
                 return
 
             # Fetch the path match from this route's path pattern
@@ -62,10 +68,10 @@ class BaseApiHandler(RequestHandler):
             # If we have a match and were returned some params, load that method
             if params:
                 tornado.log.app_log.debug(
-                    "Routing API to {}.{}(*args={}, **kwargs={})".format(self.__class__.__name__, route.get("method"),
+                    "Routing API to {}.{}(*args={}, **kwargs={})".format(self.__class__.__name__, route.get("call_method"),
                                                                          params["path_args"], params["path_kwargs"]),
                     exc_info=True)
-                getattr(self, route.get("method"))(*params["path_args"], **params["path_kwargs"])
+                getattr(self, route.get("call_method"))(*params["path_args"], **params["path_kwargs"])
                 return
 
         # If we got this far, then the URI does not match any of our configured routes.

@@ -275,12 +275,10 @@ var CompletedTasksDatatablesManaged = function () {
         };
         grid.getTableWrapper().on('click', '.add-to-pending', function (e) {
             e.preventDefault();
-            console.debug(grid.getSelectedRows());
             processAction('add-to-pending');
         });
         grid.getTableWrapper().on('click', '.delete-from-history', function (e) {
             e.preventDefault();
-            console.debug(grid.getSelectedRows());
             processAction('delete-from-history');
         });
 

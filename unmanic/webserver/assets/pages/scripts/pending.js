@@ -226,10 +226,20 @@ var PeningTasksDatatablesManaged = function () {
                 });
             }
         };
+
+        // Configure button for removing items from the task list
         grid.getTableWrapper().on('click', '.remove-from-task-list', function (e) {
             e.preventDefault();
-            console.debug(grid.getSelectedRows());
             processAction('remove-from-task-list');
+        });
+
+        // Configure button for triggering a rescan of the library
+        grid.getTableWrapper().on('click', '.rescan-library', function (e) {
+            e.preventDefault();
+            $.ajax({
+                url: '/api/v1/pending/rescan',
+                type: 'GET',
+            });
         });
 
         grid.setAjaxParam("customActionType", "group_action");

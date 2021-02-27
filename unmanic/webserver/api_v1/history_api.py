@@ -43,19 +43,20 @@ from unmanic.libs import history, task, common
 
 
 class ApiHistoryHandler(BaseApiHandler):
-    SUPPORTED_METHODS = ["GET", "POST"]
     name = None
     config = None
     params = None
 
     routes = [
         {
-            "method":       "fetch_by_id",
-            "path_pattern": r"/api/v1/history/id/(?P<id>[0-9]+)?",
+            "supported_methods": ["GET", "POST"],
+            "call_method":       "fetch_by_id",
+            "path_pattern":      r"/api/v1/history/id/(?P<id>[0-9]+)?",
         },
         {
-            "method":       "manage_historic_tasks_list",
-            "path_pattern": r"/api/v1/history/list",
+            "supported_methods": ["POST"],
+            "call_method":       "manage_historic_tasks_list",
+            "path_pattern":      r"/api/v1/history/list",
         },
     ]
 

@@ -31,18 +31,28 @@
 """
 import json
 import subprocess
+#import fastjsonschema
 
 from ..exceptions.ffmpeg import FFMpegError
 from ..exceptions.ffprobe import FFProbeError
-
+from ..lib import validation
 
 def ffprobe_file(vid_file_path):
     """
     Give a json from ffprobe command line
 
+    Eg:
+        ffprobe -loglevel quiet \
+            -print_format json \
+            -show_format \
+            -show_streams \
+            -show_error \
+            /path/to/video.mkv
+
     :param vid_file_path: The absolute (full) path of the video file, string.
     :return:
     """
+
     if type(vid_file_path) != str:
         raise Exception('Give ffprobe a full file path of the video')
 
@@ -105,3 +115,19 @@ def ffmpeg_available_encoders():
         raise FFMpegError(command, 'No command output returned')
 
     return raw_output
+
+#
+# def validate_command(command):
+#     """
+#     Validates a command array against the command JSON schema
+#     :param command:
+#     :return:
+#     """
+#
+#     json_validate = fastjsonschema.compile(validation.command_schema)
+#     return json_validate(command)
+#
+# def ffmpeg_generate_valid_comand(command):
+#     validated_command = validate_command(command)
+#     print(validated_command)
+#

@@ -43,10 +43,12 @@ from .audio_codec_handle import AudioCodecHandle
 from .hardware_acceleration_handle import HardwareAccelerationHandle
 from .subtitle_handle import SubtitleHandle
 from .video_codec_handle import VideoCodecHandle
+from .lib import cli
 
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
 
 __all__ = (
+    'cli',
     'containers',
     'exceptions',
     'audio_codecs',

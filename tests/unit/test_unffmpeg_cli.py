@@ -29,3 +29,94 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+
+import os
+import sys
+import pytest
+
+try:
+    import unmanic.libs.unffmpeg as unffmpeg
+except ImportError:
+    project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    sys.path.append(project_dir)
+    import unmanic.libs.unffmpeg as unffmpeg
+
+
+
+class TestClass(object):
+    """
+    TestClass
+
+    """
+
+    def setup_class(self):
+        """
+        Setup any state specific to the execution of the given class
+        (which usually contains tests).
+
+        :return:
+        """
+        pass
+
+    def teardown_class(self):
+        """
+        Teardown any state that was previously setup with a call to
+        setup_class.
+
+        :return:
+        """
+        pass
+
+    def setup_method(self):
+        """
+        Setup any state tied to the execution of the given method in a
+        class.
+        setup_method is invoked for every test method of a class.
+
+        :return:
+        """
+        pass
+
+    def teardown_method(self):
+        """
+        Teardown any state that was previously setup with a setup_method
+        call.
+
+        :return:
+        """
+        pass
+
+    def invalid_command(self):
+        return {
+            "TODO:": "Write valid command"
+        }
+
+    def valid_command(self):
+        # command = ['ffmpeg', '-y', '-i', infile] + args + ['-y', outfile]
+        valid_command = {
+            "ffmpeg":                 "",
+            "-y":                     "",
+            " -hide_banner":          "",
+            "-i":                     "/path/to/video.mkv",
+            "-loglevel":              "info",
+            "-strict":                "-2",
+            "-max_muxing_queue_size": "512",
+        }
+        return valid_command
+
+    @pytest.mark.unittest
+    def test_can_generate_valid_ffmpeg_command(self):
+        ffmpeg_cli = unffmpeg.cli
+        command = ffmpeg_cli.ffmpeg_generate_valid_comand(self.valid_command())
+        print(command)
+
+    @pytest.mark.unittest
+    def test_can_validate_command_schema(self):
+        # Loop over settings object attributes
+        command = self.valid_command()
+        valid = unffmpeg.cli.validate_command(command)
+        assert valid == command
+
+
+if __name__ == '__main__':
+    pytest.main(['-s', '--log-cli-level=DEBUG', __file__])

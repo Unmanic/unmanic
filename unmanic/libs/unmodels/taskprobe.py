@@ -39,7 +39,7 @@ class TaskProbe(BaseModel):
     """
     TaskProbe
     """
-    task_id = ForeignKeyField(Tasks, backref='probe', on_delete='CASCADE')
+    task_id = ForeignKeyField(Tasks, backref='probe', on_delete='CASCADE', on_update='CASCADE')
     abspath = TextField(null=False)
     basename = TextField(null=False)
     bit_rate = TextField(null=False)

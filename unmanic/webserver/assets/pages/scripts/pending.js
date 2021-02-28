@@ -239,6 +239,12 @@ var PeningTasksDatatablesManaged = function () {
             processAction('move-to-top-of-task-list');
         });
 
+        // Configure button for moving items to the bottom of the task list
+        grid.getTableWrapper().on('click', '.move-to-bottom-of-task-list', function (e) {
+            e.preventDefault();
+            processAction('move-to-bottom-of-task-list');
+        });
+
         // Configure button for triggering a rescan of the library
         grid.getTableWrapper().on('click', '.rescan-library', function (e) {
             e.preventDefault();

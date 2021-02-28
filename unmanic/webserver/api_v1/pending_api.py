@@ -99,6 +99,12 @@ class ApiPendingHandler(BaseApiHandler):
                 self.write(json.dumps({"success": False}))
                 return
 
+        # Move a list of tasks to the top of the queue
+        if request_dict.get("customActionName") == "move-to-bottom-of-task-list":
+            if not self.reorder_pending_tasks(request_dict.get("id"), "bottom"):
+                self.write(json.dumps({"success": False}))
+                return
+
         # Return a list of tasks based on the request JSON body
         results = self.prepare_filtered_pending_tasks(request_dict)
         self.write(json.dumps(results))
@@ -139,8 +145,6 @@ class ApiPendingHandler(BaseApiHandler):
         """
         Moves a list of pending tasks to either the top of the
         list of bottom depending on the provided direction.
-
-        TODO: Add support for 'direction = "bottom"' to send files to the bottom of the pile
 
         :param pending_task_ids:
         :param direction:

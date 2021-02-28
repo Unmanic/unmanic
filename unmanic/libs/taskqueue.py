@@ -128,7 +128,7 @@ class TaskQueue(object):
         self.logger = data_queues["logging"].get_logger(self.name)
 
         # Sort fields
-        self.sort_by = Tasks.id
+        self.sort_by = Tasks.priority
         self.sort_order = 'desc'
 
     def _log(self, message, message2='', level="info"):

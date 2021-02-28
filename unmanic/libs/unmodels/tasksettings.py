@@ -41,7 +41,7 @@ class TaskSettings(BaseModel):
     """
     TaskSettings
     """
-    task_id = ForeignKeyField(Tasks, backref='settings', unique=True, on_delete='CASCADE')
+    task_id = ForeignKeyField(Tasks, backref='settings', unique=True, on_delete='CASCADE', on_update='CASCADE')
     audio_codec = TextField(null=False)
     audio_stream_encoder = TextField(null=False)
     audio_codec_cloning = TextField(null=False)

@@ -39,7 +39,7 @@ class TaskProbeStreams(BaseModel):
     """
     TaskProbeStreams
     """
-    taskprobe_id = ForeignKeyField(TaskProbe, backref='streams', on_delete='CASCADE')
+    taskprobe_id = ForeignKeyField(TaskProbe, backref='streams', on_delete='CASCADE', on_update='CASCADE')
     codec_type = TextField(null=False)
     codec_long_name = TextField(null=False)
     avg_frame_rate = TextField(null=False)

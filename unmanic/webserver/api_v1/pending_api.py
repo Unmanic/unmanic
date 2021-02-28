@@ -86,15 +86,20 @@ class ApiPendingHandler(BaseApiHandler):
     def manage_pending_tasks_list(self, *args, **kwargs):
         request_dict = json.loads(self.request.body)
 
-        # Delete a list of historical tasks.
-        #   (on success will continue to return the current list of historical tasks)
+        # Delete a list of tasks.
+        #   (on success will continue to return the current list of tasks)
         if request_dict.get("customActionName") == "remove-from-task-list":
-            success = self.delete_pending_tasks(request_dict.get("id"))
-            if not success:
+            if not self.delete_pending_tasks(request_dict.get("id")):
                 self.write(json.dumps({"success": False}))
                 return
 
-        # Return a list of historical tasks based on the request JSON body
+        # Move a list of tasks to the top of the queue
+        if request_dict.get("customActionName") == "move-to-top-of-task-list":
+            if not self.reorder_pending_tasks(request_dict.get("id"), "top"):
+                self.write(json.dumps({"success": False}))
+                return
+
+        # Return a list of tasks based on the request JSON body
         results = self.prepare_filtered_pending_tasks(request_dict)
         self.write(json.dumps(results))
 
@@ -126,9 +131,25 @@ class ApiPendingHandler(BaseApiHandler):
         :return:
         """
         # Fetch tasks
-        task_handler = task.Task(self.config)
+        task_handler = task.Task(self.unmanic_data_queues.get('logging').get_logger("UIServer"))
         # Delete by ID
         return task_handler.delete_tasks_recursively(id_list=pending_task_ids)
+
+    def reorder_pending_tasks(self, pending_task_ids, direction="top"):
+        """
+        Moves a list of pending tasks to either the top of the
+        list of bottom depending on the provided direction.
+
+        TODO: Add support for 'direction = "bottom"' to send files to the bottom of the pile
+
+        :param pending_task_ids:
+        :param direction:
+        :return:
+        """
+        # Fetch tasks
+        task_handler = task.Task(self.unmanic_data_queues.get('logging').get_logger("UIServer"))
+
+        return task_handler.reorder_tasks(pending_task_ids, direction)
 
     def add_tasks_to_pending_tasks_list(self, *args, **kwargs):
         """
@@ -168,12 +189,12 @@ class ApiPendingHandler(BaseApiHandler):
 
         # Force sort order always by ID desc
         order = {
-            "column": 'id',
+            "column": 'priority',
             "dir":    'desc',
         }
 
         # Fetch tasks
-        task_handler = task.Task(self.config)
+        task_handler = task.Task(self.unmanic_data_queues.get('logging').get_logger("UIServer"))
         # Get total count
         records_total_count = task_handler.get_total_task_list_count()
         # Get quantity after filters (without pagination)

@@ -249,19 +249,6 @@ class Task(object):
         self.read_task_settings_from_db()
         self.read_task_source_from_db()
 
-    def set_task_by_fetching_first_in_filtered_list(self, status, sort_by='id', sort_order='asc'):
-        task_query = Tasks.select().where((Tasks.status == status)).limit(1)
-        # Add sort params
-        if sort_order == 'asc':
-            task_query.order_by(sort_by.asc())
-        else:
-            task_query.order_by(sort_by.desc())
-        self.task = task_query.first()
-        if not self.task:
-            return False
-        self.read_task_settings_from_db()
-        self.read_task_source_from_db()
-
     def create_task_by_absolute_path(self, abspath, settings, source_data):
         """
         Creates the task by it's absolute path.
@@ -295,6 +282,10 @@ class Task(object):
 
             # Set the cache path to use during the transcoding
             self.set_cache_path()
+
+            # Set the default priority to the ID of the task
+            self.task.priority = self.task.id
+
             # Save the task in order to save that cache path
             self.task.save()
 
@@ -519,3 +510,23 @@ class Task(object):
         except Tasks.DoesNotExist:
             # No task entries exist yet
             self._log("No tasks currently exist.", level="warning")
+
+    def reorder_tasks(self, id_list, direction):
+        # Get the task with the highest ID
+        order = {
+            "column": 'priority',
+            "dir":    'desc',
+        }
+        pending_task_results = self.get_task_list_filtered_and_sorted(order=order, start=0, length=1,
+                                                                              search_value=None, id_list=None, status=None)
+        for pending_task_result in pending_task_results:
+            task_top_priority = pending_task_result.get('priority')
+            break
+
+        # Add 500 to that number to offset it above all others.
+        new_priority_offset = (int(task_top_priority) + 500)
+
+        # Update the list of tasks by ID from the database adding the priority offset to their current priority
+        # If the direction is to send it to the bottom, then set the priority as 0
+        query = Tasks.update(priority=Tasks.priority + new_priority_offset if (direction == "top") else 0).where(Tasks.id.in_(id_list))
+        return query.execute()

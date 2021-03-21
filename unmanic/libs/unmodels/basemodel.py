@@ -37,6 +37,8 @@ from base64 import b64decode
 from playhouse.shortcuts import model_to_dict, dict_to_model
 
 # Do not initialise the database until the model is called.
+from unmanic.libs.singleton import SingletonType
+
 db = DatabaseProxy()  # Create a proxy for our db.
 
 # Stipulate date and time formats

@@ -1,0 +1,44 @@
+{{#each plugins}}
+    {{#with this}}
+
+        <div class="col-md-4 installable_plugins_list_item" id="installable_plugins_list_item_{{@index}}">
+            <span class="hidden plugin_id">{{id}}</span>
+            <span class="hidden plugin_name">{{name}}</span>
+            <span class="hidden plugin_author">{{author}}</span>
+            <div class="tile-container">
+                <div class="tile-thumbnail">
+                    <a href="javascript:;" onclick="showPluginInfo('{{id}}');" title="Info"
+                       data-toggle="modal" data-target="#configure-plugin">
+                        <img src="{{icon}}"/>
+                    </a>
+                </div>
+                <div class="tile-title">
+                    <h3>
+                        <a href="javascript:;" onclick="showPluginInfo('{{id}}');" title="Info"
+                           data-toggle="modal" data-target="#configure-plugin">
+                            {{name}}
+                        </a>
+                    </h3>
+                    <br><br>
+                    <a href="javascript:;" onclick="showPluginInfo('{{id}}');" title="Info"
+                       data-toggle="modal" data-target="#configure-plugin">
+                        <i class="icon-question font-blue"></i>
+                    </a>
+                    <a href="javascript:downloadPlugin('{{id}}', '{{@index}}');">
+                        <i class="icon-cloud-download font-green-meadow"></i>
+                    </a>
+                    <div class="tile-desc">
+                        <p>
+                            Author:
+                            <span class="font-grey-salt">{{author}}</span>
+                            <br>
+                            Version:
+                            <span class="font-grey-salt">{{version}}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {{/with}}
+{{/each}}

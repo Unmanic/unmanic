@@ -6,3 +6,8 @@ peewee_migrate==1.1.6
 pyinotify==0.9.6
 wheel==0.33.6
 setuptools>=39.0.1
+requests>=2.25.1
+py-cpuinfo>=7.0.0
+gpu-info>=2.0.1
+uuid>=1.30
+inquirer>=2.7.0

@@ -34,7 +34,7 @@ import time
 import tornado.web
 import json
 
-from unmanic.libs import common, history
+from unmanic.libs import common, history, session
 
 
 class MainUIRequestHandler(tornado.web.RequestHandler):
@@ -52,6 +52,7 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
         self.components = []
         self.config = settings
         self.historic_task_list = []
+        self.session = session.Session()
 
     def get(self, path):
         if self.get_query_arguments('ajax'):
@@ -60,7 +61,7 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
         else:
             self.get_historical_tasks()
             self.set_header("Content-Type", "text/html")
-            self.render("main/main.html", historic_task_list=self.historic_task_list, time_now=time.time())
+            self.render("main/main.html", historic_task_list=self.historic_task_list, time_now=time.time(), session=self.session)
 
     def handle_ajax_call(self, query):
         self.set_header("Content-Type", "application/json")
@@ -80,6 +81,9 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
             else:
                 self.set_header("Content-Type", "application/json")
                 self.write(json.dumps(self.get_historical_tasks()))
+        if query == 'login':
+            self.session.register_unmanic(self.session.get_installation_uuid())
+            self.redirect("/dashboard/")
 
     def get_workers_info(self, worker_id=None):
         if worker_id is not None:

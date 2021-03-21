@@ -35,10 +35,14 @@ import warnings
 
 from .history_api import ApiHistoryHandler
 from .pending_api import ApiPendingHandler
+from .plugins_api import ApiPluginsHandler
+from .session_api import ApiSessionHandler
 
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
 
 __all__ = (
     'ApiHistoryHandler',
     'ApiPendingHandler',
+    'ApiPluginsHandler',
+    'ApiSessionHandler',
 )

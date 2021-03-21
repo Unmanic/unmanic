@@ -1,0 +1,42 @@
+<div id="insufficient-permissions-popup" style="background-color: #465568 !important;"
+     class="modal container fade" tabindex="-1">
+
+    <div class="modal-header  font-white">
+        <button type="button" class="close font-white insufficient-permissions-popup-close" data-dismiss="modal" aria-hidden="true"></button>
+    </div>
+    <div class="modal-body">
+
+        <div class="page-lock">
+            <div class="page-logo">
+                <a class="brand" href="index.html">
+                    <img src="/assets/logo.png" alt="logo"/>
+                </a>
+            </div>
+            <div class="page-body">
+                <div class="lock-head"> Insufficient account permissions</div>
+                <div class="lock-body">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="pull-left lock-avatar-block">
+                                <img src="/assets/icon-blue_bg.png" class="lock-avatar"></div>
+                        </div>
+                        <div class="col-md-7 pull-left">
+                            <h4 class="font-white">This feature requires a sponsorship level of "<b>{{ minimum_required_sponsorship_level }}</b>" or higher.</h4>
+                            <button type="button" class="btn red uppercase sponsor-with-patreon">
+                                <i class="socicon-btn socicon-solid socicon-sm socicon-patreon font-white"></i>
+                                Sponsor on Patron
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="lock-bottom">
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="modal-footer">
+        <button type="button" data-dismiss="modal" class="btn btn-default insufficient-permissions-popup-close">Close</button>
+    </div>
+
+</div>

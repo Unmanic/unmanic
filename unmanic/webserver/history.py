@@ -35,7 +35,7 @@ import time
 import tornado.web
 import tornado.log
 
-from unmanic.libs import history
+from unmanic.libs import history, session
 
 
 class HistoryUIRequestHandler(tornado.web.RequestHandler):
@@ -49,6 +49,7 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
         self.config = settings
         self.data_queues = data_queues
         self.data = {}
+        self.session = session.Session()
 
     def get(self, path):
         if self.get_query_arguments('ajax'):
@@ -56,7 +57,7 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
             self.handle_ajax_call(self.get_query_arguments('ajax')[0])
         else:
             self.set_page_data()
-            self.render("history/history.html", config=self.config, data=self.data)
+            self.render("history/history.html", config=self.config, data=self.data, session=self.session)
 
     def handle_ajax_call(self, query):
         if query == 'conversionDetails':

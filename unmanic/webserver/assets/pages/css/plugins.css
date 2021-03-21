@@ -1,0 +1,22 @@
+
+.search-content-3 .tile-container > .tile-title > h3 {
+    display: block;
+    line-height: 1.5;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.search-content-3 .tile-container > .tile-title > p {
+    margin: 0 10px 0;
+}
+
+img.plugin-list-icon {
+    display: block;
+    width: auto;
+    max-width: 32px;
+    height: 32px;
+    border: none;
+    text-decoration: none;
+    vertical-align: middle;
+}

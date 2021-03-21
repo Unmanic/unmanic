@@ -316,7 +316,7 @@ class History(object):
         if search_value:
             query = query.where(HistoricTasks.task_label.contains(search_value))
 
-        if task_success:
+        if task_success is not None:
             query = query.where(HistoricTasks.task_success.in_([task_success]))
 
         if abspath:

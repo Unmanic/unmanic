@@ -42,6 +42,8 @@ from .historictaskprobe import HistoricTaskProbe
 from .historictaskprobestreams import HistoricTaskProbeStreams
 from .historictasksettings import HistoricTaskSettings
 from .migrations import Migrations
+from .plugins import Plugins
+from .pluginrepos import PluginRepos
 from .settings import Settings
 
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
@@ -56,5 +58,7 @@ __all__ = (
     'HistoricTaskProbeStreams',
     'HistoricTaskSettings',
     'Migrations',
+    'Plugins',
+    'PluginRepos',
     'Settings',
 )

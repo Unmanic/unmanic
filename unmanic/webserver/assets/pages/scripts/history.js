@@ -105,7 +105,7 @@ var CompletedTasksDatatablesManaged = function () {
     };
     var recordActionButton = function (oObj) {
         var row_id = oObj.id;
-        return '<a data-toggle="modal" href="#todo-task-modal" class="btn blue m-icon-big" ' +
+        return '<a data-toggle="modal" href="#task-history-popup" class="btn blue m-icon-big" ' +
             'onclick="viewConversionDetails(' + $.trim(row_id) + ');"> View details\n' +
             '<i class="m-icon-swapright m-icon-white"></i>\n' +
             '</a>';

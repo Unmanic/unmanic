@@ -31,6 +31,7 @@
 """
 
 import os
+import shutil
 import threading
 import queue
 import time
@@ -156,37 +157,114 @@ class WorkerThread(threading.Thread):
         abspath = self.current_task.get_source_abspath()
         self._log("{} processing job - {}".format(self.name, abspath))
 
+        # # Process item in loop for the default config
+        # file_in = abspath
+        # file_out = self.current_task.task.cache_path
+        # data = self.convert_file(file_in, file_out)
+
+        # Then process the item for for each plugin that configures it
+        from unmanic.libs.unplugins import PluginExecutor
+        plugin_executor = PluginExecutor()
+        plugin_modules = plugin_executor.get_plugin_modules_by_type('worker.process_item')
+
+        # Process item in loop.
+        # First run the default config, then process the item for for each plugin that configures it.
+        task_cache_path = self.current_task.get_cache_path()
+        file_in = abspath
+        overall_success = True
+        current_file_out = ""
+        runner_count = 0
+        for plugin_module in plugin_modules:
+            runner_count += 1
+            # Fetch file out details
+            # This creates a temp file labeled "WORKING" that will be moved to the cache_path on completion
+            tmp_file_out = os.path.splitext(task_cache_path)
+            file_out = current_file_out = "{}-{}-{}{}".format(tmp_file_out[0], "WORKING", runner_count, tmp_file_out[1])
+
+            # Fetch initial file probe
+            file_probe = self.ffmpeg.file_probe(file_in)
+            # Create args from
+            ffmpeg_args = self.ffmpeg.generate_ffmpeg_args(file_probe, file_in, file_out)
+            data = {
+                "exec_ffmpeg": True,
+                "file_probe":  file_probe,
+                "ffmpeg_args": ffmpeg_args,
+                "file_in":     file_in,
+                "file_out":    file_out,
+            }
+
+            # self._log("Runners: '{}' - DATA ".format(runner), data, level="error")
+            # Test return data against schema and ensure there are no errors
+            errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'worker.process_item', data)
+            if errors:
+                self._log(
+                    "Error while running worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'), abspath),
+                    errors, level="error")
+
+            # Run plugin and fetch return data
+            plugin_runner = plugin_module.get("runner")
+            data = plugin_runner(data)
+            self._log("Worker process '{}' file in".format(plugin_module.get('plugin_id')), data.get("file_in"), level='debug')
+            self._log("Worker process '{}' file out".format(plugin_module.get('plugin_id')), data.get("file_out"),
+                      level='debug')
+
+            # Only run the conversion process if "exec_ffmpeg" is True
+            if data.get("exec_ffmpeg"):
+                # Run conversion process
+                success = self.convert_file(data, plugin_module.get('plugin_id'))
+
+                if success:
+                    # If file conversion was successful
+                    self._log(
+                        "Successfully ran worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'), abspath))
+                    # Set the file in as the file out for the next loop
+                    file_in = file_out
+                else:
+                    # If file conversion was successful
+                    self._log(
+                        "Error while running worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'), abspath),
+                        level="error")
+                    overall_success = False
+            else:
+                self._log("Worker process '{}' set to not run the FFMPEG command.", level='debug')
+
+        if overall_success:
+            # If file conversion was successful, we will get here
+            self._log("Successfully converted file '{}'".format(abspath))
+            # Move file to original cache path
+            shutil.move(current_file_out, task_cache_path)
+            return True
+        self._log("Failed to convert file '{}'".format(abspath), level='warning')
+        return False
+
+    def convert_file(self, data, process_id):
+        file_in = data.get("file_in")
+        file_out = data.get("file_out")
+        ffmpeg_args = data.get("ffmpeg_args")
+
         # Create output path if not exists
-        common.ensure_dir(self.current_task.task.cache_path)
+        common.ensure_dir(file_out)
 
         # Convert file
         success = False
         try:
             # Fetch source file info
-            self.ffmpeg.set_file_in(abspath)
+            self.ffmpeg.set_file_in(file_in)
             # Read video information for the input file
             file_probe = self.ffmpeg.file_in['file_probe']
             if not file_probe:
                 return False
-            # Create args from
-            ffmpeg_args = self.ffmpeg.generate_ffmpeg_args(file_probe, abspath, self.current_task.task.cache_path)
             if ffmpeg_args:
-                success = self.ffmpeg.convert_file_and_fetch_progress(abspath, ffmpeg_args)
+                success = self.ffmpeg.convert_file_and_fetch_progress(file_in, ffmpeg_args)
             self.current_task.set_ffmpeg_log(self.ffmpeg.ffmpeg_cmd_stdout)
 
         except ffmpeg.FFMPEGHandleConversionError as e:
             # Fetch ffmpeg stdout and append it to the current task object (to be saved during post process)
             self.current_task.set_ffmpeg_log(self.ffmpeg.ffmpeg_cmd_stdout)
             self._log("Error while executing the FFMPEG command {}. "
-                      "Download FFMPEG command dump from history for more information.".format(abspath),
+                      "Download FFMPEG command dump from history for more information.".format(file_in),
                       message2=str(e), level="error")
-
-        if success:
-            # If file conversion was successful, we will get here
-            self._log("Successfully converted file '{}'".format(abspath))
-            return True
-        self._log("Failed to convert file '{}'".format(abspath), level='warning')
-        return False
+        return success
 
     def process_task_queue_item(self):
         self.idle = False

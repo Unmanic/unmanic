@@ -171,7 +171,7 @@ class PostProcessor(threading.Thread):
                         self.keep_filename_history(dirname, destination_data["basename"], source_data["basename"])
                     os.remove(source_data['abspath'])
             else:
-                self._log("Copy / Replace failed during post processing '{}'".format(cache_path),
+                self._log("Copy and replace function failed during post processing '{}'".format(cache_path),
                           level='warning')
                 return
         else:
@@ -179,32 +179,49 @@ class PostProcessor(threading.Thread):
                       level='warning')
             return
 
+        # Cleanup cache files
+        task_cache_directory = os.path.dirname(cache_path)
+        if os.path.exists(task_cache_directory) and "unmanic_file_conversion" in task_cache_directory:
+            for f in os.listdir(task_cache_directory):
+                cache_file_path = os.path.join(task_cache_directory, f)
+                # if not f.endswith(".bak"):
+                #     continue
+                self._log("Removing task cache directory file '{}'".format(cache_file_path))
+                # Remove the cache file
+                os.remove(cache_file_path)
+            # Remove the directory
+            self._log("Removing task cache directory '{}'".format(task_cache_directory))
+            os.rmdir(task_cache_directory)
+
     def validate_streams(self, abspath):
         # Read video information for the input file
         try:
             file_probe = self.ffmpeg.file_probe(abspath)
         except unffmpeg.exceptions.ffprobe.FFProbeError as e:
-            self._log("Exception in method process_file", str(e), level='exception')
+            self._log("Exception in method validate_streams", str(e), level='exception')
             return False
 
-        result = False
+        # Default errors to true unless we find a stream that matches
+        video_errors = True if self.settings.get_enable_video_encoding() else False
+        audio_errors = False
         for stream in file_probe['streams']:
             if stream['codec_type'] == 'video':
                 if self.settings.get_enable_video_encoding():
                     # Check if this file is the right codec
                     if stream['codec_name'] == self.settings.get_video_codec():
-                        result = True
+                        video_errors = False
                         continue
                     elif self.settings.get_debugging():
                         self._log("File is the not correct codec {} - {} :: {}".format(self.settings.get_video_codec(), abspath,
                                                                                        stream['codec_name']))
-                        # TODO: If settings are modified during a conversion, the file being converted should not fail.
-                        #  Modify ffmpeg.py to have settings passed to it rather than reading directly from the config object
-                        #  Test against the task's configured video codec
                     # TODO: Test duration is the same as src
                     # TODO: Add file checksum from before and after move
+                else:
+                    video_errors = None
 
-        return result
+        if not video_errors and not audio_errors:
+            return True
+        return False
 
     def write_history_log(self):
         """

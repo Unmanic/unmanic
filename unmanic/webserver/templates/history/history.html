@@ -11,10 +11,9 @@
 {% end %}
 
 {% block style %}
-<link href="../assets/pages/css/overlay.min.css" rel="stylesheet" type="text/css" />
 
 <link href="../assets/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css" />
-<link href="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css" />#}
 {% end %}
 
 {% block plugins %}
@@ -90,7 +89,7 @@
 
 
                                 <!-- START OVERLAY -->
-                                <div id="todo-task-modal" class="modal fade" role="dialog" aria-labelledby="myModalLabel10"
+                                {#<div id="todo-task-modal" class="modal fade" role="dialog" aria-labelledby="myModalLabel10"
                                      aria-hidden="true">
 
                                     <div class="modal-dialog">
@@ -98,6 +97,33 @@
                                              data-rail-visible="0">
                                             <div class="modal-header">
                                                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+                                            </div>
+                                            <div class="modal-body todo-task-modal-body">
+
+
+                                                <!-- START CONVERSION DETAILS -->
+                                                <div class="col-md-12" id="conversion_details"></div>
+                                                <!-- END CONVERSION DETAILS -->
+
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button class="btn default" data-dismiss="modal" aria-hidden="true">
+                                                    Close
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>#}
+
+
+                                <div id="task-history-popup" style="background-color: #465568 !important;"
+                                     class="modal container fade" tabindex="-1">
+                                    <div class="page-body">
+                                        <div class="modal-content scroller" style="height: 100%;" data-always-visible="1"
+                                             data-rail-visible="0">
+                                            <div class="modal-header">
+                                                <button type="button" class="close" data-dismiss="modal"
+                                                        aria-hidden="true"></button>
                                             </div>
                                             <div class="modal-body todo-task-modal-body">
 

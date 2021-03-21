@@ -31,11 +31,12 @@
 """
 
 import os
+import json
+
 from unmanic import metadata
 from unmanic.libs import unmodels, unlogger, unffmpeg
 from unmanic.libs import common, history
-
-import json
+from unmanic.libs.singleton import SingletonType
 
 try:
     from json.decoder import JSONDecodeError
@@ -51,7 +52,7 @@ if CONFIG_PATH is None:
     CONFIG_PATH = os.path.join(HOME_DIR, '.unmanic', 'config')
 
 
-class CONFIG(object):
+class CONFIG(object, metaclass=SingletonType):
     app_version = ''
 
     # Set the home directory
@@ -62,6 +63,9 @@ class CONFIG(object):
 
     # Set default config directory
     CONFIG_PATH = CONFIG_PATH
+
+    # Set default plugin directory
+    PLUGINS_PATH = os.path.join(HOME_DIR, '.unmanic', 'plugins')
 
     # Set default db config
     DATABASE = None
@@ -623,3 +627,11 @@ class CONFIG(object):
         :return:
         """
         return self.ENABLE_HARDWARE_ACCELERATED_DECODING
+
+    def get_plugins_path(self):
+        """
+        Get setting - config_path
+
+        :return:
+        """
+        return self.PLUGINS_PATH

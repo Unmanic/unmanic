@@ -29,7 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
+import argparse
 import os
 import json
 import time
@@ -38,13 +38,14 @@ import queue
 import schedule
 import signal
 
-from unmanic import config
+from unmanic import config, metadata
 from unmanic.libs import unlogger, common, eventmonitor, ffmpeg, history
 from unmanic.libs.taskqueue import TaskQueue
 from unmanic.libs.postprocessor import PostProcessor
 from unmanic.libs.taskhandler import TaskHandler
 from unmanic.libs.uiserver import UIServer
 from unmanic.libs.foreman import Foreman
+from unmanic.libs.unplugins.pluginscli import PluginsCLI
 
 unmanic_logging = unlogger.UnmanicLogger.__call__()
 main_logger = unmanic_logging.get_logger()
@@ -103,6 +104,8 @@ class LibraryScanner(threading.Thread):
                 self._log("Setting LibraryScanner schedule to scan every {} mins...".format(self.interval))
                 # Configure schedule
                 schedule.every(self.interval).minutes.do(self.scheduled_job)
+                # Register application
+                self.register_unmanic()
 
                 # First run the task
                 if self.settings.get_run_full_scan_on_start() and self.firstrun:
@@ -174,7 +177,7 @@ class LibraryScanner(threading.Thread):
         """
         # Fetch historical tasks
         history_logging = history.History(self.settings)
-        task_results = history_logging.get_historic_tasks_list_with_source_probe(abspath=pathname, task_success=0)
+        task_results = history_logging.get_historic_tasks_list_with_source_probe(abspath=pathname, task_success=False)
         if not task_results:
             # No results were found matching that pathname
             return False
@@ -207,6 +210,11 @@ class LibraryScanner(threading.Thread):
                         self._log("Ignoring file due to already correct format - '{}'".format(file_path))
                 elif self.settings.get_debugging():
                     self._log("Ignoring file due to incorrect suffix - '{}'".format(file_path))
+
+    def register_unmanic(self):
+        from unmanic.libs import session
+        s = session.Session()
+        s.register_unmanic(s.get_installation_uuid())
 
 
 class Service:
@@ -281,6 +289,11 @@ class Service:
         })
         return uiserver
 
+    def initial_register_unmanic(self, settings):
+        from unmanic.libs import session
+        s = session.Session()
+        s.register_unmanic(s.get_installation_uuid())
+
     def sig_handle(self, a, b):
         main_logger.info("SIGTERM Received")
         self.run_threads = False
@@ -288,7 +301,6 @@ class Service:
     def start_threads(self):
         # Read settings
         settings = config.CONFIG()
-        #print(settings.get_config_item('video_codec'))
 
         # Create our data queues
         data_queues = {
@@ -304,6 +316,9 @@ class Service:
         common.clean_files_in_dir(settings.get_cache_path())
 
         main_logger.info("Starting all threads")
+
+        # Register installation
+        self.initial_register_unmanic(settings)
 
         # Setup job queue
         task_queue = TaskQueue(settings, data_queues)
@@ -353,8 +368,22 @@ class Service:
 
 
 def main():
-    service = Service()
-    service.run()
+    parser = argparse.ArgumentParser(description='Unmanic')
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {version}'.format(version=metadata.read_version_string('long')))
+
+    parser.add_argument('--manage_plugins', action='store_true',
+                        help='manage installed plugins')
+    args = parser.parse_args()
+
+    if args.manage_plugins:
+        # Run the plugin manager CLI
+        plugin_cli = PluginsCLI()
+        plugin_cli.run()
+    else:
+        # Run the main Unmanic service
+        service = Service()
+        service.run()
 
 
 if __name__ == "__main__":

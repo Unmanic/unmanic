@@ -162,7 +162,7 @@ var PeningTasksDatatablesManaged = function () {
                     },
                     "lengthMenu": "<span class='font-sm'>View _MENU_ records</span>",
                     "info": "<span class='seperator'>|</span><span class='font-sm'>Found total _TOTAL_ records</span>",
-                    "emptyTable": "No data available in table",
+                    "emptyTable": "There are currently no pending tasks...",
                     "infoEmpty": "<span class='seperator'>|</span><span class='font-sm'>No records found</span>",
                     "search": "Search Name:",
                     "metronicGroupActions": "",

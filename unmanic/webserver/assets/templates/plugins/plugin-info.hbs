@@ -1,0 +1,121 @@
+{{#with plugin_info}}
+    <!-- Image and Basic Data -->
+    <div class="row">
+        <div class="col-md-4 col-sm-12">
+            <div class="mt-card-item">
+                <div class="mt-card-avatar mt-overlay-1">
+                    <span class="thumbnail">
+                        <img src="{{icon}}" alt="150x150" data-src="{{icon}}">
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8 col-sm-12">
+            <div class="col-md-12">
+                <label class="col-md-3 control-label"><b>Name:</b></label>
+                <div class="col-md-9">
+                    {{name}}
+                </div>
+            </div>
+            <div class="col-md-12">
+                <label class="col-md-3 control-label"><b>Author:</b></label>
+                <div class="col-md-9">
+                    {{author}}
+                </div>
+            </div>
+            <div class="col-md-12">
+                <label class="col-md-3 control-label"><b>Version:</b></label>
+                <div class="col-md-9">
+                    {{version}}
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Description -->
+    <div class="row">
+        <div class="col-md-12">
+            <p>
+                {{description}}
+            </p>
+        </div>
+    </div>
+
+    {{#if settings}}
+        <!-- Plugin settings -->
+        <div class="row">
+            <div class="col-md-12 ">
+                <div class="portlet light bordered">
+                    <div class="portlet-title">
+                        <div class="caption font-red-sunglo">
+                            <i class="icon-settings font-red-sunglo"></i>
+                            <span class="caption-subject bold uppercase"> Settings</span>
+                        </div>
+                        <div class="tools">
+                            <a href="" class="collapse" data-original-title="" title=""> </a>
+                        </div>
+                    </div>
+                    <div class="portlet-body form">
+                        <form id="plugin_settings_form" role="form">
+                            <input type="hidden" name="plugin_id" id="plugin_id"
+                                   value="{{plugin_id}}">
+                            <div class="form-body">
+                                {{#each settings}}
+                                    {{#with this}}
+                                        {{#ifEquals var_type "str"}}
+                                            <!-- Text input -->
+                                            <div class="form-group form-md-line-input">
+                                                <input type="text" class="form-control" id="{{key_id}}"
+                                                       placeholder="{{value}}"
+                                                       name="{{key_id}}" value="{{value}}">
+                                                <label for="{{key_id}}">{{key}}</label>
+                                            </div>
+                                        {{/ifEquals}}
+                                        {{#ifEquals var_type "int"}}
+                                            <!-- Text input -->
+                                            <div class="form-group form-md-line-input">
+                                                <input type="text" class="form-control" id="{{key_id}}"
+                                                       placeholder="{{value}}"
+                                                       name="{{key_id}}" value="{{value}}">
+                                                <label for="{{key_id}}">{{key}}</label>
+                                            </div>
+                                        {{/ifEquals}}
+
+                                        {{#ifEquals var_type "bool"}}
+                                            <!-- Checkbox input -->
+                                            <div class="form-group form-md-checkboxes">
+                                                <label>{{key}}</label>
+                                                <div class="md-checkbox-inline">
+                                                    <div class="md-checkbox">
+                                                        <input type='hidden' id="{{key_id}}"
+                                                               name="{{key_id}}"
+                                                               value='{{value}}'>
+                                                        <input type="checkbox" id="{{key_id}}_checkbox"
+                                                               onclick="toggleCheckboxHiddenInput('{{key_id}}_checkbox', '{{key_id}}')"
+                                                               {{#if value}}checked=""{{/if}}
+                                                               class="md-check">
+                                                        <label for="{{key_id}}_checkbox">
+                                                            <span class="inc"></span>
+                                                            <span class="check"></span>
+                                                            <span class="box"></span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {{/ifEquals}}
+                                    {{/with}}
+                                {{/each}}
+                            </div>
+
+                            <div class="form-actions noborder">
+                                <button type="button" onclick="submitPluginSettings();" class="btn sbold btn-primary">Save
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {{/if}}
+
+{{/with}}

@@ -145,7 +145,8 @@ class Task(object):
         # Parse an output cache path
         out_folder = "unmanic_file_conversion-{}".format(time.time())
         out_file = "{}-{}.{}".format(file_name_without_extension, time.time(), container_extension)
-        cache_path = os.path.join(self.settings.cache_path, out_folder, out_file)
+        cache_directory = os.path.join(self.settings.cache_path, out_folder)
+        cache_path = os.path.join(cache_directory, out_file)
         if self.task:
             self.task.cache_path = cache_path
 
@@ -287,7 +288,7 @@ class Task(object):
             self.task.priority = self.task.id
 
             # Save the task in order to save that cache path
-            self.task.save()
+            self.save_task()
 
             # Read back the task from the database (ensures that our data has been recorded correctly)
             self.read_and_set_task_by_absolute_path(abspath)
@@ -296,6 +297,11 @@ class Task(object):
         except IntegrityError as e:
             self._log("Cancel creating new task for {} - {}".format(abspath, e), level="info")
             return False
+
+    def save_task(self):
+        if not self.task:
+            raise Exception('Unable to dave task. Task has not been set!')
+        self.task.save()
 
     def set_status(self, status):
         """

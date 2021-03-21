@@ -107,7 +107,7 @@ class EventProcessor(pyinotify.ProcessEvent):
         """
         # Fetch historical tasks
         history_logging = history.History(self.settings)
-        task_results = history_logging.get_historic_tasks_list_with_source_probe(abspath=pathname, task_success=0)
+        task_results = history_logging.get_historic_tasks_list_with_source_probe(abspath=pathname, task_success=False)
         if not task_results:
             # No results were found matching that pathname
             return False

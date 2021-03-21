@@ -1,0 +1,1 @@
+var Lock=function(){return{init:function(){}}}();jQuery(document).ready(function(){Lock.init()});

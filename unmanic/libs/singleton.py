@@ -33,6 +33,9 @@
 """
 Singleton metaclass
 """
+import threading
+
+lock = threading.Lock()
 
 
 class SingletonType(type):
@@ -40,5 +43,7 @@ class SingletonType(type):
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(SingletonType, cls).__call__(*args, **kwargs)
+            with lock:
+                if cls not in cls._instances:
+                    cls._instances[cls] = super(SingletonType, cls).__call__(*args, **kwargs)
         return cls._instances[cls]

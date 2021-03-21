@@ -43,6 +43,16 @@ class Info(object):
     Provide information on FFMPEG commands and configuration
     """
     available_encoders = None
+    available_decoders = None
+
+    @staticmethod
+    def versions():
+        """
+        Return the system ffmpeg version as a string
+
+        :return:
+        """
+        return cli.ffmpeg_version_info()
 
     def file_probe(self, vid_file_path):
         """
@@ -102,6 +112,75 @@ class Info(object):
             'subtitle': available_subtitle_encoders,
             'video':    available_video_encoders
         }
+
+        return self.available_encoders
+
+    def get_available_ffmpeg_decoders(self):
+        """
+        Sets a dictionary of decoders supported by ffmpeg
+        """
+        available_audio_decoders = {}
+        available_subtitle_decoders = {}
+        available_video_decoders = {}
+
+        # Get raw ffmpeg output of available decoders
+        info = cli.ffmpeg_available_decoders()
+
+        # Sort through the lines and create a dictionary of audio, subtitle and video decoders
+        for line in info.splitlines():
+            line = line.rstrip().lstrip()
+            if line.startswith('A') and line != 'A..... = Audio':
+                # Audio decoder
+                data = line.split()
+                capabilities = data.pop(0)
+                codec = data.pop(0)
+                available_audio_decoders[codec] = {
+                    'capabilities': capabilities,
+                    'description':  " ".join(data)
+                }
+            elif line.startswith('S') and line != 'S..... = Subtitle':
+                # Subtitle decoder
+                data = line.split()
+                capabilities = data.pop(0)
+                codec = data.pop(0)
+                available_subtitle_decoders[codec] = {
+                    'capabilities': capabilities,
+                    'description':  " ".join(data)
+                }
+            elif line.startswith('V') and line != 'V..... = Video':
+                # Video decoder
+                data = line.split()
+                capabilities = data.pop(0)
+                codec = data.pop(0)
+                available_video_decoders[codec] = {
+                    'capabilities': capabilities,
+                    'description':  " ".join(data)
+                }
+
+        # Combine dictionaries into one
+        self.available_decoders = {
+            'audio':    available_audio_decoders,
+            'subtitle': available_subtitle_decoders,
+            'video':    available_video_decoders
+        }
+
+        return self.available_decoders
+
+    def get_available_ffmpeg_hw_acceleration_methods(self):
+        methods = []
+
+        # Get raw ffmpeg output of available encoders
+        info = cli.ffmpeg_available_hw_acceleration_methods()
+
+        # Sort through the lines and create a list of methods
+        for line in info.splitlines():
+            line = line.rstrip().lstrip()
+            if not line or line.startswith('Hardware acceleration'):
+                continue
+            else:
+                methods.append(line)
+
+        return methods
 
     def get_ffmpeg_audio_encoders(self):
         """

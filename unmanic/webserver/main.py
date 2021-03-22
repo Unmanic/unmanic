@@ -82,7 +82,7 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
                 self.set_header("Content-Type", "application/json")
                 self.write(json.dumps(self.get_historical_tasks()))
         if query == 'login':
-            self.session.register_unmanic(self.session.get_installation_uuid())
+            self.session.register_unmanic(self.session.get_installation_uuid(), force=True)
             self.redirect("/dashboard/")
 
     def get_workers_info(self, worker_id=None):

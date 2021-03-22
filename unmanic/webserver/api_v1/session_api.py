@@ -47,7 +47,7 @@ class ApiSessionHandler(BaseApiHandler):
         {
             "supported_methods": ["GET"],
             "call_method":       "get_patreon_login_url",
-            "path_pattern":      r"/api/v1/session/unmanic-patreon-client-id",
+            "path_pattern":      r"/api/v1/session/unmanic-patreon-login-url",
         },
         {
             "supported_methods": ["GET"],
@@ -76,19 +76,16 @@ class ApiSessionHandler(BaseApiHandler):
 
     def get_patreon_login_url(self, *args, **kwargs):
         uuid = self.session.get_installation_uuid()
-        patreon_oauth_data = self.session.get_patreon_oauth_data()
-        if not patreon_oauth_data:
+        patreon_oauth_url = self.session.get_patreon_login_url()
+        if not patreon_oauth_url:
             self.write(json.dumps({"success": False}))
             return
         else:
-            client_id = patreon_oauth_data.get("client_id")
-            redirect_uri = patreon_oauth_data.get("redirect_uri")
             self.write(json.dumps({
                 "success": True,
                 "uuid":    uuid,
                 "data":    {
-                    "client_id":    client_id,
-                    "redirect_uri": redirect_uri,
+                    "url": patreon_oauth_url,
                 }
             }))
             return
@@ -105,7 +102,7 @@ class ApiSessionHandler(BaseApiHandler):
                 "success": True,
                 "uuid":    uuid,
                 "data":    {
-                    "sponsor_page":    sponsor_page,
+                    "sponsor_page": sponsor_page,
                 }
             }))
             return

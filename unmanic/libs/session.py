@@ -140,8 +140,16 @@ class Session(object, metaclass=SingletonType):
             self.uuid = str(current_installation.uuid)
         return self.uuid
 
-    @staticmethod
-    def set_full_api_url(api_version, api_path):
+    def get_site_url(self):
+        """
+        Set the Unmanic application site URL
+        :return:
+        """
+        api_proto = "https"
+        api_domain = "unmanic.app"
+        return "{0}://{1}".format(api_proto, api_domain)
+
+    def set_full_api_url(self, api_version, api_path):
         """
         Set the API path URL
 
@@ -149,10 +157,8 @@ class Session(object, metaclass=SingletonType):
         :param api_path:
         :return:
         """
-        api_proto = "https"
-        api_domain = "unmanic.app"
         api_versioned_path = "api/v{}".format(api_version)
-        return "{0}://{1}/{2}/{3}".format(api_proto, api_domain, api_versioned_path, api_path)
+        return "{0}/{1}/{2}".format(self.get_site_url(), api_versioned_path, api_path)
 
     def api_get(self, api_version, api_path):
         """
@@ -179,7 +185,7 @@ class Session(object, metaclass=SingletonType):
         r = requests.post(u, json=data)
         return r.json()
 
-    def register_unmanic(self, uuid):
+    def register_unmanic(self, uuid, force=False):
         """
         Register Unmanic with site.
         This sends information about the system that Unmanic is running on.
@@ -192,7 +198,7 @@ class Session(object, metaclass=SingletonType):
         :return:
         """
         # First check if the current session is still valid
-        if self.__check_session_valid():
+        if not force and self.__check_session_valid():
             return True
 
         settings = config.CONFIG()
@@ -220,34 +226,40 @@ class Session(object, metaclass=SingletonType):
             # Save data
             if registration_response and registration_response.get("success"):
                 registration_data = registration_response.get("data")
+
+                # Set level from response data
                 self.level = registration_data.get("level")
-                self.picture_uri = registration_data.get("picture_uri", '/assets/global/img/avatar/7.jpg')
-                self.name = registration_data.get("name", '')
-                self.email = registration_data.get("email", '')
+
+                # Get user data from response data
+                user_data = registration_data.get('user')
+
+                # Set name from user data
+                name = user_data.get("name")
+                self.name = name if name else 'Valued Supporter'
+
+                # Set avatar from user data
+                picture_uri = user_data.get("picture_uri")
+                self.picture_uri = picture_uri if picture_uri else '/assets/global/img/avatar/avatar_placeholder.png'
+
+                # Set email from user data
+                email = user_data.get("email")
+                self.email = email if email else ''
+
                 self.__update_created_timestamp()
+
                 return True
             return False
         except Exception as e:
             self._log("Exception while registering Unmanic.", str(e), level="debug")
             return False
 
-    def get_patreon_oauth_data(self):
+    def get_patreon_login_url(self):
         """
         Fetch the Patreon client ID
 
         :return:
         """
-        try:
-            # Fetch Patreon client ID from Unmanic site API
-            response = self.api_get(1, 'unmanic-patreon-auth-data')
-
-            if response and response.get("success"):
-                response_data = response.get("data")
-                return response_data
-
-        except Exception as e:
-            self._log("Exception while fetching Patreon client ID.", str(e), level="debug")
-        return False
+        return "{0}/patreon-login".format(self.get_site_url())
 
     def get_patreon_sponsor_page(self):
         """

@@ -1,28 +1,22 @@
 $(".login-with-patreon").click(function (e) {
-    const pateron_authorize_url = "https://www.patreon.com/oauth2/authorize";
-
     // Get unmanic patreon client ID
     $.ajax({
-        url: '/api/v1/session/unmanic-patreon-client-id',
+        url: '/api/v1/session/unmanic-patreon-login-url',
         type: 'GET',
         success: function (data) {
             if (data.success) {
                 // If query was successful
                 // let current_uri = window.location.href;
                 let current_uri = window.location.origin + "/dashboard/?ajax=login";
-                let state = {
-                    uuid: data.uuid,
-                    current_uri: current_uri,
-                };
-                // Build Patreon login page URL
-                let params = {
-                    response_type: 'code',
-                    client_id: data.data.client_id,
-                    redirect_uri: data.data.redirect_uri,
-                    state: JSON.stringify(state)
-                };
-                // Redirect to Patreon login page
-                window.location.href = pateron_authorize_url + '?' + $.param(params);
+                let uuid = data.uuid;
+                let url = data.data.url;
+                let form = $('<form action="' + url + '" method="post">' +
+                    '<input type="text" name="uuid" value="' + uuid + '" />' +
+                    '<input type="text" name="current_uri" value="' + current_uri + '" />' +
+                    '</form>');
+                console.log(form)
+                $('body').append(form);
+                form.submit();
             } else {
                 // Our query was unsuccessful
                 console.error('An error occurred while fetching the patreon client ID.');

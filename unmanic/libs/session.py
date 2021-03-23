@@ -209,7 +209,7 @@ class Session(object, metaclass=SingletonType):
             system_info = system.info()
             platform_info = system_info.get("platform", None)
             if platform_info:
-                platform_info = " | ".join(platform_info)
+                platform_info = " * ".join(platform_info)
             post_data = {
                 "uuid":           uuid,
                 "version":        settings.read_version(),
@@ -232,18 +232,18 @@ class Session(object, metaclass=SingletonType):
 
                 # Get user data from response data
                 user_data = registration_data.get('user')
+                if user_data:
+                    # Set name from user data
+                    name = user_data.get("name")
+                    self.name = name if name else 'Valued Supporter'
 
-                # Set name from user data
-                name = user_data.get("name")
-                self.name = name if name else 'Valued Supporter'
+                    # Set avatar from user data
+                    picture_uri = user_data.get("picture_uri")
+                    self.picture_uri = picture_uri if picture_uri else '/assets/global/img/avatar/avatar_placeholder.png'
 
-                # Set avatar from user data
-                picture_uri = user_data.get("picture_uri")
-                self.picture_uri = picture_uri if picture_uri else '/assets/global/img/avatar/avatar_placeholder.png'
-
-                # Set email from user data
-                email = user_data.get("email")
-                self.email = email if email else ''
+                    # Set email from user data
+                    email = user_data.get("email")
+                    self.email = email if email else ''
 
                 self.__update_created_timestamp()
 

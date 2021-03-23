@@ -304,7 +304,18 @@ class ApiPluginsHandler(BaseApiHandler):
     def __get_plugin_info_and_settings(self, plugin_id):
         plugins = PluginsHandler()
 
+        plugin_installed = True
         plugin_results = plugins.get_plugin_list_filtered_and_sorted(plugin_id=plugin_id)
+        if not plugin_results:
+            # This plugin is not installed
+            plugin_installed = False
+
+            # Try to fetch it from the repository
+            plugin_list = plugins.get_installable_plugins_list()
+            for plugin in plugin_list:
+                if plugin.get('id') == plugin_id:
+                    plugin_results = [plugin]
+                    break
 
         # Iterate over plugins and append them to the plugin data
         plugin_data = {}
@@ -319,8 +330,10 @@ class ApiPluginsHandler(BaseApiHandler):
                 'tags':        plugin_result.get('tags'),
                 'author':      plugin_result.get('author'),
                 'version':     plugin_result.get('version'),
-                'settings':    self.__get_plugin_settings(plugin_result.get('plugin_id')),
+                'settings':    [],
             }
+            if plugin_installed:
+                plugin_data['settings'] = self.__get_plugin_settings(plugin_result.get('plugin_id'))
             break
 
         return plugin_data

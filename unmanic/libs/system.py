@@ -66,21 +66,20 @@ class System(object, metaclass=SingletonType):
         """
         import cpuinfo
         import gpuinfo.nvidia as nvidia_info
-        gpus = []
+        gpu_devices = []
         try:
-            gpus = nvidia_info.get_gpus()
             for gpu in nvidia_info.get_gpus():
                 gpu_info = gpu.__dict__
                 gpu_info['get_max_clock_speeds'] = gpu.get_max_clock_speeds()
                 gpu_info['get_clock_speeds'] = gpu.get_clock_speeds()
                 gpu_info['get_memory_details'] = gpu.get_memory_details()
-                gpus.append(gpu_info)
+                gpu_devices.append(gpu_info)
         except FileNotFoundError as e:
             self._log("NVIDIA GPU support not available")
         if not self.devices:
             self.devices = {
                 "cpu_info": cpuinfo.get_cpu_info(),
-                "gpu_info": gpus
+                "gpu_info": gpu_devices,
             }
         return self.devices
 

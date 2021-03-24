@@ -242,7 +242,15 @@ class PluginsHandler(object, metaclass=SingletonType):
         plugin_list = self.get_installable_plugins_list()
         for plugin in plugin_list:
             if plugin.get('id') == plugin_id:
-                return self.install_plugin(plugin)
+                success = self.install_plugin(plugin)
+
+                if success:
+                    try:
+                        plugin_directory = self.get_plugin_path(plugin.get("id"))
+                        return self.write_plugin_data_to_db(plugin, plugin_directory)
+                    except Exception as e:
+                        self._log("Exception while saving plugin info for '{}' to DB.".format(plugin), str(e),
+                                  level="exception")
 
         return False
 
@@ -275,32 +283,6 @@ class PluginsHandler(object, metaclass=SingletonType):
             if os.path.isfile(destination):
                 os.remove(destination)
 
-            # Add installed plugin to database
-            plugin_data = {
-                Plugins.plugin_id:   plugin.get("id"),
-                Plugins.name:        plugin.get("name"),
-                Plugins.author:      plugin.get("author"),
-                Plugins.version:     plugin.get("version"),
-                Plugins.tags:        plugin.get("tags"),
-                Plugins.description: plugin.get("description"),
-                Plugins.icon:        plugin.get("icon"),
-                Plugins.local_path:  plugin_directory,
-            }
-            plugin_entry = Plugins.get_or_none(plugin_id=plugin.get("id"))
-            if plugin_entry is not None:
-                # Update the existing entry
-                with db.atomic():
-                    update_query = (Plugins
-                         .update(plugin_data)
-                         .where(Plugins.plugin_id == plugin.get("id")))
-                    update_query.execute()
-            else:
-                # Insert a new entry
-                # Plugins are disable when first installed. This will help to prevent issues with broken plugins
-                plugin_data[Plugins.enabled] = False
-                with db.atomic():
-                    Plugins.insert(plugin_data).execute()
-
             self.notify_site_of_plugin_install(plugin)
 
             return True
@@ -310,6 +292,36 @@ class PluginsHandler(object, metaclass=SingletonType):
             self._log("Exception while installing plugin '{}'.".format(plugin), str(e), level="exception")
 
         return False
+
+    @staticmethod
+    def write_plugin_data_to_db(plugin, plugin_directory):
+        # Add installed plugin to database
+        plugin_data = {
+            Plugins.plugin_id:   plugin.get("id"),
+            Plugins.name:        plugin.get("name"),
+            Plugins.author:      plugin.get("author"),
+            Plugins.version:     plugin.get("version"),
+            Plugins.tags:        plugin.get("tags"),
+            Plugins.description: plugin.get("description"),
+            Plugins.icon:        plugin.get("icon"),
+            Plugins.local_path:  plugin_directory,
+        }
+        plugin_entry = Plugins.get_or_none(plugin_id=plugin.get("id"))
+        if plugin_entry is not None:
+            # Update the existing entry
+            with db.atomic():
+                update_query = (Plugins
+                                .update(plugin_data)
+                                .where(Plugins.plugin_id == plugin.get("id")))
+                update_query.execute()
+        else:
+            # Insert a new entry
+            # Plugins are disable when first installed. This will help to prevent issues with broken plugins
+            plugin_data[Plugins.enabled] = False
+            with db.atomic():
+                Plugins.insert(plugin_data).execute()
+
+        return True
 
     def get_total_plugin_list_count(self):
         task_query = Plugins.select().order_by(Plugins.id.desc())

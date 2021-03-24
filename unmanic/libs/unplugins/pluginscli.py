@@ -29,6 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import json
 import os
 import inquirer
 
@@ -39,14 +40,20 @@ from unmanic.libs.unplugins import PluginExecutor
 
 menus = {
     "main": [
-        inquirer.List('cli_action',
-                      message="What would you like to do?",
-                      choices=[
-                          'List installed plugins',
-                          'Test installed plugins',
-                          'Exit',
-                      ],
-                      ),
+        inquirer.List(
+            'cli_action',
+            message="What would you like to do?",
+            choices=[
+                'Test installed plugins',
+                'List installed plugins',
+                'Create new plugin',
+                'Exit',
+            ],
+        ),
+    ],
+    "create_plugin": [
+        inquirer.Text('plugin_name', message="What's the plugin's name"),
+        inquirer.Text('plugin_id', message="What's the plugin's id"),
     ],
 }
 
@@ -92,6 +99,66 @@ class PluginsCLI(object):
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
+
+    def create_new_plugins(self):
+        plugin_details = inquirer.prompt(menus.get('create_plugin'))
+
+        # Ensure results are not empty
+        if not plugin_details.get('plugin_name') or not plugin_details.get('plugin_id'):
+            print("ERROR! Invalid input.")
+            return
+
+        # TODO: Ensure plugin ID has only underscore and a-z, 0-9
+
+        # Create new plugin path
+        new_plugin_path = os.path.join(self.plugins_directory, plugin_details.get('plugin_id'))
+        if not os.path.exists(new_plugin_path):
+            os.makedirs(new_plugin_path)
+
+        # Touch main python file
+        main_python_file = os.path.join(new_plugin_path, 'plugin.py')
+        plugin_template = [
+            "#!/usr/bin/env python3",
+            "# -*- coding: utf-8 -*-",
+            "",
+            "from unmanic.libs.unplugins.settings import PluginSettings",
+            "",
+            "",
+            "class Settings(PluginSettings):",
+            "    settings = {}",
+            "",
+            ""
+        ]
+        if not os.path.exists(main_python_file):
+            with open(main_python_file, 'a') as outfile:
+                for plugin_template_line in plugin_template:
+                    outfile.write("{}\n".format(plugin_template_line))
+
+        common.touch(os.path.join(new_plugin_path, 'plugin.py'))
+        # Create plugin info.json
+        info_file = os.path.join(new_plugin_path, 'info.json')
+        plugin_info = {
+            "id":          plugin_details.get('plugin_id'),
+            "name":        plugin_details.get('plugin_name'),
+            "author":      "",
+            "version":     "0.0.1",
+            "tags":        "",
+            "description": "",
+            "icon":        ""
+        }
+        if not os.path.exists(info_file):
+            with open(info_file, 'w') as outfile:
+                json.dump(plugin_info, outfile, sort_keys=True, indent=4)
+
+        # Insert plugin details to DB
+
+        try:
+            PluginsHandler.write_plugin_data_to_db(plugin_info, new_plugin_path)
+        except Exception as e:
+            print("Exception while saving plugin info to DB. - {}".format(str(e)))
+            return
+
+        print("Plugin created - '{}'".format((plugin_details.get('plugin_id'))))
 
     @staticmethod
     def list_installed_plugins():
@@ -144,8 +211,9 @@ class PluginsCLI(object):
 
     def main(self, arg):
         switcher = {
-            'List installed plugins': 'list_installed_plugins',
             'Test installed plugins': 'test_installed_plugins',
+            'List installed plugins': 'list_installed_plugins',
+            'Create new plugin':      'create_new_plugins',
         }
         function = switcher.get(arg, None)
         if function:

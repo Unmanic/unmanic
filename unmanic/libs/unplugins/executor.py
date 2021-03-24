@@ -75,8 +75,10 @@ class PluginExecutor(object):
             "column": 'position',
             "dir":    'desc',
         }
+        # TODO: generate this list dynamically
         self.plugin_types = [
-            "worker.process_item"
+            "postprocessor.file_move",
+            "worker.process_item",
         ]
         self.default_plugin_runner_name = "unmanic_default_stage"
         unmanic_logging = unlogger.UnmanicLogger.__call__()

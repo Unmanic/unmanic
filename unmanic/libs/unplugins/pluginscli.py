@@ -133,11 +133,12 @@ class PluginsCLI(object):
                 else:
                     print("    - PASSED".format(plugin_id))
                 print("  Testing settings".format(plugin_result.get("name")))
-                errors = plugin_executor.test_plugin_settings(plugin_id)
+                errors, plugin_settings = plugin_executor.test_plugin_settings(plugin_id)
                 if errors:
                     for error in errors:
                         print("    - {}".format(error))
                 else:
+                    print("        - Settings: {}".format(plugin_settings))
                     print("    - PASSED".format(plugin_id))
         print()
 

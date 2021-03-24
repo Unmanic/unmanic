@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.file_move.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     05 Mar 2021, (6:54 PM)
+    Date:                     24 Mar 2021, (9:42 PM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,29 +30,32 @@
 
 """
 
-from __future__ import absolute_import
-from importlib import import_module
-from pathlib import Path
-import sys
-import inspect
-import pkgutil
-
 from ..plugin_type_base import PluginType
 
-"""
-Import all submodules for this package
 
-"""
-for (_, name, _) in pkgutil.iter_modules([Path(__file__).parent]):
-
-    imported_module = import_module('.' + name, package=__name__)
-
-    for i in dir(imported_module):
-        attribute = getattr(imported_module, i)
-
-        if inspect.isclass(attribute) and issubclass(attribute, PluginType) and attribute.__name__ != 'PluginType':
-            setattr(sys.modules[__name__], name, attribute)
-
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = ()
+class FileMove(PluginType):
+    runner = "on_postprocessor_file_movement"
+    data_schema = {
+        "remove_source_file": {
+            "required": True,
+            "type":     bool,
+        },
+        "copy_file":          {
+            "required": True,
+            "type":     bool,
+        },
+        "file_in":            {
+            "required": True,
+            "type":     str,
+        },
+        "file_out":           {
+            "required": True,
+            "type":     str,
+        },
+    }
+    test_data = {
+        'copy_file':          True,
+        'file_in':            '/tmp/unmanic/unmanic_file_conversion-1616581079.6339643/TEST_FILE-1616581079.633973.mp4',
+        'file_out':           '/library/TEST_FILE.mp4',
+        'remove_source_file': True
+    }

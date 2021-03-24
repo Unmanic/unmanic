@@ -78,6 +78,7 @@ class PluginExecutor(object):
         # TODO: generate this list dynamically
         self.plugin_types = [
             "postprocessor.file_move",
+            "postprocessor.task_result",
             "worker.process_item",
         ]
         self.default_plugin_runner_name = "unmanic_default_stage"

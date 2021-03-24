@@ -179,7 +179,7 @@ var PluginsDatatablesManaged = function () {
                     "info": "<span class='seperator'>|</span><span class='font-sm'>Found total _TOTAL_ records</span>",
                     "emptyTable": "No data available in table",
                     "infoEmpty": "<span class='seperator'>|</span><span class='font-sm'>No records found</span>",
-                    "search": "Search Name:",
+                    "search": "Search Plugin:",
                     "metronicGroupActions": "",
                     "zeroRecords": "No matching records found",
                     "paginate": {

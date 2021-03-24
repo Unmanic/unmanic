@@ -271,11 +271,14 @@ class PluginExecutor(object):
         if plugin_id == self.default_plugin_runner_name:
             return []
 
-        # Get the called runner function for the given plugin type
-        plugin_settings = self.get_plugin_settings(plugin_id)
-
-        print(plugin_settings)
-
         errors = []
 
-        return errors
+        # Get the called runner function for the given plugin type
+        plugin_settings = {}
+        try:
+            plugin_settings = self.get_plugin_settings(plugin_id)
+        except Exception as e:
+            errors.append(str(e))
+
+
+        return errors, plugin_settings

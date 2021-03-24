@@ -168,7 +168,7 @@ class WorkerThread(threading.Thread):
         plugin_modules = plugin_executor.get_plugin_modules_by_type('worker.process_item')
 
         # Process item in loop.
-        # First run the default config, then process the item for for each plugin that configures it.
+        # First process the item for for each plugin that configures it, then run the default Unmanic configuration
         task_cache_path = self.current_task.get_cache_path()
         file_in = abspath
         overall_success = True
@@ -193,13 +193,14 @@ class WorkerThread(threading.Thread):
                 "file_out":    file_out,
             }
 
-            # self._log("Runners: '{}' - DATA ".format(runner), data, level="error")
             # Test return data against schema and ensure there are no errors
             errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'worker.process_item', data)
             if errors:
                 self._log(
                     "Error while running worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'), abspath),
                     errors, level="error")
+                # Dont execute this runner. It failed
+                continue
 
             # Run plugin and fetch return data
             plugin_runner = plugin_module.get("runner")

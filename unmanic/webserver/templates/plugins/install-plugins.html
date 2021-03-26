@@ -70,21 +70,16 @@
                     </div>
 
                     <div class="portlet-body">
-                        <form id="repos_list_form" class="form-horizontal" role="form" method="POST"
-                              action="/api/v1/plugins/repos/update">
-                            <div class="form-body">
-                                <div class="form-group">
-                                    <textarea id="repos_list" name="repos_list" class="form-control" rows="3"></textarea>
-                                </div>
-                            </div>
-                            <div class="form-actions">
-                                <div class="row">
-                                    <div class="col-md-offset-3 col-md-9">
-                                        <button type="submit" class="btn green">Submit</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
+                        <div class="search-filter bordered">
+                            <form id="repos_list_form" class="form-horizontal" role="form" method="POST"
+                                  action="/api/v1/plugins/repos/update">
+                                <textarea id="repos_list" name="repos_list" class="form-control" rows="3"></textarea>
+                                <button type="submit" class="btn green bold uppercase btn-block"
+                                        id="installable_plugins_search_btn">
+                                    Update Additional Repositories List
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

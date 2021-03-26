@@ -32,9 +32,6 @@
 {% end %}
 
 {% block scripts %}
-{# Template - Popup Models #}
-<script src="../assets/pages/scripts/ui-extended-modals.min.js" type="text/javascript"></script>
-
 {# Unmanic #}
 <script src="../assets/pages/scripts/templates.js?version={{ escape(handler.config.read_version()) }}"
         type="text/javascript"></script>
@@ -148,23 +145,26 @@
 
 {% elif session.level > 1 %}
 
-    <div id="add-new-plugins" class="modal container fade" tabindex="-1">
+    <div id="add-new-plugins" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-full">
+            <div class="modal-content">
 
-        <div class="modal-header">
-            <button type="button" class="close add-new-plugins-close" data-dismiss="modal" aria-hidden="true"></button>
-            <h2 class="modal-title"><i class="icon-puzzle font-dark"></i> Plugins</h2>
-            <a href="javascript:;" class="btn btn-primary btn-sm pull-right" id="plugins-check-updates"
-               data-toggle="tooltip" title="Check repos for latest plugins">
-                <i class="fa fa-repeat"></i> Check for updates
-            </a>
+                <div class="modal-header">
+                    <button type="button" class="close add-new-plugins-close" data-dismiss="modal" aria-hidden="true"></button>
+                    <h2 class="modal-title"><i class="icon-puzzle font-dark"></i> Plugins</h2>
+                    <a href="javascript:;" class="btn btn-primary btn-sm pull-right" id="plugins-check-updates"
+                       data-toggle="tooltip" title="Check repos for latest plugins">
+                        <i class="fa fa-repeat"></i> Check for updates
+                    </a>
+                </div>
+                <div class="modal-body">
+                    {% include "install-plugins.html" %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-default dark add-new-plugins-close">Close</button>
+                </div>
+            </div>
         </div>
-        <div class="modal-body">
-            {% include "install-plugins.html" %}
-        </div>
-        <div class="modal-footer">
-            <button type="button" data-dismiss="modal" class="btn btn-outline dark add-new-plugins-close">Close</button>
-        </div>
-
     </div>
 
 {% end %}
@@ -173,20 +173,24 @@
 
 
 <!-- PLUGIN INFO AND CONFIGURE -->
-    <div id="configure-plugin" class="modal fade modal-overflow" tabindex="-1">
+<div id="configure-plugin" class="modal fade bs-modal-lg" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
 
-        <div class="modal-header">
-            <button type="button" class="close configure-plugin-close" data-dismiss="modal" aria-hidden="true"></button>
-            <h2 class="modal-title"><i class="icon-puzzle font-dark"></i> Plugin Info</h2>
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+                <h2 class="modal-title"><i class="icon-puzzle font-dark"></i> Plugin Info</h2>
+            </div>
+            <div class="modal-body" id="configure-plugin-body">
+                <!-- Dynamically generated content -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-dismiss="modal" class="btn btn-default dark">Close</button>
+            </div>
         </div>
-        <div class="modal-body" id="configure-plugin-body">
-            <!-- Dynamically generated content -->
-        </div>
-        <div class="modal-footer">
-            <button type="button" data-dismiss="modal" class="btn btn-outline dark configure-plugin-close">Close</button>
-        </div>
-
     </div>
+
+</div>
 <!-- END PLUGIN INFO AND CONFIGURE -->
 
 {% end %}

@@ -188,6 +188,9 @@ class PluginsHandler(object, metaclass=SingletonType):
             # Loop over
             for plugin in repo_data.get("plugins", []):
                 plugin["url"] = "{0}/{1}/{1}-{2}.zip".format(repo_data_directory, plugin.get('id'), plugin.get('version'))
+                # If no icon is provide, set a default
+                if not plugin["icon"]:
+                    plugin["icon"] = "/assets/global/img/plugin-icon-default.svg"
                 return_list.append(plugin)
         return return_list
 

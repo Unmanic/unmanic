@@ -1,5 +1,8 @@
 /* here you can put your own css to customize and override the theme */
 
+.no-border {
+    border: 0 !important;
+}
 
 .unmanic-file-browser-list-item-folder {
     cursor: pointer;
@@ -54,10 +57,12 @@
 .table-group-actions > span {
     margin-left: 10px;
 }
+
 .table-group-actions > .table-group-action-input {
     margin-left: 10px;
     margin-right: 10px;
 }
+
 .table-group-actions > .table-group-action-submit {
     margin-left: 10px;
     margin-right: 10px;
@@ -67,7 +72,7 @@ tr.child > td.child {
     text-align: left;
 }
 
- img.support-btn-img {
+img.support-btn-img {
     display: initial !important;
     vertical-align: middle;
     height: 22px !important;
@@ -173,7 +178,7 @@ a.support-btn:active {
     2%, 6%, 10%, 14%, 18% {
         transform: translate3d(-2px, 0, 0);
     }
-    4%, 8%, 12% , 16% {
+    4%, 8%, 12%, 16% {
         transform: translate3d(2px, 0, 0);
     }
     20% {
@@ -214,10 +219,26 @@ a.support-btn:active {
     font-size: 22px;
     font-weight: 400;
     color: #4db3a5;
-    -webkit-border-radius: 7px 7px 0 0;
-    -moz-border-radius: 7px 7px 0 0;
-    -ms-border-radius: 7px 7px 0 0;
-    -o-border-radius: 7px 7px 0 0;
-    border-radius: 7px 7px 0 0;
+    -webkit-border-radius: 7px 7px 7px 7px;
+    -moz-border-radius: 7px 7px 7px 7px;
+    -ms-border-radius: 7px 7px 7px 7px;
+    -o-border-radius: 7px 7px 7px 7px;
+    border-radius: 7px 7px 7px 7px;
+}
+
+.modal-xl {
+    width: 98%;
+}
+
+@media (min-width: 992px) {
+    .modal-xl {
+        width: 900px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .modal-xl {
+        width: 1100px;
+    }
 }
 

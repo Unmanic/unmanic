@@ -165,12 +165,12 @@ const fetchFileBrowserTemplate = function (params, callbackSuccess) {
 })(jQuery);
 
 const updateFileBrowserHTML = function (data) {
-    $("#unmanic-file-browser-body").empty();
-    $("#unmanic-file-browser-body").append(data);
+    $("#unmanic-filebrowser-popup").empty();
+    $("#unmanic-filebrowser-popup").append(data);
     $(this).updateFileBrowser();
 };
 const generateFileBrowserPopupContent = function (input_field, list_type, title) {
-    $("#unmanic-file-browser-body").empty();
+    $("#unmanic-filebrowser-popup").empty();
     const current_path = $('input[name ="' + input_field + '"]').val();
     const params = {
         current_path: current_path,

@@ -48,10 +48,6 @@ License: You must have a valid license purchased only from themeforest(the above
     <!-- END GLOBAL MANDATORY STYLES -->
     <!-- BEGIN PAGE LEVEL PLUGINS -->
 
-    {# Template - Popup Models #}
-    <link href="/assets/global/plugins/bootstrap-modal/css/bootstrap-modal-bs3patch.css" rel="stylesheet" type="text/css"/>
-    <link href="/assets/global/plugins/bootstrap-modal/css/bootstrap-modal.css" rel="stylesheet" type="text/css"/>
-
     {# Template - Lock #}
     <link href="/assets/pages/css/lock.min.css" rel="stylesheet" type="text/css"/>
 
@@ -120,7 +116,6 @@ License: You must have a valid license purchased only from themeforest(the above
                                     </span>
                                 </a>
                             </div>
-                            {% include "./global/support-future-development.html" %}
                             {% elif session.level > 0 %}
                             <button type="button" class="btn btn-sm dropdown-toggle" data-toggle="dropdown"
                                     data-hover="dropdown" data-close-others="true">
@@ -184,6 +179,7 @@ License: You must have a valid license purchased only from themeforest(the above
         <div class="page-content" {% if handler.name != 'settings' %}style="padding-top:30px"{% end %} >
             <!-- BEGIN PAGE BASE CONTENT -->
             {% block content %}{% end %}
+            {% include "./global/support-future-development.html" %}
             <!-- END PAGE BASE CONTENT -->
         </div>
         <!-- BEGIN FOOTER -->
@@ -222,9 +218,6 @@ License: You must have a valid license purchased only from themeforest(the above
 <!-- END CORE PLUGINS -->
 <!-- BEGIN PAGE LEVEL PLUGINS -->
 {% block plugins %}{% end %}
-{# Template - Popup Models #}
-<script src="/assets/global/plugins/bootstrap-modal/js/bootstrap-modalmanager.js" type="text/javascript"></script>
-<script src="/assets/global/plugins/bootstrap-modal/js/bootstrap-modal.js" type="text/javascript"></script>
 {# Handlebars #}
 <script src="/assets/global/plugins/handlebars/handlebars.js" type="text/javascript"></script>
 <!-- END PAGE LEVEL PLUGINS -->

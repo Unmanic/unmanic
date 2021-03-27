@@ -38,32 +38,6 @@ from . import plugin_types
 from unmanic.libs import unlogger, common
 
 
-def load_plugin_module(plugin_id, path):
-    """
-    Loads and returns the python module from a given plugin path.
-        All plugins should have a file called "plugin.py".
-
-    :param plugin_id:
-    :param path:
-    :return:
-    """
-    # Set the module name
-    module_name = '{}.plugin'.format(plugin_id)
-
-    # Get main module file
-    plugin_module_path = os.path.join(path, 'plugin.py')
-    # Import the module for this plugin
-    module_spec = importlib.util.spec_from_file_location(module_name, plugin_module_path)
-    plugin_import = importlib.util.module_from_spec(module_spec)
-
-    # Adding the module to sys.modules is optional but it gives us visibility if we need it elsewhere.
-    sys.modules[module_name] = plugin_import
-
-    module_spec.loader.exec_module(plugin_import)
-
-    return plugin_import
-
-
 class PluginExecutor(object):
 
     def __init__(self, plugins_directory=None):
@@ -108,6 +82,37 @@ class PluginExecutor(object):
         plugin_handler = PluginsHandler()
         return plugin_handler.get_plugin_list_filtered_and_sorted(order=self.plugin_sort_order, enabled=True)
 
+    def __load_plugin_module(self, plugin_id, path):
+        """
+        Loads and returns the python module from a given plugin path.
+            All plugins should have a file called "plugin.py".
+
+        :param plugin_id:
+        :param path:
+        :return:
+        """
+        # Set the module name
+        module_name = '{}.plugin'.format(plugin_id)
+
+        # Get main module file
+        plugin_module_path = os.path.join(path, 'plugin.py')
+
+        try:
+            # Import the module for this plugin
+            module_spec = importlib.util.spec_from_file_location(module_name, plugin_module_path)
+            plugin_import = importlib.util.module_from_spec(module_spec)
+
+            # Adding the module to sys.modules is optional but it gives us visibility if we need it elsewhere.
+            sys.modules[module_name] = plugin_import
+
+            module_spec.loader.exec_module(plugin_import)
+
+            return plugin_import
+        except Exception as e:
+            self._log("Exception encountered while importing module '{}'".format(plugin_id), message2=str(e),
+                      level="exception")
+            return None
+
     @staticmethod
     def default_runner(data):
         return data
@@ -126,7 +131,7 @@ class PluginExecutor(object):
         plugin_path = self.__get_plugin_directory(plugin_id)
 
         # Load this plugin module
-        plugin_module = load_plugin_module(plugin_id, plugin_path)
+        plugin_module = self.__load_plugin_module(plugin_id, plugin_path)
 
         for plugin_type in self.get_all_plugin_types():
             # Get the called runner function for the given plugin type
@@ -167,7 +172,7 @@ class PluginExecutor(object):
             plugin_path = self.__get_plugin_directory(plugin_id)
 
             # Load this plugin module
-            plugin_module = load_plugin_module(plugin_id, plugin_path)
+            plugin_module = self.__load_plugin_module(plugin_id, plugin_path)
 
             # Check if this module contains the given plugin type runner function
             if hasattr(plugin_module, plugin_runner):
@@ -220,7 +225,7 @@ class PluginExecutor(object):
         plugin_path = self.__get_plugin_directory(plugin_id)
 
         # Load this plugin module
-        plugin_module = load_plugin_module(plugin_id, plugin_path)
+        plugin_module = self.__load_plugin_module(plugin_id, plugin_path)
 
         plugin_settings = plugin_module.Settings()
 
@@ -240,7 +245,7 @@ class PluginExecutor(object):
         plugin_path = self.__get_plugin_directory(plugin_id)
 
         # Load this plugin module
-        plugin_module = load_plugin_module(plugin_id, plugin_path)
+        plugin_module = self.__load_plugin_module(plugin_id, plugin_path)
 
         plugin_settings = plugin_module.Settings()
 
@@ -257,15 +262,20 @@ class PluginExecutor(object):
         if plugin_id == self.default_plugin_runner_name:
             return []
 
-        # Get the path for this plugin
-        plugin_path = self.__get_plugin_directory(plugin_id)
+        try:
+            # Get the path for this plugin
+            plugin_path = self.__get_plugin_directory(plugin_id)
 
-        # Load this plugin module
-        plugin_module = load_plugin_module(plugin_id, plugin_path)
+            # Load this plugin module
+            plugin_module = self.__load_plugin_module(plugin_id, plugin_path)
 
-        # Get the called runner function for the given plugin type
-        plugin_type_meta = self.get_plugin_type_meta(plugin_type)
-        errors = plugin_type_meta.run_data_schema_tests(plugin_id, plugin_module, test_data=test_data)
+            # Get the called runner function for the given plugin type
+            plugin_type_meta = self.get_plugin_type_meta(plugin_type)
+            errors = plugin_type_meta.run_data_schema_tests(plugin_id, plugin_module, test_data=test_data)
+        except Exception as e:
+            self._log("Exception while testing plugin runner for plugin '{}'".format(plugin_id), message2=str(e),
+                      level="exception")
+            errors = ["Exception encountered while testing runner - {}".format(str(e))]
 
         return errors
 

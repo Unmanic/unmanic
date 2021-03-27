@@ -108,6 +108,12 @@ class UnmanicLogger(object, metaclass=SingletonType):
             # Add handler
             self._logger.addHandler(self._file_handler)
 
+    def disable_file_handler(self):
+        # Set the log level of the stream handle back to info
+        self._stream_handler.setLevel(logging.INFO)
+        # Remove handler
+        self._logger.removeHandler(self._file_handler)
+
     def setup_logger(self, settings):
         # Set/Update our settings
         self._settings = settings

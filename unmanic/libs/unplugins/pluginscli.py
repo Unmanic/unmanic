@@ -105,7 +105,8 @@ class PluginsCLI(object):
         if not plugins_directory:
             plugins_directory = os.path.join(os.path.expanduser("~"), '.unmanic', 'plugins')
         self.plugins_directory = plugins_directory
-        unmanic_logging = unlogger.UnmanicLogger.__call__(False)
+        unmanic_logging = unlogger.UnmanicLogger.__call__()
+        unmanic_logging.disable_file_handler()
         self.logger = unmanic_logging.get_logger(__class__.__name__)
 
     def _log(self, message, message2='', level="info"):
@@ -202,25 +203,33 @@ class PluginsCLI(object):
             # plugin_runners = plugin_executor.get_plugin_runners('worker.process_item')
             print("{1}Testing plugin: '{0}'{2}".format(plugin_result.get("name"), BColours.HEADER, BColours.ENDC))
             plugin_id = plugin_result.get("plugin_id")
+
+            # Test Plugin runners
+            print("  {0}Testing runners{1}".format(BColours.SUBHEADER, BColours.ENDC))
             plugin_types_in_plugin = plugin_executor.get_all_plugin_types_in_plugin(plugin_id)
-            for plugin_type_in_plugin in plugin_types_in_plugin:
-                print("  {0}Testing runners{1}".format(BColours.SUBHEADER, BColours.ENDC))
-                errors = plugin_executor.test_plugin_runner(plugin_id, plugin_type_in_plugin)
-                if errors:
-                    for error in errors:
-                        print("    - {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
-                else:
-                    print("    - {}PASSED{}".format(BColours.OKGREEN, BColours.ENDC))
-                print("  {0}Testing settings{1}".format(BColours.SUBHEADER, BColours.ENDC))
-                errors, plugin_settings = plugin_executor.test_plugin_settings(plugin_id)
-                if errors:
-                    for error in errors:
-                        print("    - {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
-                else:
-                    formatted_plugin_settings = json.dumps(plugin_settings, indent=1)
-                    formatted_plugin_settings = formatted_plugin_settings.replace('\n', '\n' + '                    ')
-                    print("        - {1}Settings: {0}{2}".format(formatted_plugin_settings, BColours.RESULTS, BColours.ENDC))
-                    print("    - {}PASSED{}".format(BColours.OKGREEN, BColours.ENDC))
+            if not plugin_types_in_plugin:
+                error = "No runners found in plugin"
+                print("    - {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
+            else:
+                for plugin_type_in_plugin in plugin_types_in_plugin:
+                    errors = plugin_executor.test_plugin_runner(plugin_id, plugin_type_in_plugin)
+                    if errors:
+                        for error in errors:
+                            print("    - {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
+                    else:
+                        print("    - {}PASSED{}".format(BColours.OKGREEN, BColours.ENDC))
+
+            # Test Plugin settings
+            print("  {0}Testing settings{1}".format(BColours.SUBHEADER, BColours.ENDC))
+            errors, plugin_settings = plugin_executor.test_plugin_settings(plugin_id)
+            if errors:
+                for error in errors:
+                    print("    - {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
+            else:
+                formatted_plugin_settings = json.dumps(plugin_settings, indent=1)
+                formatted_plugin_settings = formatted_plugin_settings.replace('\n', '\n' + '                    ')
+                print("        - {1}Settings: {0}{2}".format(formatted_plugin_settings, BColours.RESULTS, BColours.ENDC))
+                print("    - {}PASSED{}".format(BColours.OKGREEN, BColours.ENDC))
             print()
 
     def main(self, arg):

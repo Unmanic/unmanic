@@ -224,7 +224,7 @@ class PluginExecutor(object):
 
         plugin_settings = plugin_module.Settings()
 
-        return plugin_settings.get_setting(key='all')
+        return plugin_settings.get_setting()
 
     def save_plugin_settings(self, plugin_id, settings):
         """

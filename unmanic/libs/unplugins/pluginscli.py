@@ -39,7 +39,7 @@ from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.unplugins import PluginExecutor
 
 menus = {
-    "main": [
+    "main":          [
         inquirer.List(
             'cli_action',
             message="What would you like to do?",
@@ -56,6 +56,18 @@ menus = {
         inquirer.Text('plugin_id', message="What's the plugin's id"),
     ],
 }
+
+
+class BColours:
+    HEADER = '\033[95m'
+    SUBHEADER = '\033[94m'
+    RESULTS = '\033[96m'
+    OKGREEN = '\033[92m'
+    FAIL = '\033[91m'
+    WARNING = '\033[93m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 
 def print_table(table_data, col_list=None, sep='\uFFFA'):
@@ -188,26 +200,28 @@ class PluginsCLI(object):
         plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
         for plugin_result in plugin_results:
             # plugin_runners = plugin_executor.get_plugin_runners('worker.process_item')
-            print("Testing plugin: '{}'".format(plugin_result.get("name")))
+            print("{1}Testing plugin: '{0}'{2}".format(plugin_result.get("name"), BColours.HEADER, BColours.ENDC))
             plugin_id = plugin_result.get("plugin_id")
             plugin_types_in_plugin = plugin_executor.get_all_plugin_types_in_plugin(plugin_id)
             for plugin_type_in_plugin in plugin_types_in_plugin:
-                print("  Testing runners".format(plugin_result.get("name")))
+                print("  {0}Testing runners{1}".format(BColours.SUBHEADER, BColours.ENDC))
                 errors = plugin_executor.test_plugin_runner(plugin_id, plugin_type_in_plugin)
                 if errors:
                     for error in errors:
-                        print("    - {}".format(error))
+                        print("    - {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
                 else:
-                    print("    - PASSED".format(plugin_id))
-                print("  Testing settings".format(plugin_result.get("name")))
+                    print("    - {}PASSED{}".format(BColours.OKGREEN, BColours.ENDC))
+                print("  {0}Testing settings{1}".format(BColours.SUBHEADER, BColours.ENDC))
                 errors, plugin_settings = plugin_executor.test_plugin_settings(plugin_id)
                 if errors:
                     for error in errors:
-                        print("    - {}".format(error))
+                        print("    - {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
                 else:
-                    print("        - Settings: {}".format(plugin_settings))
-                    print("    - PASSED".format(plugin_id))
-        print()
+                    formatted_plugin_settings = json.dumps(plugin_settings, indent=1)
+                    formatted_plugin_settings = formatted_plugin_settings.replace('\n', '\n' + '                    ')
+                    print("        - {1}Settings: {0}{2}".format(formatted_plugin_settings, BColours.RESULTS, BColours.ENDC))
+                    print("    - {}PASSED{}".format(BColours.OKGREEN, BColours.ENDC))
+            print()
 
     def main(self, arg):
         switcher = {

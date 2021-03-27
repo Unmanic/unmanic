@@ -38,7 +38,6 @@ RUN \
                     ; \
             else \
                 echo "Arch does not support x86 runtime packages. Ignoring"; \
-                sleep 10; \
             fi \
     && \
     echo "**** Cleanup ****" \

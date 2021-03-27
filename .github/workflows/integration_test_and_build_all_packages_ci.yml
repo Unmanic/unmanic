@@ -183,6 +183,15 @@ jobs:
         PY_VERSION=$(cat ./dist/VERSION.txt)
         echo ::set-output name=py_version::${PY_VERSION}
 
+    # Use QEMU to build for other arch
+    - name: Set up QEMU
+      if: success()
+      id: qemu
+      uses: docker/setup-qemu-action@v1
+      with:
+        image: tonistiigi/binfmt:latest
+        platforms: all
+
     # Use docker buildx to build the docker image
     - name: Build the Docker image
       uses: docker/setup-buildx-action@v1
@@ -190,16 +199,6 @@ jobs:
       id: buildx
       with:
         version: latest
-
-    # Cache the build
-    - name: Cache Docker layers
-      uses: actions/cache@v2
-      id: cache
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
 
     # List available build platforms
     - name: Available platforms
@@ -244,8 +243,18 @@ jobs:
 
         echo ::set-output name=docker_image::${DOCKER_IMAGE}
         echo ::set-output name=docker_tags::$(echo ${DOCKER_TAGS} | sed 's/,$//')
-        echo ::set-output name=docker_platforms::linux/amd64
+        echo ::set-output name=docker_platforms::linux/amd64,linux/arm64
         echo ::set-output name=docker_push::${DOCKER_PUSH}
+
+    # Cache the build
+    - name: Cache Docker layers
+      uses: actions/cache@v2
+      id: cache
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
     
     # Login to Docker Hub
     - name: Login to Docker Hub

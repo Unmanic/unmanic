@@ -16,10 +16,9 @@ ENV \
 
 # Install the runtime dependencies
 RUN \
-    echo "**** Install runtime ****" \
+    echo "**** Install runtime packages ****" \
         && apt-get update \
         && apt-get install -y \
-            i965-va-driver \
             libexpat1 \
             libgl1-mesa-dri \
             libglib2.0-0 \
@@ -31,6 +30,15 @@ RUN \
             libxext6 \
             libxml2 \
             vainfo \
+    && \
+    echo "**** Install x86 specific packages ($(uname -m)) ****" \
+        &&  if uname -m | grep -q x86; then \
+                apt-get install -y \
+                    i965-va-driver \
+                    ; \
+            else \
+                echo "Arch does not support x86 runtime packages. Ignoring"; \
+            fi \
     && \
     echo "**** Cleanup ****" \
         && rm -rf \

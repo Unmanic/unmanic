@@ -227,8 +227,8 @@ class Session(object, metaclass=SingletonType):
             if registration_response and registration_response.get("success"):
                 registration_data = registration_response.get("data")
 
-                # Set level from response data
-                self.level = registration_data.get("level")
+                # Set level from response data (default back to 0)
+                self.level = registration_data.get("level", 0)
 
                 # Get user data from response data
                 user_data = registration_data.get('user')

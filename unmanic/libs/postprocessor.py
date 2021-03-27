@@ -191,12 +191,18 @@ class PostProcessor(threading.Thread):
                 if errors:
                     self._log("Error while running postprocessor file movement '{}' on file '{}'".format(
                         plugin_module.get('plugin_id'), cache_path), errors, level="error")
-                    # Dont execute this runner. It failed
+                    # Don't execute this runner. It failed
                     continue
 
                 # Run plugin and fetch return data
                 plugin_runner = plugin_module.get("runner")
-                data = plugin_runner(data)
+                try:
+                    data = plugin_runner(data)
+                except Exception as e:
+                    self._log("Exception while carrying out plugin runner on postprocessor file movement '{}'".format(
+                        plugin_module.get('plugin_id')), message2=str(e), level="exception")
+                    # Do not continue with this plugin module's loop
+                    continue
 
                 if data.get('copy_file'):
                     # Copy the file
@@ -248,14 +254,19 @@ class PostProcessor(threading.Thread):
             # Test return data against schema and ensure there are no errors
             errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.task_result', data)
             if errors:
-                self._log("Error while running postprocessor file movement '{}' on file '{}'".format(
+                self._log("Error while running postprocessor task result'{}' on file '{}'".format(
                     plugin_module.get('plugin_id'), cache_path), errors, level="error")
-                # Dont execute this runner. It failed
+                # Don't execute this runner. It failed
                 continue
 
             # Run plugin and fetch return data
             plugin_runner = plugin_module.get("runner")
-            plugin_runner(data)
+            try:
+                plugin_runner(data)
+            except Exception as e:
+                self._log("Exception while carrying out plugin runner on postprocessor task result '{}'".format(
+                    plugin_module.get('plugin_id')), message2=str(e), level="exception")
+                continue
 
         # Cleanup cache files
         task_cache_directory = os.path.dirname(cache_path)

@@ -216,18 +216,18 @@ jobs:
         DOCKER_IMAGE=docker.io/${GITHUB_REPOSITORY,,}
         VERSION_TAG=${GITHUB_REF#refs/*/}
 
-        DOCKER_TAGS=""
+        DOCKER_TAGS="${DOCKER_IMAGE}:test"
         if [[ ${VERSION_TAG%/merge} == 'master' ]]; then
-          DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_IMAGE}:latest"
+          DOCKER_TAGS="${DOCKER_TAGS},${DOCKER_IMAGE}:latest"
         elif [[ ${VERSION_TAG%/merge} == 'staging' ]]; then
-          DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_IMAGE}:staging"
+          DOCKER_TAGS="${DOCKER_TAGS},${DOCKER_IMAGE}:staging"
         elif [[ ${VERSION_TAG%/merge} =~ "dev-"* ]]; then
-          DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_IMAGE}:${VERSION_TAG%/merge}"
+          DOCKER_TAGS="${DOCKER_TAGS},${DOCKER_IMAGE}:${VERSION_TAG%/merge}"
         fi
         if [[ ${GITHUB_REF} == refs/tags/* ]]; then
           VERSION=${GITHUB_REF#refs/tags/}
           if [[ ${VERSION} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}[-\w]*$ ]]; then
-            DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_IMAGE}:${VERSION}"
+            DOCKER_TAGS="${DOCKER_TAGS},${DOCKER_IMAGE}:${VERSION}"
           fi
         fi
 
@@ -256,19 +256,39 @@ jobs:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: echo "${DOCKER_PASSWORD}" | docker login --username "${{ steps.prepare.outputs.docker_username }}" --password-stdin docker.io
 
-    # Run the buildx command
-    - name: Run Buildx
+    # # Run the buildx command
+    # - name: Run Buildx
+    #   if: success()
+    #   run: |
+    #     echo  "Platform targets: ${{ steps.prepare.outputs.docker_platforms }}"
+    #     docker buildx build \
+    #       --pull \
+    #       --cache-from "type=local,src=/tmp/.buildx-cache" \
+    #       --cache-to "type=local,dest=/tmp/.buildx-cache" \
+    #       --output type=image,name=${{ steps.prepare.outputs.docker_image }},push=${{ steps.prepare.outputs.docker_push }} \
+    #       --platform ${{ steps.prepare.outputs.docker_platforms }} \
+    #       ${{ steps.prepare.outputs.docker_tags }} \
+    #       --file docker/Dockerfile .
+    
+    # Run docker build and push
+    - name: Docker Build and Push
       if: success()
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        platforms: ${{ steps.prepare.outputs.docker_platforms }}
+        push: ${{ steps.prepare.outputs.docker_push }}
+        tags: |
+          ${{ steps.prepare.outputs.docker_tags }}
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new
+    # Temp fix
+    # https://github.com/docker/build-push-action/issues/252
+    # https://github.com/moby/buildkit/issues/1896
+    - name: Move cache
+      if: always()
       run: |
-        echo  "Platform targets: ${{ steps.buildx.outputs.docker_platforms }}"
-        docker buildx build \
-          --pull \
-          --cache-from "type=local,src=/tmp/.buildx-cache" \
-          --cache-to "type=local,dest=/tmp/.buildx-cache" \
-          --output type=image,name=${{ steps.prepare.outputs.docker_image }},push=${{ steps.prepare.outputs.docker_push }} \
-          --platform ${{ steps.prepare.outputs.docker_platforms }} \
-          ${{ steps.prepare.outputs.docker_tags }} \
-          --file docker/Dockerfile .
+        if [ -e /tmp/.buildx-cache-new ]; then rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache; fi
 
   build_pypi:
 

@@ -204,7 +204,13 @@ class WorkerThread(threading.Thread):
 
             # Run plugin and fetch return data
             plugin_runner = plugin_module.get("runner")
-            data = plugin_runner(data)
+            try:
+                data = plugin_runner(data)
+            except Exception as e:
+                self._log("Exception while carrying out plugin runner on worker process '{}'".format(
+                    plugin_module.get('plugin_id')), message2=str(e), level="exception")
+                # Skip this plugin module's loop
+                continue
             self._log("Worker process '{}' file in".format(plugin_module.get('plugin_id')), data.get("file_in"), level='debug')
             self._log("Worker process '{}' file out".format(plugin_module.get('plugin_id')), data.get("file_out"),
                       level='debug')

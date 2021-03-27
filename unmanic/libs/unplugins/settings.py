@@ -89,7 +89,7 @@ class PluginSettings(object, metaclass=SingletonType):
             if key in plugin_settings:
                 self.settings_configured[key] = plugin_settings.get(key)
 
-    def get_setting(self, key='all'):
+    def get_setting(self, key=None):
         """
         Fetch a single configuration value, or, when passed "all" as the key argument,
         return the full configuration dictionary.
@@ -100,7 +100,7 @@ class PluginSettings(object, metaclass=SingletonType):
         # First import settings
         self.__import_configured_settings()
 
-        if key == 'all':
+        if key is None:
             return self.settings_configured
         else:
             return self.settings_configured.get(key)

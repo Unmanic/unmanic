@@ -86,6 +86,11 @@ class PluginType(object):
         :return:
         """
         errors = []
+        if not isinstance(result_data, dict):
+            # This runner function is not returning anything
+            error = "Plugin '{0} - {1}()' has failed to return any output data.".format(plugin_id, plugin_runner, data_tree)
+            errors.append(error)
+            return errors
         for key in data_schema:
             schema_meta = data_schema.get(key)
             if schema_meta.get('required'):

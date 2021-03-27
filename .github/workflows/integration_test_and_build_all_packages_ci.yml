@@ -276,6 +276,7 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: .
+        file: docker/Dockerfile
         platforms: ${{ steps.prepare.outputs.docker_platforms }}
         push: ${{ steps.prepare.outputs.docker_push }}
         tags: |

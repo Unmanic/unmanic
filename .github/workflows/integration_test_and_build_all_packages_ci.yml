@@ -213,7 +213,7 @@ jobs:
       run: |
         echo  "GITHUB_REF:${GITHUB_REF}"
         echo  "GITHUB_REPOSITORY:${GITHUB_REPOSITORY}"
-        DOCKER_IMAGE=docker.io/${GITHUB_REPOSITORY,,}
+        DOCKER_IMAGE=docker.io/josh5/unmanic
         VERSION_TAG=${GITHUB_REF#refs/*/}
 
         DOCKER_TAGS="${DOCKER_IMAGE}:test"

@@ -32,7 +32,7 @@ RUN \
             vainfo \
     && \
     echo "**** Install x86 specific packages ($(uname -m)) ****" \
-        &&  if [[ "${build_arch}" =~ ^x86.* ]]; then \
+        &&  if uname -m | grep -q x86; then \
                 apt-get install -y \
                     i965-va-driver \
                     ; \

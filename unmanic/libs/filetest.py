@@ -121,17 +121,24 @@ class FileTest(object):
             return True
         return False
 
-    def file_in_directory_containing_ignore_lockfile(self):
+    def file_in_unmanic_ignore_lockfile(self):
         """
         Check if folder contains a '.unmanicignore' lockfile
 
         :return:
         """
+        # Get file basename
+        basename = os.path.basename(self.path)
         # Get file parent directory
-        directory = os.path.dirname(self.path)
+        dirname = os.path.dirname(self.path)
         # Check if lockfile (.unmanicignore) exists
-        if os.path.exists(os.path.join(directory, '.unmanicignore')):
-            return True
+        unmanic_ignore_file = os.path.join(dirname, '.unmanicignore')
+        if os.path.exists(unmanic_ignore_file):
+            # Read the file and check for any entry with this file name
+            with open(unmanic_ignore_file) as f:
+                for line in f:
+                    if basename in line:
+                        return True
         return False
 
     def should_file_be_added_to_task_list(self):
@@ -142,7 +149,7 @@ class FileTest(object):
         """
         errors = []
 
-        if self.file_in_directory_containing_ignore_lockfile():
+        if self.file_in_unmanic_ignore_lockfile():
             errors.append("File found in directory containing unmanic ignore file - '{}'".format(self.path))
             return False, errors
 

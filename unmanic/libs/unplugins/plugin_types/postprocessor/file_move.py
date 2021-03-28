@@ -36,6 +36,10 @@ from ..plugin_type_base import PluginType
 class FileMove(PluginType):
     runner = "on_postprocessor_file_movement"
     data_schema = {
+        "source_data":        {
+            "required": True,
+            "type":     dict,
+        },
         "remove_source_file": {
             "required": True,
             "type":     bool,
@@ -54,6 +58,15 @@ class FileMove(PluginType):
         },
     }
     test_data = {
+        'source_data':        {
+            'abspath':          '/library/TEST_FILE.mkv',
+            'basename':         'TEST_FILE.mkv',
+            'bit_rate':         '',
+            'format_long_name': '',
+            'format_name':      '',
+            'size':             '',
+            'duration':         '',
+        },
         'copy_file':          True,
         'file_in':            '/tmp/unmanic/unmanic_file_conversion-1616581079.6339643/TEST_FILE-1616581079.633973.mp4',
         'file_out':           '/library/TEST_FILE.mp4',

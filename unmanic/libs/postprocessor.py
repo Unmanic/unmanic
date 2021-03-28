@@ -172,6 +172,7 @@ class PostProcessor(threading.Thread):
 
             # Set initial data (some fields will be overwritten further down)
             data = {
+                "source_data":        None,
                 'remove_source_file': remove_source_file,
                 'copy_file':          None,
                 "file_in":            None,
@@ -179,6 +180,8 @@ class PostProcessor(threading.Thread):
             }
 
             for plugin_module in plugin_modules:
+                # Always set source_data to the original file's source_data
+                data["source_data"] = source_data
                 # Always set copy_file to True
                 data["copy_file"] = True
                 # Always set file in to cache path

@@ -34,6 +34,7 @@ import time
 import pyinotify
 
 from unmanic.libs import common, ffmpeg, history
+from unmanic.libs.filetest import FileTest
 
 
 class EventProcessor(pyinotify.ProcessEvent):
@@ -79,54 +80,19 @@ class EventProcessor(pyinotify.ProcessEvent):
     def add_path_to_queue(self, pathname):
         self.inotifytasks.put(pathname)
 
-    def file_not_target_format(self, pathname):
-        """
-        Check if file is not the correct format
-
-        :param pathname:
-        :return:
-        """
-        # init FFMPEG handle
-        ffmpeg_settings = self.init_ffmpeg_handle_settings()
-        ffmpeg_handle = ffmpeg.FFMPEGHandle(ffmpeg_settings)
-        # Reset file in
-        ffmpeg_handle.file_in = {}
-        # Check if file matches configured codec and format
-        if not ffmpeg_handle.check_file_to_be_processed(pathname, ffmpeg_settings):
-            if self.settings.get_debugging():
-                self._log("File does not need to be processed - {}".format(pathname))
-            return False
-        return True
-
-    def file_failed_in_history(self, pathname):
-        """
-        Check if file has already failed in history
-
-        :param pathname:
-        :return:
-        """
-        # Fetch historical tasks
-        history_logging = history.History(self.settings)
-        task_results = history_logging.get_historic_tasks_list_with_source_probe(abspath=pathname, task_success=False)
-        if not task_results:
-            # No results were found matching that pathname
-            return False
-        # That pathname was found in the results of failed historic tasks
-        return True
-
     def handle_event(self, event):
-        if self.settings.file_ends_in_allowed_search_extensions(event.pathname):
-            # Add it to the queue
-            if self.file_not_target_format(event.pathname):
-                # Check if file has failed in history.
-                if self.file_failed_in_history(event.pathname):
-                    self._log("Ignoring file due to file found already failed in history - '{}'".format(event.pathname))
-                else:
-                    self.add_path_to_queue(event.pathname)
-            elif self.settings.get_debugging():
-                self._log("Ignoring file due to already correct format - '{}'".format(event.pathname))
-        elif self.settings.get_debugging():
-            self._log("Ignoring file due to incorrect suffix - '{}'".format(event.pathname))
+        # Get full path to file
+        pathname = event.pathname
+
+        # Test file to be added to task list. Add it if required
+        file_test = FileTest(self.settings, pathname)
+        result, errors = file_test.should_file_be_added_to_task_list()
+        # Log any error messages
+        for error in errors:
+            self._log(error)
+        # If file needs to be added, then add it
+        if result:
+            self.add_path_to_queue(pathname)
 
     def process_IN_CLOSE_WRITE(self, event):
         if self.inotify_enabled():

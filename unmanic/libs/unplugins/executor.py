@@ -227,6 +227,10 @@ class PluginExecutor(object):
         # Load this plugin module
         plugin_module = self.__load_plugin_module(plugin_id, plugin_path)
 
+        if not hasattr(plugin_module, 'Settings'):
+            # This plugin does not have a settings class
+            return {}
+
         plugin_settings = plugin_module.Settings()
 
         return plugin_settings.get_setting()
@@ -280,7 +284,7 @@ class PluginExecutor(object):
         return errors
 
     def test_plugin_settings(self, plugin_id):
-        # Dont run a test on the default plugin runner
+        # Don't run a test on the default plugin runner
         if plugin_id == self.default_plugin_runner_name:
             return []
 

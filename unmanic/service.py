@@ -182,27 +182,29 @@ class LibraryScanner(threading.Thread):
         s.register_unmanic(s.get_installation_uuid())
 
 
+def init_db():
+    config_path = common.get_config_dir()
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    database_settings = {
+        "TYPE":           "SQLITE",
+        "FILE":           os.path.join(config_path, 'unmanic.db'),
+        "MIGRATIONS_DIR": os.path.join(app_dir, 'migrations'),
+    }
+    db_connection = unmodels.Database.select_database(database_settings)
+
+    # Run DB migrations
+    migrations = unmodels.Migrations(database_settings)
+    migrations.run_all()
+
+    return db_connection
+
+
 class Service:
 
     def __init__(self):
         self.threads = []
         self.run_threads = True
-
-    def init_db(self):
-        config_path = common.get_config_dir()
-        app_dir = os.path.dirname(os.path.abspath(__file__))
-        database_settings = {
-            "TYPE":           "SQLITE",
-            "FILE":           os.path.join(config_path, 'unmanic.db'),
-            "MIGRATIONS_DIR": os.path.join(app_dir, 'migrations'),
-        }
-        db_connection = unmodels.Database.select_database(database_settings)
-
-        # Run DB migrations
-        migrations = unmodels.Migrations(database_settings)
-        migrations.run_all()
-
-        return db_connection
+        self.db_connection = None
 
     def start_handler(self, data_queues, settings, task_queue):
         main_logger.info("Starting TaskHandler")
@@ -332,11 +334,12 @@ class Service:
 
     def run(self):
         # Init DB
-        db_connection = self.init_db()
-        db_connection.start()
+        if not self.db_connection:
+            self.db_connection = init_db()
+        self.db_connection.start()
 
         # Read settings
-        settings = config.CONFIG(db_connection=db_connection)
+        settings = config.CONFIG(db_connection=self.db_connection)
 
         # Start all threads
         self.start_threads(settings)
@@ -349,7 +352,7 @@ class Service:
 
         # Received term signal. Stop everything
         self.stop_threads()
-        db_connection.stop()
+        self.db_connection.stop()
         main_logger.info("Exit Unmanic")
 
 
@@ -363,9 +366,16 @@ def main():
     args = parser.parse_args()
 
     if args.manage_plugins:
+        # Init the DB connection
+        db_connection = init_db()
+        db_connection.start()
+
         # Run the plugin manager CLI
         plugin_cli = PluginsCLI()
         plugin_cli.run()
+
+        # Stop the DB connection
+        db_connection.stop()
     else:
         # Run the main Unmanic service
         service = Service()

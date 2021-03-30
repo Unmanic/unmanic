@@ -264,7 +264,7 @@ class Task(object):
         """
         try:
             self.task = Tasks.create(abspath=abspath, status='pending')
-            self.task.save()
+            self.save_task()
             self._log("Created new task with ID: {} for {}".format(self.task, abspath), level="debug")
 
             # Save the current settings against this task
@@ -297,11 +297,6 @@ class Task(object):
         except IntegrityError as e:
             self._log("Cancel creating new task for {} - {}".format(abspath, e), level="info")
             return False
-
-    def save_task(self):
-        if not self.task:
-            raise Exception('Unable to dave task. Task has not been set!')
-        self.task.save()
 
     def set_status(self, status):
         """
@@ -344,6 +339,11 @@ class Task(object):
         self.task.ffmpeg_log = ''.join(ffmpeg_log)
         self.save()
 
+    def save_task(self):
+        if not self.task:
+            raise Exception('Unable to save task. Task has not been set!')
+        self.task.save()
+
     def save(self):
         """
         Save task model object
@@ -356,7 +356,7 @@ class Task(object):
             raise Exception('Unable to save Task settings. Task settings has not been set!')
         if not self.source:
             raise Exception('Unable to save Task source. Task source has not been set!')
-        self.task.save()
+        self.save_task()
         self.settings.save()
         self.source.save()
         for stream in self.source.streams:

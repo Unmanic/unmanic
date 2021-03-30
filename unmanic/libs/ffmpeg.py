@@ -577,7 +577,7 @@ class FFMPEGHandle(object):
 
         # Execute command
         self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                        universal_newlines=True)
+                                        universal_newlines=True, errors='replace')
 
         # Reset cmd stdout
         self.ffmpeg_cmd_stdout = []

@@ -32,11 +32,9 @@
 
 import os
 from peewee import *
-from unmanic.libs.unmodels.basemodel import BaseModel
 
-HOME_DIR = os.environ.get('HOME_DIR')
-if HOME_DIR is None:
-    HOME_DIR = os.path.expanduser("~")
+from unmanic.libs import common
+from unmanic.libs.unmodels.basemodel import BaseModel
 
 
 # TODO: Re-order model to match UI layout for easier debugging
@@ -52,7 +50,7 @@ class Settings(BaseModel):
     audio_stream_encoder_cloning = TextField(null=False, default='aac')
     audio_stereo_stream_bitrate = TextField(null=False, default='128k')
     cache_path = TextField(null=False, default='/tmp/unmanic')
-    config_path = TextField(null=False, default=os.path.join(HOME_DIR, '.unmanic', 'config'))
+    config_path = TextField(null=False, default=os.path.join(common.get_home_dir(), '.unmanic', 'config'))
     keep_filename_history = BooleanField(null=False, default=True)
     debugging = BooleanField(null=False, default=False)
     enable_audio_encoding = BooleanField(null=False, default=True)
@@ -61,7 +59,7 @@ class Settings(BaseModel):
     enable_inotify = BooleanField(null=False, default=True)
     enable_video_encoding = BooleanField(null=False, default=True)
     library_path = TextField(null=False, default='/library')
-    log_path = TextField(null=False, default=os.path.join(HOME_DIR, '.unmanic', 'logs'))
+    log_path = TextField(null=False, default=os.path.join(common.get_home_dir(), '.unmanic', 'logs'))
     number_of_workers = IntegerField(null=False, default=3)
     out_container = TextField(null=False, default='matroska')
     remove_subtitle_streams = BooleanField(null=False, default=True)

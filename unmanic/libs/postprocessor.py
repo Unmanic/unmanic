@@ -159,7 +159,9 @@ class PostProcessor(threading.Thread):
         source_data = self.current_task.get_source_data()
         destination_data = self.current_task.get_destination_data()
         # Move file back to original folder and remove source
-        file_move_postprocessing_success = True
+        file_move_processes_success = True
+        # Create a list for filling with destination paths
+        destination_files = []
         if self.current_task.task.success:
 
             # Run a postprocess file movement on the cache file for for each plugin that configures it
@@ -211,6 +213,7 @@ class PostProcessor(threading.Thread):
                     # Copy the file
                     self._log("Copying file {} --> {}".format(data.get('file_in'), data.get('file_out')))
                     shutil.copyfile(data.get('file_in'), data.get('file_out'))
+                    destination_files.append(data.get('file_out'))
 
                     # Run another validation on the copied file to ensure it is still correct
                     copy_valid = self.validate_streams(data.get('file_out'))
@@ -218,12 +221,12 @@ class PostProcessor(threading.Thread):
                         # Something went wrong during that file copy
                         self._log("Copy function failed during postprocessor file movement '{}' on file '{}'".format(
                             plugin_module.get('plugin_id'), cache_path), level='warning')
-                        file_move_postprocessing_success = False
+                        file_move_processes_success = False
 
             # Check if the remove source flag is still True after all plugins have run. If so, we will remove the source file
             if data.get('remove_source_file'):
                 # Only carry out a source removal if the whole postprocess was successful
-                if file_move_postprocessing_success:
+                if file_move_processes_success:
                     self._log("Removing source: {}".format(source_data['abspath']))
                     os.remove(source_data['abspath'])
 
@@ -236,7 +239,7 @@ class PostProcessor(threading.Thread):
                         "Keeping source file '{}'. Not all postprocessor file movement functions completed.".format(
                             source_data['abspath']), level="warning")
 
-            if not file_move_postprocessing_success:
+            if not file_move_processes_success:
                 self._log(
                     "Error while running postprocessor file movement on file '{}'. Not all postprocessor file movement functions completed.".format(
                         cache_path), level="error")
@@ -251,8 +254,11 @@ class PostProcessor(threading.Thread):
 
         for plugin_module in plugin_modules:
             data = {
-                'task_processing_success':          self.current_task.task.success,
-                'file_move_postprocessing_success': file_move_postprocessing_success,
+                "source_data":                 source_data,
+                'task_processing_success':     self.current_task.task.success,
+                'file_move_processes_success': file_move_processes_success,
+                'destination_files':           destination_files,
+
             }
             # Test return data against schema and ensure there are no errors
             errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.task_result', data)
@@ -304,8 +310,9 @@ class PostProcessor(threading.Thread):
                         video_errors = False
                         continue
                     elif self.settings.get_debugging():
-                        self._log("File is the not correct codec {} - {} :: {}".format(self.settings.get_video_codec(), abspath,
-                                                                                       stream['codec_name']))
+                        self._log(
+                            "File is the not correct codec {} - {} :: {}".format(self.settings.get_video_codec(), abspath,
+                                                                                 stream['codec_name']))
                     # TODO: Test duration is the same as src
                     # TODO: Add file checksum from before and after move
                 else:

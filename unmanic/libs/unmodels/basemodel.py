@@ -114,7 +114,8 @@ class Database:
             database = SqliteQueueDatabase(
                 config['FILE'],
                 use_gevent=False,
-                results_timeout=10.0,
+                autostart=False,
+                results_timeout=15.0,
                 pragmas=(
                     ('foreign_keys', 1),
                 )

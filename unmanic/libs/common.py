@@ -39,6 +39,20 @@ import shutil
 import ago
 
 
+def get_home_dir():
+    home_dir = os.environ.get('HOME_DIR')
+    if home_dir is None:
+        home_dir = os.path.expanduser("~")
+    return home_dir
+
+
+def get_config_dir():
+    config_dir = os.environ.get('CONFIG_PATH')
+    if config_dir is None:
+        config_dir = os.path.join(get_home_dir(), '.unmanic', 'config')
+    return config_dir
+
+
 def format_message(message, message2=''):
     message = str(message)
     if message2:

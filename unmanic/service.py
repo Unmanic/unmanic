@@ -39,7 +39,7 @@ import schedule
 import signal
 
 from unmanic import config, metadata
-from unmanic.libs import unlogger, common, eventmonitor, ffmpeg, history
+from unmanic.libs import unlogger, common, eventmonitor, ffmpeg, history, unmodels
 from unmanic.libs.filetest import FileTest
 from unmanic.libs.taskqueue import TaskQueue
 from unmanic.libs.postprocessor import PostProcessor
@@ -188,6 +188,22 @@ class Service:
         self.threads = []
         self.run_threads = True
 
+    def init_db(self):
+        config_path = common.get_config_dir()
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        database_settings = {
+            "TYPE":           "SQLITE",
+            "FILE":           os.path.join(config_path, 'unmanic.db'),
+            "MIGRATIONS_DIR": os.path.join(app_dir, 'migrations'),
+        }
+        db_connection = unmodels.Database.select_database(database_settings)
+
+        # Run DB migrations
+        migrations = unmodels.Migrations(database_settings)
+        migrations.run_all()
+
+        return db_connection
+
     def start_handler(self, data_queues, settings, task_queue):
         main_logger.info("Starting TaskHandler")
         handler = TaskHandler(data_queues, settings, task_queue)
@@ -263,10 +279,7 @@ class Service:
         main_logger.info("SIGTERM Received")
         self.run_threads = False
 
-    def start_threads(self):
-        # Read settings
-        settings = config.CONFIG()
-
+    def start_threads(self, settings):
         # Create our data queues
         data_queues = {
             "library_scanner_triggers": queue.Queue(maxsize=1),
@@ -318,8 +331,15 @@ class Service:
         self.threads = []
 
     def run(self):
+        # Init DB
+        db_connection = self.init_db()
+        db_connection.start()
+
+        # Read settings
+        settings = config.CONFIG(db_connection=db_connection)
+
         # Start all threads
-        self.start_threads()
+        self.start_threads(settings)
 
         # Watch for the term signal
         signal.signal(signal.SIGINT, self.sig_handle)
@@ -329,6 +349,7 @@ class Service:
 
         # Received term signal. Stop everything
         self.stop_threads()
+        db_connection.stop()
         main_logger.info("Exit Unmanic")
 
 

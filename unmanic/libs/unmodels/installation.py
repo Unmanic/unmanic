@@ -30,15 +30,10 @@
 
 """
 
-import os
-
 import uuid as uuid
 from peewee import *
-from unmanic.libs.unmodels.basemodel import BaseModel
 
-HOME_DIR = os.environ.get('HOME_DIR')
-if HOME_DIR is None:
-    HOME_DIR = os.path.expanduser("~")
+from unmanic.libs.unmodels.basemodel import BaseModel
 
 
 class Installation(BaseModel):

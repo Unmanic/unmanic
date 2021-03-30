@@ -43,50 +43,36 @@ try:
 except ImportError:
     JSONDecodeError = ValueError
 
-HOME_DIR = os.environ.get('HOME_DIR')
-if HOME_DIR is None:
-    HOME_DIR = os.path.expanduser("~")
-
-CONFIG_PATH = os.environ.get('CONFIG_PATH')
-if CONFIG_PATH is None:
-    CONFIG_PATH = os.path.join(HOME_DIR, '.unmanic', 'config')
-
 
 class CONFIG(object, metaclass=SingletonType):
     app_version = ''
-
-    # Set the home directory
-    HOME_DIR = HOME_DIR
 
     # Set the default UI Port
     UI_PORT = 8888
 
     # Set default config directory
-    CONFIG_PATH = CONFIG_PATH
+    CONFIG_PATH = common.get_config_dir()
 
     # Set default plugin directory
-    PLUGINS_PATH = os.path.join(HOME_DIR, '.unmanic', 'plugins')
+    PLUGINS_PATH = os.path.join(common.get_home_dir(), '.unmanic', 'plugins')
 
     # Set default db config
     DATABASE = None
 
-    def __init__(self, config_path=None):
+    def __init__(self, config_path=None, db_connection=None):
         # Non config items (objects)
         self.name = "Config"
         self.settings = None
+        self.db_connection = db_connection
 
         # Apply default DB settings
-        self.apply_default_db_settings(config_path)
+        #self.apply_default_db_settings(config_path)
 
         # Import env variables and override all previous settings.
         self.import_settings_from_env()
-        # Read config from file and override all previous settings (this may include the DB location).
-        self.import_settings_from_file(config_path)
-
-        # Run DB migrations
-        self.run_db_migrations()
-        # Init DB connection and read settings
+        # Read settings from database
         self.import_settings_from_db()
+        # TODO: Retire this. It is not needed any longer
         # Finally, re-read config from file and override all previous settings.
         self.import_settings_from_file(config_path)
 
@@ -172,22 +158,13 @@ class CONFIG(object, metaclass=SingletonType):
         :return:
         """
         if not config_path:
-            config_path = os.path.join(self.HOME_DIR, '.unmanic', 'config')
+            config_path = os.path.join(common.get_home_dir(), '.unmanic', 'config')
         app_dir = os.path.dirname(os.path.abspath(__file__))
         self.DATABASE = {
             "TYPE":           "SQLITE",
             "FILE":           os.path.join(config_path, 'unmanic.db'),
             "MIGRATIONS_DIR": os.path.join(app_dir, 'migrations'),
         }
-
-    def run_db_migrations(self):
-        """
-        Run application DB migrations
-
-        :return:
-        """
-        migrations = unmodels.Migrations(self.DATABASE)
-        migrations.run_all()
 
     def import_settings_from_db(self):
         """
@@ -199,7 +176,6 @@ class CONFIG(object, metaclass=SingletonType):
 
         :return:
         """
-        unmodels.Database.select_database(self.DATABASE)
         # Fetch current settings (create it if nothing yet exists)
         db_settings = unmodels.Settings()
         try:
@@ -267,8 +243,6 @@ class CONFIG(object, metaclass=SingletonType):
         settings_file = os.path.join(self.get_config_path(), 'settings.json')
         data = self.get_config_as_dict()
         data = {k.upper(): v for k, v in data.items()}
-        # Append database settings
-        data['DATABASE'] = self.DATABASE
         result = common.json_dump_to_file(data, settings_file)
         if not result['success']:
             for message in result['errors']:

@@ -59,7 +59,7 @@ class FileMove(PluginType):
     }
     test_data = {
         'source_data':        {
-            'abspath':          '/library/TEST_FILE.mkv',
+            'abspath':          '/tmp/TEST_FILE.mkv',
             'basename':         'TEST_FILE.mkv',
             'bit_rate':         '',
             'format_long_name': '',
@@ -69,6 +69,6 @@ class FileMove(PluginType):
         },
         'copy_file':          True,
         'file_in':            '/tmp/unmanic/unmanic_file_conversion-1616581079.6339643/TEST_FILE-1616581079.633973.mp4',
-        'file_out':           '/library/TEST_FILE.mp4',
+        'file_out':           '/tmp/TEST_FILE.mp4',
         'remove_source_file': True
     }

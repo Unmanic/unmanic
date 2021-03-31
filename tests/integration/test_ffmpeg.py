@@ -89,7 +89,7 @@ class TestClass(object):
         unmanic_logging.get_logger()
         # import config
         from unmanic import config
-        self.settings = config.CONFIG(tempfile.mkdtemp())
+        self.settings = config.CONFIG(config_path=tempfile.mkdtemp(prefix='unmanic_tests_'))
         self.settings.set_config_item('debugging', True, save_settings=False)
         ffmpeg_settings = build_ffmpeg_handle_settings(self.settings)
         self.ffmpeg = ffmpeg.FFMPEGHandle(ffmpeg_settings)

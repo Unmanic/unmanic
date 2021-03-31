@@ -86,10 +86,10 @@ class EventProcessor(pyinotify.ProcessEvent):
 
         # Test file to be added to task list. Add it if required
         file_test = FileTest(self.settings, pathname)
-        result, errors = file_test.should_file_be_added_to_task_list()
+        result, issues = file_test.should_file_be_added_to_task_list()
         # Log any error messages
-        for error in errors:
-            self._log(error)
+        for issue in issues:
+            self._log(issue.get('message'))
         # If file needs to be added, then add it
         if result:
             self.add_path_to_queue(pathname)

@@ -31,7 +31,8 @@
 """
 import os
 
-from unmanic.libs import ffmpeg, history
+from unmanic.libs import ffmpeg, history, common, unlogger
+from unmanic.libs.unplugins import PluginExecutor
 
 
 class FileTest(object):
@@ -46,6 +47,12 @@ class FileTest(object):
     def __init__(self, settings, path):
         self.settings = settings
         self.path = path
+        unmanic_logging = unlogger.UnmanicLogger.__call__()
+        self.logger = unmanic_logging.get_logger(__class__.__name__)
+
+    def _log(self, message, message2='', level="info"):
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
 
     def init_ffmpeg_handle_settings(self):
         return {
@@ -147,24 +154,71 @@ class FileTest(object):
 
         :return:
         """
-        errors = []
+        return_value = True
+        file_issues = []
+
+        # Init plugins
+        plugin_executor = PluginExecutor()
+
+        # Run task success plugins
+        plugin_modules = plugin_executor.get_plugin_modules_by_type('postprocessor.task_result')
 
         if self.file_in_unmanic_ignore_lockfile():
-            errors.append("File found in directory containing unmanic ignore file - '{}'".format(self.path))
-            return False, errors
+            file_issues.append({
+                'id':      'unmanicignore',
+                'message': "File found in unmanic ignore file - '{}'".format(self.path),
+            })
+            return_value = False
 
         if not self.file_ends_in_allowed_search_extensions():
-            errors.append("File suffix is not in allowed search extensions - '{}'".format(self.path))
-            return False, errors
+            file_issues.append({
+                'id':      'extension',
+                'message': "File suffix is not in allowed search extensions - '{}'".format(self.path),
+            })
+            return_value = False
 
         # Check if file has failed in history.
         if self.file_failed_in_history():
-            errors.append("File found already failed in history - '{}'".format(self.path))
-            return False, errors
+            file_issues.append({
+                'id':      'blacklisted',
+                'message': "File found already failed in history - '{}'".format(self.path),
+            })
+            return_value = False
 
         # Check if this file is already the correct format:
         if self.file_already_in_target_format():
-            errors.append("File is already in target format - '{}'".format(self.path))
-            return False, errors
+            file_issues.append({
+                'id':      'format',
+                'message': "File is already in target format - '{}'".format(self.path),
+            })
+            return_value = False
 
-        return True, errors
+        # Run tests against plugins
+        for plugin_module in plugin_modules:
+            data = {
+                'path':                      self.path,
+                'issues':                    file_issues,
+                'add_file_to_pending_tasks': return_value,
+            }
+            # Test return data against schema and ensure there are no errors
+            runner_errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'library_management.file_test',
+                                                               data)
+            if runner_errors:
+                self._log(
+                    "Error while running library management file test '{}' on file '{}'".format(plugin_module.get('plugin_id'),
+                                                                                                self.path), runner_errors,
+                    level="error")
+                # Don't execute this runner. It failed
+                continue
+
+            # Run plugin and fetch return data
+            plugin_runner = plugin_module.get("runner")
+            try:
+                plugin_runner(data)
+            except Exception as e:
+                self._log("Exception while carrying out plugin runner on library management file test '{}'".format(
+                    plugin_module.get('plugin_id')), message2=str(e), level="exception")
+                continue
+            pass
+
+        return return_value, file_issues

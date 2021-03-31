@@ -101,6 +101,16 @@ License: You must have a valid license purchased only from themeforest(the above
                         kofiwidget2.draw();</script>
                         <!-- END KOFI SPONSOR BUTTON -->#}
 
+                        <!-- BEGIN DOCUMENTATION LINK -->
+                        <div class="btn-group-red btn-group">
+                            <button type="button" class="btn btn-sm"
+                                    data-toggle="tooltip" title="Documentation"
+                                    onclick="window.open('https://docs.unmanic.app/', '_blank')">
+                                <i class="fa fa-question"></i>
+                            </button>
+                        </div>
+                        <!-- END DOCUMENTATION LINK -->
+
                         <!-- BEGIN SESSION STATUS -->
                         <div class="btn-group-img btn-group">
                             {% if session.level == 0 %}
@@ -122,6 +132,13 @@ License: You must have a valid license purchased only from themeforest(the above
                                 <span>Hi, {{ escape(session.name) }}</span>
                                 <img src="{{ escape(session.picture_uri) }}" alt="">
                             </button>
+                            {#<ul class="dropdown-menu-v2" role="menu">
+                                <li>
+                                    <a href="https://docs.unmanic.app/" target="_blank">
+                                        <i class="icon-question"></i> Documentation
+                                    </a>
+                                </li>
+                            </ul>#}
                             {% end %}
                         </div>
                         <!-- END SESSION STATUS -->

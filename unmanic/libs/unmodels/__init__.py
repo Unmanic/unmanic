@@ -36,15 +36,20 @@ import warnings
 from .basemodel import BaseModel
 from .basemodel import Database
 from .basemodel import db
-from .historictasks import HistoricTasks
 from .historictaskffmpeglog import HistoricTaskFfmpegLog
 from .historictaskprobe import HistoricTaskProbe
 from .historictaskprobestreams import HistoricTaskProbeStreams
+from .historictasks import HistoricTasks
 from .historictasksettings import HistoricTaskSettings
+from .installation import Installation
 from .migrations import Migrations
-from .plugins import Plugins
 from .pluginrepos import PluginRepos
+from .plugins import Plugins
 from .settings import Settings
+from .taskprobe import TaskProbe
+from .taskprobestreams import TaskProbeStreams
+from .tasks import Tasks
+from .tasksettings import TaskSettings
 
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
 
@@ -52,13 +57,18 @@ __all__ = (
     'BaseModel',
     'Database',
     'db',
-    'HistoricTasks',
     'HistoricTaskFfmpegLog',
     'HistoricTaskProbe',
     'HistoricTaskProbeStreams',
+    'HistoricTasks',
     'HistoricTaskSettings',
+    'Installation',
     'Migrations',
-    'Plugins',
     'PluginRepos',
+    'Plugins',
     'Settings',
+    'TaskProbe',
+    'TaskProbeStreams',
+    'Tasks',
+    'TaskSettings',
 )

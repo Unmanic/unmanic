@@ -37,6 +37,8 @@ import tempfile
 
 import pytest
 
+from unmanic.libs.unmodels import Settings, Tasks, TaskSettings, TaskProbe, TaskProbeStreams, Plugins
+
 try:
     from unmanic.libs import unlogger, foreman, task, taskhandler
 except ImportError:
@@ -74,9 +76,28 @@ class TestClass(object):
         # sys.path.append(self.project_dir)
         self.logging = unlogger.UnmanicLogger.__call__(False)
         self.logging.get_logger()
+
+        # Create temp config path
+        config_path = tempfile.mkdtemp(prefix='unmanic_tests_')
+
+        # Create connection to a test DB
+        from unmanic.libs import unmodels
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        database_settings = {
+            "TYPE":           "SQLITE",
+            "FILE":           os.path.join(config_path, 'unmanic.db'),
+            "MIGRATIONS_DIR": os.path.join(app_dir, 'migrations'),
+        }
+        self.db_connection = unmodels.Database.select_database(database_settings)
+
+        # Start the database connection
+        self.db_connection.start()
+
+        self.db_connection.create_tables([Settings, Tasks, TaskSettings, TaskProbe, TaskProbeStreams, Plugins])
+
         # import config
         from unmanic import config
-        self.settings = config.CONFIG(tempfile.mkdtemp())
+        self.settings = config.CONFIG(config_path=config_path, db_connection=self.db_connection)
         self.settings.set_config_item('debugging', True, save_settings=False)
 
         # Create our test queues

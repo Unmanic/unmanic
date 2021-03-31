@@ -14,9 +14,14 @@ var PluginsDatatablesManaged = function () {
     };
 
     var recordDescription = function (oObj) {
-        var html = '';
+        let html = '';
+        let description_text = oObj.description;
+        // Limit description text to 280 characters
+        if (description_text.length > 280) {
+            description_text = description_text.substring(0, 277) + '...';
+        }
         // Wrap the description text
-        html = '<span>' + oObj.description + '</span>';
+        html = '<span>' + description_text + '</span>';
         return html;
     };
 

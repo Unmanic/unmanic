@@ -36,6 +36,7 @@ import tempfile
 
 from tests.support_.test_data import data_queues, mock_jobqueue_class
 from unmanic.libs.taskhandler import TaskHandler
+from unmanic.libs.unmodels import Settings
 from unmanic.libs.unmodels.tasks import Tasks
 
 
@@ -46,6 +47,8 @@ class TestClass(object):
     Test the TaskHandler object
 
     """
+
+    db_connection = None
 
     def setup_class(self):
         """
@@ -61,9 +64,27 @@ class TestClass(object):
         self.task_queue = mock_jobqueue_class.MockJobQueue()
         self.task_handler = None
 
+        # Create temp config path
+        config_path = tempfile.mkdtemp(prefix='unmanic_tests_')
+
+        # Create connection to a test DB
+        from unmanic.libs import unmodels
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        database_settings = {
+            "TYPE":           "SQLITE",
+            "FILE":           ':memory:',
+            "MIGRATIONS_DIR": os.path.join(app_dir, 'migrations'),
+        }
+        self.db_connection = unmodels.Database.select_database(database_settings)
+
+        # Start the database connection
+        self.db_connection.start()
+
+        self.db_connection.create_tables([Settings, Tasks])
+
         # import config
         from unmanic import config
-        self.settings = config.CONFIG(tempfile.mkdtemp())
+        self.settings = config.CONFIG(config_path=config_path, db_connection=self.db_connection)
         self.settings.set_config_item('debugging', True, save_settings=False)
 
     def teardown_class(self):
@@ -73,7 +94,8 @@ class TestClass(object):
 
         :return:
         """
-        pass
+        # Stop the database connection
+        self.db_connection.stop()
 
     def setup_method(self):
         """

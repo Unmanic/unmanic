@@ -24,3 +24,12 @@ Handlebars.registerHelper('breaklines', function(text) {
     text = text.replace(/(\r\n|\n|\r)/gm, '<br>');
     return new Handlebars.SafeString(text);
 });
+Handlebars.registerHelper('bbcode', function (text) {
+    let result = XBBCODE.process({
+        text: text,
+        removeMisalignedTags: false,
+        addInLineBreaks: false
+    });
+    text = result.html.replace(/(\r\n|\n|\r)/gm, '<br>');
+    return new Handlebars.SafeString(text);
+});

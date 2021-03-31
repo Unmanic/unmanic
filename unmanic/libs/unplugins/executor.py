@@ -261,6 +261,23 @@ class PluginExecutor(object):
 
         return save_result
 
+    def get_plugin_changelog(self, plugin_id):
+        """
+        Returns a list of lines from the plugin's changelog
+
+        :param plugin_id:
+        :return:
+        """
+        changelog = []
+        # Get the path for this plugin
+        plugin_path = self.__get_plugin_directory(plugin_id)
+        plugin_changelog = os.path.join(plugin_path, 'changelog.txt')
+        if os.path.exists(plugin_changelog):
+            with open(plugin_changelog, 'r') as f:
+                changelog = f.readlines()
+
+        return changelog
+
     def test_plugin_runner(self, plugin_id, plugin_type, test_data=None):
         # Dont run a test on the default plugin runner
         if plugin_id == self.default_plugin_runner_name:

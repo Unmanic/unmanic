@@ -301,6 +301,17 @@ class ApiPluginsHandler(BaseApiHandler):
                 )
         return settings
 
+    def __get_plugin_changelog(self, plugin_id):
+        """
+        Given a plugin ID , return a list of lines read from the plugin's changelog
+
+        :param plugin_id:
+        :return:
+        """
+        # Fetch plugin changelog
+        plugin_executor = PluginExecutor()
+        return plugin_executor.get_plugin_changelog(plugin_id)
+
     def __get_plugin_info_and_settings(self, plugin_id):
         plugins = PluginsHandler()
 
@@ -334,6 +345,7 @@ class ApiPluginsHandler(BaseApiHandler):
             }
             if plugin_installed:
                 plugin_data['settings'] = self.__get_plugin_settings(plugin_result.get('plugin_id'))
+                plugin_data['changelog'] = "".join(self.__get_plugin_changelog(plugin_result.get('plugin_id')))
             break
 
         return plugin_data

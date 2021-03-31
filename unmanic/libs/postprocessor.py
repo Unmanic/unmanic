@@ -58,14 +58,6 @@ class PostProcessError(Exception):
         self.result_var = result_var
 
 
-class PostProcessError(Exception):
-    def __init___(self, expected_var, result_var):
-        Exception.__init__(self, "Errors found during post process checks. Expected {}, but instead found {}".format(
-            expected_var, result_var))
-        self.expected_var = expected_var
-        self.result_var = result_var
-
-
 class PostProcessor(threading.Thread):
     """
     PostProcessor

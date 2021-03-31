@@ -84,7 +84,7 @@ class CONFIG(object, metaclass=SingletonType):
         self.setup_unmanic_logger()
 
         # Save settings
-        if self.settings:
+        if self.settings and self.db_connection:
             self.settings.save()
 
         # TODO: Remove temporary beta data migration
@@ -178,12 +178,16 @@ class CONFIG(object, metaclass=SingletonType):
         """
         # Fetch current settings (create it if nothing yet exists)
         db_settings = unmodels.Settings()
-        try:
-            # Fetch a single row (get() will raise DoesNotExist exception if no results are found)
-            self.settings = db_settings.select().limit(1).get()
-        except:
-            # Create settings (defaults will be applied)
-            self.settings = db_settings.create()
+        # If there is no DB connection just create an empty settings model
+        if self.db_connection:
+            try:
+                # Fetch a single row (get() will raise DoesNotExist exception if no results are found)
+                self.settings = db_settings.select().limit(1).get()
+            except:
+                # Create settings (defaults will be applied)
+                self.settings = db_settings.create()
+        else:
+            self.settings = self.get_empty_settings_model()
         # Check if key is a valid setting
         current_settings = self.get_config_as_dict()
         for setting in current_settings:
@@ -306,7 +310,7 @@ class CONFIG(object, metaclass=SingletonType):
             # Save settings (if requested)
             if save_settings:
                 self.write_settings_to_file()
-                if self.settings:
+                if self.settings and self.db_connection:
                     self.settings.save()
 
     def allowed_search_extensions(self):

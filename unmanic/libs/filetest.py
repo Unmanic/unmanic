@@ -30,6 +30,7 @@
 
 """
 import os
+import mimetypes
 
 from unmanic.libs import ffmpeg, history, common, unlogger
 from unmanic.libs.unplugins import PluginExecutor
@@ -81,6 +82,17 @@ class FileTest(object):
 
         :return:
         """
+        # Only run this check against video/audio/image MIME types
+        mimetypes.init()
+        file_type = mimetypes.guess_type(self.path)[0]
+        # If the file has no MIME type then it cannot be tested
+        if file_type is None:
+            return False
+        # Make sure the MIME type is either audio, video or image
+        file_type_category = file_type.split('/')[0]
+        if file_type_category not in ['audio', 'video', 'image']:
+            return False
+
         # init FFMPEG handle
         ffmpeg_settings = self.init_ffmpeg_handle_settings()
         ffmpeg_handle = ffmpeg.FFMPEGHandle(ffmpeg_settings)

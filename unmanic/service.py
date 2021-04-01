@@ -183,19 +183,29 @@ class LibraryScanner(threading.Thread):
 
 
 def init_db():
+    # Set paths
     config_path = common.get_config_dir()
     app_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Set database connection settings
     database_settings = {
         "TYPE":           "SQLITE",
         "FILE":           os.path.join(config_path, 'unmanic.db'),
         "MIGRATIONS_DIR": os.path.join(app_dir, 'migrations'),
     }
+
+    # Ensure the config path exists
+    if not os.path.exists(config_path):
+        os.makedirs(config_path)
+
+    # Create database connection
     db_connection = unmodels.Database.select_database(database_settings)
 
-    # Run DB migrations
+    # Run database migrations
     migrations = unmodels.Migrations(database_settings)
     migrations.run_all()
 
+    # Return the database connection
     return db_connection
 
 

@@ -73,7 +73,7 @@ RUN \
 
 # Install NVIDIA Patch
 # REF: https://github.com/keylase/nvidia-patch#docker-support
-ARG NVIDIA_PATCH_VERSION='cca1ab1'
+ARG NVIDIA_PATCH_VERSION='8a4e887'
 RUN \
     echo "**** Fetch NVIDIA Patch ****" \
         && curl -sSLf \

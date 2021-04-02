@@ -312,7 +312,7 @@ class FFMPEGHandle(object):
             correct_video_codec = True
 
         correct_audio_codec = False
-        if settings['enable_audio_encoding']:
+        if settings.get('enable_audio_encoding') and settings.get('enable_audio_stream_transcoding'):
             try:
                 audio_streams_codecs = ""
                 for stream in file_probe['streams']:

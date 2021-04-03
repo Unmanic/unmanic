@@ -253,6 +253,14 @@ class Session(object, metaclass=SingletonType):
             self._log("Exception while registering Unmanic.", str(e), level="debug")
             return False
 
+    def get_sign_out_url(self):
+        """
+        Fetch the application sign out client ID
+
+        :return:
+        """
+        return "{0}/unmanic-logout".format(self.get_site_url())
+
     def get_patreon_login_url(self):
         """
         Fetch the Patreon client ID

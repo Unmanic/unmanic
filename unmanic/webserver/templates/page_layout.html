@@ -58,11 +58,13 @@ License: You must have a valid license purchased only from themeforest(the above
     <link href="/assets/global/plugins/socicon/socicon.css" rel="stylesheet" type="text/css"/>
     <link href="/assets/global/css/components-md.min.css" rel="stylesheet" id="style_components" type="text/css"/>
     <link href="/assets/global/css/plugins-md.min.css" rel="stylesheet" type="text/css"/>
-    <link href="/assets/global/plugins/extendible-bbcode-parser/xbbcode.css?version=2{{ escape(handler.config.read_version()) }}" rel="stylesheet" type="text/css" />
+    <link href="/assets/global/plugins/extendible-bbcode-parser/xbbcode.css?version=2{{ escape(handler.config.read_version()) }}"
+          rel="stylesheet" type="text/css"/>
     <!-- END THEME GLOBAL STYLES -->
     <!-- BEGIN THEME LAYOUT STYLES -->
     <link href="/assets/layouts/layout5/css/layout.min.css" rel="stylesheet" type="text/css"/>
-    <link href="/assets/layouts/layout5/css/custom.css?version={{ escape(handler.config.read_version()) }}" rel="stylesheet" type="text/css"/>
+    <link href="/assets/layouts/layout5/css/custom.css?version={{ escape(handler.config.read_version()) }}" rel="stylesheet"
+          type="text/css"/>
     <!-- END THEME LAYOUT STYLES -->
     <link rel="shortcut icon" href="/assets/favicon.ico"/>
 
@@ -133,13 +135,19 @@ License: You must have a valid license purchased only from themeforest(the above
                                 <span>Hi, {{ escape(session.name) }}</span>
                                 <img src="{{ escape(session.picture_uri) }}" alt="">
                             </button>
-                            {#<ul class="dropdown-menu-v2" role="menu">
-                                <li>
+                            <ul class="dropdown-menu-v2" role="menu">
+                                {#<li>
                                     <a href="https://docs.unmanic.app/" target="_blank">
                                         <i class="icon-question"></i> Documentation
                                     </a>
+                                </li>#}
+                                <li class="divider"></li>
+                                <li>
+                                    <a href="#" class="unmanic-sign-out">
+                                        <i class="icon-key"></i> Sign Out
+                                    </a>
                                 </li>
-                            </ul>#}
+                            </ul>
                             {% end %}
                         </div>
                         <!-- END SESSION STATUS -->

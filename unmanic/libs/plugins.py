@@ -404,7 +404,14 @@ class PluginsHandler(object, metaclass=SingletonType):
 
         return True
 
-    def uninstall_plugins_by_db_table_id(self, plugin_table_ids):
+    def uninstall_plugins_by_db_table_id(self, plugin_table_ids: list):
+        """
+        Remove a Plugin by it's DB table ID column.
+        This will also remove the Plugin directory and all it's contents.
+
+        :param plugin_table_ids:
+        :return:
+        """
         self._log("Uninstall plugins '{}'".format(plugin_table_ids), level='debug')
 
         # Fetch records

@@ -10,20 +10,22 @@ $(".login-with-patreon").click(function (e) {
                 let current_uri = window.location.origin + "/dashboard/?ajax=login";
                 let uuid = data.uuid;
                 let url = data.data.url;
-                let form = $('<form action="' + url + '" method="post">' +
-                    '<input type="text" name="uuid" value="' + uuid + '" />' +
-                    '<input type="text" name="current_uri" value="' + current_uri + '" />' +
-                    '</form>');
-                console.log(form)
+                let form = $(
+                    '<form action="' + url + '" method="post">' +
+                    '<input type="hidden" name="uuid" value="' + uuid + '" />' +
+                    '<input type="hidden" name="current_uri" value="' + current_uri + '" />' +
+                    '</form>'
+                );
+                console.debug(form);
                 $('body').append(form);
                 form.submit();
             } else {
                 // Our query was unsuccessful
-                console.error('An error occurred while fetching the patreon client ID.');
+                console.error('An error occurred while fetching the patreon login url.');
             }
         },
         error: function (data) {
-            console.error('An error occurred while fetching the patreon client ID.');
+            console.error('An error occurred while fetching the patreon login url.');
         },
     });
 });

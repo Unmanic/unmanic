@@ -63,7 +63,7 @@ class TaskResult(PluginType):
         },
         "source_data": {
             "required": False,
-            "type":     list,
+            "type":     dict,
         },
     }
     test_data = {

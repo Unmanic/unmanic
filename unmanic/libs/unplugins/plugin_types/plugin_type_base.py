@@ -38,9 +38,19 @@ class PluginType(object):
 
     Generic configuration and methods used across all plugin types
     """
+    name = ''
     runner = ''
+    runner_docstring = ''
     data_schema = {}
     test_data = {}
+
+    def plugin_type_name(self):
+        """
+        Return the plugin runner string
+
+        :return:
+        """
+        return self.name
 
     def plugin_runner(self):
         """
@@ -49,6 +59,14 @@ class PluginType(object):
         :return:
         """
         return self.runner
+
+    def plugin_runner_docstring(self):
+        """
+        Return the plugin runner docstring
+
+        :return:
+        """
+        return self.runner_docstring
 
     def get_plugin_runner_function(self, plugin_module):
         plugin_runner = self.plugin_runner()

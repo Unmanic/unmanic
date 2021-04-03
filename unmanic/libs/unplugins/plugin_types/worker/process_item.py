@@ -34,7 +34,21 @@ from ..plugin_type_base import PluginType
 
 
 class ProcessItem(PluginType):
+    name = "Worker - Processing file"
     runner = "on_worker_process"
+    runner_docstring = """
+    Runner function - enables additional configured processing jobs during the worker stages of a task.
+
+    The 'data' object argument includes:
+        exec_ffmpeg             - Boolean, should Unmanic run FFMPEG with the data returned from this plugin.
+        file_probe              - A dictionary object containing the current file probe state.
+        ffmpeg_args             - A list of Unmanic's default FFMPEG args.
+        file_in                 - The source file to be processed by the FFMPEG command.
+        file_out                - The destination that the FFMPEG command will output.
+
+    :param data:
+    :return:
+    """
     data_schema = {
         "exec_ffmpeg": {
             "required": True,

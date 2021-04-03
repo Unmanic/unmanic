@@ -34,7 +34,19 @@ from ..plugin_type_base import PluginType
 
 
 class FileTest(PluginType):
-    runner = "on_library_file_test"
+    name = "Library Management - File test"
+    runner = "on_library_management_file_test"
+    runner_docstring = """
+    Runner function - enables additional actions during the library management file tests.
+
+    The 'data' object argument includes:
+        path                            - String containing the full path to the file being tested.
+        issues                          - List of currently found issues for not processing the file.
+        add_file_to_pending_tasks       - Boolean, is the file currently marked to be added to the queue for processing.
+
+    :param data:
+    :return:
+    """
     data_schema = {
         "path":                      {
             "required": True,

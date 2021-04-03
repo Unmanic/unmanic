@@ -31,7 +31,11 @@
 """
 import json
 import os
+import re
+
 import inquirer
+
+from . import plugin_types
 
 from unmanic import config
 from unmanic.libs import unlogger, common
@@ -53,8 +57,8 @@ menus = {
         ),
     ],
     "create_plugin": [
-        inquirer.Text('plugin_name', message="What's the plugin's name"),
         inquirer.Text('plugin_id', message="What's the plugin's id"),
+        inquirer.Text('plugin_name', message="What's the plugin's name"),
     ],
 }
 
@@ -122,16 +126,45 @@ class PluginsCLI(object):
             print("ERROR! Invalid input.")
             return
 
-        # TODO: Ensure plugin ID has only underscore and a-z, 0-9
+        # Ensure plugin ID has only underscore and a-z, 0-9
+        plugin_details['plugin_id'] = re.sub('[^0-9a-zA-Z]+', '_', plugin_details.get('plugin_id'))
+        # Ensure plugin ID is lower case
+        plugin_details['plugin_id'] = plugin_details.get('plugin_id').lower()
+
+        # Get list of plugin types
+        all_plugin_types = plugin_types.get_all_plugin_types()
+
+        # Build choice selection list from installed plugins
+        plugin_details_by_runner = {}
+        choices = []
+        for plugin_type in all_plugin_types:
+            choices.append(all_plugin_types[plugin_type].get('name'))
+            plugin_details_by_runner[all_plugin_types[plugin_type].get('name')] = all_plugin_types[plugin_type]
+
+        # Generate menu menu
+        print()
+        print('INFO: https://docs.unmanic.app/docs/plugins/writing_plugins/plugin_runner_types')
+        plugin_runners_inquirer = inquirer.List(
+            'selected_plugin',
+            message="Which Plugin runner will be used?",
+            choices=choices,
+        )
+
+        # Prompt for selection of Plugin by ID
+        runner_selection = inquirer.prompt([plugin_runners_inquirer])
+
+        # Fetch plugin type details from selection
+        plugin_type_details = plugin_details_by_runner[runner_selection.get('selected_plugin')]
+        selected_plugin_runner = plugin_type_details.get('runner')
+        selected_plugin_runner_docstring = plugin_type_details.get('runner_docstring')
 
         # Create new plugin path
         new_plugin_path = os.path.join(self.plugins_directory, plugin_details.get('plugin_id'))
         if not os.path.exists(new_plugin_path):
             os.makedirs(new_plugin_path)
 
-        # Touch main python file
-        main_python_file = os.path.join(new_plugin_path, 'plugin.py')
-        plugin_template = [
+        # Create main python file template
+        main_plugin_template = [
             "#!/usr/bin/env python3",
             "# -*- coding: utf-8 -*-",
             "",
@@ -143,13 +176,27 @@ class PluginsCLI(object):
             "",
             ""
         ]
+
+        # Create runner function template
+        runner_template = [
+            'def {}(data):'.format(selected_plugin_runner),
+            '    """{}'.format(selected_plugin_runner_docstring),
+            '    """',
+            '    return data',
+        ]
+
+        # Write above templates to main python file
+        main_python_file = os.path.join(new_plugin_path, 'plugin.py')
         if not os.path.exists(main_python_file):
             with open(main_python_file, 'a') as outfile:
-                for plugin_template_line in plugin_template:
-                    outfile.write("{}\n".format(plugin_template_line))
+                # Write out main template
+                for template_line in main_plugin_template:
+                    outfile.write("{}\n".format(template_line))
+                # Write out runner function template
+                for template_line in runner_template:
+                    outfile.write("{}\n".format(template_line))
 
-        common.touch(os.path.join(new_plugin_path, 'plugin.py'))
-        # Create plugin info.json
+        # Write plugin info.json
         info_file = os.path.join(new_plugin_path, 'info.json')
         plugin_info = {
             "id":          plugin_details.get('plugin_id'),

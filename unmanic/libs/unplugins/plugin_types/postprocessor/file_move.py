@@ -34,7 +34,21 @@ from ..plugin_type_base import PluginType
 
 
 class FileMove(PluginType):
+    name = "Post-processor - File movements"
     runner = "on_postprocessor_file_movement"
+    runner_docstring = """
+    Runner function - configures additional postprocessor file movements during the postprocessor stage of a task.
+
+    The 'data' object argument includes:
+        source_data             - Dictionary containing data pertaining to the original source file.
+        remove_source_file      - Boolean, should Unmanic remove the original source file after all copy operations are complete.
+        copy_file               - Boolean, should Unmanic run a copy operation with the returned data variables.
+        file_in                 - The converted cache file to be copied by the postprocessor.
+        file_out                - The destination file that the file will be copied to.
+
+    :param data:
+    :return:
+    """
     data_schema = {
         "source_data":        {
             "required": True,

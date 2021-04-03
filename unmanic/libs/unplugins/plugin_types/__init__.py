@@ -84,7 +84,9 @@ def get_all_plugin_types():
         for (_, module_name, _) in pkgutil.iter_modules([type_modules_path]):
             instance = grab_module(plugin_type + '.' + module_name)
             return_data = {
+                "name": instance.plugin_type_name(),
                 "runner": instance.plugin_runner(),
+                "runner_docstring": instance.plugin_runner_docstring(),
             }
             return_dic[plugin_type + '.' + module_name] = return_data
 

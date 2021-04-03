@@ -46,6 +46,11 @@ class ApiSessionHandler(BaseApiHandler):
     routes = [
         {
             "supported_methods": ["GET"],
+            "call_method":       "get_sign_out_url",
+            "path_pattern":      r"/api/v1/session/unmanic-sign-out-url",
+        },
+        {
+            "supported_methods": ["GET"],
             "call_method":       "get_patreon_login_url",
             "path_pattern":      r"/api/v1/session/unmanic-patreon-login-url",
         },
@@ -73,6 +78,22 @@ class ApiSessionHandler(BaseApiHandler):
 
     def post(self, path):
         self.action_route()
+
+    def get_sign_out_url(self, *args, **kwargs):
+        uuid = self.session.get_installation_uuid()
+        sign_out_url = self.session.get_sign_out_url()
+        if not sign_out_url:
+            self.write(json.dumps({"success": False}))
+            return
+        else:
+            self.write(json.dumps({
+                "success": True,
+                "uuid":    uuid,
+                "data":    {
+                    "url": sign_out_url,
+                }
+            }))
+            return
 
     def get_patreon_login_url(self, *args, **kwargs):
         uuid = self.session.get_installation_uuid()

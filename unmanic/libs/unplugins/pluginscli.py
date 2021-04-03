@@ -47,6 +47,7 @@ menus = {
                 'Test installed plugins',
                 'List installed plugins',
                 'Create new plugin',
+                'Remove plugin',
                 'Exit',
             ],
         ),
@@ -164,7 +165,6 @@ class PluginsCLI(object):
                 json.dump(plugin_info, outfile, sort_keys=True, indent=4)
 
         # Insert plugin details to DB
-
         try:
             PluginsHandler.write_plugin_data_to_db(plugin_info, new_plugin_path)
         except Exception as e:
@@ -172,6 +172,44 @@ class PluginsCLI(object):
             return
 
         print("Plugin created - '{}'".format((plugin_details.get('plugin_id'))))
+
+    @staticmethod
+    def remove_plugin():
+        # Fetch list of installed plugins
+        plugins = PluginsHandler()
+        order = {
+            "column": 'position',
+            "dir":    'desc',
+        }
+        plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
+
+        # Build choice selection list from installed plugins
+        table_ids = {}
+        choices = []
+        for plugin in plugin_results:
+            choices.append(plugin.get('plugin_id'))
+            table_ids[plugin.get('plugin_id')] = plugin.get('id')
+        # Append a "return" option
+        choices.append('Return')
+
+        # Generate menu menu
+        remove_plugin_inquirer = inquirer.List(
+            'cli_action',
+            message="Which Plugin would you like to remove?",
+            choices=choices,
+        )
+
+        # Prompt for selection of Plugin by ID
+        selection = inquirer.prompt([remove_plugin_inquirer])
+
+        # If the 'Return' option was given, just return to previous menu
+        if selection.get('cli_action') == "Return":
+            return
+
+        # Remove the selected Plugin by ID
+        plugin_table_id = table_ids[selection.get('cli_action')]
+        plugins.uninstall_plugins_by_db_table_id([plugin_table_id])
+        print()
 
     @staticmethod
     def list_installed_plugins():
@@ -237,6 +275,7 @@ class PluginsCLI(object):
             'Test installed plugins': 'test_installed_plugins',
             'List installed plugins': 'list_installed_plugins',
             'Create new plugin':      'create_new_plugins',
+            'Remove plugin':          'remove_plugin',
         }
         function = switcher.get(arg, None)
         if function:

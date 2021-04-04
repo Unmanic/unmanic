@@ -101,6 +101,15 @@ def print_table(table_data, col_list=None, sep='\uFFFA'):
         item = [i[1] if len(i) > 1 else '' for i in row]
 
 
+def install_plugin_requirements(plugin_path):
+    requirements_file = os.path.join(plugin_path, 'requirements.txt')
+    install_target = os.path.join(plugin_path, 'site-packages')
+    if not os.path.exists(requirements_file):
+        return
+    import pip
+    pip.main(['install', '--upgrade', '-r', requirements_file, '--target={}'.format(install_target)])
+
+
 class PluginsCLI(object):
 
     def __init__(self, plugins_directory=None):
@@ -212,6 +221,9 @@ class PluginsCLI(object):
             with open(info_file, 'w') as outfile:
                 json.dump(plugin_info, outfile, sort_keys=True, indent=4)
 
+        # Create requirements.txt file
+        common.touch(os.path.join(new_plugin_path, 'requirements.txt'))
+
         # Insert plugin details to DB
         try:
             PluginsHandler.write_plugin_data_to_db(plugin_info, new_plugin_path)
@@ -244,6 +256,8 @@ class PluginsCLI(object):
             except Exception as e:
                 print("Exception while saving plugin info to DB. - {}".format(str(e)))
                 return
+
+            install_plugin_requirements(plugin_path)
 
     @staticmethod
     def remove_plugin():

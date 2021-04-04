@@ -51,6 +51,7 @@ menus = {
                 'Test installed plugins',
                 'List installed plugins',
                 'Create new plugin',
+                'Reload plugin from disk',
                 'Remove plugin',
                 'Exit',
             ],
@@ -220,6 +221,30 @@ class PluginsCLI(object):
 
         print("Plugin created - '{}'".format((plugin_details.get('plugin_id'))))
 
+    def reload_plugin_from_disk(self):
+        # Fetch list of installed plugins
+        plugins = PluginsHandler()
+        order = {
+            "column": 'position',
+            "dir":    'desc',
+        }
+        plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
+
+        # Build choice selection list from installed plugins
+        for plugin in plugin_results:
+            plugin_path = os.path.join(self.plugins_directory, plugin.get('plugin_id'))
+            # Read plugin info.json
+            info_file = os.path.join(plugin_path, 'info.json')
+            with open(info_file) as json_file:
+                plugin_info = json.load(json_file)
+
+            # Insert plugin details to DB
+            try:
+                PluginsHandler.write_plugin_data_to_db(plugin_info, plugin_path)
+            except Exception as e:
+                print("Exception while saving plugin info to DB. - {}".format(str(e)))
+                return
+
     @staticmethod
     def remove_plugin():
         # Fetch list of installed plugins
@@ -319,10 +344,11 @@ class PluginsCLI(object):
 
     def main(self, arg):
         switcher = {
-            'Test installed plugins': 'test_installed_plugins',
-            'List installed plugins': 'list_installed_plugins',
-            'Create new plugin':      'create_new_plugins',
-            'Remove plugin':          'remove_plugin',
+            'Test installed plugins':  'test_installed_plugins',
+            'List installed plugins':  'list_installed_plugins',
+            'Create new plugin':       'create_new_plugins',
+            'Reload plugin from disk': 'reload_plugin_from_disk',
+            'Remove plugin':           'remove_plugin',
         }
         function = switcher.get(arg, None)
         if function:

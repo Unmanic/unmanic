@@ -82,6 +82,12 @@ class PluginExecutor(object):
         plugin_handler = PluginsHandler()
         return plugin_handler.get_plugin_list_filtered_and_sorted(order=self.plugin_sort_order, enabled=True)
 
+    @staticmethod
+    def __include_plugin_site_packages(path):
+        plugin_site_packages_dir = os.path.join(path, 'site-packages')
+        if os.path.exists(plugin_site_packages_dir) and plugin_site_packages_dir not in sys.path:
+            sys.path.append(plugin_site_packages_dir)
+
     def __load_plugin_module(self, plugin_id, path):
         """
         Loads and returns the python module from a given plugin path.
@@ -96,6 +102,9 @@ class PluginExecutor(object):
 
         # Get main module file
         plugin_module_path = os.path.join(path, 'plugin.py')
+
+        # Add site-packages directory to sys path prior to loading the module
+        self.__include_plugin_site_packages(path)
 
         try:
             # Import the module for this plugin

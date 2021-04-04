@@ -224,6 +224,18 @@ class PluginsCLI(object):
         # Create requirements.txt file
         common.touch(os.path.join(new_plugin_path, 'requirements.txt'))
 
+        # Create Plugin .gitignore
+        plugin_gitignore = os.path.join(new_plugin_path, '.gitignore')
+        gitignore_template = [
+            '**/__pycache__',
+            '*.py[cod]',
+            '**/site-packages',
+        ]
+        if not os.path.exists(plugin_gitignore):
+            with open(plugin_gitignore, 'a') as outfile:
+                for template_line in gitignore_template:
+                    outfile.write("{}\n".format(template_line))
+
         # Insert plugin details to DB
         try:
             PluginsHandler.write_plugin_data_to_db(plugin_info, new_plugin_path)

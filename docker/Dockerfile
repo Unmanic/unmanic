@@ -1,5 +1,5 @@
 FROM lsiobase/ffmpeg:bin as binstage
-FROM lsiobase/ubuntu:bionic
+FROM lsiobase/ubuntu:focal
 LABEL maintainer="Josh.5 <jsunnex@gmail.com>"
 
 
@@ -30,12 +30,22 @@ RUN \
             libxext6 \
             libxml2 \
             vainfo \
+            gpg-agent \
     && \
     echo "**** Install x86 specific packages ($(uname -m)) ****" \
         &&  if uname -m | grep -q x86; then \
-                apt-get install -y \
-                    i965-va-driver \
-                    ; \
+
+            echo "**** Add Intel Graphics repository  ****" \
+            && echo "deb [arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main" > /etc/apt/sources.list.d/intel-graphics.list \
+            && apt-key adv --fetch-keys https://repositories.intel.com/graphics/intel-graphics.key \
+
+            && echo "**** Install Intel Media Drivers  ****" \
+            && apt-get update \
+            && apt-get install -y \
+                i965-va-driver \
+                intel-opencl-icd \
+                intel-level-zero-gpu level-zero \
+                intel-media-va-driver-non-free libmfx1 ; \
             else \
                 echo "Arch does not support x86 runtime packages. Ignoring"; \
             fi \

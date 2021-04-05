@@ -14,15 +14,22 @@ var PluginsDatatablesManaged = function () {
     };
 
     var recordDescription = function (oObj) {
-        let html = '';
         let description_text = oObj.description;
         // Limit description text to 280 characters
         if (description_text.length > 280) {
             description_text = description_text.substring(0, 277) + '...';
         }
+        // Only show first line in multi-line description text.
+        description_text = description_text.split('\n')[0];
+        // Parse BBCode
+        let bbcode_result = XBBCODE.process({
+            text: description_text,
+            removeMisalignedTags: false,
+            addInLineBreaks: false
+        });
+        description_text = bbcode_result.html;
         // Wrap the description text
-        html = '<span>' + description_text + '</span>';
-        return html;
+        return '<span>' + description_text + '</span>';
     };
 
     var recordIcon = function (oObj) {

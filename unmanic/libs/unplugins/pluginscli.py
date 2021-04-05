@@ -230,6 +230,7 @@ class PluginsCLI(object):
             '**/__pycache__',
             '*.py[cod]',
             '**/site-packages',
+            'settings.json',
         ]
         if not os.path.exists(plugin_gitignore):
             with open(plugin_gitignore, 'a') as outfile:

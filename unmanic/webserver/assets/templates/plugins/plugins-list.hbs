@@ -24,9 +24,13 @@
                        data-toggle="modal" data-target="#configure-plugin">
                         <i class="icon-question font-blue"></i>
                     </a>
-                    <a href="javascript:downloadPlugin('{{id}}', '{{@index}}');">
-                        <i class="icon-cloud-download font-green-meadow"></i>
-                    </a>
+                    {{#if installed}}
+                        <i class="icon-check font-green-meadow"></i>
+                    {{else}}
+                        <a href="javascript:downloadPlugin('{{id}}', '{{@index}}');">
+                            <i class="icon-cloud-download font-yellow-gold"></i>
+                        </a>
+                    {{/if}}
                     <div class="tile-desc">
                         <p>
                             Author:

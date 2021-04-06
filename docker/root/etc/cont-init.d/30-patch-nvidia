@@ -1,17 +1,31 @@
 #!/usr/bin/with-contenv bash
-# Take from:
+# Taken from:
 #   https://github.com/keylase/nvidia-patch/blob/master/docker-entrypoint.sh
 #
 
-echo "/patched-lib" > /etc/ld.so.conf.d/000-patched-lib.conf && \
-mkdir -p "/patched-lib" && \
-PATCH_OUTPUT_DIR=/patched-lib /usr/local/bin/patch.sh && \
-cd /patched-lib && \
-for f in * ; do
-    suffix="${f##*.so}"
-    name="$(basename "$f" "$suffix")"
-    [ -h "$name" ] || ln -sf "$f" "$name"
-    [ -h "$name" ] || ln -sf "$f" "$name.1"
-done && \
-ldconfig
-[ "$OLDPWD" ] && cd -
+
+# Install NVIDIA Patch
+# REF: https://github.com/keylase/nvidia-patch#docker-support
+if [[ ! -z ${NVIDIA_PATCH_VERSION} ]]; then
+
+    echo "**** (patch-nvidia) Fetch NVIDIA Patch ****";
+    curl -sSLf \
+        -o /usr/local/bin/patch.sh \
+        "https://raw.githubusercontent.com/keylase/nvidia-patch/${NVIDIA_PATCH_VERSION}/patch.sh"
+    chmod +x /usr/local/bin/patch.sh
+
+    echo "**** (patch-nvidia) Exec NVIDIA Patch ****";
+    echo "/patched-lib" > /etc/ld.so.conf.d/000-patched-lib.conf && \
+    mkdir -p "/patched-lib" && \
+    PATCH_OUTPUT_DIR=/patched-lib /usr/local/bin/patch.sh && \
+    cd /patched-lib && \
+    for f in * ; do
+        suffix="${f##*.so}"
+        name="$(basename "$f" "$suffix")"
+        [ -h "$name" ] || ln -sf "$f" "$name"
+        [ -h "$name" ] || ln -sf "$f" "$name.1"
+    done && \
+    ldconfig
+    [ "$OLDPWD" ] && cd -
+
+fi

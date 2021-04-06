@@ -34,7 +34,7 @@ var PluginsDatatablesManaged = function () {
 
     var recordIcon = function (oObj) {
         var html = '<span>' +
-            '<a href="javascript:;" onclick="showPluginInfo(\'' + oObj.plugin_id + '\');" class="thumbnail" data-target="#configure-plugin" data-toggle="modal" title="Configure">' +
+            '<a href="#" onclick="showPluginInfo(\'' + oObj.plugin_id + '\');" class="thumbnail" data-target="#configure-plugin" data-toggle="modal" title="Configure">' +
             '<img src="' + oObj.icon + '" class="plugin-list-icon">' +
             '</a>' +
             '</span>';
@@ -345,8 +345,7 @@ const fillRepoListTextbox = function (repos_list) {
         repo_list_textbox.val(repo_list_textbox.val() + repo.path + '\n');
     });
     // Unblock textbox
-    unblockElementByID("repos_list_form")
-    console.debug('Repo list textbox populated.');
+    unblockElementByID("repos_list_form");
 };
 
 const fetchCurrentRepoList = function () {
@@ -360,7 +359,7 @@ const fetchCurrentRepoList = function () {
             if (data.success) {
                 // If query was successful
                 fillRepoListTextbox(data.repos);
-                console.log('Repo list updated.');
+                console.debug('Additional repositories list fetched.');
             } else {
                 // Our query was unsuccessful
                 console.error('An error occurred while updating the repo list.');
@@ -380,7 +379,7 @@ const checkReposForUpdates = function (callback) {
         success: function (data) {
             if (data.success) {
                 // If query was successful
-                console.log('Latest repo data downloaded.');
+                console.debug('Latest repo data downloaded.');
             } else {
                 // Our query was unsuccessful
                 console.error('An error occurred while downloading the latest repo data.');
@@ -417,7 +416,7 @@ $('#repos_list_form').submit(function (e) {
                 fillRepoListTextbox(data.repos);
                 fetchCurrentPluginList();
                 checkReposForUpdates();
-                console.log('Repo list updated.');
+                console.debug('Additional repositories list updated.');
             } else {
                 // Our query was unsuccessful
                 console.error('An error occurred while submitting the repo list form.');
@@ -442,7 +441,6 @@ const fillPluginInfo = function (template_data) {
 
     // Unblock element
     unblockElementByID("configure-plugin-body");
-    console.debug('Plugin info populated.');
 };
 
 const showPluginInfo = function (plugin_id) {
@@ -464,7 +462,6 @@ const showPluginInfo = function (plugin_id) {
             if (data.success) {
                 // If query was successful
                 fillPluginInfo(data);
-                console.log('Plugin info updated.');
             } else {
                 // Our query was unsuccessful
                 console.error('An error occurred while updating plugin info.');
@@ -514,7 +511,6 @@ const fillPluginListItems = function (template_data) {
 
     // Unblock textbox
     unblockElementByID("installable_plugins_list");
-    console.debug('Plugin list populated.');
 };
 
 const fetchCurrentPluginList = function () {

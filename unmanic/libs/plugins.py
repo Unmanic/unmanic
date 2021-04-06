@@ -188,6 +188,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             # Loop over
             for plugin in repo_data.get("plugins", []):
                 plugin["url"] = "{0}/{1}/{1}-{2}.zip".format(repo_data_directory, plugin.get('id'), plugin.get('version'))
+                plugin["changelog_url"] = "{0}/{1}/changelog.txt".format(repo_data_directory, plugin.get('id'))
                 # If no icon is provide, set a default
                 if not plugin["icon"]:
                     plugin["icon"] = "/assets/global/img/plugin-icon-default.svg"
@@ -207,6 +208,12 @@ class PluginsHandler(object, metaclass=SingletonType):
             return_list = return_list + plugins_in_repo
 
         return return_list
+
+    def read_remote_changelog_file(self, changelog_url):
+        r = requests.get(changelog_url, timeout=1)
+        if r.status_code == 200:
+            return r.text
+        return ''
 
     def notify_site_of_plugin_install(self, plugin):
         """

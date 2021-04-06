@@ -325,6 +325,9 @@ class ApiPluginsHandler(BaseApiHandler):
             plugin_list = plugins.get_installable_plugins_list()
             for plugin in plugin_list:
                 if plugin.get('id') == plugin_id:
+                    # Create changelog text from remote changelog text file
+                    plugin['changelog'] = plugins.read_remote_changelog_file(plugin.get('changelog_url'))
+                    # Create list as the 'plugin_results' var above will also have returned a list if any results were found.
                     plugin_results = [plugin]
                     break
 
@@ -341,6 +344,7 @@ class ApiPluginsHandler(BaseApiHandler):
                 'tags':        plugin_result.get('tags'),
                 'author':      plugin_result.get('author'),
                 'version':     plugin_result.get('version'),
+                'changelog':   plugin_result.get('changelog', ''),
                 'settings':    [],
             }
             if plugin_installed:

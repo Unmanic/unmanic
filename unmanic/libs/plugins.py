@@ -172,8 +172,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             return repo_data
         return {}
 
-    @staticmethod
-    def get_plugins_in_repo_data(repo_data):
+    def get_plugins_in_repo_data(self, repo_data):
         return_list = []
         if 'repo' in repo_data and 'plugins' in repo_data:
             # Get URLs for plugin downloads
@@ -189,6 +188,21 @@ class PluginsHandler(object, metaclass=SingletonType):
             for plugin in repo_data.get("plugins", []):
                 plugin["url"] = "{0}/{1}/{1}-{2}.zip".format(repo_data_directory, plugin.get('id'), plugin.get('version'))
                 plugin["changelog_url"] = "{0}/{1}/changelog.txt".format(repo_data_directory, plugin.get('id'))
+
+                # Check if plugin is already installed:
+                plugin["installed"] = False
+                plugin_directory = os.path.join(self.settings.get_plugins_path(), plugin.get('id'))
+                if os.path.exists(plugin_directory):
+                    # Read plugin info.json
+                    info_file = os.path.join(plugin_directory, 'info.json')
+                    with open(info_file) as json_file:
+                        plugin_info = json.load(json_file)
+                    local_version = plugin_info.get('version')
+                    # Parse the currently installed version number and check if it matches
+                    remote_version = plugin.get('version')
+                    if local_version == remote_version:
+                        plugin["installed"] = True
+
                 # If no icon is provide, set a default
                 if not plugin["icon"]:
                     plugin["icon"] = "/assets/global/img/plugin-icon-default.svg"

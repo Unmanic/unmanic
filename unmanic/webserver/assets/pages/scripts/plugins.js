@@ -525,6 +525,7 @@ const fetchCurrentPluginList = function () {
                 // If query was successful
                 fillPluginListItems(data);
                 console.log('Plugin list updated.');
+                setPluginsFilter();
             } else {
                 // Our query was unsuccessful
                 console.error('An error occurred while updating the plugin list.');
@@ -594,6 +595,8 @@ const downloadPlugin = function (plugin_id, item_number) {
             if (data.success) {
                 // If query was successful
                 console.log('Plugin installed.');
+                // Fetch latest plugin list
+                fetchCurrentPluginList();
             } else {
                 // Our query was unsuccessful
                 console.error('An error occurred while installing the plugin: "' + plugin_id + '".');

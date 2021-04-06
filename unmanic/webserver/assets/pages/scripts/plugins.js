@@ -193,6 +193,7 @@ var PluginsDatatablesManaged = function () {
                     "infoEmpty": "<span class='seperator'>|</span><span class='font-sm'>No records found</span>",
                     "search": "Search Plugin:",
                     "metronicGroupActions": "",
+                    "metronicAjaxRequestGeneralError": "Could not update table. Please check that Unmanic is still running.",
                     "zeroRecords": "No matching records found",
                     "paginate": {
                         "previous": "Prev",

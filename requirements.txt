@@ -9,5 +9,5 @@ setuptools>=39.0.1
 requests>=2.25.1
 py-cpuinfo>=7.0.0
 gpu-info>=2.0.1
-uuid>=1.30
+shortuuid>=1.0.1
 inquirer>=2.7.0

@@ -342,14 +342,18 @@ class Service:
             main_logger.info("Thread {} has successfully stopped".format(thread['name']))
         self.threads = []
 
-    def run(self):
+    def init_config(self):
         # Init DB
         if not self.db_connection:
             self.db_connection = init_db()
         self.db_connection.start()
 
         # Read settings
-        settings = config.CONFIG(db_connection=self.db_connection)
+        return config.CONFIG(db_connection=self.db_connection)
+
+    def run(self):
+        # Init the configuration
+        settings = self.init_config()
 
         # Start all threads
         self.start_threads(settings)

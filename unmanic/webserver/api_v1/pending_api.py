@@ -31,6 +31,7 @@
 """
 
 import json
+import os
 import time
 import tornado.web
 import tornado.log
@@ -51,7 +52,7 @@ class ApiPendingHandler(BaseApiHandler):
     routes = [
         {
             "supported_methods": ["POST"],
-            "call_method":       "add_tasks_to_pending_tasks_list",
+            "call_method":       "create_task_from_path",
             "path_pattern":      r"/api/v1/pending/add/",
         },
         {
@@ -165,14 +166,36 @@ class ApiPendingHandler(BaseApiHandler):
         """
         pass
 
-    def create_task_from_path(self, pathname):
+    def create_task_from_path(self, *args, **kwargs):
         """
-        TODO: Generate a Task object from a pathname
+        Generate a Task object from a pathname
 
         :param pathname:
         :return:
         """
-        pass
+        request_dict = json.loads(self.request.body)
+
+        # Fetch the abspath name
+        abspath = os.path.abspath(request_dict.get("path"))
+
+        # Ensure path exists
+        if not os.path.exists(abspath):
+            self.write(json.dumps({"success": False}))
+            return
+
+        # Create a new task
+        new_task = task.Task(tornado.log.app_log)
+
+        # Run a probe on the file for current data
+        source_data = common.fetch_file_data_by_path(abspath)
+
+        if not new_task.create_task_by_absolute_path(abspath, self.config, source_data):
+            # If file exists in task queue already this will return false.
+            # Do not carry on.
+            self.write(json.dumps({"success": False}))
+            return
+
+        self.write(json.dumps({"success": True}))
 
     def prepare_filtered_pending_tasks(self, request_dict):
         """

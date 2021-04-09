@@ -48,7 +48,7 @@ class CONFIG(object, metaclass=SingletonType):
     app_version = ''
 
     # Set the default UI Port
-    UI_PORT = 8888
+    UI_PORT = common.get_ui_port()
 
     # Set default config directory
     CONFIG_PATH = common.get_config_dir()
@@ -66,7 +66,7 @@ class CONFIG(object, metaclass=SingletonType):
         self.db_connection = db_connection
 
         # Apply default DB settings
-        #self.apply_default_db_settings(config_path)
+        # self.apply_default_db_settings(config_path)
 
         # Import env variables and override all previous settings.
         self.import_settings_from_env()

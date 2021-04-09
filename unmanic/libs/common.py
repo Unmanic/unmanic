@@ -53,6 +53,13 @@ def get_config_dir():
     return config_dir
 
 
+def get_ui_port():
+    ui_port = os.environ.get('UI_PORT')
+    if ui_port is None:
+        ui_port = 8888
+    return ui_port
+
+
 def format_message(message, message2=''):
     message = str(message)
     if message2:

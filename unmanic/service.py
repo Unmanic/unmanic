@@ -93,11 +93,23 @@ class LibraryScanner(threading.Thread):
     def stop(self):
         self.abort_flag.set()
 
+    def abort_is_set(self):
+        # Check if the abort flag is set
+        if self.abort_flag.is_set():
+            # Return True straight away if it is
+            return True
+
+        # Sleep for a fraction of a second to prevent CPU pinning
+        time.sleep(.1)
+
+        # Return False
+        return False
+
     def run(self):
         # If we have a config set to run a schedule, then start the process.
         # Otherwise close this thread now.
         self._log("Starting LibraryScanner Monitor loop")
-        while not self.abort_flag.is_set():
+        while not self.abort_is_set():
             # Main loop to configure the scheduler
             if int(self.settings.get_schedule_full_scan_minutes()) != self.interval:
                 self.interval = int(self.settings.get_schedule_full_scan_minutes())
@@ -115,7 +127,7 @@ class LibraryScanner(threading.Thread):
                 self.firstrun = False
 
                 # Then loop and wait for the schedule
-                while not self.abort_flag.is_set():
+                while not self.abort_is_set():
 
                     # Check if a manual library scan was triggered
                     try:

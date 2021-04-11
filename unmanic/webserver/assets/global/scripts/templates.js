@@ -33,3 +33,6 @@ Handlebars.registerHelper('bbcode', function (text) {
     text = result.html.replace(/(\r\n|\n|\r)/gm, '<br>');
     return new Handlebars.SafeString(text);
 });
+Handlebars.registerHelper('escape_quotes', function(variable) {
+  return variable.replace(/(['"])/g, '\\$1');
+});

@@ -38,4 +38,4 @@ class Matroska(Containers):
     description = 'Matroska'
     supports_subtitles = True
     # TODO: When user selection of subtitle codec is available, re-order alphabetically
-    subtitle_codecs = ['srt', 'ass', 'ssa', 'subrip']
+    subtitle_codecs = ['srt', 'ass', 'ssa', 'subrip', 'dvbsub', 'dvdsub']

@@ -49,7 +49,7 @@ var PluginsDatatablesManaged = function () {
         } else {
             enabled_html = '<span class="label label-sm label-danger"> Disabled </span>';
         }
-        if (oObj.status.update) {
+        if (oObj.status.update_available) {
             update_html = '<span class="label label-sm label-warning"> update-available </span>';
         } else {
             update_html = '<span class="label label-sm label-primary"> up-to-date </span>';

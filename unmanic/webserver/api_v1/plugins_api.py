@@ -185,8 +185,8 @@ class ApiPluginsHandler(BaseApiHandler):
         for plugin_result in plugin_results:
             # Set plugin status
             plugin_status = {
-                "enabled": plugin_result.get('enabled'),
-                "update":  False,
+                "enabled":          plugin_result.get('enabled'),
+                "update_available": plugin_result.get('update_available'),
             }
             # Set params as required in template
             item = {

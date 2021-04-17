@@ -47,4 +47,5 @@ class Plugins(BaseModel):
     icon = TextField(null=False)
     local_path = TextField(null=False)
     enabled = BooleanField(null=False, default=False)
+    update_available = BooleanField(null=False, default=False)
     position = IntegerField(null=False, default=9999)

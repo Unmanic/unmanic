@@ -202,6 +202,9 @@ class PluginsHandler(object, metaclass=SingletonType):
                     remote_version = plugin.get('version')
                     if local_version == remote_version:
                         plugin["installed"] = True
+                    else:
+                        # There is an update available
+                        self.flag_plugin_for_update_by_id(plugin.get("id"))
 
                 # If no icon is provide, set a default
                 if not plugin["icon"]:
@@ -329,6 +332,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             Plugins.description: plugin.get("description"),
             Plugins.icon:        plugin.get("icon"),
             Plugins.local_path:  plugin_directory,
+            Plugins.update:      False,
         }
         plugin_entry = Plugins.get_or_none(plugin_id=plugin.get("id"))
         if plugin_entry is not None:
@@ -421,6 +425,24 @@ class PluginsHandler(object, metaclass=SingletonType):
             if not record.get('enabled'):
                 continue
             self._log("Failed to disable plugin '{}'".format(record.get('plugin_id')), level='debug')
+            return False
+
+        return True
+
+    def flag_plugin_for_update_by_id(self, plugin_id):
+        self._log("Flagging update available for installed plugin '{}'".format(plugin_id), level='debug')
+        # Disable the matching entries in the table
+        with db.atomic():
+            Plugins.update(update_available=True).where(Plugins.plugin_id == plugin_id).execute()
+
+        # Fetch records
+        records = self.get_plugin_list_filtered_and_sorted(plugin_id=plugin_id)
+
+        # Ensure they are now disabled
+        for record in records:
+            if record.get('update_available'):
+                continue
+            self._log("Failed to flag plugin for update '{}'".format(record.get('plugin_id')), level='debug')
             return False
 
         return True

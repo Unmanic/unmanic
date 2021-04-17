@@ -45,16 +45,17 @@ class ProcessItem(PluginType):
         ffmpeg_args             - A list of Unmanic's default FFMPEG args.
         file_in                 - The source file to be processed by the FFMPEG command.
         file_out                - The destination that the FFMPEG command will output.
+        original_file_path      - The absolute path to the original library file.
 
     :param data:
     :return:
     """
     data_schema = {
-        "exec_ffmpeg": {
+        "exec_ffmpeg":        {
             "required": True,
             "type":     bool,
         },
-        "file_probe":  {
+        "file_probe":         {
             "required": True,
             "type":     dict,
             "children": {
@@ -68,22 +69,26 @@ class ProcessItem(PluginType):
                 },
             },
         },
-        "ffmpeg_args": {
+        "ffmpeg_args":        {
             "required": True,
             "type":     list,
         },
-        "file_in":     {
+        "file_in":            {
             "required": True,
             "type":     str,
         },
-        "file_out":    {
+        "file_out":           {
             "required": True,
+            "type":     str,
+        },
+        "original_file_path": {
+            "required": False,
             "type":     str,
         },
     }
     test_data = {
-        'exec_ffmpeg': True,
-        'ffmpeg_args': [
+        'exec_ffmpeg':        True,
+        'ffmpeg_args':        [
             '-i',
             '/library/TEST_FILE.mkv',
             '-hide_banner',
@@ -124,9 +129,9 @@ class ProcessItem(PluginType):
             '-y',
             '/tmp/unmanic/unmanic_file_conversion-1616571944.7296784/TEST_FILE-1616571944.7296877-WORKING-1.mp4'
         ],
-        'file_in':     '/library/TEST_FILE.mkv',
-        'file_out':    '/tmp/unmanic/unmanic_file_conversion-1616571944.7296784/TEST_FILE-1616571944.7296877-WORKING-1.mp4',
-        'file_probe':  {
+        'file_in':            '/library/TEST_FILE.mkv',
+        'file_out':           '/tmp/unmanic/unmanic_file_conversion-1616571944.7296784/TEST_FILE-1616571944.7296877-WORKING-1.mp4',
+        'file_probe':         {
             'format':  {
                 'bit_rate':    '5536191',
                 'duration':    '4585.462000',
@@ -543,5 +548,6 @@ class ProcessItem(PluginType):
                     'width':               1067
                 }
             ]
-        }
+        },
+        'original_file_path': '/library/TEST_FILE.mkv',
     }

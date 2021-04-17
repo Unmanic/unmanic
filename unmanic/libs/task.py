@@ -327,7 +327,7 @@ class Task(object):
             self.task.success = False
         self.save()
 
-    def set_ffmpeg_log(self, ffmpeg_log):
+    def save_ffmpeg_log(self, ffmpeg_log):
         """
         Sets the task ffmpeg_log
 
@@ -336,7 +336,7 @@ class Task(object):
         """
         if not self.task:
             raise Exception('Unable to set status. Task has not been set!')
-        self.task.ffmpeg_log = ''.join(ffmpeg_log)
+        self.task.ffmpeg_log += ''.join(ffmpeg_log)
         self.save()
 
     def save_task(self):

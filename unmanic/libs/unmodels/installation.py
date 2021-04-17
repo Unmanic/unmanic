@@ -30,7 +30,7 @@
 
 """
 
-import shortuuid
+import uuid
 from peewee import *
 
 from unmanic.libs.unmodels.basemodel import BaseModel
@@ -42,4 +42,4 @@ class Installation(BaseModel):
 
     All application installation data
     """
-    uuid = UUIDField(null=False, default=shortuuid.uuid, unique=True)
+    uuid = UUIDField(null=False, default=uuid.uuid4, unique=True)

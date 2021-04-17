@@ -165,7 +165,7 @@ class PostProcessor(threading.Thread):
                 remove_source_file = True
 
             # Set initial data (some fields will be overwritten further down)
-            data = {
+            initial_data = {
                 "source_data":        None,
                 'remove_source_file': remove_source_file,
                 'copy_file':          None,
@@ -175,16 +175,16 @@ class PostProcessor(threading.Thread):
 
             for plugin_module in plugin_modules:
                 # Always set source_data to the original file's source_data
-                data["source_data"] = source_data
+                initial_data["source_data"] = source_data
                 # Always set copy_file to True
-                data["copy_file"] = True
+                initial_data["copy_file"] = True
                 # Always set file in to cache path
-                data["file_in"] = cache_path
+                initial_data["file_in"] = cache_path
                 # Always set file out to destination data absolute path
-                data["file_out"] = destination_data.get('abspath')
+                initial_data["file_out"] = destination_data.get('abspath')
 
                 # Test return data against schema and ensure there are no errors
-                errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.file_move', data)
+                errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.file_move', initial_data)
                 if errors:
                     self._log("Error while running postprocessor file movement '{}' on file '{}'".format(
                         plugin_module.get('plugin_id'), cache_path), errors, level="error")
@@ -194,7 +194,7 @@ class PostProcessor(threading.Thread):
                 # Run plugin and fetch return data
                 plugin_runner = plugin_module.get("runner")
                 try:
-                    data = plugin_runner(data)
+                    data = plugin_runner(initial_data)
                 except Exception as e:
                     self._log("Exception while carrying out plugin runner on postprocessor file movement '{}'".format(
                         plugin_module.get('plugin_id')), message2=str(e), level="exception")

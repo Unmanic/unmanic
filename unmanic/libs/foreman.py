@@ -186,11 +186,12 @@ class WorkerThread(threading.Thread):
             # Create args from
             ffmpeg_args = self.ffmpeg.generate_ffmpeg_args(file_probe, file_in, file_out)
             initial_data = {
-                "exec_ffmpeg": True,
-                "file_probe":  file_probe,
-                "ffmpeg_args": ffmpeg_args,
-                "file_in":     file_in,
-                "file_out":    file_out,
+                "exec_ffmpeg":        True,
+                "file_probe":         file_probe,
+                "ffmpeg_args":        ffmpeg_args,
+                "file_in":            file_in,
+                "file_out":           file_out,
+                "original_file_path": abspath,
             }
 
             # Test return data against schema and ensure there are no errors

@@ -153,12 +153,13 @@ class PluginType(object):
         # Get test data
         if not test_data:
             test_data = self.get_test_data()
+        test_data_copy = test_data.copy()
 
         # Get data schema
         data_schema = self.get_data_schema()
 
         # Execute plugin function
-        result_data = plugin_runner_function(test_data)
+        result_data = plugin_runner_function(test_data_copy)
 
         # Ensure the test data returned is valid according to the schema
         errors = self.__data_schema_test_data(plugin_id, plugin_runner, result_data, data_schema)

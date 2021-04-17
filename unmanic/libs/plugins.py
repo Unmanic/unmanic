@@ -324,15 +324,15 @@ class PluginsHandler(object, metaclass=SingletonType):
     def write_plugin_data_to_db(plugin, plugin_directory):
         # Add installed plugin to database
         plugin_data = {
-            Plugins.plugin_id:   plugin.get("id"),
-            Plugins.name:        plugin.get("name"),
-            Plugins.author:      plugin.get("author"),
-            Plugins.version:     plugin.get("version"),
-            Plugins.tags:        plugin.get("tags"),
-            Plugins.description: plugin.get("description"),
-            Plugins.icon:        plugin.get("icon"),
-            Plugins.local_path:  plugin_directory,
-            Plugins.update:      False,
+            Plugins.plugin_id:        plugin.get("id"),
+            Plugins.name:             plugin.get("name"),
+            Plugins.author:           plugin.get("author"),
+            Plugins.version:          plugin.get("version"),
+            Plugins.tags:             plugin.get("tags"),
+            Plugins.description:      plugin.get("description"),
+            Plugins.icon:             plugin.get("icon"),
+            Plugins.local_path:       plugin_directory,
+            Plugins.update_available: False,
         }
         plugin_entry = Plugins.get_or_none(plugin_id=plugin.get("id"))
         if plugin_entry is not None:

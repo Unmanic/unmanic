@@ -25,6 +25,8 @@ import datetime as dt
 import peewee as pw
 from decimal import ROUND_HALF_EVEN
 
+from unmanic.libs.unmodels import Plugins
+
 try:
     import playhouse.postgres_ext as pw_pext
 except ImportError:
@@ -36,7 +38,7 @@ SQL = pw.SQL
 def migrate(migrator, database, fake=False, **kwargs):
     """Write your migrations here."""
     # Add enable_hardware_accelerated_decoding field to Settings Model
-    migrator.add_fields('plugins', update_available=pw.BooleanField(null=False, default=False))
+    migrator.create_table(Plugins)
 
 
 def rollback(migrator, database, fake=False, **kwargs):

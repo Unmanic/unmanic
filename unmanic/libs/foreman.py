@@ -185,7 +185,7 @@ class WorkerThread(threading.Thread):
             file_probe = self.ffmpeg.file_probe(file_in)
             # Create args from
             ffmpeg_args = self.ffmpeg.generate_ffmpeg_args(file_probe, file_in, file_out)
-            data = {
+            initial_data = {
                 "exec_ffmpeg": True,
                 "file_probe":  file_probe,
                 "ffmpeg_args": ffmpeg_args,
@@ -194,7 +194,7 @@ class WorkerThread(threading.Thread):
             }
 
             # Test return data against schema and ensure there are no errors
-            errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'worker.process_item', data)
+            errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'worker.process_item', initial_data)
             if errors:
                 self._log(
                     "Error while running worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'), abspath),
@@ -205,15 +205,14 @@ class WorkerThread(threading.Thread):
             # Run plugin and fetch return data
             plugin_runner = plugin_module.get("runner")
             try:
-                data = plugin_runner(data)
+                data = plugin_runner(initial_data)
             except Exception as e:
                 self._log("Exception while carrying out plugin runner on worker process '{}'".format(
                     plugin_module.get('plugin_id')), message2=str(e), level="exception")
                 # Skip this plugin module's loop
                 continue
-            self._log("Worker process '{}' file in".format(plugin_module.get('plugin_id')), data.get("file_in"), level='debug')
-            self._log("Worker process '{}' file out".format(plugin_module.get('plugin_id')), data.get("file_out"),
-                      level='debug')
+            self._log("Worker process '{}' (in)".format(plugin_module.get('plugin_id')), data.get("file_in"), level='debug')
+            self._log("Worker process '{}' (out)".format(plugin_module.get('plugin_id')), data.get("file_out"), level='debug')
 
             # Only run the conversion process if "exec_ffmpeg" is True
             if data.get("exec_ffmpeg"):
@@ -225,7 +224,7 @@ class WorkerThread(threading.Thread):
                     self._log(
                         "Successfully ran worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'), abspath))
                     # Set the file in as the file out for the next loop
-                    file_in = file_out
+                    file_in = data.get("file_out")
                 else:
                     # If file conversion was successful
                     self._log(
@@ -255,6 +254,8 @@ class WorkerThread(threading.Thread):
         # Convert file
         success = False
         try:
+            # Reset to defaults
+            self.ffmpeg.set_info_defaults()
             # Fetch source file info
             self.ffmpeg.set_file_in(file_in)
             # Read video information for the input file
@@ -263,11 +264,11 @@ class WorkerThread(threading.Thread):
                 return False
             if ffmpeg_args:
                 success = self.ffmpeg.convert_file_and_fetch_progress(file_in, ffmpeg_args)
-            self.current_task.set_ffmpeg_log(self.ffmpeg.ffmpeg_cmd_stdout)
+            self.current_task.save_ffmpeg_log(self.ffmpeg.ffmpeg_cmd_stdout)
 
         except ffmpeg.FFMPEGHandleConversionError as e:
             # Fetch ffmpeg stdout and append it to the current task object (to be saved during post process)
-            self.current_task.set_ffmpeg_log(self.ffmpeg.ffmpeg_cmd_stdout)
+            self.current_task.save_ffmpeg_log(self.ffmpeg.ffmpeg_cmd_stdout)
             self._log("Error while executing the FFMPEG command {}. "
                       "Download FFMPEG command dump from history for more information.".format(file_in),
                       message2=str(e), level="error")

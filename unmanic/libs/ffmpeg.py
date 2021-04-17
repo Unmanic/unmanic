@@ -29,10 +29,9 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
+import math
 import os
 import subprocess
-import json
 import shutil
 import re
 import sys
@@ -126,13 +125,13 @@ class FFMPEGHandle(object):
         self.total_frames = None
         self.duration = None
         self.src_fps = None
-        self.elapsed = 0
-        self.time = 0
-        self.percent = 0
-        self.frame = 0
-        self.fps = 0
-        self.speed = 0
-        self.bitrate = 0
+        self.elapsed = '0'
+        self.time = '0'
+        self.percent = '0'
+        self.frame = '0'
+        self.fps = '0'
+        self.speed = '0'
+        self.bitrate = '0'
         self.file_size = None
         self.ffmpeg_cmd_stdout = []
 
@@ -580,7 +579,13 @@ class FFMPEGHandle(object):
                                         universal_newlines=True, errors='replace')
 
         # Reset cmd stdout
-        self.ffmpeg_cmd_stdout = []
+        self.ffmpeg_cmd_stdout = [
+            '\n\n',
+            'COMMAND:\n',
+            ' '.join(command),
+            '\n\n',
+            'LOG:\n',
+        ]
 
         # Poll process for new output until finished
         while True:
@@ -619,24 +624,24 @@ class FFMPEGHandle(object):
         :return:
         """
         # Calculate elapsed time
-        self.elapsed = (time.time() - self.start_time)
+        self.elapsed = str(time.time() - self.start_time)
 
         # Calculate elapsed time
         if line_text and 'frame=' in line_text:
             # Update time
             _time = self.get_progress_from_regex_of_string(line_text, r"time=(\s+|)(\d+:\d+:\d+\.\d+)", self.time)
             if _time:
-                self.time = common.time_string_to_seconds(_time)
+                self.time = str(common.time_string_to_seconds(_time))
 
             # Update frames
-            _frame = float(self.get_progress_from_regex_of_string(line_text, r"frame=(\s+|)(\d+)", self.frame))
-            if _frame and _frame > self.frame:
+            _frame = self.get_progress_from_regex_of_string(line_text, r"frame=(\s+|)(\d+)", self.frame)
+            if _frame and int(_frame) > int(self.frame):
                 self.frame = _frame
 
             # Update speed
             _speed = self.get_progress_from_regex_of_string(line_text, r"speed=(\s+|)(\d+\.\d+)", self.speed)
             if _speed:
-                self.speed = _speed
+                self.speed = str(_speed)
 
             # Update bitrate
             _bitrate = self.get_progress_from_regex_of_string(line_text, r"bitrate=(\s+|)(\d+\.\d+\w+|\d+w)",
@@ -651,15 +656,18 @@ class FFMPEGHandle(object):
 
             # Update percent
             _percent = None
-            if self.frame and self.total_frames and self.frame > 0 and self.total_frames > 0:
+            if _frame and self.total_frames and int(_frame) > 0 and int(self.total_frames) > 0:
                 # If we have both the current frame and the total number of frames, then we can easily calculate the %
-                _percent = int(int(self.frame) / int(self.total_frames) * 100)
-            if not _percent and self.time and self.duration and self.time > 0 and self.duration > 0:
+                #_percent = float(int(_frame) / int(self.total_frames))
+                _percent = float(int(_frame) / int(self.total_frames)) * 100
+                _percent = math.trunc(_percent)
+            elif self.time and self.duration and int(self.time) > 0 and int(self.duration) > 0:
                 # If that was not successful, we need to resort to assuming the percent by the duration and the time
                 # passed so far
-                _percent = int(int(self.time) / int(self.duration) * 100)
-            if _percent and _percent > self.percent:
-                self.percent = _percent
+                _percent = float(int(self.time) / int(self.duration)) * 100
+                _percent = math.trunc(_percent)
+            if _percent and int(_percent) > int(self.percent):
+                self.percent = str(_percent)
 
         # self._log("TOTAL: frames", self.total_frames, level='debug')
         # self._log("TOTAL: duration", self.duration, level='debug')

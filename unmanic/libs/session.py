@@ -35,7 +35,7 @@ import requests
 from unmanic import config
 from unmanic.libs import common, unlogger
 from unmanic.libs.singleton import SingletonType
-from unmanic.libs.unmodels import db
+from unmanic.libs.unmodels import db, Installation
 
 
 class Session(object, metaclass=SingletonType):
@@ -126,15 +126,15 @@ class Session(object, metaclass=SingletonType):
         """
         if not self.uuid:
             # Fetch installation
-            from unmanic.libs.unmodels import installation
-            db_installation = installation.Installation()
+            db_installation = Installation()
             try:
                 # Fetch a single row (get() will raise DoesNotExist exception if no results are found)
-                current_installation = db_installation.select().limit(1).get()
+                current_installation = db_installation.select().order_by(Installation.id.asc()).limit(1).get()
             except Exception as e:
                 # Create settings (defaults will be applied)
                 self._log("Unmanic session does not yet exist... Creating.", level="debug")
                 with db.atomic():
+                    db_installation.delete().execute()
                     current_installation = db_installation.create()
 
             self.uuid = str(current_installation.uuid)

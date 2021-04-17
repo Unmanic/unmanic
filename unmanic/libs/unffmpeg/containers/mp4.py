@@ -37,4 +37,4 @@ class Mp4(Containers):
     extension = 'mp4'
     description = 'MP4 (MPEG-4 Part 14)'
     supports_subtitles = True
-    subtitle_codecs = ['mov_text']
+    subtitle_codecs = ['mov_text', 'srt', 'ass', 'ssa', 'dvbsub', 'dvdsub']

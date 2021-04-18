@@ -498,21 +498,17 @@ const submitPluginSettings = function () {
     });
 };
 
-const fillPluginListItems = function (template_data) {
-    // Block the plugin list
-    blockElementByID("installable_plugins_list");
-
-    // Empty the current list
-    $("div#installable_plugins_list").html('');
-
-    // Fetch template and display
-    var template = Handlebars.getTemplate('plugins/plugins-list');
-    $("div#installable_plugins_list").html(template(template_data));
-
-    // Unblock textbox
-    unblockElementByID("installable_plugins_list");
+// Global plugin-list
+let $plugin_list = {
+    all: {},
+    filtered: {},
+    filter: {},
+    pagination: {
+        currentPage: 1,
+        pageCount: 0,
+        pageSize: 6,
+    }
 };
-
 const fetchCurrentPluginList = function () {
     // Block the plugin list
     blockElementByID("installable_plugins_list");
@@ -522,9 +518,11 @@ const fetchCurrentPluginList = function () {
         type: 'GET',
         success: function (data) {
             if (data.success) {
+                $plugin_list.all.plugins = data.plugins;
+                $plugin_list.filtered.plugins = data.plugins;
                 // If query was successful
-                fillPluginListItems(data);
-                console.log('Plugin list updated.');
+                console.debug('Plugin list updated.');
+                // Set the filters (will trigger the list to be drawn on completion)
                 setPluginsFilter();
             } else {
                 // Our query was unsuccessful
@@ -537,37 +535,84 @@ const fetchCurrentPluginList = function () {
     });
 };
 
+const fillPluginListItems = function () {
+    let template_data = {
+        plugins: [],
+        pagination: $plugin_list.pagination,
+    };
+
+    // Block the plugin list
+    blockElementByID("installable_plugins_list");
+
+    // Paginate the filtered plugin list
+    if ($plugin_list.filtered.plugins.length === 0) {
+        // If there are not filtered plugins, then set the page count to 0 to hide the pagination buttons
+        $plugin_list.pagination.pageCount = 0;
+    } else {
+        $plugin_list.pagination.pageCount = 1;
+        for (let i = 0; i < $plugin_list.filtered.plugins.length; i++) {
+            // Increment page counter when the array index is divisible by the page size
+            if ((i > 0) && (i % $plugin_list.pagination.pageSize === 0)) {
+                $plugin_list.pagination.pageCount++
+            }
+            // If the page counter is not the current page counter, then skip this plugin
+            if ($plugin_list.pagination.pageCount !== $plugin_list.pagination.currentPage) {
+                continue;
+            }
+
+            // Add the plugin item to the template data list
+            template_data.plugins.push($plugin_list.filtered.plugins[i]);
+        }
+    }
+
+    // Fetch template and display
+    let template = Handlebars.getTemplate('plugins/plugins-list');
+    $("div#installable_plugins_list").html(template(template_data));
+
+    // Unblock textbox
+    unblockElementByID("installable_plugins_list");
+};
+
 const setPluginsFilter = function () {
-    let input, filter, installable_plugins_list, installable_plugins_list_item, plugin_id, plugin_name, plugin_author;
+    let input, plugin_id, plugin_name, plugin_author;
+
+    // Block the plugin list
+    blockElementByID("installable_plugins_list");
 
     // Get search filter
     input = $("#installable_plugins_search");
-    filter = input.val().toUpperCase();
+    $plugin_list.filter = input.val().toUpperCase();
 
-    // Get all listed plugins
-    installable_plugins_list = $("#installable_plugins_list");
-    installable_plugins_list_item = installable_plugins_list.find('.installable_plugins_list_item');
+    $plugin_list.filtered.plugins = [];
+    $plugin_list.all.plugins.forEach(function (item, index) {
+        plugin_id = item.id;
+        plugin_name = item.name;
+        plugin_author = item.author;
 
-    installable_plugins_list_item.each(function () {
-        plugin_id = $(this).find(".plugin_id").first();
-        plugin_name = $(this).find(".plugin_name").first();
-        plugin_author = $(this).find(".plugin_author").first();
-
-        if (plugin_id.text().toUpperCase().indexOf(filter) > -1) {
-            $(this).removeClass("hidden")
-        } else if (plugin_name.text().toUpperCase().indexOf(filter) > -1) {
-            $(this).removeClass("hidden")
-        } else if (plugin_author.text().toUpperCase().indexOf(filter) > -1) {
-            $(this).removeClass("hidden")
-        } else {
-            $(this).addClass("hidden");
+        // Only add required items to filtered list
+        if (plugin_id.toUpperCase().indexOf($plugin_list.filter) > -1) {
+            $plugin_list.filtered.plugins.push(item);
+        } else if (plugin_name.toUpperCase().indexOf($plugin_list.filter) > -1) {
+            $plugin_list.filtered.plugins.push(item);
+        } else if (plugin_author.toUpperCase().indexOf($plugin_list.filter) > -1) {
+            $plugin_list.filtered.plugins.push(item);
         }
     });
+
+    // Reset the pagination current page
+    $plugin_list.pagination.currentPage = 1;
+
+    fillPluginListItems();
+};
+
+const setPluginsPagination = function (page) {
+    $plugin_list.pagination.currentPage = parseInt(page);
+    fillPluginListItems();
 };
 
 const resetPluginsFilter = function () {
     $("#installable_plugins_search").val('');
-    $("#installable_plugins_list").find('.installable_plugins_list_item').each(function () {
+    $("#installable_plugins_list").find('.installable-plugins-list-item').each(function () {
         $(this).removeClass("hidden")
     });
 };
@@ -576,9 +621,8 @@ const downloadPlugin = function (plugin_id, item_number) {
     console.log("Downloading: " + plugin_id);
     // Block the plugin list item
 
-    //blockElementByID("installable_plugins_list_item_" + item_number);
     App.blockUI({
-        target: "#installable_plugins_list_item_" + item_number,
+        target: "#installable-plugins-list-item-" + item_number,
         overlayColor: "none",
         animate: !0
     });
@@ -601,11 +645,11 @@ const downloadPlugin = function (plugin_id, item_number) {
                 // Our query was unsuccessful
                 console.error('An error occurred while installing the plugin: "' + plugin_id + '".');
             }
-            App.unblockUI("#installable_plugins_list_item_" + item_number);
+            App.unblockUI("#installable-plugins-list-item-" + item_number);
         },
         error: function (data) {
             console.error('An error occurred while installing the plugin: "' + plugin_id + '".');
-            App.unblockUI("#installable_plugins_list_item_" + item_number);
+            App.unblockUI("#installable-plugins-list-item-" + item_number);
         },
     });
 };

@@ -1,10 +1,28 @@
 
+.installable-plugins-list-item {
+    padding-left: 0;
+}
+.installable-plugins-list-item-container {
+    border: 1px solid lightgrey;
+    border-radius: 10px 10px 10px 10px;
+    margin-bottom: 15px;
+    padding-top: 5px;
+}
+.installable-plugins-list-item-container .tile-container > hr {
+    border-top: 1px solid lightgrey;
+    margin-left: 15px;
+    margin-top: 5px;
+    margin-bottom: 0px;
+    margin-right: 15px;
+}
+
 .search-content-3 .tile-container > .tile-title > h3 {
     display: block;
     line-height: 1.5;
+    height: 3em;
     text-overflow: ellipsis;
     overflow: hidden;
-    white-space: nowrap;
+    /*white-space: nowrap;*/
 }
 
 .search-content-3 .tile-container > .tile-title > p {

@@ -117,8 +117,16 @@ class TestClass(object):
         source_data = common.fetch_file_data_by_path(pathname)
         self.test_task.create_task_by_absolute_path(os.path.abspath(pathname), self.settings, source_data)
 
-        #self.test_task.set_source_data(pathname)
-        destination_data = task.prepare_file_destination_data(os.path.abspath(pathname), self.settings.get_out_container())
+        # Get container extension
+        if self.settings.get_keep_original_container():
+            split_file_name = os.path.splitext(os.path.basename(pathname))
+            container_extension = split_file_name[1].lstrip('.')
+        else:
+            from unmanic.libs.unffmpeg import containers
+            container = containers.grab_module(self.settings.get_out_container())
+            container_extension = container.container_extension()
+
+        destination_data = task.prepare_file_destination_data(os.path.abspath(pathname), container_extension)
         self.test_task.set_destination_data(destination_data)
         self.test_task.set_cache_path()
 

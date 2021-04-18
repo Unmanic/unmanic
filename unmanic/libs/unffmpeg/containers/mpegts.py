@@ -37,3 +37,4 @@ class Mpegts(Containers):
     extension = 'ts'
     description = 'MPEG-TS (MPEG-2 Transport Stream)'
     supports_subtitles = False
+    subtitle_codecs = ['mov_text']

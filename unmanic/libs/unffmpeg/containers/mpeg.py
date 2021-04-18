@@ -37,3 +37,4 @@ class Mpeg(Containers):
     extension = 'mpeg'
     description = 'MPEG-1 Systems / MPEG program stream'
     supports_subtitles = True
+    subtitle_codecs = ['mov_text']

@@ -20,33 +20,63 @@
                                 <span class="help-inline"> Comma separated list of file extensions to search for during library scans and new file event triggers </span>
                             </div>
                         </div>
+                        <hr/>
+
                         <div class="form-group">
-                            <label class="col-md-3 control-label">Output container </label>
+                            <label class="col-md-3 control-label">Keep Original Container</label>
                             <div class="col-md-9">
-                                <select class="form-control"
-                                        name="OUT_CONTAINER"
-                                        id="out_container"
-                                        onchange="showHideSubtitleSettings();">
-                                    {% set enable_subtitles = True %}
-                                    {% for option in config.get_supported_containers() %}data-supportssubtitles=
-                                    <option value="{{ escape(option) }}"
-                                            {% if config.get_supported_containers()[option]['supports_subtitles'] %}
-                                            data-supports_subtitles="true"
-                                            {% else %}
-                                            data-supports_subtitles="false"
-                                            {% end %}
-                                            {% if config.get_out_container() == option %}
-                                            {% set enable_subtitles = config.get_supported_containers()[option]['supports_subtitles'] %}
-                                            selected
-                                            {% end %}>
-                                        .{{ escape(config.get_supported_containers()[option]['extension']) }}
-                                        - {{ escape(config.get_supported_containers()[option]['description']) }}
-                                    </option>
-                                    {% end %}
-                                </select>
-                                <span class="help-inline"> Select the container you want output files to be </span>
+                                <div class="checkbox-list">
+                                    <input type="hidden" name="KEEP_ORIGINAL_CONTAINER" id="KEEP_ORIGINAL_CONTAINER"
+                                           value="{% if config.get_keep_original_container() %}true{% end %}">
+                                    <label>
+                                        <input type="checkbox" id="keep_original_container_enabled"
+                                               onchange="toggleKeepOriginalContainer();" {% if config.get_keep_original_container() %}
+                                               checked {% end %} />
+                                    </label>
+                                </div>
                             </div>
                         </div>
+
+                        <div class="form-group ">
+                            <label class="col-md-3 control-label">Output container </label>
+                            <div class="col-md-9">
+
+                                <div class="output_container_settings {% if config.get_keep_original_container() %}hidden{% end %}">
+                                    <select class="form-control"
+                                            name="OUT_CONTAINER"
+                                            id="out_container"
+                                            onchange="showHideSubtitleSettings();">
+                                        {% set enable_subtitles = True %}
+                                        {% for option in config.get_supported_containers() %}data-supportssubtitles=
+                                        <option value="{{ escape(option) }}"
+                                                {% if config.get_supported_containers()[option]['supports_subtitles'] %}
+                                                data-supports_subtitles="true"
+                                                {% else %}
+                                                data-supports_subtitles="false"
+                                                {% end %}
+                                                {% if config.get_out_container() == option %}
+                                                {% set enable_subtitles = config.get_supported_containers()[option]['supports_subtitles'] %}
+                                                selected
+                                                {% end %}>
+                                            .{{ escape(config.get_supported_containers()[option]['extension']) }}
+                                            - {{ escape(config.get_supported_containers()[option]['description']) }}
+                                        </option>
+                                        {% end %}
+                                    </select>
+                                    <span class="help-inline"> Select the container you want output files to be </span>
+                                </div>
+
+                                <div class="keep_original_container_notice {% if not config.get_keep_original_container() %}hidden{% end %}">
+                                    <div class="note note-info caption">
+                                        <span class="help-inline">
+                                            The destination file will be the same container type as the source file.
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr/>
+
                         <div class="form-group subtitle_settings" {% if not enable_subtitles %} style="display:none" {% end %}>
                             <label class="col-md-3 control-label">Remove subtitles</label>
                             <div class="col-md-9">

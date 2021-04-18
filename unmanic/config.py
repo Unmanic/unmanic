@@ -523,6 +523,14 @@ class CONFIG(object, metaclass=SingletonType):
         """
         return self.NUMBER_OF_WORKERS
 
+    def get_keep_original_container(self):
+        """
+        Get setting - keep_original_container
+
+        :return:
+        """
+        return self.KEEP_ORIGINAL_CONTAINER
+
     def get_out_container(self):
         """
         Get setting - out_container

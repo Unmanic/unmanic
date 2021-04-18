@@ -1,4 +1,4 @@
-"""Peewee migrations -- 013_add_update_column_to_plugin_table.py.
+"""Peewee migrations -- 014_add_keep_original_container_to_settings_table.py.
 
 Some examples (model - class or model name)::
 
@@ -25,7 +25,7 @@ import datetime as dt
 import peewee as pw
 from decimal import ROUND_HALF_EVEN
 
-from unmanic.libs.unmodels import Plugins
+from unmanic.libs.unmodels import Settings
 
 try:
     import playhouse.postgres_ext as pw_pext
@@ -37,10 +37,19 @@ SQL = pw.SQL
 
 def migrate(migrator, database, fake=False, **kwargs):
     """Write your migrations here."""
-    # Add enable_hardware_accelerated_decoding field to Plugins Model
-    migrator.create_table(Plugins)
+    # Add keep_original_container field to Settings Model
+    migrator.add_fields('settings', keep_original_container=pw.BooleanField(null=False, default=False))
+    # Add keep_original_container field to TaskSettings Model
+    migrator.add_fields('tasksettings', keep_original_container=pw.BooleanField(null=False, default=False))
+    # Add keep_original_container field to HistoricTaskSettings Model
+    migrator.add_fields('historictasksettings', keep_original_container=pw.BooleanField(null=False, default=False))
 
 
 def rollback(migrator, database, fake=False, **kwargs):
     """Write your rollback migrations here."""
-    migrator.remove_fields('plugins', 'update_available', cascade=True)
+    # Remove the keep_original_container field from the Settings Model
+    migrator.remove_fields('settings', 'keep_original_container', cascade=True)
+    # Remove the keep_original_container field from the TaskSettings Model
+    migrator.remove_fields('tasksettings', 'keep_original_container', cascade=True)
+    # Remove the keep_original_container field from the HistoricTaskSettings Model
+    migrator.remove_fields('historictasksettings', 'keep_original_container', cascade=True)

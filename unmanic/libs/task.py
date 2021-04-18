@@ -46,15 +46,12 @@ from unmanic.libs.unmodels.tasks import IntegrityError, Tasks
 from unmanic.libs.unmodels.tasksettings import TaskSettings
 
 
-def prepare_file_destination_data(pathname, out_container):
+def prepare_file_destination_data(pathname, container_extension):
     basename = os.path.basename(pathname)
     dirname = os.path.dirname(os.path.abspath(pathname))
     # Fetch the file's name without the file extension (this is going to be reset)
     file_name_without_extension = os.path.splitext(basename)[0]
 
-    # Get container extension
-    container = containers.grab_module(out_container)
-    container_extension = container.container_extension()
 
     # Set destination dict
     basename = "{}.{}".format(file_name_without_extension, container_extension)
@@ -65,6 +62,17 @@ def prepare_file_destination_data(pathname, out_container):
     }
 
     return file_data
+
+def get_container_by_extension(pathname):
+    split_file_name = os.path.splitext(os.path.basename(pathname))
+    container_extension = split_file_name[1].lstrip('.')
+
+    supported_containers = containers.get_all_containers()
+
+    for key in supported_containers:
+        extension = supported_containers[key].get('extension')
+        if extension == container_extension:
+            return key
 
 
 class Task(object):
@@ -130,13 +138,22 @@ class Task(object):
             if hasattr(TaskSettings, attribute_lower):
                 task_settings_dict[attribute_lower] = settings.__dict__[attribute]
                 continue
+
+        # IF Unmanic is configured to keep the original container, attempt to get the container type by the files extension...
+        if task_settings_dict.get('keep_original_container'):
+            out_container = get_container_by_extension(self.task.abspath)
+            # IF a supported container was matched to the extension, set the out container to that
+            if out_container:
+                task_settings_dict['out_container'] = out_container
+
         self.settings = TaskSettings.create(**task_settings_dict)
 
     def set_cache_path(self):
         if not self.task:
             raise Exception('Unable to set cache path. Task has not been set!')
         # Fetch the file's name without the file extension (this is going to be reset)
-        file_name_without_extension = os.path.splitext(self.source.basename)[0]
+        split_file_name = os.path.splitext(self.source.basename)
+        file_name_without_extension = split_file_name[0]
 
         # Get container extension
         container = containers.grab_module(self.settings.out_container)
@@ -168,7 +185,12 @@ class Task(object):
             raise Exception('Unable to fetch destination data. Task has not been set!')
         if not self.settings:
             raise Exception('Unable to fetch destination data. Task settings has not been set!')
-        return prepare_file_destination_data(self.task.abspath, self.settings.out_container)
+
+        # Get container extension
+        container = containers.grab_module(self.settings.out_container)
+        container_extension = container.container_extension()
+
+        return prepare_file_destination_data(self.task.abspath, container_extension)
 
     def get_source_data(self):
         # TODO: Rename to probe

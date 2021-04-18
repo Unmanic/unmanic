@@ -61,6 +61,7 @@ class Settings(BaseModel):
     library_path = TextField(null=False, default='/library')
     log_path = TextField(null=False, default=os.path.join(common.get_home_dir(), '.unmanic', 'logs'))
     number_of_workers = IntegerField(null=False, default=3)
+    keep_original_container = BooleanField(null=False, default=False)
     out_container = TextField(null=False, default='matroska')
     remove_subtitle_streams = BooleanField(null=False, default=True)
     run_full_scan_on_start = BooleanField(null=False, default=False)

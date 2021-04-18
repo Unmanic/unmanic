@@ -49,6 +49,17 @@
 </script>
 {# Container #}
 <script type="text/javascript">
+    var toggleKeepOriginalContainer = function () {
+        if ($("#keep_original_container_enabled").prop("checked")) {
+            $("#KEEP_ORIGINAL_CONTAINER").val("true");
+            $(".output_container_settings").addClass('hidden');
+            $(".keep_original_container_notice").removeClass('hidden');
+        } else {
+            $("#KEEP_ORIGINAL_CONTAINER").val("false");
+            $(".output_container_settings").removeClass('hidden');
+            $(".keep_original_container_notice").addClass('hidden');
+        }
+    };
     var showHideSubtitleSettings = function () {
         var supports_subtitles = $("#out_container option:selected").data('supports_subtitles');
         console.log(supports_subtitles);

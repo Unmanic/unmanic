@@ -59,6 +59,7 @@ class TaskSettings(BaseModel):
     library_path = TextField(null=False)
     log_path = TextField(null=False)
     number_of_workers = IntegerField(null=False)
+    keep_original_container = BooleanField(null=False)
     out_container = TextField(null=False)
     remove_subtitle_streams = BooleanField(null=False)
     run_full_scan_on_start = BooleanField(null=False)

@@ -51,6 +51,7 @@ class PluginExecutor(object):
         }
         # TODO: generate this list dynamically
         self.plugin_types = [
+            "library_management.file_test",
             "postprocessor.file_move",
             "postprocessor.task_result",
             "worker.process_item",

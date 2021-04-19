@@ -173,7 +173,7 @@ class FileTest(object):
         plugin_executor = PluginExecutor()
 
         # Run task success plugins
-        plugin_modules = plugin_executor.get_plugin_modules_by_type('postprocessor.task_result')
+        plugin_modules = plugin_executor.get_plugin_modules_by_type('library_management.file_test')
 
         if self.file_in_unmanic_ignore_lockfile():
             file_issues.append({

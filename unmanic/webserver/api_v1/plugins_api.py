@@ -52,6 +52,16 @@ class ApiPluginsHandler(BaseApiHandler):
             "path_pattern":      r"/api/v1/plugins/installed",
         },
         {
+            "supported_methods": ["POST"],
+            "call_method":       "get_installed_plugin_flow",
+            "path_pattern":      r"/api/v1/plugins/flow",
+        },
+        {
+            "supported_methods": ["POST"],
+            "call_method":       "set_installed_plugin_flow",
+            "path_pattern":      r"/api/v1/plugins/flow/save",
+        },
+        {
             "supported_methods": ["GET"],
             "call_method":       "get_plugin_list",
             "path_pattern":      r"/api/v1/plugins/list",
@@ -155,10 +165,12 @@ class ApiPluginsHandler(BaseApiHandler):
         search_value = search.get("value")
 
         # Force sort order always by ID desc
-        order = {
-            "column": 'position',
-            "dir":    'desc',
-        }
+        order = [
+            {
+                "column": 'name',
+                "dir":    'asc',
+            }
+        ]
 
         # Fetch Plugins
         plugins = PluginsHandler()
@@ -244,6 +256,46 @@ class ApiPluginsHandler(BaseApiHandler):
     def update_repos(self, *args, **kwargs):
         plugins = PluginsHandler()
         if plugins.update_plugin_repos():
+            # Return success
+            self.write(json.dumps({"success": True}))
+        else:
+            # Return failure
+            self.write(json.dumps({"success": False}))
+
+    def get_installed_plugin_flow(self, *args, **kwargs):
+        plugin_type = self.get_argument('plugin_type')
+
+        from unmanic.libs.unplugins import PluginExecutor
+        plugin_executor = PluginExecutor()
+
+        plugin_modules = plugin_executor.get_plugin_modules_by_type(plugin_type)
+
+        # Only return the data that we need
+        return_plugin_flow = []
+        for plugin_module in plugin_modules:
+            return_plugin_flow.append(
+                {
+                    "plugin_id": plugin_module.get("plugin_id"),
+                    "name":      plugin_module.get("name"),
+                }
+            )
+        self.write(json.dumps({"success": True, "plugin_flow": return_plugin_flow}))
+
+    def set_installed_plugin_flow(self, *args, **kwargs):
+        request_dict = json.loads(self.request.body)
+
+        plugin_type = request_dict.get('plugin_type')
+        if not plugin_type:
+            # Return failure
+            self.write(json.dumps({"success": False, "error": "Missing plugin_type"}))
+            return
+
+        flow = request_dict.get('flow', [])
+
+        plugins = PluginsHandler()
+        success = plugins.set_plugin_flow(plugin_type, flow)
+
+        if success:
             # Return success
             self.write(json.dumps({"success": True}))
         else:

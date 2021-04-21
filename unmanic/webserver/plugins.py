@@ -45,7 +45,30 @@ class PluginsUIRequestHandler(tornado.web.RequestHandler):
         self.name = 'plugins'
         self.config = settings
         self.data_queues = data_queues
-        self.data = {}
+        self.data = {
+            'plugin_types': [
+                {
+                    'id':          'library_management_file_test',
+                    'name':        'Library Management - File test',
+                    'plugin_type': 'library_management.file_test',
+                },
+                {
+                    'id':          'worker_process',
+                    'name':        'Worker - Processing file',
+                    'plugin_type': 'worker.process_item',
+                },
+                {
+                    'id':          'postprocessor_file_movement',
+                    'name':        'Post-processor - File movements',
+                    'plugin_type': 'postprocessor.file_move',
+                },
+                {
+                    'id':          'postprocessor_task_results',
+                    'name':        'Post-processor - Marking task success/failure',
+                    'plugin_type': 'postprocessor.task_result',
+                },
+            ]
+        }
         self.session = session.Session()
 
     def get(self, path):

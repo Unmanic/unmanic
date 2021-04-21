@@ -36,6 +36,7 @@ import sys
 
 from . import plugin_types
 from unmanic.libs import unlogger, common
+from ..unmodels.pluginflow import PluginFlow
 
 
 class PluginExecutor(object):
@@ -45,10 +46,6 @@ class PluginExecutor(object):
         if not plugins_directory:
             plugins_directory = os.path.join(os.path.expanduser("~"), '.unmanic', 'plugins')
         self.plugins_directory = plugins_directory
-        self.plugin_sort_order = {
-            "column": 'position',
-            "dir":    'desc',
-        }
         # TODO: generate this list dynamically
         self.plugin_types = [
             "library_management.file_test",
@@ -73,7 +70,7 @@ class PluginExecutor(object):
         """
         return os.path.join(self.plugins_directory, plugin_id)
 
-    def __get_enabled_plugins(self):
+    def __get_enabled_plugins(self, plugin_type=None):
         """
         Returns a list of enabled plugins
 
@@ -81,7 +78,18 @@ class PluginExecutor(object):
         """
         from unmanic.libs.plugins import PluginsHandler
         plugin_handler = PluginsHandler()
-        return plugin_handler.get_plugin_list_filtered_and_sorted(order=self.plugin_sort_order, enabled=True)
+        order = [
+            {
+                "model":  PluginFlow,
+                "column": 'position',
+                "dir":    'asc',
+            },
+            {
+                "column": 'name',
+                "dir":    'asc',
+            },
+        ]
+        return plugin_handler.get_plugin_list_filtered_and_sorted(order=order, enabled=True, plugin_type=plugin_type)
 
     @staticmethod
     def __include_plugin_site_packages(path):
@@ -178,6 +186,9 @@ class PluginExecutor(object):
             # Get plugin ID
             plugin_id = plugin.get('plugin_id')
 
+            # Get plugin Name
+            plugin_name = plugin.get('name')
+
             # Get the path for this plugin
             plugin_path = self.__get_plugin_directory(plugin_id)
 
@@ -189,6 +200,7 @@ class PluginExecutor(object):
                 # If it does, add it to the plugin_modules list
                 plugin_runner_data = {
                     "plugin_id":     plugin_id,
+                    "name":          plugin_name,
                     "plugin_module": plugin_module,
                     "plugin_path":   plugin_path,
                     "runner":        getattr(plugin_module, plugin_runner),
@@ -207,7 +219,7 @@ class PluginExecutor(object):
         """
         runners = []
         # Fetch all enabled plugins
-        enabled_plugins = self.__get_enabled_plugins()
+        enabled_plugins = self.__get_enabled_plugins(plugin_type)
 
         # Filter out only plugins that have runners of this type
         plugin_modules = self.get_plugin_runners_filtered_by_type(enabled_plugins, plugin_type)
@@ -215,6 +227,7 @@ class PluginExecutor(object):
         plugin_modules.append(
             {
                 "plugin_id":     self.default_plugin_runner_name,
+                "name":          "Default Unmanic Process",
                 "plugin_module": None,
                 "plugin_path":   None,
                 "runner":        self.default_runner,
@@ -323,6 +336,5 @@ class PluginExecutor(object):
             plugin_settings = self.get_plugin_settings(plugin_id)
         except Exception as e:
             errors.append(str(e))
-
 
         return errors, plugin_settings

@@ -2,12 +2,14 @@
 .installable-plugins-list-item {
     padding-left: 0;
 }
+
 .installable-plugins-list-item-container {
     border: 1px solid lightgrey;
     border-radius: 10px 10px 10px 10px;
     margin-bottom: 15px;
     padding-top: 5px;
 }
+
 .installable-plugins-list-item-container .tile-container > hr {
     border-top: 1px solid lightgrey;
     margin-left: 15px;
@@ -37,4 +39,53 @@ img.plugin-list-icon {
     border: none;
     text-decoration: none;
     vertical-align: middle;
+}
+
+.plugin-flowchart-container {
+    width: 100%;
+    /*height: 200px;*/
+    overflow: hidden;
+    background: repeating-linear-gradient(45deg, #eee, #eee 10px, #e5e5e5 10px, #e5e5e5 20px);
+    border: 1px solid black;
+}
+
+.flowchart-container {
+    min-height: 190px;
+}
+
+.draggable_operators {
+    margin-top: 10px;
+}
+
+.draggable_operators_label {
+    margin-bottom: 5px;
+}
+
+.draggable_operators_divs {
+    margin-bottom: 20px;
+}
+
+.draggable_operator {
+    display: inline-block;
+    padding: 2px 5px 2px 5px;
+    border: 1px solid #ccc;
+    cursor: grab;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.delete_selected_button {
+    margin-bottom: 20px;
+}
+
+.flowchart-default-operator {
+    width: 250px;
+}
+
+.flowchart-operator-body {
+    display: none;
 }

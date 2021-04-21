@@ -41,6 +41,7 @@ from unmanic import config
 from unmanic.libs import unlogger, common
 from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.unplugins import PluginExecutor
+from ..unmodels.pluginflow import PluginFlow
 
 menus = {
     "main":          [
@@ -249,10 +250,12 @@ class PluginsCLI(object):
     def reload_plugin_from_disk(self):
         # Fetch list of installed plugins
         plugins = PluginsHandler()
-        order = {
-            "column": 'position',
-            "dir":    'desc',
-        }
+        order = [
+            {
+                "column": 'name',
+                "dir":    'asc',
+            }
+        ]
         plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
 
         # Build choice selection list from installed plugins
@@ -276,10 +279,12 @@ class PluginsCLI(object):
     def remove_plugin():
         # Fetch list of installed plugins
         plugins = PluginsHandler()
-        order = {
-            "column": 'position',
-            "dir":    'desc',
-        }
+        order = [
+            {
+                "column": 'name',
+                "dir":    'asc',
+            }
+        ]
         plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
 
         # Build choice selection list from installed plugins
@@ -313,10 +318,12 @@ class PluginsCLI(object):
     @staticmethod
     def list_installed_plugins():
         plugins = PluginsHandler()
-        order = {
-            "column": 'position',
-            "dir":    'desc',
-        }
+        order = [
+            {
+                "column": 'name',
+                "dir":    'asc',
+            },
+        ]
         plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
         print_table(plugin_results)
         print()
@@ -331,10 +338,12 @@ class PluginsCLI(object):
         plugin_executor = PluginExecutor()
 
         plugins = PluginsHandler()
-        order = {
-            "column": 'position',
-            "dir":    'desc',
-        }
+        order = [
+            {
+                "column": 'name',
+                "dir":    'asc',
+            },
+        ]
         plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
         for plugin_result in plugin_results:
             # plugin_runners = plugin_executor.get_plugin_runners('worker.process_item')

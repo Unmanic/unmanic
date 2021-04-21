@@ -286,6 +286,17 @@ jQuery(document).ready(function () {
         reloadPluginInstaller();
     });
 
+    // Reload plugins datatable when we close the install plugins modal
+    $(".configure-plugin-flow-close").click(function () {
+        let table = $('#installed_plugins_table').DataTable();
+        table.ajax.reload();
+    });
+
+    // Reload the plugins list when we open the install plugins modal
+    $("#set_plugin_flow").click(function () {
+        reloadPluginFlow();
+    });
+
     // Set actions for search field
     $("#installable_plugins_search").bind(
         'keyup.DT search.DT input.DT paste.DT cut.DT',

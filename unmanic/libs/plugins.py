@@ -44,12 +44,13 @@ from unmanic.libs import common, unlogger
 from unmanic.libs.session import Session
 from unmanic.libs.singleton import SingletonType
 from unmanic.libs.unmodels import db, Plugins, PluginRepos
+from unmanic.libs.unmodels.pluginflow import PluginFlow
+from unmanic.libs.unplugins import plugin_types
 
 
 class PluginsHandler(object, metaclass=SingletonType):
-
     # Set the default repo to main repo
-    default_repo='https://unmanic.app/api/v1/unmanic-plugin-repo/uuid'
+    default_repo = 'https://unmanic.app/api/v1/unmanic-plugin-repo/uuid'
 
     def __init__(self, *args, **kwargs):
         self.settings = config.CONFIG()
@@ -356,9 +357,15 @@ class PluginsHandler(object, metaclass=SingletonType):
         return task_query.count()
 
     def get_plugin_list_filtered_and_sorted(self, order=None, start=0, length=None, search_value=None, id_list=None,
-                                            enabled=None, plugin_id=None):
+                                            enabled=None, plugin_id=None, plugin_type=None):
         try:
             query = (Plugins.select())
+
+            if plugin_type:
+                join_condition = (
+                    (PluginFlow.plugin_id == Plugins.id) &
+                    (PluginFlow.plugin_type == plugin_type))
+                query = query.join(PluginFlow, join_type='LEFT OUTER JOIN', on=join_condition)
 
             if id_list:
                 query = query.where(Plugins.id.in_(id_list))
@@ -377,15 +384,21 @@ class PluginsHandler(object, metaclass=SingletonType):
                 query = query.where(Plugins.enabled == enabled)
 
             # Get order by
-            order_by = None
             if order:
-                if order.get("dir") == "asc":
-                    order_by = attrgetter(order.get("column"))(Plugins).asc()
-                else:
-                    order_by = attrgetter(order.get("column"))(Plugins).desc()
+                for o in order:
+                    if o.get("model"):
+                        model = o.get("model")
+                    else:
+                        model = Plugins
+                    if o.get("dir") == "asc":
+                        order_by = attrgetter(o.get("column"))(model).asc()
+                    else:
+                        order_by = attrgetter(o.get("column"))(model).desc()
 
-            if order_by and length:
-                query = query.order_by(order_by).limit(length).offset(start)
+                    query = query.order_by_extend(order_by)
+
+            if length:
+                query = query.limit(length).offset(start)
 
             return query.dicts()
 
@@ -487,3 +500,33 @@ class PluginsHandler(object, metaclass=SingletonType):
             return False
 
         return True
+
+    def set_plugin_flow(self, plugin_type, flow):
+        # Delete all current flow data for this plugin type
+        delete_query = PluginFlow.delete().where(PluginFlow.plugin_type == plugin_type)
+        delete_query.execute()
+
+        success = True
+        priority = 1
+        for plugin in flow:
+            plugin_id = plugin.get('plugin_id')
+
+            # Fetch the plugin info
+            plugin_info = Plugins.select().where(Plugins.plugin_id == plugin_id).first()
+            if not plugin_info:
+                continue
+
+            # Save the plugin flow
+            flow_dict = {
+                'plugin_id':   plugin_info.id,
+                'plugin_name': plugin_info.plugin_id,
+                'plugin_type': plugin_type,
+                'position':    priority,
+            }
+            plugin_flow = PluginFlow.create(**flow_dict)
+            priority += 1
+
+            if not plugin_flow:
+                success = False
+
+        return success

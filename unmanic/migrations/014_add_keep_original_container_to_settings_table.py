@@ -25,7 +25,7 @@ import datetime as dt
 import peewee as pw
 from decimal import ROUND_HALF_EVEN
 
-from unmanic.libs.unmodels import Settings
+from unmanic.libs.unmodels import Settings, TaskSettings, HistoricTaskSettings
 
 try:
     import playhouse.postgres_ext as pw_pext
@@ -38,18 +38,32 @@ SQL = pw.SQL
 def migrate(migrator, database, fake=False, **kwargs):
     """Write your migrations here."""
     # Add keep_original_container field to Settings Model
-    migrator.add_fields('settings', keep_original_container=pw.BooleanField(null=False, default=False))
+    if any(cm for cm in database.get_columns('settings') if cm.name == 'keep_original_container'):
+        # Remove the current column
+        migrator.remove_fields(Settings, 'keep_original_container', cascade=True)
+    migrator.add_fields(Settings, keep_original_container=pw.BooleanField(null=False, default=False))
+
     # Add keep_original_container field to TaskSettings Model
-    migrator.add_fields('tasksettings', keep_original_container=pw.BooleanField(null=False, default=False))
+    if any(cm for cm in database.get_columns('tasksettings') if cm.name == 'keep_original_container'):
+        # Remove the current column
+        migrator.remove_fields(TaskSettings, 'keep_original_container', cascade=True)
+    migrator.add_fields(TaskSettings, keep_original_container=pw.BooleanField(null=False, default=False))
+
     # Add keep_original_container field to HistoricTaskSettings Model
-    migrator.add_fields('historictasksettings', keep_original_container=pw.BooleanField(null=False, default=False))
+    if any(cm for cm in database.get_columns('historictasksettings') if cm.name == 'keep_original_container'):
+        # Remove the current column
+        migrator.remove_fields(HistoricTaskSettings, 'keep_original_container', cascade=True)
+    migrator.add_fields(HistoricTaskSettings, keep_original_container=pw.BooleanField(null=False, default=False))
 
 
 def rollback(migrator, database, fake=False, **kwargs):
     """Write your rollback migrations here."""
     # Remove the keep_original_container field from the Settings Model
-    migrator.remove_fields('settings', 'keep_original_container', cascade=True)
+    if any(cm for cm in database.get_columns('settings') if cm.name == 'keep_original_container'):
+        migrator.remove_fields(Settings, 'keep_original_container', cascade=True)
     # Remove the keep_original_container field from the TaskSettings Model
-    migrator.remove_fields('tasksettings', 'keep_original_container', cascade=True)
+    if any(cm for cm in database.get_columns('tasksettings') if cm.name == 'keep_original_container'):
+        migrator.remove_fields(TaskSettings, 'keep_original_container', cascade=True)
     # Remove the keep_original_container field from the HistoricTaskSettings Model
-    migrator.remove_fields('historictasksettings', 'keep_original_container', cascade=True)
+    if any(cm for cm in database.get_columns('historictasksettings') if cm.name == 'keep_original_container'):
+        migrator.remove_fields(HistoricTaskSettings, 'keep_original_container', cascade=True)

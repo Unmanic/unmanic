@@ -39,8 +39,13 @@ def migrate(migrator, database, fake=False, **kwargs):
     """Write your migrations here."""
     # Add enable_hardware_accelerated_decoding field to Plugins Model
     migrator.create_table(Plugins)
+    # Add keep_original_container field to Settings Model
+    if any(cm for cm in database.get_columns('plugins') if cm.name == 'update_available'):
+        # Remove the current column
+        migrator.remove_fields(Plugins, 'update_available', cascade=True)
+    migrator.add_fields(Plugins, update_available=pw.BooleanField(null=False, default=False))
 
 
 def rollback(migrator, database, fake=False, **kwargs):
     """Write your rollback migrations here."""
-    migrator.remove_fields('plugins', 'update_available', cascade=True)
+    migrator.remove_fields(Plugins, 'update_available', cascade=True)

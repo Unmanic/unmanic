@@ -43,6 +43,7 @@ from .historictasks import HistoricTasks
 from .historictasksettings import HistoricTaskSettings
 from .installation import Installation
 from .migrations import Migrations
+from .pluginflow import PluginFlow
 from .pluginrepos import PluginRepos
 from .plugins import Plugins
 from .settings import Settings
@@ -64,6 +65,7 @@ __all__ = (
     'HistoricTaskSettings',
     'Installation',
     'Migrations',
+    'PluginFlow',
     'PluginRepos',
     'Plugins',
     'Settings',

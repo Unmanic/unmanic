@@ -256,7 +256,3 @@ const drawFlow = function (plugin_type, plugin_type_id, plugin_flow) {
     });
 
 };
-
-$(document).ready(function () {
-    jQuery('#set_plugin_flow').click();
-});

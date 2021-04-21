@@ -32,8 +32,8 @@
 
 from peewee import *
 
-from unmanic.libs.unmodels import Plugins
 from unmanic.libs.unmodels.basemodel import BaseModel
+from unmanic.libs.unmodels.plugins import Plugins
 
 
 class PluginFlow(BaseModel):

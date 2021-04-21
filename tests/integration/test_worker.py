@@ -37,7 +37,7 @@ import tempfile
 
 import pytest
 
-from unmanic.libs.unmodels import Settings, Tasks, TaskSettings, TaskProbe, TaskProbeStreams, Plugins
+from unmanic.libs.unmodels import Settings, Tasks, TaskSettings, TaskProbe, TaskProbeStreams, Plugins, PluginFlow
 
 try:
     from unmanic.libs import unlogger, foreman, task, taskhandler
@@ -93,7 +93,7 @@ class TestClass(object):
         # Start the database connection
         self.db_connection.start()
 
-        self.db_connection.create_tables([Settings, Tasks, TaskSettings, TaskProbe, TaskProbeStreams, Plugins])
+        self.db_connection.create_tables([Settings, Tasks, TaskSettings, TaskProbe, TaskProbeStreams, Plugins, PluginFlow])
 
         # import config
         from unmanic import config

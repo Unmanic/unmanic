@@ -67,22 +67,6 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
 
     def handle_ajax_call(self, query):
         self.set_header("Content-Type", "application/json")
-        if query == 'workersInfo':
-            if self.get_query_arguments('workerId'):
-                worker_info = self.get_workers_info(self.get_query_arguments('workerId')[0])
-                self.set_header("Content-Type", "text/html")
-                self.render("main/main-worker-pie-chart.html", worker_info=worker_info)
-            else:
-                self.write(json.dumps(self.get_workers_info()))
-        if query == 'historicalTasks':
-            if self.get_query_arguments('format') and 'html' in self.get_query_arguments('format'):
-                self.get_historical_tasks()
-                self.set_header("Content-Type", "text/html")
-                self.render("main/main-completed-tasks-list.html", historic_task_list=self.historic_task_list,
-                            time_now=time.time())
-            else:
-                self.set_header("Content-Type", "application/json")
-                self.write(json.dumps(self.get_historical_tasks()))
         if query == 'login':
             self.session.register_unmanic(self.session.get_installation_uuid(), force=True)
             self.redirect("/dashboard/")
@@ -123,19 +107,48 @@ class DashboardWebSocket(tornado.websocket.WebSocketHandler):
         super(DashboardWebSocket, self).__init__(*args, **kwargs)
 
     def open(self):
-        #print("WebSocket opened")
+        # print("WebSocket opened")
         pass
 
     def on_message(self, message):
-        if message == 'workers_info':
-            workers_info = self.foreman.get_all_worker_status()
-            self.write_message(
-                {
-                    'success': True,
-                    'data':    workers_info
-                }
-            )
+        switcher = {
+            'workers_info':    self.write_workers_info,
+            'completed_tasks': self.write_completed_tasks,
+        }
+        # Get the function from switcher dictionary
+        func = switcher.get(message, lambda: self.write_message({'success': False}))
+        # Execute the function
+        func()
 
     def on_close(self):
-        #print("WebSocket closed")
+        # print("WebSocket closed")
         pass
+
+    def write_workers_info(self):
+        workers_info = self.foreman.get_all_worker_status()
+        self.write_message(
+            {
+                'success': True,
+                'type':    'workers_info',
+                'data':    workers_info,
+            }
+        )
+
+    def write_completed_tasks(self):
+        return_data = []
+        history_logging = history.History(self.config)
+        historic_task_list = list(history_logging.get_historic_task_list(20))
+        for historical_item in historic_task_list:
+            if (int(historical_item['finish_time']) + 60) > int(time.time()):
+                historical_item['human_readable_time'] = 'Just Now'
+            else:
+                human_readable_time = common.make_timestamp_human_readable(int(historical_item['finish_time']))
+                historical_item['human_readable_time'] = human_readable_time
+            return_data.append(historical_item)
+        self.write_message(
+            {
+                'success': True,
+                'type':    'completed_tasks',
+                'data':    return_data,
+            }
+        )

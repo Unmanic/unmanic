@@ -21,6 +21,16 @@ let wsDashboard = function () {
 
 let Dashboard = function () {
 
+    let updateCompletedTasks = function (data) {
+        // Create template data
+        let template_data = {
+            'list_items': data
+        };
+        // Fetch template and display
+        let template = Handlebars.getTemplateFromURL('main/completed-tasks');
+        $("div#completed_tasks").html(template(template_data));
+    };
+
     let updateWorkerPieCharts = function (data) {
         let default_percent_value = 100;
         let default_current_file = 'Waiting for job...';
@@ -174,23 +184,31 @@ let Dashboard = function () {
                 lineWidth: 3,
                 barColor: App.getBrandColor('red')
             });
-
-            $('.worker-pie-chart-reload').click(function () {
-                updateWorkerPieCharts();
-            });
         },
 
         initDashboardWebsocket: function () {
             let ws = wsDashboard();
+            // TODO: Add onclose and show error message in UI
             ws.onopen = function () {
                 ws.send("workers_info");
+                ws.send("completed_tasks");
             };
             ws.onmessage = function (evt) {
                 if (typeof evt.data === "string") {
                     let jsonData = JSON.parse(evt.data);
                     if (jsonData.success) {
-                        // Parse JSON and send it to update the pie charts
-                        updateWorkerPieCharts(jsonData.data);
+                        // Parse data type and update the dashboard
+                        switch (jsonData.type) {
+                            case 'workers_info':
+                                updateWorkerPieCharts(jsonData.data);
+                                break;
+                            case 'completed_tasks':
+                                updateCompletedTasks(jsonData.data);
+                                break;
+                            default:
+                                console.error('WebSocket Error: Received data was not a valid type - ' + jsonData.type);
+                                break;
+                        }
                     } else {
                         console.error('WebSocket Error: Received contained errors - ' + evt.data);
                     }
@@ -199,16 +217,14 @@ let Dashboard = function () {
                 }
             };
             ws.onerror = function (evt) {
+                // TODO: Show notification in UI
                 console.error('WebSocket Error: ' + evt);
             };
             window.setInterval(function () {
                 ws.send("workers_info");
-            }, 100);
-        },
-
-        initHistoricalTasks: function () {
+            }, 100);;
             window.setInterval(function () {
-                updateHistoricalTasksList();
+                ws.send("completed_tasks");
             }, 5000);
         },
 
@@ -216,7 +232,6 @@ let Dashboard = function () {
             // Init the widgets
             //this.initSparklineCharts();
             this.initDashboardWebsocket();
-            this.initHistoricalTasks();
         }
     };
 

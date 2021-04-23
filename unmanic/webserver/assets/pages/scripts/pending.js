@@ -199,7 +199,7 @@ var PeningTasksDatatablesManaged = function () {
                         if (!portlet.hasClass('portlet-fullscreen')) {
                             grid.getDataTable().ajax.reload();
                         }
-                    }, 30000);
+                    }, 10000);
                 }
             }
         });

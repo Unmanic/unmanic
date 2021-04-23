@@ -32,6 +32,7 @@
 
 import time
 import tornado.web
+import tornado.websocket
 import json
 
 from unmanic.libs import common, history, session
@@ -61,7 +62,8 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
         else:
             self.get_historical_tasks()
             self.set_header("Content-Type", "text/html")
-            self.render("main/main.html", historic_task_list=self.historic_task_list, time_now=time.time(), session=self.session)
+            self.render("main/main.html", historic_task_list=self.historic_task_list, time_now=time.time(),
+                        session=self.session)
 
     def handle_ajax_call(self, query):
         self.set_header("Content-Type", "application/json")
@@ -109,3 +111,31 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
             historical_item['human_readable_time'] = human_readable_time
             self.historic_task_list.append(historical_item)
         return self.historic_task_list
+
+
+class DashboardWebSocket(tornado.websocket.WebSocketHandler):
+
+    def __init__(self, *args, **kwargs):
+        self.data_queues = kwargs.pop('data_queues')
+        self.foreman = kwargs.pop('foreman')
+        self.config = kwargs.pop('settings')
+        self.session = session.Session()
+        super(DashboardWebSocket, self).__init__(*args, **kwargs)
+
+    def open(self):
+        #print("WebSocket opened")
+        pass
+
+    def on_message(self, message):
+        if message == 'workers_info':
+            workers_info = self.foreman.get_all_worker_status()
+            self.write_message(
+                {
+                    'success': True,
+                    'data':    workers_info
+                }
+            )
+
+    def on_close(self):
+        #print("WebSocket closed")
+        pass

@@ -1,5 +1,5 @@
 /* Read remote template file and return the compiled template */
-Handlebars.getTemplate = function (name) {
+Handlebars.getTemplateFromURL = function (name) {
     if (Handlebars.templates === undefined || Handlebars.templates[name] === undefined || UNMANIC_VERSION === "UNKNOWN") {
         $.ajax({
             url: '/assets/templates/' + name + '.hbs?version=' + UNMANIC_VERSION,

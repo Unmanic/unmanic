@@ -45,7 +45,7 @@
     const updateFileBrowserList = function (data) {
 
         // Fetch template and display updated directory list
-        let template = Handlebars.getTemplate('global/file-browser-file-list');
+        let template = Handlebars.getTemplateFromURL('global/file-browser-file-list');
         let render_template = template(data);
         $("div#unmanic-file-browser-list-items").html(render_template);
 
@@ -75,7 +75,7 @@ const generateFileBrowserPopupContent = function (input_field, list_type, title)
         input_field: input_field,
         title: title,
     };
-    let template = Handlebars.getTemplate('global/file-browser-popup');
+    let template = Handlebars.getTemplateFromURL('global/file-browser-popup');
     let render_template = template(params);
     $("div#unmanic-filebrowser-popup").html(render_template);
 

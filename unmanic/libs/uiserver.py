@@ -45,7 +45,7 @@ from unmanic.libs import common
 from unmanic.libs.singleton import SingletonType
 from unmanic.webserver.api_request_router import APIRequestRouter
 from unmanic.webserver.history import HistoryUIRequestHandler
-from unmanic.webserver.main import MainUIRequestHandler
+from unmanic.webserver.main import MainUIRequestHandler, DashboardWebSocket
 from unmanic.webserver.plugins import PluginsUIRequestHandler
 from unmanic.webserver.settings import SettingsUIRequestHandler
 from unmanic.webserver.helpers.element_filebrowser import ElementFileBrowserUIRequestHandler
@@ -157,6 +157,11 @@ class UIServer(threading.Thread):
                 path=tornado_settings['static_path']
             )),
             (r"/dashboard/(.*)", MainUIRequestHandler, dict(
+                data_queues=self.data_queues,
+                foreman=self.foreman,
+                settings=self.settings
+            )),
+            (r"/dashws", DashboardWebSocket, dict(
                 data_queues=self.data_queues,
                 foreman=self.foreman,
                 settings=self.settings

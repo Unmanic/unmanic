@@ -577,7 +577,7 @@ const fillPluginListItems = function () {
     }
 
     // Fetch template and display
-    let template = Handlebars.getTemplate('plugins/plugins-list');
+    let template = Handlebars.getTemplateFromURL('plugins/plugins-list');
     $("div#installable_plugins_list").html(template(template_data));
 
     // Unblock textbox

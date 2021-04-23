@@ -48,9 +48,12 @@
 <script src="../assets/global/scripts/datatable.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-confirmation/bootstrap-confirmation.min.js" type="text/javascript"></script>
 {% end %}
 
 {% block scripts %}
+<script src="../assets/pages/scripts/ui-confirmations.min.js" type="text/javascript"></script>
+
 <script src="../assets/pages/scripts/dashboard.js?version={{ escape(handler.config.read_version()) }}"
         type="text/javascript"></script>
 
@@ -76,7 +79,27 @@
                 </div>
             </div>
             <div class="portlet-body">
-                <div class="row" id="worker_pie_chart"></div>
+                <!-- BEGIN WORKER PIE CHARTS -->
+                <div class="row" id="worker_pie_charts"></div>
+                <!-- END WORKER PIE CHARTS -->
+                <!-- BEGIN WORKER PIE CHARTS TEMPLATE -->
+                <div id="unmanic_worker_piechart_template" class="hidden">
+                    <div class="col-md-2 col-sm-4 col-xs-6">
+                        <div class="easy-pie-chart worker-pie-chart">
+                            <div class="number idle" data-percent="100">
+                                <span style="margin-left:-7px;"> - </span>
+                            </div>
+                            <a class="title" href="javascript:;">
+                                <span class="worker-name"></span>
+                                <i class="icon-arrow-right"></i>
+                                <br>
+                                <span class="worker-subtitle"></span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="margin-bottom-10 visible-sm"></div>
+                </div>
+                <!-- END WORKER PIE CHARTS TEMPLATE -->
             </div>
         </div>
     </div>

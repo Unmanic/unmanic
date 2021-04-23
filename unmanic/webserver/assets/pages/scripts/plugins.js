@@ -447,7 +447,7 @@ const fillPluginInfo = function (template_data) {
     $("div#configure-plugin-body").html('');
 
     // Fetch template and display
-    var template = Handlebars.getTemplate('plugins/plugin-info');
+    var template = Handlebars.getTemplateFromURL('plugins/plugin-info');
     $("div#configure-plugin-body").html(template(template_data));
 
     // Unblock element

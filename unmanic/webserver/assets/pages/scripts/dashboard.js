@@ -64,6 +64,14 @@ let Dashboard = function () {
                     });
                 }
             });
+
+            // Write the ffmpeg log if the dom exists (portlet is fullscreen)
+            $(group_id + ' .worker-ffmpeg-log').each(function () {
+                if (element.ffmpeg_log_tail.length) {
+                    let lines = element.ffmpeg_log_tail.join("");
+                    $(this).html(lines);
+                }
+            });
         };
 
         let addNewChart = function (group_id, element) {
@@ -77,8 +85,21 @@ let Dashboard = function () {
             template.removeClass('hidden');
             // Modify the name
             template.find(".worker-name").text(element.name);
+            // When the worker-full-screen button is clicked, make the footer visible
+            // This is pinched from app.js and expanded to include hiding and showing the footer elements
+            template.find(".worker-full-screen-toggle").on('click', function (e) {
+                e.preventDefault();
+                let portlet = $(this).closest(".portlet");
+                workerToggleFullScreen(portlet);
+            });
+            // Set portlet tooltips
+            template.find(".worker-full-screen-toggle").tooltip({
+                container: 'body',
+                title: 'Fullscreen'
+            });
+            template.find(".worker-name").text(element.name);
             // Insert the template into the container
-            template.appendTo( "#worker_pie_charts" );
+            template.appendTo("#worker_pie_charts");
             // Init the pie charts again to include this new element
             Dashboard.initEasyPieCharts();
             // Update data
@@ -107,6 +128,44 @@ let Dashboard = function () {
                 $(this).remove()
             }
         });
+    };
+
+    let workerToggleFullScreen = function (portlet) {
+        if (portlet.hasClass('portlet-fullscreen')) {
+            // Minimise
+            $(this).removeClass('on');
+            portlet.removeClass('portlet-fullscreen');
+            $('body').removeClass('page-portlet-fullscreen');
+
+            // Hide worker details body
+            portlet.children('.portlet-body').html('');
+            portlet.children('.portlet-body').css('height', 'auto');
+            portlet.children('.portlet-body').addClass('hidden');
+            portlet.children('.portlet-title').children('.actions').addClass('hidden');
+            portlet.children('.portlet-title').find('.worker-subtitle').css('height', '');
+            portlet.children('.portlet-body').html('');
+        } else {
+            // Maximise
+            //let height = App.getViewPort().height -
+            //    portlet.children('.portlet-title').outerHeight() -
+            //    parseInt(portlet.children('.portlet-body').css('padding-top')) -
+            //    parseInt(portlet.children('.portlet-body').css('padding-bottom'));
+
+            $(this).addClass('on');
+            portlet.addClass('portlet-fullscreen');
+            $('body').addClass('page-portlet-fullscreen');
+
+            // Display worker details body
+            //portlet.children('.portlet-body').css('height', height);
+            portlet.children('.portlet-body').removeClass('hidden');
+            portlet.children('.portlet-title').children('.actions').removeClass('hidden');
+            portlet.children('.portlet-title').find('.worker-subtitle').css('height', '25px');
+            portlet.children('.portlet-body').html('<div id="worker-details"></div>');
+
+            // Inject worker details template
+            let template = Handlebars.getTemplateFromURL('main/worker-details');
+            $("div#worker-details").html(template({}));
+        }
     };
 
     return {
@@ -190,8 +249,8 @@ let Dashboard = function () {
             let ws = wsDashboard();
             // TODO: Add onclose and show error message in UI
             ws.onopen = function () {
-                ws.send("workers_info");
-                ws.send("completed_tasks");
+                ws.send("start_workers_info");
+                ws.send("start_completed_tasks_info");
             };
             ws.onmessage = function (evt) {
                 if (typeof evt.data === "string") {
@@ -220,12 +279,6 @@ let Dashboard = function () {
                 // TODO: Show notification in UI
                 console.error('WebSocket Error: ' + evt);
             };
-            window.setInterval(function () {
-                ws.send("workers_info");
-            }, 100);;
-            window.setInterval(function () {
-                ws.send("completed_tasks");
-            }, 5000);
         },
 
         init: function () {

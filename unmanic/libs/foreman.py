@@ -64,7 +64,6 @@ class WorkerThread(threading.Thread):
         self.finish_time = None
         # Worker handles connection to ffmpeg
         self.ffmpeg = None
-        self.ffmpeg_log = None
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -72,19 +71,27 @@ class WorkerThread(threading.Thread):
 
     def get_status(self):
         status = {
-            'id':           str(self.thread_id),
-            'name':         self.name,
-            'idle':         self.idle,
-            'pid':          self.ident,
-            'progress':     self.get_job_progress(),
-            'current_file': "",
-            'start_time':   self.start_time
+            'id':              str(self.thread_id),
+            'name':            self.name,
+            'idle':            self.idle,
+            'pid':             self.ident,
+            'progress':        self.get_job_progress(),
+            'start_time':      self.start_time,
+            'current_file':    "",
+            'ffmpeg_log_tail': [],
         }
         if self.current_task:
+            # Fetch the current file
             try:
                 status['current_file'] = self.current_task.get_source_basename()
             except Exception as e:
-                self._log("Exception in fetching status of worker {}:".format(self.name), message2=str(e), level="exception")
+                self._log("Exception in fetching the current file of worker {}:".format(self.name), message2=str(e), level="exception")
+            # Append the ffmpeg log tail
+            try:
+                if self.ffmpeg.ffmpeg_cmd_stdout:
+                    status['ffmpeg_log_tail'] = self.ffmpeg.ffmpeg_cmd_stdout[-19:]
+            except Exception as e:
+                self._log("Exception in fetching ffmpeg log tail of worker {}:".format(self.name), message2=str(e), level="exception")
         return status
 
     def get_job_progress(self):
@@ -148,7 +155,6 @@ class WorkerThread(threading.Thread):
             'enable_hardware_accelerated_decoding': self.current_task.settings.enable_hardware_accelerated_decoding,
         }
         self.ffmpeg = ffmpeg.FFMPEGHandle(settings)
-        self.ffmpeg_log = None
 
     def process_item(self):
         # Reset the ffmpeg class when a new item is received

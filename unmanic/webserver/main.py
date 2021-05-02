@@ -29,11 +29,12 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
 import time
 import tornado.web
+import tornado.locks
+import tornado.ioloop
 import tornado.websocket
-import json
+from tornado import gen
 
 from unmanic.libs import common, history, session
 
@@ -71,16 +72,6 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
             self.session.register_unmanic(self.session.get_installation_uuid(), force=True)
             self.redirect("/dashboard/")
 
-    def get_workers_info(self, worker_id=None):
-        if worker_id is not None:
-            workers_info = self.foreman.get_worker_status(worker_id)
-        else:
-            workers_info = self.foreman.get_all_worker_status()
-        return workers_info
-
-    def get_workers_count(self):
-        return len(self.foreman.get_all_worker_status())
-
     def get_pending_tasks(self):
         # TODO: Configure pagination on the UI - limit 5,10,20,50,100 (default to 20)
         limit = 20
@@ -98,6 +89,9 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
 
 
 class DashboardWebSocket(tornado.websocket.WebSocketHandler):
+    sending_worker_info = False
+    sending_completed_tasks_info = False
+    close_event = False
 
     def __init__(self, *args, **kwargs):
         self.data_queues = kwargs.pop('data_queues')
@@ -107,13 +101,12 @@ class DashboardWebSocket(tornado.websocket.WebSocketHandler):
         super(DashboardWebSocket, self).__init__(*args, **kwargs)
 
     def open(self):
-        # print("WebSocket opened")
-        pass
+        self.close_event = tornado.locks.Event()
 
     def on_message(self, message):
         switcher = {
-            'workers_info':    self.write_workers_info,
-            'completed_tasks': self.write_completed_tasks,
+            'start_workers_info':         self.start_workers_info,
+            'start_completed_tasks_info': self.start_completed_tasks_info,
         }
         # Get the function from switcher dictionary
         func = switcher.get(message, lambda: self.write_message({'success': False}))
@@ -121,34 +114,47 @@ class DashboardWebSocket(tornado.websocket.WebSocketHandler):
         func()
 
     def on_close(self):
-        # print("WebSocket closed")
-        pass
+        self.close_event.set()
+        self.sending_worker_info = False
+        self.sending_completed_tasks_info = False
 
-    def write_workers_info(self):
-        workers_info = self.foreman.get_all_worker_status()
-        self.write_message(
-            {
-                'success': True,
-                'type':    'workers_info',
-                'data':    workers_info,
-            }
-        )
+    def start_workers_info(self):
+        self.sending_worker_info = True
+        tornado.ioloop.IOLoop.current().spawn_callback(self.async_workers_info)
 
-    def write_completed_tasks(self):
-        return_data = []
-        history_logging = history.History(self.config)
-        historic_task_list = list(history_logging.get_historic_task_list(20))
-        for historical_item in historic_task_list:
-            if (int(historical_item['finish_time']) + 60) > int(time.time()):
-                historical_item['human_readable_time'] = 'Just Now'
-            else:
-                human_readable_time = common.make_timestamp_human_readable(int(historical_item['finish_time']))
-                historical_item['human_readable_time'] = human_readable_time
-            return_data.append(historical_item)
-        self.write_message(
-            {
-                'success': True,
-                'type':    'completed_tasks',
-                'data':    return_data,
-            }
-        )
+    def start_completed_tasks_info(self):
+        self.sending_completed_tasks_info = True
+        tornado.ioloop.IOLoop.current().spawn_callback(self.async_completed_tasks_info)
+
+    async def async_workers_info(self):
+        while self.sending_worker_info:
+            workers_info = self.foreman.get_all_worker_status()
+            await self.write_message(
+                {
+                    'success': True,
+                    'type':    'workers_info',
+                    'data':    workers_info,
+                }
+            )
+            await gen.sleep(.2)
+
+    async def async_completed_tasks_info(self):
+        while self.sending_completed_tasks_info:
+            return_data = []
+            history_logging = history.History(self.config)
+            historic_task_list = list(history_logging.get_historic_task_list(20))
+            for historical_item in historic_task_list:
+                if (int(historical_item['finish_time']) + 60) > int(time.time()):
+                    historical_item['human_readable_time'] = 'Just Now'
+                else:
+                    human_readable_time = common.make_timestamp_human_readable(int(historical_item['finish_time']))
+                    historical_item['human_readable_time'] = human_readable_time
+                return_data.append(historical_item)
+            await self.write_message(
+                {
+                    'success': True,
+                    'type':    'completed_tasks',
+                    'data':    return_data,
+                }
+            )
+            await gen.sleep(10)

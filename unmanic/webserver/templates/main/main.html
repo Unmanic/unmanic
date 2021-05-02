@@ -86,15 +86,41 @@
                 <div id="unmanic_worker_piechart_template" class="hidden">
                     <div class="col-md-2 col-sm-4 col-xs-6">
                         <div class="easy-pie-chart worker-pie-chart">
-                            <div class="number idle" data-percent="100">
-                                <span style="margin-left:-7px;"> - </span>
+                            <div class="portlet light" style="box-shadow: none;">
+                                <div class="portlet-title" style="border: none;">
+                                    <div class="caption">
+                                        <div class="number idle" data-percent="100">
+                                            <span style="margin-left:-7px;"> - </span>
+                                        </div>
+                                        {% if session.level == 0 %}
+                                            {% set data_target = "data-target=#login-popup data-toggle=modal" %}
+                                            {% set link_class = "" %}
+                                        {% elif session.level == 1 %}
+                                            {% set data_target = "data-target=#insufficient-permissions-popup data-toggle=modal" %}
+                                            {% set link_class = "" %}
+                                        {% elif session.level > 1 %}
+                                            {% set data_target = "" %}
+                                            {% set link_class = "worker-full-screen-toggle" %}
+                                        {% end %}
+                                        <a class="title {{ link_class }}" {{ data_target }} href="javascript:;">
+                                            <span class="worker-name"></span>
+                                            <i class="icon-arrow-right"></i>
+                                            <br>
+                                            <span class="worker-subtitle"></span>
+                                        </a>
+                                    </div>
+                                    <div class="actions hidden">
+                                        <a class="btn btn-circle btn-icon-only btn-default worker-full-screen-toggle"
+                                           href="javascript:;"
+                                           data-original-title="" title=""><i class="fa fa-expand"></i></a>
+                                    </div>
+                                </div>
+                                <div class="portlet-body hidden" style="height: auto;">
+                                    <div class="worker-details hidden">
+
+                                    </div>
+                                </div>
                             </div>
-                            <a class="title" href="javascript:;">
-                                <span class="worker-name"></span>
-                                <i class="icon-arrow-right"></i>
-                                <br>
-                                <span class="worker-subtitle"></span>
-                            </a>
                         </div>
                     </div>
                     <div class="margin-bottom-10 visible-sm"></div>
@@ -188,4 +214,10 @@
         </div>
     </div>
 </div>
+    {% if session.level == 0 %}
+        {% include "../global/login-popup.html" %}
+    {% elif session.level == 1 %}
+        {% set minimum_required_sponsorship_level = "Supporter" %}
+        {% include "../global/insufficient-permissions.html" %}
+    {% end %}
 {% end %}

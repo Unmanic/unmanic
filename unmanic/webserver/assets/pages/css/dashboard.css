@@ -29,3 +29,7 @@ div.dashboard-task-list-preview .dataTables_paginate,
 div.dashboard-task-list-preview .remove-from-task-list {
     display: none;
 }
+
+.worker-ffmpeg-log {
+    text-align: left;
+}

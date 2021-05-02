@@ -452,10 +452,10 @@ class FFMPEGHandle(object):
         # Suppress printing banner. (-hide_banner)
         # Set loglevel to info ("-loglevel", "info")
         # Allow experimental encoder config ("-strict", "-2")
-        # Fix issue - 'Too many packets buffered for output stream 0:1' ("-max_muxing_queue_siz", "512")
+        # Fix issue - 'Too many packets buffered for output stream 0:1' ("-max_muxing_queue_siz", "2048")
         #       REF: [https://trac.ffmpeg.org/ticket/6375]
         #
-        default_ffmpeg_options = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "512"]
+        default_ffmpeg_options = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "2048"]
         additional_ffmpeg_options = []
         command = []
 

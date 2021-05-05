@@ -1,7 +1,10 @@
-let $dashws;
+let $dashWS = {
+    timer: null,
+    ws: null,
+};
 let wsDashboard = function () {
     // Check if connection exists
-    if ($dashws === undefined) {
+    if ($dashWS === undefined || $dashWS.ws === null) {
         // Build WS path
         let loc = window.location, new_uri;
         if (loc.protocol === "https:") {
@@ -12,11 +15,11 @@ let wsDashboard = function () {
         new_uri += "//" + loc.host + "/dashws";
 
         // Open WS connection
-        $dashws = new WebSocket(new_uri);
+        $dashWS.ws = new WebSocket(new_uri);
     }
 
     // Return WS
-    return $dashws;
+    return $dashWS.ws;
 };
 
 let Dashboard = function () {
@@ -29,6 +32,10 @@ let Dashboard = function () {
         // Fetch template and display
         let template = Handlebars.getTemplateFromURL('main/completed-tasks');
         $("div#completed_tasks").html(template(template_data));
+    };
+
+    let clearWorkerPieCharts = function () {
+        $("#worker_pie_charts").html('<div id="worker_pie_chart_notifications"></div>')
     };
 
     let updateWorkerPieCharts = function (data) {
@@ -247,10 +254,14 @@ let Dashboard = function () {
 
         initDashboardWebsocket: function () {
             let ws = wsDashboard();
-            // TODO: Add onclose and show error message in UI
-            ws.onopen = function () {
+            let wsSend = function () {
                 ws.send("start_workers_info");
                 ws.send("start_completed_tasks_info");
+            };
+            ws.onopen = function () {
+                clearTimeout($dashWS.timer);
+                clearWorkerPieCharts();
+                wsSend();
             };
             ws.onmessage = function (evt) {
                 if (typeof evt.data === "string") {
@@ -276,8 +287,27 @@ let Dashboard = function () {
                 }
             };
             ws.onerror = function (evt) {
-                // TODO: Show notification in UI
                 console.error('WebSocket Error: ' + evt);
+                clearWorkerPieCharts();
+                App.alert({
+                    container: '#worker_pie_chart_notifications',
+                    place: 'append',
+                    type: 'danger',
+                    message: 'Could not update workers. Please check that Unmanic is still running.',
+                    close: false,
+                    reset: true,
+                    focus: false,
+                    closeInSeconds: 0,
+                    icon: 'warning',
+                })
+            };
+            ws.onclose = function () {
+                console.log('Socket to Unmanic closed. Reconnect will be attempted in 30 seconds.');
+                $dashWS.ws = null;
+                $dashWS.timer = setTimeout(() => {
+                    console.debug('Attempting reconnect to Unmanic socket...');
+                    Dashboard.initDashboardWebsocket();
+                }, 30000);
             };
         },
 

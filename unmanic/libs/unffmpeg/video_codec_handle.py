@@ -65,6 +65,10 @@ class VideoCodecHandle(object):
                 # By default the video stream will be re-encoded
                 just_copy_video_stream = False
 
+                # Ignore certain codec types (images)
+                if stream['codec_name'] in ['mjpeg']:
+                    just_copy_video_stream = True
+
                 # Check for more details about the stream
                 if 'tags' in stream:
                     # Is 'mimetype' in the tags

@@ -477,7 +477,11 @@ class PluginsHandler(object, metaclass=SingletonType):
         for record in records_by_id:
             plugin_directory = self.get_plugin_path(record.get('plugin_id'))
             self._log("Removing plugin files from disk '{}'".format(plugin_directory), level='debug')
-            shutil.rmtree(plugin_directory)
+            try:
+                shutil.rmtree(plugin_directory)
+            except Exception as e:
+                self._log("Exception while removing directory {}:".format(plugin_directory), message2=str(e),
+                          level="exception")
 
         # Delete by ID in DB
         with db.atomic():

@@ -238,8 +238,13 @@ class WorkerThread(threading.Thread):
         if overall_success:
             # If file conversion was successful, we will get here
             self._log("Successfully converted file '{}'".format(abspath))
-            # Move file to original cache path
-            shutil.move(current_file_out, task_cache_path)
+            try:
+                # Move file to original cache path
+                shutil.move(current_file_out, task_cache_path)
+            except Exception as e:
+                self._log("Exception in final move operation of file {} to {}:".format(current_file_out, task_cache_path),
+                          message2=str(e), level="exception")
+                return False
             return True
         self._log("Failed to convert file '{}'".format(abspath), level='warning')
         return False

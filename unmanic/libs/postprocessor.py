@@ -29,7 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
+import hashlib
 import os
 import shutil
 import threading
@@ -204,15 +204,21 @@ class PostProcessor(threading.Thread):
                 if data.get('copy_file'):
                     # Copy the file
                     self._log("Copying file {} --> {}".format(data.get('file_in'), data.get('file_out')))
-                    shutil.copyfile(data.get('file_in'), data.get('file_out'))
-                    destination_files.append(data.get('file_out'))
-
-                    # Run another validation on the copied file to ensure it is still correct
-                    copy_valid = self.validate_streams(data.get('file_out'))
-                    if not copy_valid:
-                        # Something went wrong during that file copy
-                        self._log("Copy function failed during postprocessor file movement '{}' on file '{}'".format(
-                            plugin_module.get('plugin_id'), cache_path), level='warning')
+                    try:
+                        before_checksum = hashlib.md5(open(data.get('file_in'), 'rb').read()).hexdigest()
+                        shutil.copyfile(data.get('file_in'), data.get('file_out'))
+                        after_checksum = hashlib.md5(open(data.get('file_out'), 'rb').read()).hexdigest()
+                        # Compare the checksums on the copied file to ensure it is still correct
+                        if before_checksum != after_checksum:
+                            # Something went wrong during that file copy
+                            self._log("Copy function failed during postprocessor file movement '{}' on file '{}'".format(
+                                plugin_module.get('plugin_id'), cache_path), level='warning')
+                            file_move_processes_success = False
+                        else:
+                            destination_files.append(data.get('file_out'))
+                    except Exception as e:
+                        self._log("Exception while copying file {} to {}:".format(data.get('file_in'), data.get('file_out')),
+                                  message2=str(e), level="exception")
                         file_move_processes_success = False
 
             # Check if the remove source flag is still True after all plugins have run. If so, we will remove the source file

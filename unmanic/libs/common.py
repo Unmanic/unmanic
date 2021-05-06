@@ -123,7 +123,10 @@ def clean_files_in_dir(directory):
         for root, subFolders, files in os.walk(directory):
             if os.path.basename(root).startswith("unmanic_file_conversion"):
                 print("Clearing cache path - {}".format(root))
-                shutil.rmtree(root)
+                try:
+                    shutil.rmtree(root)
+                except Exception as e:
+                    print("Exception while clearing cache path - {}".format(str(e)))
 
 
 def random_string(string_length=5):

@@ -292,6 +292,10 @@ class FFMPEGHandle(object):
                             video_streams_codecs += "{},{}".format(video_streams_codecs, stream['codec_name'])
                         else:
                             video_streams_codecs += "{}".format(stream['codec_name'])
+                        # Ignore certain codec types (images)
+                        if stream['codec_name'] in ['mjpeg']:
+                            continue
+                        # Check if codec name is the same as the one configured
                         if stream['codec_name'] == settings['video_codec']:
                             self._log(
                                 "File already has {} codec video stream - {}".format(settings['video_codec'], vid_file_path),

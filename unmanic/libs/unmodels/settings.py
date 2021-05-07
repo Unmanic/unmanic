@@ -56,7 +56,7 @@ class Settings(BaseModel):
     enable_audio_encoding = BooleanField(null=False, default=True)
     enable_audio_stream_transcoding = BooleanField(null=False, default=True)
     enable_audio_stream_stereo_cloning = BooleanField(null=False, default=True)
-    enable_inotify = BooleanField(null=False, default=True)
+    enable_inotify = BooleanField(null=False, default=False)
     enable_video_encoding = BooleanField(null=False, default=True)
     library_path = TextField(null=False, default='/library')
     log_path = TextField(null=False, default=os.path.join(common.get_home_dir(), '.unmanic', 'logs'))

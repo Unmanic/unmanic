@@ -64,6 +64,8 @@ class WorkerThread(threading.Thread):
         self.finish_time = None
         # Worker handles connection to ffmpeg
         self.ffmpeg = None
+        # Record the runners info including all plugins
+        self.worker_runners_info = []
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -71,27 +73,36 @@ class WorkerThread(threading.Thread):
 
     def get_status(self):
         status = {
-            'id':              str(self.thread_id),
-            'name':            self.name,
-            'idle':            self.idle,
-            'pid':             self.ident,
-            'progress':        self.get_job_progress(),
-            'start_time':      self.start_time,
-            'current_file':    "",
-            'ffmpeg_log_tail': [],
+            'id':                    str(self.thread_id),
+            'name':                  self.name,
+            'idle':                  self.idle,
+            'pid':                   self.ident,
+            'progress':              self.get_job_progress(),
+            'start_time':            self.start_time,
+            'current_file':          "",
+            'ffmpeg_log_tail':       [],
+            'runners_info':          [],
         }
         if self.current_task:
             # Fetch the current file
             try:
                 status['current_file'] = self.current_task.get_source_basename()
             except Exception as e:
-                self._log("Exception in fetching the current file of worker {}:".format(self.name), message2=str(e), level="exception")
+                self._log("Exception in fetching the current file of worker {}:".format(self.name), message2=str(e),
+                          level="exception")
             # Append the ffmpeg log tail
             try:
                 if self.ffmpeg.ffmpeg_cmd_stdout:
                     status['ffmpeg_log_tail'] = self.ffmpeg.ffmpeg_cmd_stdout[-19:]
             except Exception as e:
-                self._log("Exception in fetching ffmpeg log tail of worker {}:".format(self.name), message2=str(e), level="exception")
+                self._log("Exception in fetching ffmpeg log tail of worker {}:".format(self.name), message2=str(e),
+                          level="exception")
+            # Append the runners info
+            try:
+                status['runners_info'] = self.worker_runners_info
+            except Exception as e:
+                self._log("Exception in fetching ffmpeg log tail of worker {}:".format(self.name), message2=str(e),
+                          level="exception")
         return status
 
     def get_job_progress(self):
@@ -115,6 +126,7 @@ class WorkerThread(threading.Thread):
     def unset_current_task(self):
         self.current_task = None
         self.ffmpeg = None
+        self.worker_runners_info = {}
 
     def start_task_stats(self):
         self.start_time = time.time()
@@ -173,6 +185,19 @@ class WorkerThread(threading.Thread):
         plugin_executor = PluginExecutor()
         plugin_modules = plugin_executor.get_plugin_modules_by_type('worker.process_item')
 
+        # Create dictionary of runners info for the webUI
+        self.worker_runners_info = {}
+        for plugin_module in plugin_modules:
+            self.worker_runners_info[plugin_module.get('plugin_id')] = {
+                'plugin_id':   plugin_module.get('plugin_id'),
+                'status':      'pending',
+                "name":        plugin_module.get('name'),
+                "author":      plugin_module.get('author'),
+                "version":     plugin_module.get('version'),
+                "icon":        plugin_module.get('icon'),
+                "description": plugin_module.get('description'),
+            }
+
         # Process item in loop.
         # First process the item for for each plugin that configures it, then run the default Unmanic configuration
         task_cache_path = self.current_task.get_cache_path()
@@ -182,6 +207,8 @@ class WorkerThread(threading.Thread):
         runner_count = 0
         for plugin_module in plugin_modules:
             runner_count += 1
+            self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'in_progress'
+            self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = False
             # Fetch file out details
             # This creates a temp file labeled "WORKING" that will be moved to the cache_path on completion
             tmp_file_out = os.path.splitext(task_cache_path)
@@ -207,6 +234,7 @@ class WorkerThread(threading.Thread):
                     "Error while running worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'), abspath),
                     errors, level="error")
                 # Dont execute this runner. It failed
+                self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'complete'
                 continue
 
             # Run plugin and fetch return data
@@ -217,6 +245,7 @@ class WorkerThread(threading.Thread):
                 self._log("Exception while carrying out plugin runner on worker process '{}'".format(
                     plugin_module.get('plugin_id')), message2=str(e), level="exception")
                 # Skip this plugin module's loop
+                self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'complete'
                 continue
             self._log("Worker process '{}' (in)".format(plugin_module.get('plugin_id')), data.get("file_in"), level='debug')
             self._log("Worker process '{}' (out)".format(plugin_module.get('plugin_id')), data.get("file_out"), level='debug')
@@ -237,9 +266,13 @@ class WorkerThread(threading.Thread):
                     self._log(
                         "Error while running worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'), abspath),
                         level="error")
+                    self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = False
                     overall_success = False
             else:
                 self._log("Worker process '{}' set to not run the FFMPEG command.", level='debug')
+
+            self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = True
+            self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'complete'
 
         if overall_success:
             # If file conversion was successful, we will get here

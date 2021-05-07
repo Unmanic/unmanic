@@ -1,0 +1,72 @@
+<div class="tab-pane {{ active }}" id="worker-runners-info-{{ plugin_id }}">
+    <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: 200px;">
+        <div class="scroller" style="height: 200px; overflow: hidden; width: auto;" data-initialized="1">
+            <h4> {{ name }} </h4>
+            <div class="row text-left">
+                <div class="col-md-6 ">
+                    <div class="border-right-blue">
+                    <p> {{bbcode description}} </p>
+                        </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Runner Stats</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="col-md-12">
+                                <label class="col-md-5 control-label">
+                                    <b>State:</b>
+                                </label>
+                                <div class="col-md-7">
+                                    <span class="worker-runner-stats"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="col-md-5 control-label">
+                                    <b>Current Frame:</b>
+                                </label>
+                                <div class="col-md-7">
+                                    <span class="worker-runner-stats"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="col-md-5 control-label">
+                                    <b>FFMPEG Speed:</b>
+                                </label>
+                                <div class="col-md-7">
+                                    <span class="worker-runner-stats"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="col-md-5 control-label">
+                                    <b>Total Processing Time:</b>
+                                </label>
+                                <div class="col-md-7">
+                                    <span class="worker-runner-stats"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slimScrollBar"
+             style="background: rgb(187, 187, 187) none repeat scroll 0% 0%; width: 7px; position: absolute; top: 0px; opacity: 0.4; display: none; border-radius: 7px; z-index: 99; right: 1px; height: 142.857px;"></div>
+        <div class="slimScrollRail"
+             style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; background: rgb(234, 234, 234) none repeat scroll 0% 0%; opacity: 0.2; z-index: 90; right: 1px;"></div>
+    </div>
+</div>
+<!--
+
+            progress['duration'] = str(self.ffmpeg.duration)
+            progress['src_fps'] = str(self.ffmpeg.src_fps)
+            progress['elapsed'] = str(self.ffmpeg.elapsed)
+            progress['time'] = str(self.ffmpeg.time)
+            progress['percent'] = str(self.ffmpeg.percent)
+            progress['frame'] = str(self.ffmpeg.frame)
+            progress['fps'] = str(self.ffmpeg.fps)
+            progress['speed'] = str(self.ffmpeg.speed)
+            progress['bitrate'] = str(self.ffmpeg.bitrate)
+            progress['file_size'] = str(self.ffmpeg.file_size)
+            -->

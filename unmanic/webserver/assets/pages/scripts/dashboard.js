@@ -38,7 +38,6 @@ let Dashboard = function () {
         $("#worker_pie_charts").html('<div id="worker_pie_chart_notifications"></div>')
     };
 
-    let workerRunnerInfoTemplate = null;
     let updateWorkerPieCharts = function (data) {
         let default_percent_value = 100;
         let default_current_file = 'Waiting for job...';
@@ -85,33 +84,12 @@ let Dashboard = function () {
                 }
             });
 
-
-            // TODO: Remove tabs when worker is idle
-            // Write the runners info if the dom exists (portlet is fullscreen)
+            // Get the current runner
             let currentRunner = 'None';
             $.each(element.runners_info, function (key, value) {
-                // Append another item to the top tabs
-                let template_data = value;
-                template_data['active'] = '';
-                if (value.status == 'in_progress') {
-                    template_data['active'] = 'active';
+                if (value.status === 'in_progress') {
                     currentRunner = value.name;
                 }
-                /*if (!$("#worker-runners-info-tab-" + key).length) {
-                    $("#worker-runners-info-tabs").append(
-                        '<li class="' + template_data.active + ' worker-runners-info-tab" id="worker-runners-info-tab-' + key + '">\n' +
-                        '    <a href="#worker-runners-info-' + key + '" data-toggle="tab" aria-expanded="false"> ' + value.name + ' </a>\n' +
-                        '</li>'
-                    );
-                }
-
-                // Append item to the runner details
-                if (workerRunnerInfoTemplate) {
-                    if (!$("#worker-runners-info-" + key).length) {
-                        $("div#worker-runners-info").append(workerRunnerInfoTemplate(template_data));
-                        console.log(template_data)
-                    }
-                }*/
             });
 
             // Update the worker status
@@ -242,9 +220,6 @@ let Dashboard = function () {
             // Inject worker details template
             let template = Handlebars.getTemplateFromURL('main/worker-details');
             $("div#worker-details").html(template({}));
-
-            // Fetch template for
-            workerRunnerInfoTemplate = Handlebars.getTemplateFromURL('main/worker-info-runner-info');
         }
     };
 

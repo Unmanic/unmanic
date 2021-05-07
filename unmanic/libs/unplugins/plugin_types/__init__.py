@@ -41,7 +41,7 @@ import pkgutil
 
 from .plugin_type_base import PluginType
 
-d = Path(__file__).parent
+d = os.path.join(Path(__file__).parent)
 type_modules_paths = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o)) and not o.startswith('_')]
 
 

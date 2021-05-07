@@ -29,7 +29,7 @@ jobs:
 
     # Restore the python cache if it exists
     - name: Restore python cache
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}

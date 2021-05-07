@@ -34,6 +34,7 @@ from __future__ import absolute_import
 import warnings
 from importlib import import_module
 from pathlib import Path
+import os
 import sys
 import inspect
 import pkgutil
@@ -75,7 +76,7 @@ def get_all_containers():
     """
     containers_dic = {}
 
-    for (_, module_name, _) in pkgutil.iter_modules([Path(__file__).parent]):
+    for (_, module_name, _) in pkgutil.iter_modules([os.path.join(Path(__file__).parent)]):
         instance = grab_module(module_name)
         container_data = {
             "extension":          instance.container_extension(),
@@ -91,7 +92,7 @@ def get_all_containers():
 Import all submodules for this package
 
 """
-for (_, name, _) in pkgutil.iter_modules([Path(__file__).parent]):
+for (_, name, _) in pkgutil.iter_modules([os.path.join(Path(__file__).parent)]):
 
     imported_module = import_module('.' + name, package=__name__)
 

@@ -30,6 +30,8 @@
 
 """
 import time
+import uuid
+
 import tornado.web
 import tornado.locks
 import tornado.ioloop
@@ -94,6 +96,7 @@ class DashboardWebSocket(tornado.websocket.WebSocketHandler):
     close_event = False
 
     def __init__(self, *args, **kwargs):
+        self.server_id = str(uuid.uuid4())
         self.data_queues = kwargs.pop('data_queues')
         self.foreman = kwargs.pop('foreman')
         self.config = kwargs.pop('settings')
@@ -131,9 +134,10 @@ class DashboardWebSocket(tornado.websocket.WebSocketHandler):
             workers_info = self.foreman.get_all_worker_status()
             await self.write_message(
                 {
-                    'success': True,
-                    'type':    'workers_info',
-                    'data':    workers_info,
+                    'success':   True,
+                    'server_id': self.server_id,
+                    'type':      'workers_info',
+                    'data':      workers_info,
                 }
             )
             await gen.sleep(.2)
@@ -152,9 +156,10 @@ class DashboardWebSocket(tornado.websocket.WebSocketHandler):
                 return_data.append(historical_item)
             await self.write_message(
                 {
-                    'success': True,
-                    'type':    'completed_tasks',
-                    'data':    return_data,
+                    'success':   True,
+                    'server_id': self.server_id,
+                    'type':      'completed_tasks',
+                    'data':      return_data,
                 }
             )
             await gen.sleep(10)

@@ -1,6 +1,7 @@
 let $dashWS = {
     timer: null,
     ws: null,
+    serverId: null,
 };
 let wsDashboard = function () {
     // Check if connection exists
@@ -315,6 +316,16 @@ let Dashboard = function () {
                 if (typeof evt.data === "string") {
                     let jsonData = JSON.parse(evt.data);
                     if (jsonData.success) {
+                        // Ensure the server is still running the same instance...
+                        if ($dashWS.serverId === null) {
+                            $dashWS.serverId = jsonData.server_id;
+                        } else {
+                            if (jsonData.server_id !== $dashWS.serverId) {
+                                // Reload the whole page. Some things may have changed
+                                console.log('Unmanic server has restarted. Reloading page...')
+                                location.reload();
+                            }
+                        }
                         // Parse data type and update the dashboard
                         switch (jsonData.type) {
                             case 'workers_info':
@@ -350,10 +361,9 @@ let Dashboard = function () {
                 })
             };
             ws.onclose = function () {
-                console.log('Socket to Unmanic closed. Reconnect will be attempted in 5 seconds.');
                 $dashWS.ws = null;
                 $dashWS.timer = setTimeout(() => {
-                    console.debug('Attempting reconnect to Unmanic socket...');
+                    console.debug('Attempting reconnect to Unmanic server...');
                     Dashboard.initDashboardWebsocket();
                 }, 5000);
             };

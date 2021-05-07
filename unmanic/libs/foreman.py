@@ -92,8 +92,9 @@ class WorkerThread(threading.Thread):
                           level="exception")
             # Append the ffmpeg log tail
             try:
-                if self.ffmpeg.ffmpeg_cmd_stdout:
-                    status['ffmpeg_log_tail'] = self.ffmpeg.ffmpeg_cmd_stdout[-19:]
+                if self.ffmpeg:
+                    if self.ffmpeg.ffmpeg_cmd_stdout:
+                        status['ffmpeg_log_tail'] = self.ffmpeg.ffmpeg_cmd_stdout[-19:]
             except Exception as e:
                 self._log("Exception in fetching ffmpeg log tail of worker {}:".format(self.name), message2=str(e),
                           level="exception")
@@ -101,7 +102,7 @@ class WorkerThread(threading.Thread):
             try:
                 status['runners_info'] = self.worker_runners_info
             except Exception as e:
-                self._log("Exception in fetching ffmpeg log tail of worker {}:".format(self.name), message2=str(e),
+                self._log("Exception in runners info of worker {}:".format(self.name), message2=str(e),
                           level="exception")
         return status
 

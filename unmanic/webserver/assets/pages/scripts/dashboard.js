@@ -38,6 +38,7 @@ let Dashboard = function () {
         $("#worker_pie_charts").html('<div id="worker_pie_chart_notifications"></div>')
     };
 
+    let workerRunnerInfoTemplate = null;
     let updateWorkerPieCharts = function (data) {
         let default_percent_value = 100;
         let default_current_file = 'Waiting for job...';
@@ -74,11 +75,74 @@ let Dashboard = function () {
 
             // Write the ffmpeg log if the dom exists (portlet is fullscreen)
             $(group_id + ' .worker-ffmpeg-log').each(function () {
-                if (element.ffmpeg_log_tail.length) {
-                    let lines = element.ffmpeg_log_tail.join("");
-                    $(this).html(lines);
+                if (element.idle) {
+                    $(this).html('');
+                } else {
+                    if (element.ffmpeg_log_tail.length) {
+                        let lines = element.ffmpeg_log_tail.join("");
+                        $(this).html(lines);
+                    }
                 }
             });
+
+
+            // TODO: Remove tabs when worker is idle
+            // Write the runners info if the dom exists (portlet is fullscreen)
+            let currentRunner = 'None';
+            $.each(element.runners_info, function (key, value) {
+                // Append another item to the top tabs
+                let template_data = value;
+                template_data['active'] = '';
+                if (value.status == 'in_progress') {
+                    template_data['active'] = 'active';
+                    currentRunner = value.name;
+                }
+                /*if (!$("#worker-runners-info-tab-" + key).length) {
+                    $("#worker-runners-info-tabs").append(
+                        '<li class="' + template_data.active + ' worker-runners-info-tab" id="worker-runners-info-tab-' + key + '">\n' +
+                        '    <a href="#worker-runners-info-' + key + '" data-toggle="tab" aria-expanded="false"> ' + value.name + ' </a>\n' +
+                        '</li>'
+                    );
+                }
+
+                // Append item to the runner details
+                if (workerRunnerInfoTemplate) {
+                    if (!$("#worker-runners-info-" + key).length) {
+                        $("div#worker-runners-info").append(workerRunnerInfoTemplate(template_data));
+                        console.log(template_data)
+                    }
+                }*/
+            });
+
+            // Update the worker status
+            $(group_id + ' .worker-status').each(function () {
+                $(this).find('.worker-status-current-runner').text(currentRunner);
+                if (element.idle) {
+                    $(this).find('.worker-status-state').text('Waiting for another task...');
+                    $(this).find('.worker-status-start-time').text('');
+                    $(this).find('.worker-status-total-proc-time').text('');
+                } else {
+                    $(this).find('.worker-status-state').text('Processing task...');
+                    let startTime = new Date(element.start_time * 1000);
+                    $(this).find('.worker-status-start-time').text(startTime);
+                    $(this).find('.worker-status-total-proc-time').text(printTimeSinceDate(startTime));
+                }
+            });
+        };
+
+        const printTimeSinceDate = function(startDate) {
+            let date_now = new Date();
+
+            let seconds = Math.floor((date_now - (startDate))/1000);
+            let minutes = Math.floor(seconds/60);
+            let hours = Math.floor(minutes/60);
+            let days = Math.floor(hours/24);
+
+            hours = hours-(days*24);
+            minutes = minutes-(days*24*60)-(hours*60);
+            seconds = seconds-(days*24*60*60)-(hours*60*60)-(minutes*60);
+
+            return "Days: " + days + " Hours: " + hours + " Minutes: " + minutes + " Seconds: " + seconds;
         };
 
         let addNewChart = function (group_id, element) {
@@ -148,7 +212,10 @@ let Dashboard = function () {
             portlet.children('.portlet-body').html('');
             portlet.children('.portlet-body').css('height', 'auto');
             portlet.children('.portlet-body').addClass('hidden');
+            portlet.children('.portlet-title').children('.caption').removeClass('col-md-11');
             portlet.children('.portlet-title').children('.actions').addClass('hidden');
+            portlet.children('.portlet-title').find('.worker-chart').removeClass('col-md-6');
+            portlet.children('.portlet-title').find('.worker-status').addClass('hidden');
             portlet.children('.portlet-title').find('.worker-subtitle').css('height', '');
             portlet.children('.portlet-body').html('');
         } else {
@@ -165,13 +232,19 @@ let Dashboard = function () {
             // Display worker details body
             //portlet.children('.portlet-body').css('height', height);
             portlet.children('.portlet-body').removeClass('hidden');
+            portlet.children('.portlet-title').children('.caption').addClass('col-md-11');
             portlet.children('.portlet-title').children('.actions').removeClass('hidden');
+            portlet.children('.portlet-title').find('.worker-chart').addClass('col-md-6');
+            portlet.children('.portlet-title').find('.worker-status').removeClass('hidden');
             portlet.children('.portlet-title').find('.worker-subtitle').css('height', '25px');
             portlet.children('.portlet-body').html('<div id="worker-details"></div>');
 
             // Inject worker details template
             let template = Handlebars.getTemplateFromURL('main/worker-details');
             $("div#worker-details").html(template({}));
+
+            // Fetch template for
+            workerRunnerInfoTemplate = Handlebars.getTemplateFromURL('main/worker-info-runner-info');
         }
     };
 
@@ -302,12 +375,12 @@ let Dashboard = function () {
                 })
             };
             ws.onclose = function () {
-                console.log('Socket to Unmanic closed. Reconnect will be attempted in 30 seconds.');
+                console.log('Socket to Unmanic closed. Reconnect will be attempted in 5 seconds.');
                 $dashWS.ws = null;
                 $dashWS.timer = setTimeout(() => {
                     console.debug('Attempting reconnect to Unmanic socket...');
                     Dashboard.initDashboardWebsocket();
-                }, 30000);
+                }, 5000);
             };
         },
 

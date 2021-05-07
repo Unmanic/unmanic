@@ -87,25 +87,71 @@
                             <div class="portlet light" style="box-shadow: none;">
                                 <div class="portlet-title" style="border: none;">
                                     <div class="caption">
-                                        <div class="number idle" data-percent="100">
-                                            <span style="margin-left:-7px;"> - </span>
+                                        <div class="row">
+                                            <div class="worker-chart">
+                                                <div class="number idle" data-percent="100">
+                                                    <span style="margin-left:-7px;"> - </span>
+                                                </div>
+                                                {% if session.level == 0 %}
+                                                    {% set data_target = "data-target=#login-popup data-toggle=modal" %}
+                                                    {% set link_class = "" %}
+                                                {% elif session.level == 1 %}
+                                                    {% set data_target = "data-target=#insufficient-permissions-popup data-toggle=modal" %}
+                                                    {% set link_class = "" %}
+                                                {% elif session.level > 1 %}
+                                                    {% set data_target = "" %}
+                                                    {% set link_class = "worker-full-screen-toggle" %}
+                                                {% end %}
+                                                <a class="title {{ link_class }}" {{ data_target }} href="javascript:;">
+                                                    <span class="worker-name"></span>
+                                                    <i class="icon-arrow-right"></i>
+                                                    <br>
+                                                    <span class="worker-subtitle"></span>
+                                                </a>
+                                            </div>
+
+                                            <div class="worker-status col-md-6 text-left hidden">
+                                                <div class="panel panel-default">
+                                                    <div class="panel-heading">
+                                                        <h3 class="panel-title">Status</h3>
+                                                    </div>
+                                                    <div class="panel-body">
+                                                        <div class="col-md-12">
+                                                            <label class="col-md-5 control-label">
+                                                                <b>State:</b>
+                                                            </label>
+                                                            <div class="col-md-7">
+                                                                <span class="worker-status-state"></span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-12">
+                                                            <label class="col-md-5 control-label">
+                                                                <b>Current Runner:</b>
+                                                            </label>
+                                                            <div class="col-md-7">
+                                                                <span class="worker-status-current-runner"></span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-12">
+                                                            <label class="col-md-5 control-label">
+                                                                <b>Start Time:</b>
+                                                            </label>
+                                                            <div class="col-md-7">
+                                                                <span class="worker-status-start-time"></span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-12">
+                                                            <label class="col-md-5 control-label">
+                                                                <b>Total Processing Time:</b>
+                                                            </label>
+                                                            <div class="col-md-7">
+                                                                <span class="worker-status-total-proc-time"></span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        {% if session.level == 0 %}
-                                            {% set data_target = "data-target=#login-popup data-toggle=modal" %}
-                                            {% set link_class = "" %}
-                                        {% elif session.level == 1 %}
-                                            {% set data_target = "data-target=#insufficient-permissions-popup data-toggle=modal" %}
-                                            {% set link_class = "" %}
-                                        {% elif session.level > 1 %}
-                                            {% set data_target = "" %}
-                                            {% set link_class = "worker-full-screen-toggle" %}
-                                        {% end %}
-                                        <a class="title {{ link_class }}" {{ data_target }} href="javascript:;">
-                                            <span class="worker-name"></span>
-                                            <i class="icon-arrow-right"></i>
-                                            <br>
-                                            <span class="worker-subtitle"></span>
-                                        </a>
                                     </div>
                                     <div class="actions hidden">
                                         <a class="btn btn-circle btn-icon-only btn-default worker-full-screen-toggle"

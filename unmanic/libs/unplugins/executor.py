@@ -186,8 +186,12 @@ class PluginExecutor(object):
             # Get plugin ID
             plugin_id = plugin.get('plugin_id')
 
-            # Get plugin Name
+            # Get plugin metadata
             plugin_name = plugin.get('name')
+            plugin_author = plugin.get('author')
+            plugin_version = plugin.get('version')
+            plugin_icon = plugin.get('icon')
+            plugin_description = plugin.get('description')
 
             # Get the path for this plugin
             plugin_path = self.__get_plugin_directory(plugin_id)
@@ -201,6 +205,10 @@ class PluginExecutor(object):
                 plugin_runner_data = {
                     "plugin_id":     plugin_id,
                     "name":          plugin_name,
+                    "author":        plugin_author,
+                    "version":       plugin_version,
+                    "icon":          plugin_icon,
+                    "description":   plugin_description,
                     "plugin_module": plugin_module,
                     "plugin_path":   plugin_path,
                     "runner":        getattr(plugin_module, plugin_runner),
@@ -228,6 +236,10 @@ class PluginExecutor(object):
             {
                 "plugin_id":     self.default_plugin_runner_name,
                 "name":          "Default Unmanic Process",
+                "author":        "N/A",
+                "version":       "N/A",
+                "icon":          None,
+                "description":   "The default unmanic process as configured by the Unmanic settings",
                 "plugin_module": None,
                 "plugin_path":   None,
                 "runner":        self.default_runner,

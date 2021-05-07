@@ -31,6 +31,8 @@
 """
 
 from __future__ import absolute_import
+
+import os
 import warnings
 from importlib import import_module
 from pathlib import Path
@@ -75,7 +77,7 @@ def get_all_audio_codecs():
     """
     return_dic = {}
 
-    for (_, module_name, _) in pkgutil.iter_modules([Path(__file__).parent]):
+    for (_, module_name, _) in pkgutil.iter_modules([os.path.join(Path(__file__).parent)]):
         instance = grab_module(module_name)
         return_data = {
             "name":            instance.codec_name(),
@@ -92,7 +94,7 @@ def get_all_audio_codecs():
 Import all submodules for this package
 
 """
-for (_, name, _) in pkgutil.iter_modules([Path(__file__).parent]):
+for (_, name, _) in pkgutil.iter_modules([os.path.join(Path(__file__).parent)]):
 
     imported_module = import_module('.' + name, package=__name__)
 

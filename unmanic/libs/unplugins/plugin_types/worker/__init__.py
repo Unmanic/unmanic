@@ -31,6 +31,8 @@
 """
 
 from __future__ import absolute_import
+
+import os
 from importlib import import_module
 from pathlib import Path
 import sys
@@ -43,7 +45,7 @@ from ..plugin_type_base import PluginType
 Import all submodules for this package
 
 """
-for (_, name, _) in pkgutil.iter_modules([Path(__file__).parent]):
+for (_, name, _) in pkgutil.iter_modules([os.path.join(Path(__file__).parent)]):
 
     imported_module = import_module('.' + name, package=__name__)
 

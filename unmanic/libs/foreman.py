@@ -253,6 +253,8 @@ class WorkerThread(threading.Thread):
 
             # Only run the conversion process if "exec_ffmpeg" is True
             if data.get("exec_ffmpeg"):
+                self.current_task.save_ffmpeg_log("\n\nRUNNER: \n" + plugin_module.get('name'))
+
                 # Run conversion process
                 success = self.convert_file(data, plugin_module.get('plugin_id'))
 

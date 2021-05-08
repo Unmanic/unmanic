@@ -594,15 +594,10 @@ class FFMPEGHandle(object):
         # Poll process for new output until finished
         while True:
             line_text = self.process.stdout.readline()
-            # Add line to stdout list. This is used for debugging the process if something goes wrong
-            if self.settings['debugging']:
-                # Fetch ffmpeg stdout and append it to the current task object (to be saved during post process)
-                # This adds a fair amount of data to the database. It is not ideal to do this
-                # for every task unless the user really needs it.
-                # TODO: Add config options to save this data instead of relying on debugging.
-                #  We could filter it here so that it does not include the lines starting with 'frame='
-                #  in order to reduce the amount of data needing to be saved.
-                self.ffmpeg_cmd_stdout.append(line_text)
+
+            # Fetch ffmpeg stdout and append it to the current task object (to be saved during post process)
+            self.ffmpeg_cmd_stdout.append(line_text)
+
             if line_text == '' and self.process.poll() is not None:
                 break
             # parse the progress

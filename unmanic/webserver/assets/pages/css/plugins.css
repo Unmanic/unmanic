@@ -1,3 +1,7 @@
+div#installable_plugins_list {
+    padding-left: 5px;
+    padding-right: 15px;
+}
 
 .installable-plugins-list-item {
     padding-left: 0;

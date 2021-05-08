@@ -45,6 +45,13 @@ class PluginSettings(object, metaclass=SingletonType):
     settings = {}
 
     """
+    A dictionary of form settings used by Unmanic's WebUI to configure
+    the plugin's settings form.
+
+    """
+    form_settings = {}
+
+    """
     A cached copy of settings as they are stored on disk.
 
     """

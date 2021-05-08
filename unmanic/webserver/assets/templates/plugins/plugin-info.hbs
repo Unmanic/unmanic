@@ -67,29 +67,51 @@
                             <div class="form-body">
                                 {{#each settings}}
                                     {{#with this}}
-                                        {{#ifEquals var_type "str"}}
+                                        {{#ifEquals input_type "text"}}
                                             <!-- Text input -->
                                             <div class="form-group form-md-line-input">
-                                                <input type="text" class="form-control" id="{{key_id}}"
+                                                <input type="text" class="form-control"
+                                                       id="{{key_id}}"
+                                                       name="{{key_id}}"
                                                        placeholder="{{value}}"
-                                                       name="{{key_id}}" value="{{value}}">
-                                                <label for="{{key_id}}">{{key}}</label>
-                                            </div>
-                                        {{/ifEquals}}
-                                        {{#ifEquals var_type "int"}}
-                                            <!-- Text input -->
-                                            <div class="form-group form-md-line-input">
-                                                <input type="text" class="form-control" id="{{key_id}}"
-                                                       placeholder="{{value}}"
-                                                       name="{{key_id}}" value="{{value}}">
-                                                <label for="{{key_id}}">{{key}}</label>
+                                                       value="{{value}}">
+                                                <label for="{{key_id}}">{{label}}</label>
                                             </div>
                                         {{/ifEquals}}
 
-                                        {{#ifEquals var_type "bool"}}
+                                        {{#ifEquals input_type "textarea"}}
+                                            <!-- Textarea input -->
+                                            <div class="form-group form-md-line-input">
+                                                <textarea class="form-control" rows="3"
+                                                          id="{{key_id}}"
+                                                          name="{{key_id}}"
+                                                          placeholder="{{value}}">{{value}}</textarea>
+                                                <label for="{{key_id}}">{{label}}</label>
+                                            </div>
+                                        {{/ifEquals}}
+
+                                        {{#ifEquals input_type "select"}}
+                                            <!-- Select input -->
+                                            <div class="form-group form-md-line-input">
+                                                <select class="form-control"
+                                                        id="{{key_id}}"
+                                                        name="{{key_id}}">
+                                                    {{#setSelectedOption value}}
+                                                        {{#each select_options}}
+                                                            {{#with this}}
+                                                                <option value="{{value}}">{{label}}</option>
+                                                            {{/with}}
+                                                        {{/each}}
+                                                    {{/setSelectedOption}}
+                                                </select>
+                                                <label for="{{key_id}}">{{label}}</label>
+                                            </div>
+                                        {{/ifEquals}}
+
+                                        {{#ifEquals input_type "checkbox"}}
                                             <!-- Checkbox input -->
                                             <div class="form-group form-md-checkboxes">
-                                                <label>{{key}}</label>
+                                                <label>{{label}}</label>
                                                 <div class="md-checkbox-inline">
                                                     <div class="md-checkbox">
                                                         <input type='hidden' id="{{key_id}}"

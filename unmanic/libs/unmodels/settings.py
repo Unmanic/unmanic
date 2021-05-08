@@ -65,7 +65,7 @@ class Settings(BaseModel):
     out_container = TextField(null=False, default='matroska')
     remove_subtitle_streams = BooleanField(null=False, default=True)
     run_full_scan_on_start = BooleanField(null=False, default=False)
-    schedule_full_scan_minutes = IntegerField(null=False, default=60)
+    schedule_full_scan_minutes = IntegerField(null=False, default=1440)
     search_extensions = TextField(null=False, default='mkv,avi,mov,ts,rmvb,mp4,')
     video_codec = TextField(null=False, default='hevc')
     video_stream_encoder = TextField(null=False, default='libx265')

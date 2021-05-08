@@ -266,9 +266,11 @@ class PluginExecutor(object):
             # This plugin does not have a settings class
             return {}
 
-        plugin_settings = plugin_module.Settings()
+        settings = plugin_module.Settings()
 
-        return plugin_settings.get_setting()
+        plugin_settings = settings.get_setting()
+
+        return plugin_settings, settings.form_settings
 
     def save_plugin_settings(self, plugin_id, settings):
         """
@@ -345,7 +347,7 @@ class PluginExecutor(object):
         # Get the called runner function for the given plugin type
         plugin_settings = {}
         try:
-            plugin_settings = self.get_plugin_settings(plugin_id)
+            plugin_settings, plugin_settings_meta = self.get_plugin_settings(plugin_id)
         except Exception as e:
             errors.append(str(e))
 

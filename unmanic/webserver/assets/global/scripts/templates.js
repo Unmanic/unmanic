@@ -49,3 +49,8 @@ Handlebars.registerHelper('pagination', function (currentPage, pageCount, pageSi
 
     return options.fn(context);
 });
+Handlebars.registerHelper('setSelectedOption', function (value, options) {
+    var $el = $('<select />').html(options.fn(this));
+    $el.find('[value="' + value + '"]').attr({'selected': 'selected'});
+    return $el.html();
+});

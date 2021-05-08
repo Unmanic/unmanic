@@ -333,24 +333,40 @@ class ApiPluginsHandler(BaseApiHandler):
 
         # Check plugin for settings
         plugin_executor = PluginExecutor()
-        plugin_settings = plugin_executor.get_plugin_settings(plugin_id)
+        plugin_settings, plugin_settings_meta = plugin_executor.get_plugin_settings(plugin_id)
         if plugin_settings:
             for key in plugin_settings:
-                key_id = hashlib.md5(key.encode('utf8')).hexdigest()
-                value = plugin_settings.get(key)
-                var_type = "str"
-                if isinstance(value, bool):
-                    var_type = "bool"
-                elif isinstance(value, (int, float)):
-                    var_type = "int"
-                settings.append(
-                    {
-                        "key_id":   key_id,
-                        "key":      key,
-                        "value":    value,
-                        "var_type": var_type,
-                    }
-                )
+                form_input = {
+                    "key_id":         hashlib.md5(key.encode('utf8')).hexdigest(),
+                    "key":            key,
+                    "value":          plugin_settings.get(key),
+                    "input_type":     None,
+                    "label":          None,
+                    "select_options": [],
+                }
+
+                plugin_setting_meta = plugin_settings_meta.get(key, {})
+
+                # Set input type for form
+                form_input['input_type'] = plugin_setting_meta.get('input_type', None)
+                if not form_input['input_type']:
+                    form_input['input_type'] = "text"
+                    if isinstance(form_input['value'], bool):
+                        form_input['input_type'] = "checkbox"
+
+                # Set input label text
+                form_input['label'] = plugin_setting_meta.get('label', None)
+                if not form_input['label']:
+                    form_input['label'] = key
+
+                # Set options if form input is select
+                if form_input['input_type'] == 'select':
+                    form_input['select_options'] = plugin_setting_meta.get('select_options', [])
+                    if not form_input['select_options']:
+                        # No options are given. Revert back to text input
+                        form_input['input_type'] = 'text'
+
+                settings.append(form_input)
         return settings
 
     def __get_plugin_changelog(self, plugin_id):
@@ -440,12 +456,12 @@ class ApiPluginsHandler(BaseApiHandler):
         for setting in plugin_data.get('settings'):
             key = setting.get('key')
             key_id = setting.get('key_id')
-            var_type = setting.get('var_type')
+            input_type = setting.get('input_type')
             # Check if setting is in params
             if key_id in post_params:
                 post_value = post_params.get(key_id, '')
                 # Check if value should be boolean
-                if var_type == 'bool':
+                if input_type == 'checkbox':
                     post_value = True if post_value.lower() == 'true' else False
                 # Add that to our dictionary of settings to save
                 settings_to_save[key] = post_value
@@ -459,5 +475,6 @@ class ApiPluginsHandler(BaseApiHandler):
             if saved_all_settings:
                 # Update settings in plugin data that will be returned
                 plugin_data['settings'] = settings_to_save
+                result = True
 
         self.write(json.dumps({"success": result, "plugin_info": plugin_data}))

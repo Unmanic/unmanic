@@ -227,6 +227,8 @@ class FileTest(object):
             plugin_runner = plugin_module.get("runner")
             try:
                 plugin_runner(data)
+                # Set the return_value based on the plugin results
+                return_value = data.get('add_file_to_pending_tasks')
             except Exception as e:
                 self._log("Exception while carrying out plugin runner on library management file test '{}'".format(
                     plugin_module.get('plugin_id')), message2=str(e), level="exception")

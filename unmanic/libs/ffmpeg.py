@@ -552,8 +552,6 @@ class FFMPEGHandle(object):
         # Add output file
         command = command + ['-y', out_file]
 
-        self._log(" ".join(command), level='debug')
-
         return command
 
     def convert_file_and_fetch_progress(self, infile, args):

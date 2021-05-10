@@ -260,8 +260,8 @@ class WorkerThread(threading.Thread):
 
                 if success:
                     # If file conversion was successful
-                    self._log(
-                        "Successfully ran worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'), abspath))
+                    self._log("Successfully ran worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'),
+                                                                                   data.get("file_in")))
                     # Set the file in as the file out for the next loop
                     file_in = data.get("file_out")
                 else:
@@ -272,7 +272,8 @@ class WorkerThread(threading.Thread):
                     self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = False
                     overall_success = False
             else:
-                self._log("Worker process '{}' set to not run the FFMPEG command.", level='debug')
+                self._log("Worker process '{}' set to not run the FFMPEG command.".format(plugin_module.get('plugin_id')),
+                                                                                          level='debug')
 
             self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = True
             self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'complete'
@@ -282,6 +283,7 @@ class WorkerThread(threading.Thread):
             self._log("Successfully converted file '{}'".format(abspath))
             try:
                 # Move file to original cache path
+                self._log("Moving final cache file from '{}' to '{}'".format(current_file_out, task_cache_path))
                 shutil.move(current_file_out, task_cache_path)
             except Exception as e:
                 self._log("Exception in final move operation of file {} to {}:".format(current_file_out, task_cache_path),

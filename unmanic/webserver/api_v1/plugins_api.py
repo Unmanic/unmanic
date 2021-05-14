@@ -265,10 +265,8 @@ class ApiPluginsHandler(BaseApiHandler):
     def get_installed_plugin_flow(self, *args, **kwargs):
         plugin_type = self.get_argument('plugin_type')
 
-        from unmanic.libs.unplugins import PluginExecutor
-        plugin_executor = PluginExecutor()
-
-        plugin_modules = plugin_executor.get_plugin_modules_by_type(plugin_type)
+        plugin_handler = PluginsHandler()
+        plugin_modules = plugin_handler.get_plugin_modules_by_type(plugin_type)
 
         # Only return the data that we need
         return_plugin_flow = []

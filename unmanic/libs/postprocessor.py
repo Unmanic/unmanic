@@ -37,7 +37,7 @@ import time
 
 from unmanic.libs.fileinfo import FileInfo
 from unmanic.libs import common, history, ffmpeg, unffmpeg
-from unmanic.libs.unplugins import PluginExecutor
+from unmanic.libs.plugins import PluginsHandler
 
 """
 
@@ -142,8 +142,8 @@ class PostProcessor(threading.Thread):
         # Ensure file is correct format
         self.current_task.task.success = self.validate_streams(self.current_task.task.cache_path)
 
-        # Init plugins
-        plugin_executor = PluginExecutor()
+        # Init plugins handler
+        plugin_handler = PluginsHandler()
 
         # Read current task data
         # task_data = self.current_task.get_task_data()
@@ -155,9 +155,10 @@ class PostProcessor(threading.Thread):
         # Create a list for filling with destination paths
         destination_files = []
         if self.current_task.task.success:
-
             # Run a postprocess file movement on the cache file for for each plugin that configures it
-            plugin_modules = plugin_executor.get_plugin_modules_by_type('postprocessor.file_move')
+
+            # Fetch all 'postprocessor.file_move' plugin modules
+            plugin_modules = plugin_handler.get_plugin_modules_by_type('postprocessor.file_move')
 
             # Check if the source file needs to be remove by default (only if it does not match the destination file)
             remove_source_file = False
@@ -184,7 +185,7 @@ class PostProcessor(threading.Thread):
                 initial_data["file_out"] = destination_data.get('abspath')
 
                 # Test return data against schema and ensure there are no errors
-                errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.file_move', initial_data)
+                errors = plugin_modules.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.file_move', initial_data)
                 if errors:
                     self._log("Error while running postprocessor file movement '{}' on file '{}'".format(
                         plugin_module.get('plugin_id'), cache_path), errors, level="error")
@@ -247,8 +248,8 @@ class PostProcessor(threading.Thread):
                       level='warning')
             return
 
-        # Run task success plugins
-        plugin_modules = plugin_executor.get_plugin_modules_by_type('postprocessor.task_result')
+        # Fetch all 'postprocessor.task_result' plugin modules
+        plugin_modules = plugin_handler.get_plugin_modules_by_type('postprocessor.task_result')
 
         for plugin_module in plugin_modules:
             data = {
@@ -259,7 +260,7 @@ class PostProcessor(threading.Thread):
 
             }
             # Test return data against schema and ensure there are no errors
-            errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.task_result', data)
+            errors = plugin_modules.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.task_result', data)
             if errors:
                 self._log("Error while running postprocessor task result'{}' on file '{}'".format(
                     plugin_module.get('plugin_id'), cache_path), errors, level="error")

@@ -163,11 +163,15 @@ class PluginExecutor(object):
 
         return return_plugin_types
 
-    def get_plugin_runners_filtered_by_type(self, plugins, plugin_type):
+    def build_plugin_data_from_plugin_list_filtered_by_plugin_type(self, plugins_list, plugin_type):
         """
-        Returns a filtered list of plugin modules for a given plugin type
+        Given a list of plugins and a plugin type,
+        Return a filtered list of dictionaries containing:
+            - the plugin module
+            - the runner function to execute
+            - the metadata for that plugin
 
-        :param plugins:
+        :param plugins_list:
         :param plugin_type:
         :return:
         """
@@ -182,16 +186,16 @@ class PluginExecutor(object):
         plugin_type_meta = self.get_plugin_type_meta(plugin_type)
         plugin_runner = plugin_type_meta.plugin_runner()
 
-        for plugin in plugins:
+        for plugin_data in plugins_list:
             # Get plugin ID
-            plugin_id = plugin.get('plugin_id')
+            plugin_id = plugin_data.get('plugin_id')
 
             # Get plugin metadata
-            plugin_name = plugin.get('name')
-            plugin_author = plugin.get('author')
-            plugin_version = plugin.get('version')
-            plugin_icon = plugin.get('icon')
-            plugin_description = plugin.get('description')
+            plugin_name = plugin_data.get('name')
+            plugin_author = plugin_data.get('author')
+            plugin_version = plugin_data.get('version')
+            plugin_icon = plugin_data.get('icon')
+            plugin_description = plugin_data.get('description')
 
             # Get the path for this plugin
             plugin_path = self.__get_plugin_directory(plugin_id)
@@ -217,22 +221,24 @@ class PluginExecutor(object):
 
         return plugin_modules
 
-    def get_plugin_modules_by_type(self, plugin_type):
+    def get_plugin_data_by_type(self, enabled_plugins, plugin_type):
         """
-        Returns a list of plugin runners.
-        Runners are filtered by plugin_type and sorted by order of execution.
+        Given a list of enabled plugins and a plugin type
+        Returns a list of dictionaries containing plugin data including
+            - the plugin module
+            - the runner function to execute
+            - the metadata for that plugin
 
+        :param enabled_plugins:
         :param plugin_type:
         :return:
         """
         runners = []
-        # Fetch all enabled plugins
-        enabled_plugins = self.__get_enabled_plugins(plugin_type)
 
         # Filter out only plugins that have runners of this type
-        plugin_modules = self.get_plugin_runners_filtered_by_type(enabled_plugins, plugin_type)
+        plugin_data = self.build_plugin_data_from_plugin_list_filtered_by_plugin_type(enabled_plugins, plugin_type)
 
-        plugin_modules.append(
+        plugin_data.append(
             {
                 "plugin_id":     self.default_plugin_runner_name,
                 "name":          "Default Unmanic Process",
@@ -247,7 +253,7 @@ class PluginExecutor(object):
         )
 
         # Return runners
-        return plugin_modules
+        return plugin_data
 
     def get_plugin_settings(self, plugin_id):
         """

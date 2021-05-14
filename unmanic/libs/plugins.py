@@ -45,7 +45,7 @@ from unmanic.libs.session import Session
 from unmanic.libs.singleton import SingletonType
 from unmanic.libs.unmodels import db, Plugins, PluginRepos
 from unmanic.libs.unmodels.pluginflow import PluginFlow
-from unmanic.libs.unplugins import plugin_types
+from unmanic.libs.unplugins import plugin_types, PluginExecutor
 
 
 class PluginsHandler(object, metaclass=SingletonType):
@@ -408,6 +408,15 @@ class PluginsHandler(object, metaclass=SingletonType):
 
     def enable_plugin_by_db_table_id(self, plugin_table_ids):
         self._log("Enable plugins '{}'".format(plugin_table_ids), level='debug')
+
+        # Refresh session
+        s = Session()
+        s.register_unmanic(s.get_installation_uuid())
+
+        # Update enabled plugins
+        if not self.ensure_session_level_for_plugins(s.level):
+            return False
+
         # Enable the matching entries in the table
         with db.atomic():
             Plugins.update(enabled=True).where(Plugins.id.in_(plugin_table_ids)).execute()
@@ -534,3 +543,62 @@ class PluginsHandler(object, metaclass=SingletonType):
                 success = False
 
         return success
+
+    def get_plugin_modules_by_type(self, plugin_type):
+        """
+        Return a list of enabled plugin modules when given a plugin type
+
+        Runners are filtered by the given 'plugin_type' and sorted by
+        configured order of execution.
+
+        :param plugin_type:
+        :return:
+        """
+        # Refresh session
+        s = Session()
+        s.register_unmanic(s.get_installation_uuid())
+
+        # Update enabled plugins
+        self.ensure_session_level_for_plugins(s.level)
+
+        # First fetch all enabled plugins
+        order = [
+            {
+                "model":  PluginFlow,
+                "column": 'position',
+                "dir":    'asc',
+            },
+            {
+                "column": 'name',
+                "dir":    'asc',
+            },
+        ]
+        enabled_plugins = self.get_plugin_list_filtered_and_sorted(order=order, enabled=True, plugin_type=plugin_type)
+
+        # Fetch all plugin modules from the given list of enabled plugins
+        plugin_executor = PluginExecutor()
+        plugin_data = plugin_executor.get_plugin_data_by_type(enabled_plugins, plugin_type)
+
+        # Return modules
+        return plugin_data
+
+    def ensure_session_level_for_plugins(self, level):
+        if level > 1:
+            # Session level is valid for running plugins
+            return True
+
+        if level == 0:
+            self._log("Plugin support not available. To enable plugin support, sign in...", level='warning')
+        elif level == 1:
+            self._log("Plugin support not available. Consider becoming a supporter if you wish to enable plugin support.",
+                      level='warning')
+
+        # Disable plugins
+        with db.atomic():
+            Plugins.update(enabled=False).execute()
+        return False
+
+    @staticmethod
+    def test_plugin_runner(plugin_id, plugin_type, test_data=None):
+        plugin_executor = PluginExecutor()
+        return plugin_executor.test_plugin_runner(plugin_id, plugin_type, test_data)

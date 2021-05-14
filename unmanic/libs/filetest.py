@@ -33,7 +33,7 @@ import os
 import mimetypes
 
 from unmanic.libs import ffmpeg, history, common, unlogger
-from unmanic.libs.unplugins import PluginExecutor
+from unmanic.libs.plugins import PluginsHandler
 
 
 class FileTest(object):
@@ -170,10 +170,8 @@ class FileTest(object):
         file_issues = []
 
         # Init plugins
-        plugin_executor = PluginExecutor()
-
-        # Run task success plugins
-        plugin_modules = plugin_executor.get_plugin_modules_by_type('library_management.file_test')
+        plugin_handler = PluginsHandler()
+        plugin_modules = plugin_handler.get_plugin_modules_by_type('library_management.file_test')
 
         if self.file_in_unmanic_ignore_lockfile():
             file_issues.append({
@@ -213,7 +211,7 @@ class FileTest(object):
                 'add_file_to_pending_tasks': return_value,
             }
             # Test return data against schema and ensure there are no errors
-            runner_errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'library_management.file_test',
+            runner_errors = plugin_handler.test_plugin_runner(plugin_module.get('plugin_id'), 'library_management.file_test',
                                                                data)
             if runner_errors:
                 self._log(

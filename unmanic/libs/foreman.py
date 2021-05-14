@@ -37,6 +37,8 @@ import queue
 import time
 import sys
 
+from unmanic.libs.plugins import PluginsHandler
+
 try:
     from unmanic.libs import common, history, ffmpeg
 except ImportError:
@@ -182,9 +184,10 @@ class WorkerThread(threading.Thread):
         # data = self.convert_file(file_in, file_out)
 
         # Then process the item for for each plugin that configures it
-        from unmanic.libs.unplugins import PluginExecutor
-        plugin_executor = PluginExecutor()
-        plugin_modules = plugin_executor.get_plugin_modules_by_type('worker.process_item')
+
+        # Init plugins
+        plugin_handler = PluginsHandler()
+        plugin_modules = plugin_handler.get_plugin_modules_by_type('worker.process_item')
 
         # Create dictionary of runners info for the webUI
         self.worker_runners_info = {}
@@ -229,7 +232,7 @@ class WorkerThread(threading.Thread):
             }
 
             # Test return data against schema and ensure there are no errors
-            errors = plugin_executor.test_plugin_runner(plugin_module.get('plugin_id'), 'worker.process_item', initial_data)
+            errors = plugin_handler.test_plugin_runner(plugin_module.get('plugin_id'), 'worker.process_item', initial_data)
             if errors:
                 self._log(
                     "Error while running worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'), abspath),

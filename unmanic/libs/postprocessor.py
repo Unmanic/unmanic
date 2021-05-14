@@ -185,7 +185,7 @@ class PostProcessor(threading.Thread):
                 initial_data["file_out"] = destination_data.get('abspath')
 
                 # Test return data against schema and ensure there are no errors
-                errors = plugin_modules.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.file_move', initial_data)
+                errors = plugin_handler.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.file_move', initial_data)
                 if errors:
                     self._log("Error while running postprocessor file movement '{}' on file '{}'".format(
                         plugin_module.get('plugin_id'), cache_path), errors, level="error")
@@ -260,7 +260,7 @@ class PostProcessor(threading.Thread):
 
             }
             # Test return data against schema and ensure there are no errors
-            errors = plugin_modules.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.task_result', data)
+            errors = plugin_handler.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.task_result', data)
             if errors:
                 self._log("Error while running postprocessor task result'{}' on file '{}'".format(
                     plugin_module.get('plugin_id'), cache_path), errors, level="error")

@@ -6,7 +6,6 @@ peewee_migrate==1.1.6
 pyinotify==0.9.6
 requests>=2.25.1
 py-cpuinfo>=7.0.0
-gpu-info>=2.0.1
 
 
 # Required for CLI only

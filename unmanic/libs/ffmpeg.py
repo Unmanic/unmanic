@@ -161,6 +161,9 @@ class FFMPEGHandle(object):
         except ZeroDivisionError:
             # Warning, Cannot use input FPS
             self._log('Warning, Cannot use input FPS', level='warning')
+        except KeyError:
+            # Warning, Cannot use input Duration
+            self._log('Warning, Cannot use input FPS', level='warning')
         if self.src_fps == 0:
             raise ValueError('Unexpected zero FPS')
 
@@ -169,6 +172,9 @@ class FFMPEGHandle(object):
         try:
             self.duration = float(probe_info['format']['duration'])
         except ZeroDivisionError:
+            # Warning, Cannot use input Duration
+            self._log('Warning, Cannot use input Duration', level='warning')
+        except KeyError:
             # Warning, Cannot use input Duration
             self._log('Warning, Cannot use input Duration', level='warning')
 

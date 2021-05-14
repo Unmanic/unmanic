@@ -276,15 +276,18 @@ class Service:
         return scheduler
 
     def start_inotify_watch_manager(self, data_queues, settings):
-        main_logger.info("Starting EventMonitorManager")
-        event_monitor_manager = eventmonitor.EventMonitorManager(data_queues, settings)
-        event_monitor_manager.daemon = True
-        event_monitor_manager.start()
-        self.threads.append({
-            'name':   'EventMonitorManager',
-            'thread': event_monitor_manager
-        })
-        return event_monitor_manager
+        if eventmonitor.event_monitor_module:
+            main_logger.info("Starting EventMonitorManager")
+            event_monitor_manager = eventmonitor.EventMonitorManager(data_queues, settings)
+            event_monitor_manager.daemon = True
+            event_monitor_manager.start()
+            self.threads.append({
+                'name':   'EventMonitorManager',
+                'thread': event_monitor_manager
+            })
+            return event_monitor_manager
+        else:
+            main_logger.warn("Unable to start EventMonitorManager as no event monitor module was found")
 
     def start_ui_server(self, data_queues, settings, foreman):
         main_logger.info("Starting UIServer")

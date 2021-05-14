@@ -47,7 +47,6 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
     foreman = None
     components = None
     config = None
-    historic_task_list = None
 
     def initialize(self, data_queues, foreman, settings):
         self.name = 'main'
@@ -55,7 +54,6 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
         self.foreman = foreman
         self.components = []
         self.config = settings
-        self.historic_task_list = []
         self.session = session.Session()
 
     def get(self, path):
@@ -63,9 +61,8 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
             # Print out the json based on the call
             self.handle_ajax_call(self.get_query_arguments('ajax')[0])
         else:
-            self.get_historical_tasks()
             self.set_header("Content-Type", "text/html")
-            self.render("main/main.html", historic_task_list=self.historic_task_list, time_now=time.time(),
+            self.render("main/main.html", time_now=time.time(),
                         session=self.session)
 
     def handle_ajax_call(self, query):
@@ -78,16 +75,6 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
         # TODO: Configure pagination on the UI - limit 5,10,20,50,100 (default to 20)
         limit = 20
         return self.foreman.task_queue.list_pending_tasks(limit)
-
-    def get_historical_tasks(self):
-        self.historic_task_list = []
-        history_logging = history.History(self.config)
-        historic_task_list = list(history_logging.get_historic_task_list(20))
-        for historical_item in historic_task_list:
-            human_readable_time = common.make_timestamp_human_readable(int(historical_item['finish_time']))
-            historical_item['human_readable_time'] = human_readable_time
-            self.historic_task_list.append(historical_item)
-        return self.historic_task_list
 
 
 class DashboardWebSocket(tornado.websocket.WebSocketHandler):

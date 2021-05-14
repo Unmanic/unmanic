@@ -36,8 +36,6 @@ import random
 import string
 import shutil
 
-import ago
-
 
 def get_home_dir():
     home_dir = os.environ.get('HOME_DIR')
@@ -77,7 +75,51 @@ def format_message(message, message2=''):
 
 
 def make_timestamp_human_readable(ts):
-    return ago.human(ts, precision=1)
+    """
+    Accept a unix timestamp, return a human readable timedelta string.
+
+    :param ts: a datetime, timedelta, or timestamp (integer / float) object
+    :returns: Human readable timedelta string (Str)
+    """
+    units = ("year", "day", "hour", "minute", "second", "millisecond", "microsecond")
+    precision = 1
+    past_tense = "{} ago"
+    future_tense = "in {}"
+
+    # Get datetime from ts string
+    dt = datetime.datetime.fromtimestamp(ts)
+    delta = datetime.datetime.now(tz=dt.tzinfo) - dt
+
+    # Determine if this is past or future tense
+    the_tense = future_tense if delta < datetime.timedelta(0) else past_tense
+
+    # Create a dictionary of units
+    delta = abs(delta)
+    d = {
+        "year":        int(delta.days / 365),
+        "day":         int(delta.days % 365),
+        "hour":        int(delta.seconds / 3600),
+        "minute":      int(delta.seconds / 60) % 60,
+        "second":      delta.seconds % 60,
+        "millisecond": delta.microseconds / 1000,
+        "microsecond": delta.microseconds % 1000,
+    }
+
+    human_readable_list = []
+    count = 0
+
+    # Start building up the output in the human readable list.
+    for unit in units:
+        if count >= precision:
+            break  # met precision
+        if d[unit] == 0:
+            continue  # skip 0's
+        else:
+            s = "" if d[unit] == 1 else "s"  # handle plurals
+            human_readable_list.append("{} {}{}".format(d[unit], unit, s))
+        count += 1
+
+    return the_tense.format(", ".join(human_readable_list))
 
 
 def ensure_dir(file_path):

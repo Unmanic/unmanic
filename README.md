@@ -1,15 +1,15 @@
 Unmanic - Library Optimiser  
 ===========================
 
-![UNMANIC - Library Optimiser](https://github.com/Josh5/unmanic/raw/master/logo.png)
+![UNMANIC - Library Optimiser](https://github.com/unmanic/unmanic/raw/master/logo.png)
 
 <a href='https://ko-fi.com/I2I21F8E1' target='_blank'><img height='26' style='border:0px;height:26px;' src='https://cdn.ko-fi.com/cdn/kofi1.png?v=2' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
-[![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/josh5/unmanic?color=009dc7&label=latest%20release&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/releases)
-[![GitHub issues](https://img.shields.io/github/issues-raw/josh5/unmanic?color=009dc7&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/issues?q=is%3Aopen+is%3Aissue)
-[![GitHub closed issues](https://img.shields.io/github/issues-closed-raw/josh5/unmanic?color=009dc7&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/issues?q=is%3Aissue+is%3Aclosed)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr-raw/josh5/unmanic?color=009dc7&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/pulls?q=is%3Aopen+is%3Apr)
-[![GitHub closed pull requests](https://img.shields.io/github/issues-pr-closed-raw/josh5/unmanic?color=009dc7&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/pulls?q=is%3Apr+is%3Aclosed)
+[![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/unmanic/unmanic?color=009dc7&label=latest%20release&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/unmanic/unmanic/releases)
+[![GitHub issues](https://img.shields.io/github/issues-raw/unmanic/unmanic?color=009dc7&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/unmanic/unmanic/issues?q=is%3Aopen+is%3Aissue)
+[![GitHub closed issues](https://img.shields.io/github/issues-closed-raw/unmanic/unmanic?color=009dc7&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/unmanic/unmanic/issues?q=is%3Aissue+is%3Aclosed)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr-raw/unmanic/unmanic?color=009dc7&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/unmanic/unmanic/pulls?q=is%3Aopen+is%3Apr)
+[![GitHub closed pull requests](https://img.shields.io/github/issues-pr-closed-raw/unmanic/unmanic?color=009dc7&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/unmanic/unmanic/pulls?q=is%3Apr+is%3Aclosed)
 
 [![Docker Stars](https://img.shields.io/docker/stars/josh5/unmanic?color=009dc7&logo=docker&logoColor=%23403d3d&style=for-the-badge)](https://hub.docker.com/r/josh5/unmanic)
 [![Docker Pulls](https://img.shields.io/docker/pulls/josh5/unmanic?color=009dc7&logo=docker&logoColor=%23403d3d&style=for-the-badge)](https://hub.docker.com/r/josh5/unmanic)
@@ -18,10 +18,10 @@ Unmanic - Library Optimiser
 
 
 
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/josh5/unmanic/Python%20Lint%20&%20Run%20Unit%20Tests/master?label=Unit%20Tests&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/actions?query=workflow%3A%22Python+Lint+%26+Run+Unit+Tests%22+branch%3Amaster)
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/josh5/unmanic/Build%20All%20Packages%20CI/master?label=Package%20Build&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/Josh5/unmanic/actions?query=workflow%3A%22Build+All+Packages+CI%22+branch%3Amaster)
+[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/unmanic/unmanic/Python%20Lint%20&%20Run%20Unit%20Tests/master?label=Unit%20Tests&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/unmanic/unmanic/actions?query=workflow%3A%22Python+Lint+%26+Run+Unit+Tests%22+branch%3Amaster)
+[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/unmanic/unmanic/Build%20All%20Packages%20CI/master?label=Package%20Build&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/unmanic/unmanic/actions?query=workflow%3A%22Build+All+Packages+CI%22+branch%3Amaster)
 
-[![GitHub license](https://img.shields.io/github/license/josh5/unmanic?color=009dc7&style=flat-square)]()
+[![GitHub license](https://img.shields.io/github/license/unmanic/unmanic?color=009dc7&style=flat-square)]()
 ---
 
 Unmanic is a simple tool for optimising your video library to a single, uniform format. 
@@ -61,11 +61,11 @@ Simply point Unmanic at your library and let it manage it.
 
 #### Desktop:
 
-![Screen-shot - Desktop](https://raw.githubusercontent.com/Josh5/unmanic/master/docs/images/dashboard-1.png)
+![Screen-shot - Desktop](https://raw.githubusercontent.com/unmanic/unmanic/master/docs/images/dashboard-1.png)
 
 #### Mobile:
 
-![Screen-shot - Mobile](https://raw.githubusercontent.com/Josh5/unmanic/master/docs/images/dashboard-mobile-1.png)
+![Screen-shot - Mobile](https://raw.githubusercontent.com/unmanic/unmanic/master/docs/images/dashboard-mobile-1.png)
 
 
 ## Install and Run

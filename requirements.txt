@@ -1,12 +1,13 @@
-ago==0.0.93
+
 schedule==0.6.0
 tornado==6.0.2
 peewee==3.13.3
 peewee_migrate==1.1.6
 pyinotify==0.9.6
-wheel==0.33.6
-setuptools>=39.0.1
 requests>=2.25.1
 py-cpuinfo>=7.0.0
 gpu-info>=2.0.1
+
+
+# Required for CLI only
 inquirer>=2.7.0

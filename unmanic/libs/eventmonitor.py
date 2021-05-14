@@ -31,58 +31,54 @@
 """
 import threading
 import time
-import pyinotify
 
-from unmanic.libs import common, ffmpeg, history
+try:
+    from watchdog.observers import Observer
+    from watchdog.events import FileSystemEventHandler
+
+    event_monitor_module = 'watchdog'
+except ImportError:
+    class Observer(object):
+        pass
+
+
+    class FileSystemEventHandler(object):
+        pass
+
+
+    event_monitor_module = None
+
+from unmanic.libs import common, unlogger
 from unmanic.libs.filetest import FileTest
 
 
-class EventProcessor(pyinotify.ProcessEvent):
+class EventHandler(FileSystemEventHandler):
     def __init__(self, data_queues, settings):
         self.name = "EventProcessor"
         self.settings = settings
-        self.logger = data_queues["logging"].get_logger(self.name)
         self.inotifytasks = data_queues["inotifytasks"]
+        self.logger = None
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
-        self.ffmpeg = None
 
     def _log(self, message, message2='', level="info"):
+        if not self.logger:
+            unmanic_logging = unlogger.UnmanicLogger.__call__()
+            self.logger = unmanic_logging.get_logger(self.name)
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
-    def init_ffmpeg_handle_settings(self):
-        return {
-            'audio_codec':                          self.settings.get_config_item('audio_codec'),
-            'audio_stream_encoder':                 self.settings.get_audio_stream_encoder(),
-            'audio_codec_cloning':                  self.settings.get_audio_codec_cloning(),
-            'audio_stereo_stream_bitrate':          self.settings.get_audio_stereo_stream_bitrate(),
-            'cache_path':                           self.settings.get_cache_path(),
-            'debugging':                            self.settings.get_debugging(),
-            'enable_audio_encoding':                self.settings.get_enable_audio_encoding(),
-            'enable_audio_stream_stereo_cloning':   self.settings.get_enable_audio_stream_stereo_cloning(),
-            'enable_audio_stream_transcoding':      self.settings.get_enable_audio_stream_transcoding(),
-            'enable_video_encoding':                self.settings.get_enable_video_encoding(),
-            'out_container':                        self.settings.get_out_container(),
-            'remove_subtitle_streams':              self.settings.get_remove_subtitle_streams(),
-            'video_codec':                          self.settings.get_video_codec(),
-            'video_stream_encoder':                 self.settings.get_video_stream_encoder(),
-            'overwrite_additional_ffmpeg_options':  self.settings.get_overwrite_additional_ffmpeg_options(),
-            'additional_ffmpeg_options':            self.settings.get_additional_ffmpeg_options(),
-            'enable_hardware_accelerated_decoding': self.settings.get_enable_hardware_accelerated_decoding(),
-        }
-
-    def inotify_enabled(self):
-        if self.settings.get_enable_inotify():
-            return True
-        return False
-
-    def add_path_to_queue(self, pathname):
+    def __add_path_to_queue(self, pathname):
         self.inotifytasks.put(pathname)
 
-    def handle_event(self, event):
+    def __handle_event(self, event):
+        # Ensure event was not for a directory
+        if event.is_directory:
+            self._log("Detected even is for a directory. Ignoring...")
+            return
+
         # Get full path to file
-        pathname = event.pathname
+        pathname = event.src_path
 
         # Test file to be added to task list. Add it if required
         file_test = FileTest(self.settings, pathname)
@@ -95,25 +91,27 @@ class EventProcessor(pyinotify.ProcessEvent):
                 self._log(issue)
         # If file needs to be added, then add it
         if result:
-            self.add_path_to_queue(pathname)
+            self.__add_path_to_queue(pathname)
 
-    def process_IN_CLOSE_WRITE(self, event):
-        if self.inotify_enabled():
-            self._log("CLOSE_WRITE event detected:", event.pathname)
-            self.handle_event(event)
+    def on_moved(self, event):
+        self._log("MOVED_TO event detected:", event.src_path)
+        self.__handle_event(event)
 
-    def process_IN_MOVED_TO(self, event):
-        if self.inotify_enabled():
-            self._log("MOVED_TO event detected:", event.pathname)
-            self.handle_event(event)
-
-    def process_IN_DELETE(self, event):
-        if self.inotify_enabled():
-            self._log("DELETE event detected:", event.pathname)
-            self._log("Nothing to do for this event")
-
-    def process_default(self, event):
+    def on_created(self, event):
+        # self._log("CREATED event detected:", event.src_path)
         pass
+
+    def on_deleted(self, event):
+        # self._log("DELETE event detected:", event.src_path)
+        pass
+
+    def on_modified(self, event):
+        # self._log("MODIFIED event detected:", event.src_path)
+        pass
+
+    def on_closed(self, event):
+        self._log("CLOSE_WRITE event detected:", event.src_path)
+        self.__handle_event(event)
 
 
 class EventMonitorManager(threading.Thread):
@@ -138,7 +136,7 @@ class EventMonitorManager(threading.Thread):
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
 
-        self.event_processor_thread = None
+        self.event_observer_thread = None
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -155,11 +153,11 @@ class EventMonitorManager(threading.Thread):
             # Check settings to ensure the event monitor should be enabled...
             if self.settings.get_enable_inotify():
                 # If enabled, ensure it is running and start it if it is not
-                if not self.event_processor_thread:
+                if not self.event_observer_thread:
                     self.start_event_processor()
             else:
                 # If not enabled, ensure the EventProcessor is not running and stop it if it is
-                if self.event_processor_thread:
+                if self.event_observer_thread:
                     self.stop_event_processor()
             # Add delay
             time.sleep(1)
@@ -173,15 +171,14 @@ class EventMonitorManager(threading.Thread):
 
         :return:
         """
-        if not self.event_processor_thread:
+        if not self.event_observer_thread:
             self._log("EventMonitorManager spawning EventProcessor thread...")
-            wm = pyinotify.WatchManager()
-            wm.add_watch(self.settings.get_library_path(), pyinotify.ALL_EVENTS, rec=True)
-            # event processor
-            ep = EventProcessor(self.data_queues, self.settings)
-            # notifier
-            self.event_processor_thread = pyinotify.ThreadedNotifier(wm, ep)
-            self.event_processor_thread.start()
+            event_handler = EventHandler(self.data_queues, self.settings)
+
+            self.event_observer_thread = Observer()
+            self.event_observer_thread.schedule(event_handler, self.settings.get_library_path(), recursive=True)
+
+            self.event_observer_thread.start()
         else:
             self._log("Given signal to start the EventProcessor thread, but it is already running....")
 
@@ -191,16 +188,16 @@ class EventMonitorManager(threading.Thread):
 
         :return:
         """
-        if self.event_processor_thread:
+        if self.event_observer_thread:
             self._log("EventMonitorManager stopping EventProcessor thread...")
 
             self._log("Sending thread EventProcessor abort signal")
-            self.event_processor_thread.stop()
+            self.event_observer_thread.stop()
 
             self._log("Waiting for thread EventProcessor to stop")
-            self.event_processor_thread.join()
+            self.event_observer_thread.join()
             self._log("Thread EventProcessor has successfully stopped")
         else:
             self._log("Given signal to stop the EventProcessor thread, but it is not running...")
 
-        self.event_processor_thread = None
+        self.event_observer_thread = None

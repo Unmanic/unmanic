@@ -29,6 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import os
 import threading
 import time
 
@@ -160,7 +161,7 @@ class EventMonitorManager(threading.Thread):
                 if self.event_observer_thread:
                     self.stop_event_processor()
             # Add delay
-            time.sleep(1)
+            time.sleep(.5)
 
         self.stop_event_processor()
         self._log("Leaving EventMonitorManager loop...")
@@ -172,6 +173,10 @@ class EventMonitorManager(threading.Thread):
         :return:
         """
         if not self.event_observer_thread:
+            library_path = self.settings.get_library_path()
+            if not os.path.exists(library_path):
+                time.sleep(.1)
+                return
             self._log("EventMonitorManager spawning EventProcessor thread...")
             event_handler = EventHandler(self.data_queues, self.settings)
 

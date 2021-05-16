@@ -157,12 +157,15 @@ class LibraryScanner(threading.Thread):
 
     def scheduled_job(self):
         self._log("Running full library scan")
-        self.get_convert_files(self.settings.get_library_path())
+        self.scan_library_path(self.settings.get_library_path())
 
     def add_path_to_queue(self, pathname):
         self.scheduledtasks.put(pathname)
 
-    def get_convert_files(self, search_folder):
+    def scan_library_path(self, search_folder):
+        if not os.path.exists(search_folder):
+            self._log("Path does not exist - '{}'".format(search_folder), level="warning")
+            return
         if self.settings.get_debugging():
             self._log("Scanning directory - '{}'".format(search_folder), level="debug")
         for root, subFolders, files in os.walk(search_folder, followlinks=True):

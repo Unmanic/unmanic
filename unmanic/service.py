@@ -386,6 +386,10 @@ class Service:
 
         # Received term signal. Stop everything
         self.stop_threads()
+        self.db_connection.stop()
+        while not self.db_connection.is_stopped():
+            time.sleep(0.1)
+            continue
         main_logger.info("Exit Unmanic")
 
 
@@ -405,6 +409,12 @@ def main():
         # Run the plugin manager CLI
         plugin_cli = PluginsCLI()
         plugin_cli.run()
+
+        # Stop the DB connection
+        db_connection.stop()
+        while not db_connection.is_stopped():
+            time.sleep(0.1)
+            continue
     else:
         # Run the main Unmanic service
         service = Service()

@@ -527,10 +527,11 @@ class Task(object):
                 query = query.where(Tasks.id.in_(id_list))
 
             for task_id in query:
-                result = common.delete_model_recursively(task_id)
-                if not result:
-                    # break there and return
-                    self._log("Failed to delete task ID: {}.".format(task_id), level="warning")
+                try:
+                    task_id.delete_instance(recursive=True)
+                except Exception as e:
+                    # Catch delete exceptions
+                    self._log("An error occurred while deleting task ID: {}.".format(task_id), str(e), level="exception")
                     return False
 
             return True

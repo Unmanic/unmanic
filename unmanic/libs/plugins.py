@@ -118,8 +118,7 @@ class PluginsHandler(object, metaclass=SingletonType):
         for repo_path in repo_list:
             data.append({"path": repo_path})
 
-        with db.atomic():
-            PluginRepos.insert_many(data).execute()
+        PluginRepos.insert_many(data).execute()
 
     def update_plugin_repos(self):
         """
@@ -338,17 +337,15 @@ class PluginsHandler(object, metaclass=SingletonType):
         plugin_entry = Plugins.get_or_none(plugin_id=plugin.get("id"))
         if plugin_entry is not None:
             # Update the existing entry
-            with db.atomic():
-                update_query = (Plugins
-                                .update(plugin_data)
-                                .where(Plugins.plugin_id == plugin.get("id")))
-                update_query.execute()
+            update_query = (Plugins
+                            .update(plugin_data)
+                            .where(Plugins.plugin_id == plugin.get("id")))
+            update_query.execute()
         else:
             # Insert a new entry
             # Plugins are disable when first installed. This will help to prevent issues with broken plugins
             plugin_data[Plugins.enabled] = False
-            with db.atomic():
-                Plugins.insert(plugin_data).execute()
+            Plugins.insert(plugin_data).execute()
 
         return True
 
@@ -418,8 +415,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             return False
 
         # Enable the matching entries in the table
-        with db.atomic():
-            Plugins.update(enabled=True).where(Plugins.id.in_(plugin_table_ids)).execute()
+        Plugins.update(enabled=True).where(Plugins.id.in_(plugin_table_ids)).execute()
 
         # Fetch records
         records_by_id = self.get_plugin_list_filtered_and_sorted(id_list=plugin_table_ids)
@@ -436,8 +432,7 @@ class PluginsHandler(object, metaclass=SingletonType):
     def disable_plugin_by_db_table_id(self, plugin_table_ids):
         self._log("Disable plugins '{}'".format(plugin_table_ids), level='debug')
         # Disable the matching entries in the table
-        with db.atomic():
-            Plugins.update(enabled=False).where(Plugins.id.in_(plugin_table_ids)).execute()
+        Plugins.update(enabled=False).where(Plugins.id.in_(plugin_table_ids)).execute()
 
         # Fetch records
         records_by_id = self.get_plugin_list_filtered_and_sorted(id_list=plugin_table_ids)
@@ -454,8 +449,7 @@ class PluginsHandler(object, metaclass=SingletonType):
     def flag_plugin_for_update_by_id(self, plugin_id):
         self._log("Flagging update available for installed plugin '{}'".format(plugin_id), level='debug')
         # Disable the matching entries in the table
-        with db.atomic():
-            Plugins.update(update_available=True).where(Plugins.plugin_id == plugin_id).execute()
+        Plugins.update(update_available=True).where(Plugins.plugin_id == plugin_id).execute()
 
         # Fetch records
         records = self.get_plugin_list_filtered_and_sorted(plugin_id=plugin_id)
@@ -493,9 +487,8 @@ class PluginsHandler(object, metaclass=SingletonType):
                           level="exception")
 
         # Delete by ID in DB
-        with db.atomic():
-            if not Plugins.delete().where(Plugins.id.in_(plugin_table_ids)).execute():
-                return False
+        if not Plugins.delete().where(Plugins.id.in_(plugin_table_ids)).execute():
+            return False
 
         return True
 
@@ -594,8 +587,7 @@ class PluginsHandler(object, metaclass=SingletonType):
                       level='warning')
 
         # Disable plugins
-        with db.atomic():
-            Plugins.update(enabled=False).execute()
+        Plugins.update(enabled=False).execute()
         return False
 
     @staticmethod

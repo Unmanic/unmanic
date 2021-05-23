@@ -111,13 +111,11 @@ class Database:
         # Based on configuration, use a different database.
         if config['TYPE'] == 'SQLITE':
             # use SqliteDatabase
-            database = SqliteQueueDatabase(
+            database = SqliteDatabase(
                 config['FILE'],
-                use_gevent=False,
-                autostart=False,
-                results_timeout=15.0,
                 pragmas=(
                     ('foreign_keys', 1),
+                    ('journal_mode', 'wal'),
                 )
             )
 

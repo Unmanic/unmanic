@@ -133,15 +133,6 @@ class PostProcessor(threading.Thread):
         self._log("Leaving PostProcessor Monitor loop...")
 
     def post_process_file(self):
-        # Check if the job was a success
-        if not self.current_task.task.success:
-            self._log("Task was marked as failed.", level='debug')
-            self._log("Removing cached file", self.current_task.task.cache_path, level='debug')
-            self.remove_current_task_cache_file()
-            return
-        # Ensure file is correct format
-        self.current_task.task.success = self.validate_streams(self.current_task.task.cache_path)
-
         # Init plugins handler
         plugin_handler = PluginsHandler()
 
@@ -156,6 +147,9 @@ class PostProcessor(threading.Thread):
         destination_files = []
         if self.current_task.task.success:
             # Run a postprocess file movement on the cache file for for each plugin that configures it
+
+            # Ensure finaly cache path file is correct format
+            self.current_task.task.success = self.validate_streams(self.current_task.task.cache_path)
 
             # Fetch all 'postprocessor.file_move' plugin modules
             plugin_modules = plugin_handler.get_plugin_modules_by_type('postprocessor.file_move')
@@ -246,7 +240,6 @@ class PostProcessor(threading.Thread):
         else:
             self._log("Encoded file failed post processing test '{}'".format(cache_path),
                       level='warning')
-            return
 
         # Fetch all 'postprocessor.task_result' plugin modules
         plugin_modules = plugin_handler.get_plugin_modules_by_type('postprocessor.task_result')
@@ -281,8 +274,6 @@ class PostProcessor(threading.Thread):
         if os.path.exists(task_cache_directory) and "unmanic_file_conversion" in task_cache_directory:
             for f in os.listdir(task_cache_directory):
                 cache_file_path = os.path.join(task_cache_directory, f)
-                # if not f.endswith(".bak"):
-                #     continue
                 self._log("Removing task cache directory file '{}'".format(cache_file_path))
                 # Remove the cache file
                 os.remove(cache_file_path)
@@ -373,7 +364,3 @@ class PostProcessor(threading.Thread):
         fileinfo.load()
         fileinfo.append(newname, originalname)
         fileinfo.save()
-
-    def remove_current_task_cache_file(self):
-        if os.path.exists(self.current_task.task.cache_path):
-            os.remove(self.current_task.task.cache_path)

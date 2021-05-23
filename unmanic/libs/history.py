@@ -172,13 +172,12 @@ class History(object):
             }
 
             try:
-                with db.atomic():
-                    result = self.save_task_history(task_data)
-                    if not result:
-                        raise Exception('Failed to migrate historical file data to database')
+                result = self.save_task_history(task_data)
+                if not result:
+                    raise Exception('Failed to migrate historical file data to database')
 
-                    # Remove json file
-                    os.remove(job_details_file)
+                # Remove json file
+                os.remove(job_details_file)
 
             except Exception as error:
                 self._log("Failed to save historic task entry to database.", error, level="error")
@@ -366,11 +365,13 @@ class History(object):
             if id_list:
                 query = query.where(HistoricTasks.id.in_(id_list))
 
-            for task_id in query:
-                result = common.delete_model_recursively(task_id)
-                if not result:
-                    # break there and return
-                    self._log("Failed to delete task ID: {}.".format(task_id), level="warning")
+            for historic_task_id in query:
+                try:
+                    historic_task_id.delete_instance(recursive=True)
+                except Exception as e:
+                    # Catch delete exceptions
+                    self._log("An error occurred while deleting historic task ID: {}.".format(historic_task_id), str(e),
+                              level="exception")
                     return False
 
             return True
@@ -387,28 +388,26 @@ class History(object):
         :return:
         """
         try:
-            with db.atomic():
+            # Create the new historical task entry
+            new_historic_task = self.create_historic_task_entry(task_data)
 
-                # Create the new historical task entry
-                new_historic_task = self.create_historic_task_entry(task_data)
+            # TODO: Create a snapshot of the current configuration of the application into HistoricTaskSettings
 
-                # TODO: Create a snapshot of the current configuration of the application into HistoricTaskSettings
+            # Ensure a dump of the task was passed through with the task data param
+            # This dump is a snapshot of all information pertaining to the task
+            task_dump = task_data.get('task_dump', {})
+            if not task_dump:
+                self._log('Passed param dict', json.dumps(task_data), level="debug")
+                raise Exception('Function param missing task data dump')
 
-                # Ensure a dump of the task was passed through with the task data param
-                # This dump is a snapshot of all information pertaining to the task
-                task_dump = task_data.get('task_dump', {})
-                if not task_dump:
-                    self._log('Passed param dict', json.dumps(task_data), level="debug")
-                    raise Exception('Function param missing task data dump')
+            # Create an entry of the data from the source ffprobe
+            self.create_historic_task_probe_entry('source', new_historic_task, task_dump)
 
-                # Create an entry of the data from the source ffprobe
-                self.create_historic_task_probe_entry('source', new_historic_task, task_dump)
+            # Create an entry of the data from the destination ffprobe
+            self.create_historic_task_probe_entry('destination', new_historic_task, task_dump)
 
-                # Create an entry of the data from the destination ffprobe
-                self.create_historic_task_probe_entry('destination', new_historic_task, task_dump)
-
-                # Create an entry of the data from the source ffprobe
-                self.create_historic_task_ffmpeg_log_entry(new_historic_task, task_dump)
+            # Create an entry of the data from the source ffprobe
+            self.create_historic_task_ffmpeg_log_entry(new_historic_task, task_dump)
 
             return True
 

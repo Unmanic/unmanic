@@ -133,9 +133,8 @@ class Session(object, metaclass=SingletonType):
             except Exception as e:
                 # Create settings (defaults will be applied)
                 self._log("Unmanic session does not yet exist... Creating.", level="debug")
-                with db.atomic():
-                    db_installation.delete().execute()
-                    current_installation = db_installation.create()
+                db_installation.delete().execute()
+                current_installation = db_installation.create()
 
             self.uuid = str(current_installation.uuid)
         return self.uuid

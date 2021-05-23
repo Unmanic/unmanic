@@ -273,23 +273,3 @@ def fetch_file_data_by_path(pathname):
 
     # return the file data
     return file_data
-
-
-def delete_model_recursively(model):
-    success = False
-    from unmanic.libs.unmodels import db
-    with db.manual_commit():
-        db.begin()  # Begin transaction explicitly.
-        try:
-            model.delete_instance(recursive=True)
-        except:
-            db.rollback()  # Rollback -- an error occurred.
-            raise
-        else:
-            try:
-                db.commit()  # Attempt to commit changes.
-                success = True
-            except:
-                db.rollback()  # Error committing, rollback.
-                raise
-    return success

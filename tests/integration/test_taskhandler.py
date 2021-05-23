@@ -77,9 +77,7 @@ class TestClass(object):
         }
         self.db_connection = unmodels.Database.select_database(database_settings)
 
-        # Start the database connection
-        self.db_connection.start()
-
+        # Create required tables
         self.db_connection.create_tables([Settings, Tasks])
 
         # import config
@@ -94,8 +92,7 @@ class TestClass(object):
 
         :return:
         """
-        # Stop the database connection
-        self.db_connection.stop()
+        pass
 
     def setup_method(self):
         """

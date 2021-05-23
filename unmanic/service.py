@@ -367,7 +367,6 @@ class Service:
         # Init DB
         if not self.db_connection:
             self.db_connection = init_db()
-        self.db_connection.start()
 
         # Read settings
         return config.CONFIG(db_connection=self.db_connection)
@@ -387,7 +386,6 @@ class Service:
 
         # Received term signal. Stop everything
         self.stop_threads()
-        self.db_connection.stop()
         main_logger.info("Exit Unmanic")
 
 
@@ -403,14 +401,10 @@ def main():
     if args.manage_plugins:
         # Init the DB connection
         db_connection = init_db()
-        db_connection.start()
 
         # Run the plugin manager CLI
         plugin_cli = PluginsCLI()
         plugin_cli.run()
-
-        # Stop the DB connection
-        db_connection.stop()
     else:
         # Run the main Unmanic service
         service = Service()

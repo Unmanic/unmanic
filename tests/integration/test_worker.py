@@ -90,9 +90,7 @@ class TestClass(object):
         }
         self.db_connection = unmodels.Database.select_database(database_settings)
 
-        # Start the database connection
-        self.db_connection.start()
-
+        # Create required tables
         self.db_connection.create_tables([Settings, Tasks, TaskSettings, TaskProbe, TaskProbeStreams, Plugins, PluginFlow, Installation])
 
         # import config
@@ -193,3 +191,7 @@ class TestClass(object):
             count += 1
             if count >= 2:
                 break
+
+    @pytest.mark.integrationtest
+    def test_worker_tread_for_conversion_success(self):
+        pass

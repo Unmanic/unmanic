@@ -396,6 +396,6 @@ class PluginsCLI(object):
     def run(self):
         while True:
             selection = inquirer.prompt(menus.get('main'))
-            self.main(selection.get('cli_action'))
             if selection.get('cli_action') == "Exit":
                 break
+            self.main(selection.get('cli_action'))

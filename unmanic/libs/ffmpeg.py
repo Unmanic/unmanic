@@ -199,7 +199,7 @@ class FFMPEGHandle(object):
             self._log("Exception in method process_file", str(e), level='exception')
             return False
         except Exception as e:
-            self._log("Exception in method process_file", str(e), level='exception')
+            self._log("Unexpected exception in method process_file", str(e), level='exception')
             return False
 
     def set_file_out(self, vid_file_path):

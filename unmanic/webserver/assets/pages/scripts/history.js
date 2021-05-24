@@ -242,8 +242,8 @@ var CompletedTasksDatatablesManaged = function () {
                 "pagingType": "bootstrap_full_number",
 
                 "lengthMenu": [
-                    [5, 10, 20, 50, 100, 500, -1],
-                    [5, 10, 20, 50, 100, 500, "All"] // change per page values here
+                    [5, 10, 20, 50, 100, 500],
+                    [5, 10, 20, 50, 100, 500] // change per page values here
                 ],
                 "pageLength": 10, // default record count per page
                 "order": [

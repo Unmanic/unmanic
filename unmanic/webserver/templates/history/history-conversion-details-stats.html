@@ -213,9 +213,12 @@
             <div class="portlet-body">
                 <div id="file_size_chart">
                     {% if job_data['ffmpeg_log'] %}
-                    <pre>{{ job_data['ffmpeg_log'] }}</pre>
+                        {% for foo in job_data.get('ffmpeg_log_lines') %}
+                            {% raw foo %}
+                            <br>
+                        {% end %}
                     {% else %}
-                    <pre>No FFMPEG command log recorded for this task.</pre>
+                        <pre>No FFMPEG command log recorded for this task.</pre>
                     {% end %}
                 </div>
             </div>

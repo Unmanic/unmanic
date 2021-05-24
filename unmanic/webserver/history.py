@@ -94,9 +94,9 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
             return False
         # Set params as required in template
         template_task_data = {
-            'id':          task_data['id'],
-            'task_label':  task_data.get('task_label'),
-            'statistics':  {
+            'id':               task_data['id'],
+            'task_label':       task_data.get('task_label'),
+            'statistics':       {
                 'task_success':        task_data.get('task_success'),
                 'duration':            '',
                 'start_time':          task_data.get('start_time'),
@@ -105,9 +105,10 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
                 'finish_datetime':     '',
                 'processed_by_worker': task_data.get('processed_by_worker'),
             },
-            'source':      {},
-            'destination': {},
-            'ffmpeg_log':  ''
+            'source':           {},
+            'destination':      {},
+            'ffmpeg_log':       '',
+            'ffmpeg_log_lines': [],
         }
 
         # Generate source/destination ffprobe data
@@ -128,6 +129,7 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
 
         for ffmpeg_log in task_data.get('historictaskffmpeglog_set', []):
             template_task_data['ffmpeg_log'] += ffmpeg_log['dump']
+            template_task_data['ffmpeg_log_lines'] += self.format_ffmpeg_log_text(ffmpeg_log['dump'].split("\n"))
 
         try:
             template_task_data['statistics']['start_datetime'] = self.make_pretty_date_string(
@@ -152,6 +154,34 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
 
         return template_task_data
 
+    def format_ffmpeg_log_text(self, log_lines):
+        return_list = []
+        pre_text = False
+        headers = ['RUNNER:', 'COMMAND:', 'LOG:']
+        for i, line in enumerate(log_lines):
+            line_text = line
+
+            # Add PRE to lines
+            if line_text and pre_text and line_text.rstrip() not in headers:
+                line_text = '<pre>{}</pre>'.format(line_text)
+
+            # Add bold to headers
+            line_text = line_text if line_text.rstrip() not in headers else '<b>{}</b>'.format(line_text)
+
+            # Replace leading whitespace
+            stripped = line.lstrip()
+            line_text = "&nbsp;" * (len(line) - len(stripped)) + line_text
+
+            # If log section is COMMAND:
+            if 'RUNNER:' in line_text:
+                pre_text = False
+            elif 'COMMAND:' in line_text:
+                pre_text = True
+            elif 'LOG:' in line_text:
+                pre_text = False
+            return_list.append(line_text)
+        return return_list
+
     def set_page_data(self, task_id=None):
         historical_tasks = self.get_historical_tasks()
         self.data['historical_item_list'] = []
@@ -161,10 +191,10 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
         for task in historical_tasks:
             # Set params as required in template
             item = {
-                'id':         task['id'],
-                'success':    task['task_success'],
-                'selected':   False,
-                'task_label': task['task_label'],
+                'id':          task['id'],
+                'success':     task['task_success'],
+                'selected':    False,
+                'task_label':  task['task_label'],
                 'finish_date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(task['finish_time'])),
             }
 

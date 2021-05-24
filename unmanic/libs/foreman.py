@@ -287,6 +287,10 @@ class WorkerThread(threading.Thread):
             try:
                 # Move file to original cache path
                 self._log("Moving final cache file from '{}' to '{}'".format(current_file_out, task_cache_path))
+                current_file_out = os.path.abspath(current_file_out)
+                if not os.path.exists(current_file_out):
+                    self._log("Error - current_file_out path does not exist! '{}'".format(file_in), level="error")
+                    time.sleep(1)
                 shutil.move(current_file_out, task_cache_path)
             except Exception as e:
                 self._log("Exception in final move operation of file {} to {}:".format(current_file_out, task_cache_path),

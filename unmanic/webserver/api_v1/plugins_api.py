@@ -352,6 +352,17 @@ class ApiPluginsHandler(BaseApiHandler):
                     if isinstance(form_input['value'], bool):
                         form_input['input_type'] = "checkbox"
 
+                # Handle unsupported input types (where they may be supported in future versions of Unmanic)
+                supported_input_types = [
+                    "text",
+                    "textarea",
+                    "select",
+                    "checkbox",
+                    "browse_directory",
+                ]
+                if form_input['input_type'] not in supported_input_types:
+                    form_input['input_type'] = "text"
+
                 # Set input label text
                 form_input['label'] = plugin_setting_meta.get('label', None)
                 if not form_input['label']:

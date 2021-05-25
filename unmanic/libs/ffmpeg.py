@@ -254,37 +254,40 @@ class FFMPEGHandle(object):
 
         # Check if the file container from it's properties matches the configured container
         correct_extension = False
-        try:
-            # Get the list of possible file extensions from the ffprobe
-            current_possible_format_names = file_probe['format']['format_name'].split(",")
-            self._log("Current file format names:", current_possible_format_names, level='debug')
+        if not settings.get('keep_original_container'):
+            try:
+                # Get the list of possible file extensions from the ffprobe
+                current_possible_format_names = file_probe['format']['format_name'].split(",")
+                self._log("Current file format names:", current_possible_format_names, level='debug')
 
-            # Get container extension
-            container = unffmpeg.containers.grab_module(settings['out_container'])
-            container_extension = container.container_extension()
+                # Get container extension
+                container = unffmpeg.containers.grab_module(settings['out_container'])
+                container_extension = container.container_extension()
 
-            # Loop over file extensions to check if it is already one used by our configured container.
-            for format_name in current_possible_format_names:
-                extension = 'NONE SELECTED'
-                if format_name in self.supported_containers:
-                    extension = self.supported_containers[format_name]['extension']
-                if extension == container_extension:
-                    self._log("File already in container format {} - {}".format(container_extension, vid_file_path),
+                # Loop over file extensions to check if it is already one used by our configured container.
+                for format_name in current_possible_format_names:
+                    extension = 'NONE SELECTED'
+                    if format_name in self.supported_containers:
+                        extension = self.supported_containers[format_name]['extension']
+                    if extension == container_extension:
+                        self._log("File already in container format {} - {}".format(container_extension, vid_file_path),
+                                  level='debug')
+                        # This extension is used by our configured container.
+                        # We will assume that we are already the correct container
+                        correct_extension = True
+
+                # If this is not in the correct extension, then log it. This file may be added to the conversion list
+                if not correct_extension:
+                    self._log("Current file format names do not match the configured extension {}".format(container_extension),
                               level='debug')
-                    # This extension is used by our configured container.
-                    # We will assume that we are already the correct container
-                    correct_extension = True
-
-            # If this is not in the correct extension, then log it. This file may be added to the conversion list
-            if not correct_extension:
-                self._log("Current file format names do not match the configured extension {}".format(container_extension),
-                          level='debug')
-        except Exception as e:
-            self._log("Exception in method check_file_to_be_processed. check file container", str(e), level='exception')
-            # Failed to fetch properties
-            self._log("Failed to read format of file {}".format(vid_file_path), level='debug')
-            self._log("Marking file not to be processed", level='debug')
-            return False
+            except Exception as e:
+                self._log("Exception in method check_file_to_be_processed. check file container", str(e), level='exception')
+                # Failed to fetch properties
+                self._log("Failed to read format of file {}".format(vid_file_path), level='debug')
+                self._log("Marking file not to be processed", level='debug')
+                return False
+        else:
+            correct_extension = True
 
         # Check if the file video codec from it's properties matches the configured video codec
         correct_video_codec = False

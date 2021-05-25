@@ -231,16 +231,6 @@ class WorkerThread(threading.Thread):
                 "original_file_path": abspath,
             }
 
-            # Test return data against schema and ensure there are no errors
-            errors = plugin_handler.test_plugin_runner(plugin_module.get('plugin_id'), 'worker.process_item', initial_data)
-            if errors:
-                self._log(
-                    "Error while running worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'), abspath),
-                    errors, level="error")
-                # Dont execute this runner. It failed
-                self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'complete'
-                continue
-
             # Run plugin and fetch return data
             plugin_runner = plugin_module.get("runner")
             try:

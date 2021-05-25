@@ -30,6 +30,7 @@
 
 """
 import json
+import logging
 import os
 import re
 
@@ -66,9 +67,10 @@ menus = {
 
 
 class BColours:
-    HEADER = '\033[95m'
+    HEADER = '\033[44m'
     SUBHEADER = '\033[94m'
-    RESULTS = '\033[96m'
+    SECTION = '\033[96m'
+    RESULTS = '\033[39m'
     OKGREEN = '\033[92m'
     FAIL = '\033[91m'
     WARNING = '\033[93m'
@@ -77,7 +79,7 @@ class BColours:
     UNDERLINE = '\033[4m'
 
 
-def print_table(table_data, col_list=None, sep='\uFFFA'):
+def print_table(table_data, col_list=None, sep='\uFFFA', max_col_width=9):
     """
     Pretty print a list of dictionaries (myDict) as a dynamically sized table.
     If column names (col_list) aren't specified, they will show in random order.
@@ -88,7 +90,12 @@ def print_table(table_data, col_list=None, sep='\uFFFA'):
     if not col_list: col_list = list(table_data[0].keys() if table_data else [])
     my_list = [col_list]  # 1st row = header
     for item in table_data: my_list.append([str(item[col] or '') for col in col_list])
-    col_size = [max(map(len, (sep.join(col)).split(sep))) for col in zip(*my_list)]
+    original_col_size = [max(map(len, (sep.join(col)).split(sep))) for col in zip(*my_list)]
+    col_size = []
+    for col in original_col_size:
+        if col > max_col_width:
+            col = max_col_width
+        col_size.append(col)
     format_str = ' | '.join(["{{:<{}}}".format(i) for i in col_size])
     line = format_str.replace(' | ', '-+-').format(*['-' * i for i in col_size])
     item = my_list.pop(0);
@@ -97,7 +104,7 @@ def print_table(table_data, col_list=None, sep='\uFFFA'):
         if all(not i for i in item):
             item = my_list.pop(0)
             if line and (sep != '\uFFFA' or not line_done): print(line); line_done = True
-        row = [i.split(sep, 1) for i in item]
+        row = [i[:max_col_width].split(sep, 1) for i in item]
         print(format_str.format(*[i[0] for i in row]))
         item = [i[1] if len(i) > 1 else '' for i in row]
 
@@ -122,7 +129,13 @@ class PluginsCLI(object):
             plugins_directory = os.path.join(os.path.expanduser("~"), '.unmanic', 'plugins')
         self.plugins_directory = plugins_directory
         unmanic_logging = unlogger.UnmanicLogger.__call__()
-        unmanic_logging.disable_file_handler()
+        unmanic_logging.disable_file_handler(debugging=True)
+        unmanic_logging.stream_handler.setFormatter(
+            logging.Formatter(
+                '        - {}%(asctime)s:%(levelname)s:%(name)s - %(message)s{}'.format(BColours.RESULTS, BColours.ENDC),
+                datefmt='%Y-%m-%dT%H:%M:%S'
+            )
+        )
         self.logger = unmanic_logging.get_logger(__class__.__name__)
 
     def _log(self, message, message2='', level="info"):
@@ -274,6 +287,8 @@ class PluginsCLI(object):
                 return
 
             install_plugin_requirements(plugin_path)
+        print()
+        print()
 
     @staticmethod
     def remove_plugin():
@@ -327,6 +342,7 @@ class PluginsCLI(object):
         plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
         print_table(plugin_results)
         print()
+        print()
 
     @staticmethod
     def test_installed_plugins():
@@ -355,36 +371,41 @@ class PluginsCLI(object):
             plugin_types_in_plugin = plugin_executor.get_all_plugin_types_in_plugin(plugin_id)
             if not plugin_types_in_plugin:
                 error = "No runners found in plugin"
-                print("    - {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
+                print("  -- {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
+                print()
             else:
                 for plugin_type_in_plugin in plugin_types_in_plugin:
+                    print("    {1}{0}{2}".format(plugin_type_in_plugin, BColours.SECTION, BColours.ENDC))
                     errors = plugin_executor.test_plugin_runner(plugin_id, plugin_type_in_plugin)
                     if errors:
                         for error in errors:
-                            print("    - {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
+                            print("        -- {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
                     else:
-                        print("    - {}PASSED{}".format(BColours.OKGREEN, BColours.ENDC))
+                        print("        -- {}PASSED{} --".format(BColours.OKGREEN, BColours.ENDC))
+                    print()
 
             # Test Plugin settings
             print("  {0}Testing settings{1}".format(BColours.SUBHEADER, BColours.ENDC))
             errors, plugin_settings = plugin_executor.test_plugin_settings(plugin_id)
+            print("    {}Plugin settings schema{}".format(BColours.SECTION, BColours.ENDC))
             if errors:
                 for error in errors:
-                    print("    - {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
+                    print("        -- {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
             else:
                 formatted_plugin_settings = json.dumps(plugin_settings, indent=1)
                 formatted_plugin_settings = formatted_plugin_settings.replace('\n', '\n' + '                    ')
                 print("        - {1}Settings: {0}{2}".format(formatted_plugin_settings, BColours.RESULTS, BColours.ENDC))
-                print("    - {}PASSED{}".format(BColours.OKGREEN, BColours.ENDC))
+                print("        -- {}PASSED{} --".format(BColours.OKGREEN, BColours.ENDC))
+            print()
             print()
 
     def main(self, arg):
         switcher = {
-            'Test installed plugins':  'test_installed_plugins',
-            'List installed plugins':  'list_installed_plugins',
-            'Create new plugin':       'create_new_plugins',
-            'Reload plugin from disk': 'reload_plugin_from_disk',
-            'Remove plugin':           'remove_plugin',
+            'Test installed plugins':       'test_installed_plugins',
+            'List installed plugins':       'list_installed_plugins',
+            'Create new plugin':            'create_new_plugins',
+            'Reload all plugins from disk': 'reload_plugin_from_disk',
+            'Remove plugin':                'remove_plugin',
         }
         function = switcher.get(arg, None)
         if function:
@@ -394,6 +415,7 @@ class PluginsCLI(object):
             return
 
     def run(self):
+        print()
         while True:
             selection = inquirer.prompt(menus.get('main'))
             if selection.get('cli_action') == "Exit":

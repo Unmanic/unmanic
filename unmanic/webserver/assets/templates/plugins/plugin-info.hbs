@@ -130,6 +130,30 @@
                                                 </div>
                                             </div>
                                         {{/ifEquals}}
+
+                                        {{#ifEquals input_type "browse_directory"}}
+                                            <!-- Directory browser input -->
+                                            <div class="form-group form-md-line-input">
+                                                <div class="input-group">
+                                                    <div class="input-group-control">
+                                                        <input type="text" class="form-control"
+                                                               id="{{key_id}}"
+                                                               name="{{key_id}}"
+                                                               placeholder="{{value}}"
+                                                               value="{{value}}">
+                                                        <label for="{{key_id}}">{{label}}</label>
+                                                    </div>
+                                                    <span class="input-group-btn btn-right">
+                                                        <a class="btn green sbold upppercase"
+                                                           href="#unmanic-filebrowser-popup"
+                                                           data-toggle="modal"
+                                                           onclick="generateFileBrowserPopupContent('{{key_id}}', 'directories', 'Select a directory')">
+                                                                Browse… <i class="fa fa-share"></i>
+                                                        </a>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        {{/ifEquals}}
                                     {{/with}}
                                 {{/each}}
                             </div>

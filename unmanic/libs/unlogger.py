@@ -33,22 +33,13 @@
 import os
 import logging
 
-
-# TODO: Refactor to use new singleton global metaclass
-class SingletonType(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(SingletonType, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
+from unmanic.libs.singleton import SingletonType
 
 
-# python 3 style
 class UnmanicLogger(object, metaclass=SingletonType):
     _enable_log_to_file = None
-    _stream_handler = None
-    _file_handler = None
+    stream_handler = None
+    file_handler = None
     _settings = None
     _logger = None
 
@@ -67,71 +58,58 @@ class UnmanicLogger(object, metaclass=SingletonType):
             datefmt='%Y-%m-%dT%H:%M:%S'
         )
         # Add stream handler
-        if not self._stream_handler:
+        if not self.stream_handler:
             # Create file handler
-            self._stream_handler = logging.StreamHandler()
+            self.stream_handler = logging.StreamHandler()
             # Apply formatter
-            self._stream_handler.setFormatter(self.formatter)
+            self.stream_handler.setFormatter(self.formatter)
             # Set the log level of the stream handle
-            self._stream_handler.setLevel(logging.INFO)
+            self.stream_handler.setLevel(logging.INFO)
             # Add handler
-            self._logger.addHandler(self._stream_handler)
+            self._logger.addHandler(self.stream_handler)
         # Add file handler
         self.setup_file_handler()
-        # ###########
-        # log_to_debug = self._logger
-        # while log_to_debug is not None:
-        #     print ("########## level: %s, name: %s, handlers: %s" % (log_to_debug.level,
-        #                                                 log_to_debug.name,
-        #                                                 log_to_debug.handlers))
-        #     log_to_debug = log_to_debug.parent
-        # ##########
 
     def setup_file_handler(self):
-        if self._enable_log_to_file and not self._file_handler and self._settings and self._settings.get_log_path():
+        if self._enable_log_to_file and not self.file_handler and self._settings and self._settings.get_log_path():
             # Create directory if not exists
             if not os.path.exists(self._settings.get_log_path()):
                 os.makedirs(self._settings.get_log_path())
             # Create file handler
             log_file = os.path.join(self._settings.get_log_path(), 'unmanic.log')
-            self._file_handler = logging.handlers.TimedRotatingFileHandler(log_file, when='midnight', interval=1,
+            self.file_handler = logging.handlers.TimedRotatingFileHandler(log_file, when='midnight', interval=1,
                                                                            backupCount=7)
             # Apply formatter
-            self._file_handler.setFormatter(self.formatter)
+            self.file_handler.setFormatter(self.formatter)
             # Set log level of file handler...
             if self._settings.get_debugging():
-                self._file_handler.setLevel(logging.DEBUG)
+                self.file_handler.setLevel(logging.DEBUG)
             else:
-                self._file_handler.setLevel(logging.INFO)
+                self.file_handler.setLevel(logging.INFO)
             # Set the log level of the stream handle always to error
-            self._stream_handler.setLevel(logging.CRITICAL)
+            self.stream_handler.setLevel(logging.CRITICAL)
             # Add handler
-            self._logger.addHandler(self._file_handler)
+            self._logger.addHandler(self.file_handler)
 
-    def disable_file_handler(self):
-        # Set the log level of the stream handle back to info
-        self._stream_handler.setLevel(logging.INFO)
+    def disable_file_handler(self, debugging=False):
+        # Set the log level of the stream handle back to INFO or DEBUG
+        if debugging:
+            self.stream_handler.setLevel(logging.DEBUG)
+        else:
+            self.stream_handler.setLevel(logging.INFO)
         # Remove handler
-        self._logger.removeHandler(self._file_handler)
+        self._logger.removeHandler(self.file_handler)
 
     def setup_logger(self, settings):
         # Set/Update our settings
         self._settings = settings
-        if not self._file_handler:
+        if not self.file_handler:
             self.setup_file_handler()
         if self._settings.get_debugging():
             self._logger.setLevel(logging.DEBUG)
         else:
             self._logger.setLevel(logging.INFO)
         print("UnmanicLogger - SETUP LOGGER")
-        # ###########
-        # log_to_debug = self._logger
-        # while log_to_debug is not None:
-        #     print ("########## level: %s, name: %s, handlers: %s" % (log_to_debug.level,
-        #                                                 log_to_debug.name,
-        #                                                 log_to_debug.handlers))
-        #     log_to_debug = log_to_debug.parent
-        # ##########
 
     def get_logger(self, name=None):
         if name:

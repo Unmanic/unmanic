@@ -74,6 +74,7 @@ class FileTest(object):
             'overwrite_additional_ffmpeg_options':  self.settings.get_overwrite_additional_ffmpeg_options(),
             'additional_ffmpeg_options':            self.settings.get_additional_ffmpeg_options(),
             'enable_hardware_accelerated_decoding': self.settings.get_enable_hardware_accelerated_decoding(),
+            'keep_original_container':              self.settings.get_keep_original_container(),
         }
 
     def file_already_in_target_format(self):
@@ -207,26 +208,20 @@ class FileTest(object):
         for plugin_module in plugin_modules:
             data = {
                 'path':                      self.path,
-                'issues':                    file_issues,
+                'issues':                    file_issues.copy(),
                 'add_file_to_pending_tasks': return_value,
             }
-            # Test return data against schema and ensure there are no errors
-            runner_errors = plugin_handler.test_plugin_runner(plugin_module.get('plugin_id'), 'library_management.file_test',
-                                                               data)
-            if runner_errors:
-                self._log(
-                    "Error while running library management file test '{}' on file '{}'".format(plugin_module.get('plugin_id'),
-                                                                                                self.path), runner_errors,
-                    level="error")
-                # Don't execute this runner. It failed
-                continue
 
             # Run plugin and fetch return data
             plugin_runner = plugin_module.get("runner")
             try:
                 plugin_runner(data)
+
                 # Set the return_value based on the plugin results
                 return_value = data.get('add_file_to_pending_tasks')
+
+                # Append any file issues found during previous tests
+                file_issues = data.get('issues')
             except Exception as e:
                 self._log("Exception while carrying out plugin runner on library management file test '{}'".format(
                     plugin_module.get('plugin_id')), message2=str(e), level="exception")

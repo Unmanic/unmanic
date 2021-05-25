@@ -178,14 +178,6 @@ class PostProcessor(threading.Thread):
                 # Always set file out to destination data absolute path
                 initial_data["file_out"] = destination_data.get('abspath')
 
-                # Test return data against schema and ensure there are no errors
-                errors = plugin_handler.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.file_move', initial_data)
-                if errors:
-                    self._log("Error while running postprocessor file movement '{}' on file '{}'".format(
-                        plugin_module.get('plugin_id'), cache_path), errors, level="error")
-                    # Don't execute this runner. It failed
-                    continue
-
                 # Run plugin and fetch return data
                 plugin_runner = plugin_module.get("runner")
                 try:
@@ -257,13 +249,6 @@ class PostProcessor(threading.Thread):
                 'destination_files':           destination_files,
 
             }
-            # Test return data against schema and ensure there are no errors
-            errors = plugin_handler.test_plugin_runner(plugin_module.get('plugin_id'), 'postprocessor.task_result', data)
-            if errors:
-                self._log("Error while running postprocessor task result'{}' on file '{}'".format(
-                    plugin_module.get('plugin_id'), cache_path), errors, level="error")
-                # Don't execute this runner. It failed
-                continue
 
             # Run plugin and fetch return data
             plugin_runner = plugin_module.get("runner")

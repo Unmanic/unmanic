@@ -42,7 +42,6 @@ from unmanic import config
 from unmanic.libs import unlogger, common
 from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.unplugins import PluginExecutor
-from ..unmodels.pluginflow import PluginFlow
 
 menus = {
     "main":          [
@@ -53,7 +52,7 @@ menus = {
                 'Test installed plugins',
                 'List installed plugins',
                 'Create new plugin',
-                'Reload plugin from disk',
+                'Reload all plugins from disk',
                 'Remove plugin',
                 'Exit',
             ],

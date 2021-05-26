@@ -234,6 +234,8 @@ class Service:
         self.run_threads = True
         self.db_connection = None
 
+        self.developer = None
+
     def start_handler(self, data_queues, settings, task_queue):
         main_logger.info("Starting TaskHandler")
         handler = TaskHandler(data_queues, settings, task_queue)
@@ -294,7 +296,7 @@ class Service:
 
     def start_ui_server(self, data_queues, settings, foreman):
         main_logger.info("Starting UIServer")
-        uiserver = UIServer(data_queues, settings, foreman)
+        uiserver = UIServer(data_queues, settings, foreman, self.developer)
         uiserver.daemon = True
         uiserver.start()
         self.threads.append({
@@ -343,14 +345,14 @@ class Service:
         # Start new thread to handle messages from service
         self.start_handler(data_queues, settings, task_queue)
 
-        # Start new thread to run the web UI
-        self.start_ui_server(data_queues, settings, foreman)
-
         # Start scheduled thread
         self.start_library_scanner_manager(data_queues, settings)
 
         # Start inotify watch manager
         self.start_inotify_watch_manager(data_queues, settings)
+
+        # Start new thread to run the web UI
+        self.start_ui_server(data_queues, settings, foreman)
 
     def stop_threads(self):
         main_logger.info("Stopping all threads")
@@ -359,7 +361,7 @@ class Service:
             thread['thread'].stop()
         for thread in self.threads:
             main_logger.info("Waiting for thread {} to stop".format(thread['name']))
-            thread['thread'].join()
+            thread['thread'].join(10)
             main_logger.info("Thread {} has successfully stopped".format(thread['name']))
         self.threads = []
 
@@ -397,9 +399,11 @@ def main():
     parser = argparse.ArgumentParser(description='Unmanic')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {version}'.format(version=metadata.read_version_string('long')))
-
     parser.add_argument('--manage_plugins', action='store_true',
                         help='manage installed plugins')
+    parser.add_argument('--dev',
+                        action='store_true',
+                        help='Enable developer mode')
     args = parser.parse_args()
 
     if args.manage_plugins:
@@ -418,6 +422,7 @@ def main():
     else:
         # Run the main Unmanic service
         service = Service()
+        service.developer = args.dev
         service.run()
 
 

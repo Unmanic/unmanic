@@ -31,15 +31,18 @@
 """
 
 import os
+import socket
 import threading
 import queue
-import tornado.ioloop
-import tornado.log as tornado_log
-import tornado.web
-import tornado.template
-import tornado.routing
 import asyncio
 import logging
+
+from tornado.httpserver import HTTPServer
+from tornado.ioloop import IOLoop
+from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+from tornado.routing import PathMatches
+from tornado.template import Loader
+from tornado.web import Application, StaticFileHandler, RedirectHandler
 
 from unmanic.libs import common
 from unmanic.libs.singleton import SingletonType
@@ -54,9 +57,10 @@ templates_dir = os.path.abspath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'webserver', 'templates'))
 
 tornado_settings = {
-    'template_loader': tornado.template.Loader(templates_dir),
+    'template_loader': Loader(templates_dir),
     'static_path':     os.path.join(os.path.dirname(__file__), "..", "webserver", "assets"),
-    'debug':           True
+    'debug':           True,
+    'autoreload':      False,
 }
 
 
@@ -74,19 +78,21 @@ class UnmanicDataQueues(object, metaclass=SingletonType):
 
 
 class UIServer(threading.Thread):
-    def __init__(self, unmanic_data_queues, unmanic_settings, foreman):
+    started = False
+    io_loop = None
+    server = None
+    app = None
+
+    def __init__(self, unmanic_data_queues, unmanic_settings, foreman, developer):
         super(UIServer, self).__init__(name='UIServer')
         self.settings = unmanic_settings
-        self.ioloop = None
-        self.app = None
+        self.developer = developer
         self.data_queues = unmanic_data_queues
         self.logger = unmanic_data_queues["logging"].get_logger(self.name)
         self.inotifytasks = unmanic_data_queues["inotifytasks"]
         # TODO: Move all logic out of template calling to foreman.
         #  Create methods here to handle the calls and rename to foreman
         self.foreman = foreman
-        self.abort_flag = threading.Event()
-        self.abort_flag.clear()
         self.set_logging()
         # Add a singleton for handling the data queues for sending data to unmanic's other processes
         udq = UnmanicDataQueues()
@@ -97,8 +103,10 @@ class UIServer(threading.Thread):
         getattr(self.logger, level)(message)
 
     def stop(self):
-        self.abort_flag.set()
-        self.ioloop.stop()
+        if self.started:
+            self.started = False
+        if self.io_loop:
+            self.io_loop.add_callback(self.io_loop.stop)
 
     def set_logging(self):
         if self.settings and self.settings.get_log_path():
@@ -130,30 +138,45 @@ class UIServer(threading.Thread):
             tornado_general.addHandler(file_handler)
             tornado_general.propagate = True  # Send logs also to root logger (command line)
 
-            tornado_log.enable_pretty_logging()
+    def update_tornado_settings(self):
+        # Check if this is a development environment or not
+        if self.developer:
+            tornado_settings['autoreload'] = True
 
     def run(self):
-        self._log("Setting up UIServer loop...")
-        asyncio.set_event_loop(asyncio.new_event_loop())
+        asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
+        self.started = True
 
-        self.ioloop = tornado.ioloop.IOLoop.current()
+        # Configure tornado server based on config
+        self.update_tornado_settings()
 
         # Load the app
         self.app = self.make_web_app()
 
-        # Start app
-        self._log("Listening on port {}".format(self.settings.UI_PORT))
-        self._log(tornado_settings['static_path'])
-        self.app.listen(int(self.settings.UI_PORT))
+        # TODO: add support for HTTPS
 
-        self.ioloop.start()
+        # Web Server
+        self.server = HTTPServer(
+            self.app,
+            ssl_options=None,
+        )
+
+        try:
+            self.server.listen(int(self.settings.UI_PORT))
+        except socket.error as e:
+            self._log("Exception when setting WebUI port {}:".format(self.settings.UI_PORT), message2=str(e), level="warning")
+            raise SystemExit
+
+        self.io_loop = IOLoop().current()
+        self.io_loop.start()
+        self.io_loop.close(True)
 
         self._log("Leaving UIServer loop...")
 
     def make_web_app(self):
         # Start with web application routes
-        app = tornado.web.Application([
-            (r"/assets/(.*)", tornado.web.StaticFileHandler, dict(
+        app = Application([
+            (r"/assets/(.*)", StaticFileHandler, dict(
                 path=tornado_settings['static_path']
             )),
             (r"/dashboard/(.*)", MainUIRequestHandler, dict(
@@ -182,14 +205,14 @@ class UIServer(threading.Thread):
                 data_queues=self.data_queues,
                 settings=self.settings
             )),
-            (r"/(.*)", tornado.web.RedirectHandler, dict(
+            (r"/(.*)", RedirectHandler, dict(
                 url="/dashboard/"
             )),
         ], **tornado_settings)
 
         # Add API routes
         app.add_handlers(r'.*', [(
-            tornado.routing.PathMatches(r"/api/.*"),
+            PathMatches(r"/api/.*"),
             APIRequestRouter(app, settings=self.settings)
         ), ])
 

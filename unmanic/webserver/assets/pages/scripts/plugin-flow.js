@@ -236,13 +236,14 @@ const drawFlow = function (plugin_type, plugin_type_id, plugin_flow) {
         data: data,
     });
 
+    // Add save button logic
+    $flowchart.parent().siblings('.plugin_flow_save').off("click");
     $flowchart.parent().siblings('.plugin_flow_save').click(function () {
         let data = $flowchart.flowchart('getData');
-        //$('#flowchart_data').val(JSON.stringify(data, null, 2));
         savePluginFlow(plugin_type, data);
     });
 
-    $flowchart.parent().siblings('.delete_selected_button').click(function () {
+    /*$flowchart.parent().siblings('.delete_selected_button').click(function () {
         $flowchart.flowchart('deleteSelected');
     });
 
@@ -253,6 +254,6 @@ const drawFlow = function (plugin_type, plugin_type_id, plugin_flow) {
 
     $flowchart.siblings('.delete_selected_button').click(function () {
         $flowchart.flowchart('deleteSelected');
-    });
+    });*/
 
 };

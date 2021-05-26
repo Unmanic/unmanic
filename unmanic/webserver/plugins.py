@@ -31,19 +31,23 @@
 """
 import tornado.web
 
+from unmanic import config
 from unmanic.libs import session
 
 
 class PluginsUIRequestHandler(tornado.web.RequestHandler):
     name = None
     config = None
-    data_queues = None
-    data = None
     session = None
 
-    def initialize(self, data_queues, settings):
+    data_queues = None
+    data = None
+
+    def initialize(self, data_queues):
         self.name = 'plugins'
-        self.config = settings
+        self.config = config.CONFIG()
+        self.session = session.Session()
+
         self.data_queues = data_queues
         self.data = {
             'plugin_types': [
@@ -69,7 +73,6 @@ class PluginsUIRequestHandler(tornado.web.RequestHandler):
                 },
             ]
         }
-        self.session = session.Session()
 
     def get(self, path):
         self.render("plugins/plugins.html", config=self.config, data=self.data, session=self.session)

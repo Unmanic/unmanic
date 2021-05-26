@@ -34,6 +34,8 @@ import importlib
 import tornado.web
 import tornado.log
 
+from unmanic import config
+
 
 class Handle404(tornado.web.RequestHandler):
     def get(self):
@@ -47,7 +49,7 @@ class APIRequestRouter(tornado.routing.Router):
 
     def __init__(self, app, **kwargs):
         self.app = app
-        self.config = kwargs.get("settings")
+        self.config = config.CONFIG()
 
     def find_handler(self, request, **kwargs):
         api_version = request.path.split('/')[2]  # Set API version
@@ -67,6 +69,6 @@ class APIRequestRouter(tornado.routing.Router):
         # Return handler
         return self.app.get_handler_delegate(request, handler,
                                              target_kwargs=dict(
-                                                 settings=self.config,
+                                                 params=params,
                                              ),
                                              path_args=[request.path])

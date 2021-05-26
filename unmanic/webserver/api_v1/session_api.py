@@ -39,6 +39,7 @@ from unmanic.webserver.api_v1.base_api_handler import BaseApiHandler
 
 class ApiSessionHandler(BaseApiHandler):
     name = None
+    session = None
     config = None
     params = None
     unmanic_data_queues = None
@@ -63,11 +64,10 @@ class ApiSessionHandler(BaseApiHandler):
 
     def initialize(self, **kwargs):
         self.name = 'plugins_api'
-        self.config = kwargs.get("settings")
+        self.session = session.Session()
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
-        self.session = session.Session()
 
     def set_default_headers(self):
         """Set the default response header to be JSON."""

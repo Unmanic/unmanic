@@ -37,6 +37,7 @@ import tornado.web
 import tornado.log
 import tornado.routing
 
+from unmanic import config
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v1.base_api_handler import BaseApiHandler
 
@@ -69,7 +70,8 @@ class ApiPendingHandler(BaseApiHandler):
 
     def initialize(self, **kwargs):
         self.name = 'pending_api'
-        self.config = kwargs.get("settings")
+        self.config = config.CONFIG()
+
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()

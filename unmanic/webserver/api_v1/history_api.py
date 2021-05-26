@@ -37,6 +37,7 @@ import tornado.web
 import tornado.log
 import tornado.routing
 
+from unmanic import config
 from unmanic.webserver.api_v1.base_api_handler import BaseApiHandler
 
 from unmanic.libs import history, task, common
@@ -62,7 +63,7 @@ class ApiHistoryHandler(BaseApiHandler):
 
     def initialize(self, **kwargs):
         self.name = 'history_api'
-        self.config = kwargs.get("settings")
+        self.config = config.CONFIG()
         self.params = kwargs.get("params")
 
     def set_default_headers(self):

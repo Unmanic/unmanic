@@ -35,21 +35,26 @@ import time
 import tornado.web
 import tornado.log
 
+from unmanic import config
 from unmanic.libs import history, session
 
 
 class HistoryUIRequestHandler(tornado.web.RequestHandler):
     name = None
     config = None
+    session = None
+
     data_queues = None
     data = None
 
-    def initialize(self, data_queues, settings):
+    def initialize(self, data_queues):
         self.name = 'history'
-        self.config = settings
+        self.config = config.CONFIG()
+        self.session = session.Session()
+
+        # TODO: Fetch data queues from uiserver.py
         self.data_queues = data_queues
         self.data = {}
-        self.session = session.Session()
 
     def get(self, path):
         if self.get_query_arguments('ajax'):

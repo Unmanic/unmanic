@@ -38,15 +38,11 @@ import tornado.web
 class ElementFileBrowserUIRequestHandler(tornado.web.RequestHandler):
     name = None
     step = None
-    config = None
-    data_queues = None
     components = None
 
-    def initialize(self, data_queues, settings):
+    def initialize(self):
         self.name = 'filebrowser'
         self.step = 'general'
-        self.config = settings
-        self.data_queues = data_queues
         self.components = []
 
     def get(self, path):

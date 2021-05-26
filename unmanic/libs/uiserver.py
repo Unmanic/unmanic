@@ -44,6 +44,7 @@ from tornado.routing import PathMatches
 from tornado.template import Loader
 from tornado.web import Application, StaticFileHandler, RedirectHandler
 
+from unmanic import config
 from unmanic.libs import common
 from unmanic.libs.singleton import SingletonType
 from unmanic.webserver.api_request_router import APIRequestRouter
@@ -78,14 +79,16 @@ class UnmanicDataQueues(object, metaclass=SingletonType):
 
 
 class UIServer(threading.Thread):
+    config = None
     started = False
     io_loop = None
     server = None
     app = None
 
-    def __init__(self, unmanic_data_queues, unmanic_settings, foreman, developer):
+    def __init__(self, unmanic_data_queues, foreman, developer):
         super(UIServer, self).__init__(name='UIServer')
-        self.settings = unmanic_settings
+        self.config = config.CONFIG()
+
         self.developer = developer
         self.data_queues = unmanic_data_queues
         self.logger = unmanic_data_queues["logging"].get_logger(self.name)
@@ -109,13 +112,13 @@ class UIServer(threading.Thread):
             self.io_loop.add_callback(self.io_loop.stop)
 
     def set_logging(self):
-        if self.settings and self.settings.get_log_path():
+        if self.config and self.config.get_log_path():
             # Create directory if not exists
-            if not os.path.exists(self.settings.get_log_path()):
-                os.makedirs(self.settings.get_log_path())
+            if not os.path.exists(self.config.get_log_path()):
+                os.makedirs(self.config.get_log_path())
 
             # Create file handler
-            log_file = os.path.join(self.settings.get_log_path(), 'tornado.log')
+            log_file = os.path.join(self.config.get_log_path(), 'tornado.log')
             file_handler = logging.handlers.TimedRotatingFileHandler(log_file, when='midnight', interval=1,
                                                                      backupCount=7)
             file_handler.setLevel(logging.INFO)
@@ -162,9 +165,9 @@ class UIServer(threading.Thread):
         )
 
         try:
-            self.server.listen(int(self.settings.UI_PORT))
+            self.server.listen(int(self.config.UI_PORT))
         except socket.error as e:
-            self._log("Exception when setting WebUI port {}:".format(self.settings.UI_PORT), message2=str(e), level="warning")
+            self._log("Exception when setting WebUI port {}:".format(self.config.UI_PORT), message2=str(e), level="warning")
             raise SystemExit
 
         self.io_loop = IOLoop().current()
@@ -182,28 +185,22 @@ class UIServer(threading.Thread):
             (r"/dashboard/(.*)", MainUIRequestHandler, dict(
                 data_queues=self.data_queues,
                 foreman=self.foreman,
-                settings=self.settings
             )),
             (r"/dashws", DashboardWebSocket, dict(
                 data_queues=self.data_queues,
                 foreman=self.foreman,
-                settings=self.settings
             )),
             (r"/history/(.*)", HistoryUIRequestHandler, dict(
                 data_queues=self.data_queues,
-                settings=self.settings
             )),
             (r"/plugins/(.*)", PluginsUIRequestHandler, dict(
                 data_queues=self.data_queues,
-                settings=self.settings
             )),
             (r"/settings/(.*)", SettingsUIRequestHandler, dict(
                 data_queues=self.data_queues,
-                settings=self.settings
             )),
             (r"/filebrowser/(.*)", ElementFileBrowserUIRequestHandler, dict(
                 data_queues=self.data_queues,
-                settings=self.settings
             )),
             (r"/(.*)", RedirectHandler, dict(
                 url="/dashboard/"
@@ -213,7 +210,7 @@ class UIServer(threading.Thread):
         # Add API routes
         app.add_handlers(r'.*', [(
             PathMatches(r"/api/.*"),
-            APIRequestRouter(app, settings=self.settings)
+            APIRequestRouter(app)
         ), ])
 
         return app

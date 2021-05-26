@@ -294,9 +294,9 @@ class Service:
         else:
             main_logger.warn("Unable to start EventMonitorManager as no event monitor module was found")
 
-    def start_ui_server(self, data_queues, settings, foreman):
+    def start_ui_server(self, data_queues, foreman):
         main_logger.info("Starting UIServer")
-        uiserver = UIServer(data_queues, settings, foreman, self.developer)
+        uiserver = UIServer(data_queues, foreman, self.developer)
         uiserver.daemon = True
         uiserver.start()
         self.threads.append({
@@ -352,7 +352,7 @@ class Service:
         self.start_inotify_watch_manager(data_queues, settings)
 
         # Start new thread to run the web UI
-        self.start_ui_server(data_queues, settings, foreman)
+        self.start_ui_server(data_queues, foreman)
 
     def stop_threads(self):
         main_logger.info("Stopping all threads")

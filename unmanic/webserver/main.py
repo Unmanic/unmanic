@@ -38,23 +38,27 @@ import tornado.ioloop
 import tornado.websocket
 from tornado import gen
 
+from unmanic import config
 from unmanic.libs import common, history, session
 
 
 class MainUIRequestHandler(tornado.web.RequestHandler):
     name = None
+    config = None
+    session = None
     data_queues = None
     foreman = None
     components = None
-    config = None
 
-    def initialize(self, data_queues, foreman, settings):
+    def initialize(self, data_queues, foreman):
         self.name = 'main'
-        self.data_queues = data_queues
-        self.foreman = foreman
-        self.components = []
-        self.config = settings
+        self.config = config.CONFIG()
         self.session = session.Session()
+
+        # TODO: Fetch data queues from uiserver.py
+        self.data_queues = data_queues
+        #self.foreman = foreman
+        self.components = []
 
     def get(self, path):
         if self.get_query_arguments('ajax'):
@@ -78,15 +82,18 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
 
 
 class DashboardWebSocket(tornado.websocket.WebSocketHandler):
+    name = None
+    config = None
     sending_worker_info = False
     sending_completed_tasks_info = False
     close_event = False
 
     def __init__(self, *args, **kwargs):
+        self.name = 'dashws'
+        self.config = config.CONFIG()
         self.server_id = str(uuid.uuid4())
         self.data_queues = kwargs.pop('data_queues')
         self.foreman = kwargs.pop('foreman')
-        self.config = kwargs.pop('settings')
         self.session = session.Session()
         super(DashboardWebSocket, self).__init__(*args, **kwargs)
 

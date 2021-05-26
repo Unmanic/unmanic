@@ -32,23 +32,27 @@
 
 import tornado.web
 
+from unmanic import config
 from unmanic.libs import session
 
 
 class SettingsUIRequestHandler(tornado.web.RequestHandler):
     name = None
-    step = None
     config = None
+    session = None
+
+    step = None
     data_queues = None
     components = None
 
-    def initialize(self, data_queues, settings):
+    def initialize(self, data_queues):
         self.name = 'settings'
+        self.config = config.CONFIG()
+        self.session = session.Session()
+
         self.step = 'general'
-        self.config = settings
         self.data_queues = data_queues
         self.components = []
-        self.session = session.Session()
 
     def get(self, path):
         step_list = self.get_query_arguments('step')

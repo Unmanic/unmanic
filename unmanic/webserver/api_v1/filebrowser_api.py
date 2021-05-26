@@ -38,7 +38,6 @@ from unmanic.webserver.api_v1.base_api_handler import BaseApiHandler
 
 class ApiFilebrowserHandler(BaseApiHandler):
     name = None
-    config = None
     params = None
     unmanic_data_queues = None
 
@@ -52,7 +51,6 @@ class ApiFilebrowserHandler(BaseApiHandler):
 
     def initialize(self, **kwargs):
         self.name = 'file_browser_api'
-        self.config = kwargs.get("settings")
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()

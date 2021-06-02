@@ -1,0 +1,5 @@
+#!/usr/bin/with-contenv bash
+
+RUN_USER=abc
+export HOME=/config
+exec s6-setuidgid ${RUN_USER} /usr/local/bin/unmanic-service ${@}

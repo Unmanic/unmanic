@@ -1,14 +1,15 @@
 #!/usr/bin/with-contenv bash
 
-export HOME=/config
-export PYTHONPATH="${PYTHONPATH}:/app"
-
 RUN_USER=abc
 
 if [[ -e /app/unmanic/service.py ]]; then
-    echo "Running Unmanic from source"
-    exec s6-setuidgid ${RUN_USER} /usr/bin/python3 /app/unmanic/service.py
-else
-    echo "Running Unmanic from installed module"
-    exec s6-setuidgid ${RUN_USER} unmanic
+    echo "Update container to running Unmanic from source"
+    if [[ ! -L /usr/local/lib/python3.8/dist-packages/unmanic ]]; then
+        echo "Move container unmanic install"
+        mv /usr/local/lib/python3.8/dist-packages/unmanic /usr/local/lib/python3.8/dist-packages/unmanic-installed
+    fi
+    ln -sf /app/unmanic /usr/local/lib/python3.8/dist-packages/unmanic
 fi
+
+chmod +x /usr/bin/unmanic
+exec s6-setuidgid root /usr/bin/unmanic

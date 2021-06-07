@@ -1,10 +1,10 @@
-FROM lsiobase/ffmpeg:bin as binstage
+FROM josh5/ffmpeg:latest as ffmpeg
 FROM lsiobase/ubuntu:focal
 LABEL maintainer="Josh.5 <jsunnex@gmail.com>"
 
 
-# Add files from binstage
-COPY --from=binstage / /
+# Add files from ffmpeg image
+COPY --from=ffmpeg / /
 
 
 # Env variables

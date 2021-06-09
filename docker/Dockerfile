@@ -51,7 +51,6 @@ RUN \
             fi \
     && \
     echo "**** Cleanup ****" \
-        && apt-get remove -y gpg-agent \
         && apt-get clean autoclean -y \
         && apt-get autoremove -y \
         && rm -rf \

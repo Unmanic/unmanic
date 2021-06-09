@@ -61,17 +61,18 @@ RUN \
 
 
 # Install jellyfin-ffmpeg
+ARG FFMPEG_VERSION=4.3.2-1
 RUN \
-    echo "**** Add Jellyfin repository ($( dpkg --print-architecture )) ****" \
-        && curl -sSL https://repo.jellyfin.org/jellyfin_team.gpg.key | apt-key add - \
-        && echo "deb [arch=$( dpkg --print-architecture )] https://repo.jellyfin.org/$( awk -F'=' '/^ID=/{ print $NF }' /etc/os-release ) $( awk -F'=' '/^VERSION_CODENAME=/{ print $NF }' /etc/os-release ) main" | tee /etc/apt/sources.list.d/jellyfin.list \
-    && \
     echo "**** Install jellyfin-ffmpeg ****" \
+        && curl -Lf \
+            https://repo.jellyfin.org/releases/server/ubuntu/versions/jellyfin-ffmpeg/${FFMPEG_VERSION}/jellyfin-ffmpeg_${FFMPEG_VERSION}-focal_$( dpkg --print-architecture ).deb \
+            -o /var/tmp/jellyfin-ffmpeg_${FFMPEG_VERSION}-focal_$( dpkg --print-architecture ).deb \
         && apt-get update \
         && apt-get install --no-install-recommends --no-install-suggests -y \
-            jellyfin-ffmpeg \
             openssl \
             locales \
+        && apt-get install --no-install-recommends --no-install-suggests -y \
+            /var/tmp/jellyfin-ffmpeg_${FFMPEG_VERSION}-focal_$( dpkg --print-architecture ).deb \
         && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
         && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
     && \

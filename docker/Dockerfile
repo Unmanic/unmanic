@@ -1,10 +1,5 @@
-FROM josh5/ffmpeg:latest as ffmpeg
 FROM lsiobase/ubuntu:focal
 LABEL maintainer="Josh.5 <jsunnex@gmail.com>"
-
-
-# Add files from ffmpeg image
-COPY --from=ffmpeg / /
 
 
 # Env variables
@@ -15,6 +10,9 @@ ENV \
 
 
 # Install the runtime dependencies
+# TODO: Remove intel-opencl-icd and replace with suggested build by Jellyfin
+#   https://jellyfin.org/docs/general/administration/hardware-acceleration.html
+#   https://github.com/jellyfin/jellyfin/blob/master/Dockerfile
 RUN \
     echo "**** Install runtime packages ****" \
         && apt-get update \
@@ -44,10 +42,38 @@ RUN \
                     i965-va-driver \
                     intel-opencl-icd \
                     intel-level-zero-gpu level-zero \
-                    intel-media-va-driver-non-free libmfx1 ; \
+                    intel-media-va-driver-non-free libmfx1 \
+                && echo "**** Install MESA Media Drivers for AMD VAAPI ****" \
+                && apt-get install -y \
+                    mesa-va-drivers ; \
             else \
                 echo "Arch does not support x86 runtime packages. Ignoring"; \
             fi \
+    && \
+    echo "**** Cleanup ****" \
+        && apt-get remove -y gpg-agent \
+        && apt-get clean autoclean -y \
+        && apt-get autoremove -y \
+        && rm -rf \
+            /var/lib/apt/lists/* \
+            /var/tmp/* \
+            /tmp/*
+
+
+# Install jellyfin-ffmpeg
+RUN \
+    echo "**** Add Jellyfin repository ****" \
+        && curl -sSL https://repo.jellyfin.org/jellyfin_team.gpg.key | apt-key add - \
+        && echo "deb [arch=$( dpkg --print-architecture )] https://repo.jellyfin.org/$( awk -F'=' '/^ID=/{ print $NF }' /etc/os-release ) $( awk -F'=' '/^VERSION_CODENAME=/{ print $NF }' /etc/os-release ) main" | tee /etc/apt/sources.list.d/jellyfin.list \
+    && \
+    echo "**** Install jellyfin-ffmpeg ****" \
+        && apt-get update \
+        && apt-get install --no-install-recommends --no-install-suggests -y \
+            jellyfin-ffmpeg \
+            openssl \
+            locales \
+        && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
+        && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
     && \
     echo "**** Cleanup ****" \
         && rm -rf \
@@ -59,7 +85,7 @@ RUN \
 COPY /requirements.txt /tmp/requirements.txt
 
 
-# Install dependencies.
+# Install Unmanic python dependencies.
 RUN \
     echo "**** Update sources ****" \
         && apt-get update \

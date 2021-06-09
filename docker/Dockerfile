@@ -63,23 +63,26 @@ RUN \
 # Install jellyfin-ffmpeg
 ARG FFMPEG_VERSION=4.3.2-1
 RUN \
-    echo "**** Install jellyfin-ffmpeg ****" \
+    echo "**** Install jellyfin-ffmpeg ($( dpkg --print-architecture )) ****" \
         && curl -Lf \
             https://repo.jellyfin.org/releases/server/ubuntu/versions/jellyfin-ffmpeg/${FFMPEG_VERSION}/jellyfin-ffmpeg_${FFMPEG_VERSION}-focal_$( dpkg --print-architecture ).deb \
-            -o /var/tmp/jellyfin-ffmpeg_${FFMPEG_VERSION}-focal_$( dpkg --print-architecture ).deb \
+            -o /tmp/jellyfin-ffmpeg_${FFMPEG_VERSION}-focal_$( dpkg --print-architecture ).deb \
         && apt-get update \
         && apt-get install --no-install-recommends --no-install-suggests -y \
             openssl \
             locales \
         && apt-get install --no-install-recommends --no-install-suggests -y \
-            /var/tmp/jellyfin-ffmpeg_${FFMPEG_VERSION}-focal_$( dpkg --print-architecture ).deb \
+            /tmp/jellyfin-ffmpeg_${FFMPEG_VERSION}-focal_$( dpkg --print-architecture ).deb \
         && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
         && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
     && \
     echo "**** Cleanup ****" \
+        && apt-get clean autoclean -y \
+        && apt-get autoremove -y \
         && rm -rf \
             /var/lib/apt/lists/* \
-            /var/tmp/*
+            /var/tmp/* \
+            /tmp/*
 
 
 # Add pip requirements

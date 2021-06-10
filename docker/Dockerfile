@@ -29,28 +29,33 @@ RUN \
             libxml2 \
             vainfo \
     && \
-    echo "**** Install x86 specific packages ($(uname -m)) ****" \
-        &&  if uname -m | grep -q x86; then \
-                apt-get install -y \
+    echo "**** Install arch specific packages for $(uname -m) ****" \
+        && sleep 2 \
+        && \
+        if uname -m | grep -q x86; then \
+            echo "**** Add Intel Graphics repository  ****" \
+                && apt-get install -y \
                     gpg-agent \
-                && echo "**** Add Intel Graphics repository  ****" \
                 && echo "deb [arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main" > /etc/apt/sources.list.d/intel-graphics.list \
                 && apt-key adv --fetch-keys https://repositories.intel.com/graphics/intel-graphics.key \
-                && echo "**** Install Intel Media Drivers  ****" \
+            && \
+            echo "**** Install Intel Media Drivers  ****" \
                 && apt-get update \
                 && apt-get install -y \
                     i965-va-driver \
                     intel-opencl-icd \
                     intel-level-zero-gpu level-zero \
                     intel-media-va-driver-non-free libmfx1 \
-                && echo "**** Install MESA Media Drivers for AMD VAAPI ****" \
+            && \
+            echo "**** Install MESA Media Drivers for AMD VAAPI ****" \
                 && apt-get install -y \
-                    mesa-va-drivers ; \
-            else \
-                echo "Arch does not support x86 runtime packages. Ignoring"; \
-            fi \
+                    mesa-va-drivers \
+            && \
+            echo ; \
+        fi \
     && \
     echo "**** Cleanup ****" \
+        && apt-get remove -y gpg-agent \
         && apt-get clean autoclean -y \
         && apt-get autoremove -y \
         && rm -rf \
@@ -59,21 +64,91 @@ RUN \
             /tmp/*
 
 
-# Install jellyfin-ffmpeg
-ARG FFMPEG_VERSION=4.3.2-1
+# Install ffmpeg
 RUN \
-    echo "**** Install jellyfin-ffmpeg ($( dpkg --print-architecture )) ****" \
-        && curl -Lf \
-            https://repo.jellyfin.org/releases/server/ubuntu/versions/jellyfin-ffmpeg/${FFMPEG_VERSION}/jellyfin-ffmpeg_${FFMPEG_VERSION}-focal_$( dpkg --print-architecture ).deb \
-            -o /tmp/jellyfin-ffmpeg_${FFMPEG_VERSION}-focal_$( dpkg --print-architecture ).deb \
-        && apt-get update \
-        && apt-get install --no-install-recommends --no-install-suggests -y \
-            openssl \
-            locales \
-        && apt-get install --no-install-recommends --no-install-suggests -y \
-            /tmp/jellyfin-ffmpeg_${FFMPEG_VERSION}-focal_$( dpkg --print-architecture ).deb \
-        && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
-        && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
+    echo "**** Install FFmpeg for $(uname -m) ****" \
+        && sleep 2 \
+        && echo "$PATH" \
+        && export PATH=${PATH} \
+        && \
+        if uname -m | grep -q x86; then \
+            echo "**** Add Jellyfin repository ****" \
+                && apt-get update \
+                && apt-get install -y \
+                    gnupg \
+                    curl \
+                && curl -ks https://repo.jellyfin.org/jellyfin_team.gpg.key | apt-key add - \
+                && echo "deb [arch=$( dpkg --print-architecture )] https://repo.jellyfin.org/ubuntu focal main" | tee /etc/apt/sources.list.d/jellyfin.list \
+            && \
+            echo "**** Install jellyfin-ffmpeg ****" \
+                && apt-get update \
+                && apt-get install --no-install-recommends --no-install-suggests -y \
+                    jellyfin-ffmpeg \
+                    openssl \
+                    locales \
+                && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
+                && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
+            && \
+            echo "**** Remove build packages ****" \
+                && apt-get remove -y \
+                    curl \
+                    gnupg \
+            && \
+            echo ; \
+        fi \
+        && \
+        if uname -m | grep -q aarch64; then \
+            echo "**** Install ffmpeg ****" \
+                && apt-get update \
+                && apt-get install --no-install-recommends --no-install-suggests -y \
+                    ffmpeg \
+                    libssl-dev \
+                    ca-certificates \
+                    libfontconfig1 \
+                    libfreetype6 \
+                    libomxil-bellagio0 \
+                    libomxil-bellagio-bin \
+                    locales \
+            && \
+            echo ; \
+        fi \
+        && \
+        if uname -m | grep -q armv7l; then \
+            echo "**** Add Jellyfin repository ****" \
+                && apt-get update \
+                && apt-get install --no-install-recommends --no-install-suggests -y \
+                    ca-certificates \
+                    curl \
+                    gnupg \
+                && curl -ks https://repo.jellyfin.org/jellyfin_team.gpg.key | apt-key add - \
+                && curl -ks https://keyserver.ubuntu.com/pks/lookup?op=get\&search=0x6587ffd6536b8826e88a62547876ae518cbcf2f2 | apt-key add - \
+                && echo 'deb [arch=armhf] https://repo.jellyfin.org/ubuntu focal main' > /etc/apt/sources.list.d/jellyfin.list \
+                && echo "deb http://ppa.launchpad.net/ubuntu-raspi2/ppa/ubuntu bionic main">> /etc/apt/sources.list.d/raspbins.list \
+            && \
+            echo "**** Install jellyfin-ffmpeg ****" \
+                && apt-get update \
+                && apt-get install --no-install-recommends --no-install-suggests -y \
+                    jellyfin-ffmpeg \
+                    libssl-dev \
+                    libfontconfig1 \
+                    libfreetype6 \
+                    libomxil-bellagio0 \
+                    libomxil-bellagio-bin \
+                    libraspberrypi0 \
+                    vainfo \
+                    libva2 \
+                    locales \
+                    locales \
+                && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
+                && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
+            && \
+            echo "**** Remove build packages ****" \
+                && apt-get remove -y \
+                    curl \
+                    gnupg \
+            && \
+            echo ; \
+        fi \
     && \
     echo "**** Cleanup ****" \
         && apt-get clean autoclean -y \

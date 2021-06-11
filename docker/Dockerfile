@@ -35,7 +35,7 @@ RUN \
         if uname -m | grep -q x86; then \
             echo "**** Add Intel Graphics repository  ****" \
                 && apt-get install -y \
-                    gpg-agent \
+                    gnupg \
                 && echo "deb [arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main" > /etc/apt/sources.list.d/intel-graphics.list \
                 && apt-key adv --fetch-keys https://repositories.intel.com/graphics/intel-graphics.key \
             && \
@@ -51,11 +51,14 @@ RUN \
                 && apt-get install -y \
                     mesa-va-drivers \
             && \
+            echo "**** Remove build packages ****" \
+                && apt-get remove -y \
+                    gnupg \
+            && \
             echo ; \
         fi \
     && \
-    echo "**** Cleanup ****" \
-        && apt-get remove -y gpg-agent \
+    echo "**** Section cleanup ****" \
         && apt-get clean autoclean -y \
         && apt-get autoremove -y \
         && rm -rf \
@@ -68,8 +71,6 @@ RUN \
 RUN \
     echo "**** Install FFmpeg for $(uname -m) ****" \
         && sleep 2 \
-        && echo "$PATH" \
-        && export PATH=${PATH} \
         && \
         if uname -m | grep -q x86; then \
             echo "**** Add Jellyfin repository ****" \
@@ -80,7 +81,7 @@ RUN \
                 && curl -ks https://repo.jellyfin.org/jellyfin_team.gpg.key | apt-key add - \
                 && echo "deb [arch=$( dpkg --print-architecture )] https://repo.jellyfin.org/ubuntu focal main" | tee /etc/apt/sources.list.d/jellyfin.list \
             && \
-            echo "**** Install jellyfin-ffmpeg ****" \
+            echo "**** Install jellyfin-ffmpeg and linked 3rd party libs ****" \
                 && apt-get update \
                 && apt-get install --no-install-recommends --no-install-suggests -y \
                     jellyfin-ffmpeg \
@@ -98,7 +99,7 @@ RUN \
         fi \
         && \
         if uname -m | grep -q aarch64; then \
-            echo "**** Install ffmpeg ****" \
+            echo "**** Install ffmpeg and linked 3rd party libs ****" \
                 && apt-get update \
                 && apt-get install --no-install-recommends --no-install-suggests -y \
                     ffmpeg \
@@ -125,7 +126,7 @@ RUN \
                 && echo 'deb [arch=armhf] https://repo.jellyfin.org/ubuntu focal main' > /etc/apt/sources.list.d/jellyfin.list \
                 && echo "deb http://ppa.launchpad.net/ubuntu-raspi2/ppa/ubuntu bionic main">> /etc/apt/sources.list.d/raspbins.list \
             && \
-            echo "**** Install jellyfin-ffmpeg ****" \
+            echo "**** Install jellyfin-ffmpeg and linked 3rd party libs ****" \
                 && apt-get update \
                 && apt-get install --no-install-recommends --no-install-suggests -y \
                     jellyfin-ffmpeg \
@@ -138,7 +139,6 @@ RUN \
                     vainfo \
                     libva2 \
                     locales \
-                    locales \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
             && \
@@ -150,7 +150,7 @@ RUN \
             echo ; \
         fi \
     && \
-    echo "**** Cleanup ****" \
+    echo "**** Section cleanup ****" \
         && apt-get clean autoclean -y \
         && apt-get autoremove -y \
         && rm -rf \
@@ -165,39 +165,48 @@ COPY /requirements.txt /tmp/requirements.txt
 
 # Install Unmanic python dependencies.
 RUN \
-    echo "**** Update sources ****" \
-        && apt-get update \
+    echo "**** Install Unmanic application dependencies ****" \
+        && sleep 2 \
+        && \
+        echo "**** Update sources ****" \
+            && apt-get update \
+        && \
+        echo "**** Install python ****" \
+            && apt-get install -y --no-install-recommends \
+                python3 \
+                python3-pip \
+                python3-setuptools \
+                unzip \
+        && \
+        echo "**** Install pip packages ****" \
+            && python3 -m pip install --no-cache-dir -r /tmp/requirements.txt \
     && \
-    echo "**** Install python ****" \
-        && apt-get install -y --no-install-recommends \
-            python3 \
-            python3-pip \
-            python3-setuptools \
-            unzip \
-    && \
-    echo "**** Install pip packages ****" \
-        && python3 -m pip install --no-cache-dir -r /tmp/requirements.txt \
-    && \
-    echo "**** Cleanup ****" \
+    echo "**** Section cleanup ****" \
+        && apt-get clean autoclean -y \
+        && apt-get autoremove -y \
         && rm -rf \
-            /tmp/* \
-            /var/tmp/*
+            /var/lib/apt/lists/* \
+            /var/tmp/* \
+            /tmp/*
 
 
-# Build and install application
-# Must first run `python3 ./setup.py bdist_wheel` to build package
-COPY /dist/      /src/
+# Install pre-built Unmanic wheel
+# Must first run `python3 ./setup.py bdist_wheel` on host to build package
+COPY /dist/ /src/
 RUN \
-    echo "**** Build and install unmanic ****" \
-        && ls -l /src/ \
-        && python3 -m pip install --no-cache-dir /src/*.whl \
-    && \
-    echo "**** Move unmanic executable so we can wrap a bash script around it for developers ****" \
-        && mv -f /usr/local/bin/unmanic /usr/local/bin/unmanic-service \
-    && \
-    echo "**** Make default paths for unmanic library ****" \
-        && mkdir -p /library
+    echo "**** Install Unmanic ****" \
+        && sleep 2 \
+        && \
+        echo "**** Install unmanic from pre-built wheel ****" \
+            && ls -l /src/ \
+            && python3 -m pip install --no-cache-dir /src/*.whl \
+        && \
+        echo "**** Move unmanic executable so we can wrap a bash script around it for developers ****" \
+            && mv -f /usr/local/bin/unmanic /usr/local/bin/unmanic-service \
+        && \
+        echo "**** Make default paths for unmanic library ****" \
+            && mkdir -p /library
 
 
 # Add local files
-COPY /docker/root   /
+COPY /docker/root /

@@ -63,7 +63,7 @@ class Settings(BaseModel):
     number_of_workers = IntegerField(null=False, default=3)
     keep_original_container = BooleanField(null=False, default=False)
     out_container = TextField(null=False, default='matroska')
-    remove_subtitle_streams = BooleanField(null=False, default=True)
+    remove_subtitle_streams = BooleanField(null=False, default=False)
     run_full_scan_on_start = BooleanField(null=False, default=False)
     schedule_full_scan_minutes = IntegerField(null=False, default=1440)
     search_extensions = TextField(null=False, default='mkv,avi,mov,ts,rmvb,mp4,')

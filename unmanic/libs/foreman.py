@@ -408,7 +408,7 @@ class Foreman(threading.Thread):
 
         # Check if we have to many workers running and stop the ones that are idle
         if len(self.worker_threads) > int(self.settings.get_number_of_workers()):
-            self._log("Foreman Threads exceed the configured limit. Marking some for removal...")
+            self._log("Foreman Threads exceed the configured limit. Marking some for removal...", level='debug')
             # Too many workers, stop any idle ones
             for thread in self.worker_threads:
                 if self.worker_threads[thread].idle:

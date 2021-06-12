@@ -173,6 +173,7 @@ RUN \
         && \
         echo "**** Install python ****" \
             && apt-get install -y --no-install-recommends \
+                grc \
                 python3 \
                 python3-pip \
                 python3-setuptools \

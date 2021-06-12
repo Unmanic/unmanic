@@ -468,34 +468,40 @@ class FFMPEGHandle(object):
         # Fix issue - 'Too many packets buffered for output stream 0:1' ("-max_muxing_queue_siz", "2048")
         #       REF: [https://trac.ffmpeg.org/ticket/6375]
         #
-        default_ffmpeg_options = ["-hide_banner", "-loglevel", "info", "-strict", "-2", "-max_muxing_queue_size", "2048"]
-        additional_ffmpeg_options = []
+        main_options = ["-hide_banner", "-loglevel", "info", "-strict", "-2"]
+        # Configure Advanced options: https://ffmpeg.org/ffmpeg.html#Advanced-options
+        # These are added after the input file
+        advanced_options = ["-max_muxing_queue_size", "2048"]
         command = []
 
         # Hardware acceleration args
         hardware_acceleration = unffmpeg.HardwareAccelerationHandle(file_probe)
-        hardware_acceleration.video_encoder = self.settings['video_stream_encoder']
+        if self.settings['enable_video_encoding']:
+            hardware_acceleration.video_encoder = self.settings['video_stream_encoder']
         # Check if hardware decoding is enabled
         if self.settings['enable_hardware_accelerated_decoding']:
-            # Loop over available decoders...
-            for hardware_decoder in hardware_acceleration.get_decoders():
-                # Just select the first one in the list.
+            hardware_acceleration.enable_hardware_accelerated_decoding = True
+            # The "Enable HW Decoding" checkbox is selected...
+            # Loop over available decoders to select the best match for the current settings...
+            for hardware_device in hardware_acceleration.get_hwaccel_devices():
                 # TODO: in the future perhaps add a feature to be able to select which decoder to use.
 
-                # First select the first one in the list
-                if hardware_acceleration.hardware_decoder is None:
-                    hardware_acceleration.hardware_decoder = hardware_decoder
+                # First select the first one in the list (if nothing else matches, this one will be used)
+                if hardware_acceleration.hardware_device is None:
+                    hardware_acceleration.hardware_device = hardware_device
 
                 # If we have enabled a HW accelerated encoder, then attempt to match the decoder with it.
-                hwaccel = hardware_acceleration.hardware_decoder.get('hwaccel')
+                hwaccel = hardware_acceleration.hardware_device.get('hwaccel')
                 if "vaapi" in self.settings['video_stream_encoder'] and hwaccel == "vaapi":
-                    hardware_acceleration.hardware_decoder = hardware_decoder
+                    hardware_acceleration.hardware_device = hardware_device
                     break
                 elif "nvenc" in self.settings['video_stream_encoder'] and hwaccel == "cuda":
-                    hardware_acceleration.hardware_decoder = hardware_decoder
+                    hardware_acceleration.hardware_device = hardware_device
                     break
                 continue
-        hardware_acceleration_args = hardware_acceleration.args()
+        hardware_acceleration.set_hwaccel_args()
+        main_options = hardware_acceleration.update_main_options(main_options)
+        advanced_options = hardware_acceleration.update_advanced_options(advanced_options)
 
         # Read stream data
         streams_to_map = []
@@ -539,18 +545,16 @@ class FFMPEGHandle(object):
 
         # Overwrite additional options
         if self.settings['overwrite_additional_ffmpeg_options']:
-            additional_ffmpeg_options = self.settings['additional_ffmpeg_options'].split()
-        else:
-            additional_ffmpeg_options = default_ffmpeg_options
+            advanced_options = self.settings['additional_ffmpeg_options'].split()
 
-        # Add decoder args to command
-        command = command + hardware_acceleration_args
+        # Add main options to command
+        command = command + main_options
 
         # Add input file
         command = command + ['-i', in_file]
 
-        # Add encoder args to command
-        command = command + additional_ffmpeg_options
+        # Add advanced options to command
+        command = command + advanced_options
 
         # Map streams
         command = command + streams_to_map

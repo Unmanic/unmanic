@@ -285,7 +285,7 @@ class Task(object):
         :return:
         """
         try:
-            self.task = Tasks.create(abspath=abspath, status='pending')
+            self.task = Tasks.create(abspath=abspath, status='creating')
             self.save_task()
             self._log("Created new task with ID: {} for {}".format(self.task, abspath), level="debug")
 
@@ -309,8 +309,9 @@ class Task(object):
             # Set the default priority to the ID of the task
             self.task.priority = self.task.id
 
-            # Save the task in order to save that cache path
-            self.save_task()
+            # Now set the status to pending. Only then will it be picked up by a worker.
+            # This will also save the task.
+            self.set_status('pending')
 
             # Read back the task from the database (ensures that our data has been recorded correctly)
             self.read_and_set_task_by_absolute_path(abspath)

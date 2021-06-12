@@ -42,11 +42,13 @@ class HardwareAccelerationHandle(object):
 
     def __init__(self, file_probe):
         self.file_probe = file_probe
-        self.hardware_decoder = None
+        self.enable_hardware_accelerated_decoding = False
+        self.hardware_device = None
         self.video_encoder = None
-        self.acceleration_args = []
+        self.main_options = []
+        self.advanced_options = []
 
-    def get_decoders(self):
+    def get_hwaccel_devices(self):
         """
         Return a list of the hosts compatible decoders
 
@@ -58,56 +60,93 @@ class HardwareAccelerationHandle(object):
         decoders_list = decoders_list + self.list_available_cuda_decoders()
 
         # Append any discovered VAAPI decoders
-        decoders_list = decoders_list + self.list_available_vaapi_decoders()
+        decoders_list = decoders_list + self.list_available_vaapi_devices()
 
         # Return the decoder list
         return decoders_list
 
-    def args(self):
-        self.acceleration_args = []
-        if self.hardware_decoder:
-            hwaccel = self.hardware_decoder.get('hwaccel')
-            hwaccel_device = self.hardware_decoder.get('hwaccel_device')
-            if hwaccel is not None and hwaccel_device is not None:
-                if hwaccel == 'vaapi':
+    def set_hwaccel_args(self):
+        self.main_options = []
+
+        # If Unmanic has settings configured for enabling 'HW Decoding', then fetch args based on selected HW type
+        if self.hardware_device:
+            hwaccel_type = self.hardware_device.get('hwaccel')
+            if hwaccel_type is not None:
+                if hwaccel_type == 'vaapi':
                     # Return decoder args for VAAPI
-                    self.acceleration_args = self.generate_vaapi_args()
-                elif hwaccel == 'cuda':
+                    self.generate_vaapi_main_args()
+                elif hwaccel_type == 'cuda':
                     # Return decoder args for NVIDIA CUDA device
-                    self.acceleration_args = self.generate_cuda_args()
+                    self.generate_cuda_main_args()
         else:
             # If no hardware decoder is set, then check that there is no need for setting the hardware device for the encoder
+            # Eg. The VAAPI encoder still needs to have the '-vaapi_device' main option configured to work even if no decoder
+            #   is configured
+
+            # Check if VAAPI video encoder is enabled
             if self.video_encoder and "vaapi" in self.video_encoder.lower():
-                vaapi_decoders = self.list_available_vaapi_decoders()
-                if vaapi_decoders:
-                    vaapi_decoder = vaapi_decoders[0]
-                    self.acceleration_args = self.acceleration_args + ['-vaapi_device', vaapi_decoder.get('hwaccel_device')]
+                # Find the first decoder
+                vaapi_devices = self.list_available_vaapi_devices()
+                if vaapi_devices:
+                    self.hardware_device = vaapi_devices[0]
+                    self.generate_vaapi_main_args()
+                    #self.main_options = self.main_options + ['-vaapi_device', vaapi_device.get('hwaccel_device')]
 
-        return self.acceleration_args
+    def update_main_options(self, main_options):
+        return main_options + self.main_options
 
-    def generate_vaapi_args(self):
+    def update_advanced_options(self, advanced_options):
+        return advanced_options + self.advanced_options
+
+    def generate_vaapi_main_args(self):
         """
         Generate a list of args for using a VAAPI decoder
 
         :return:
         """
-        args = ["-hwaccel", "vaapi", "-hwaccel_device", self.hardware_decoder.get('hwaccel_device')]
-
+        # Check if we are using a VAAPI encoder also...
         if self.video_encoder and "vaapi" in self.video_encoder.lower():
-            # If the decoder and encoder are both the same vaapi device, then we need an additional argument
-            args = args + ["-hwaccel_output_format", "vaapi"]
+            if self.enable_hardware_accelerated_decoding:
+                # Configure args such that when the input may or may not be hardware decodable we can do:
+                #   REF: https://trac.ffmpeg.org/wiki/Hardware/VAAPI#Encoding
+                self.main_options = [
+                    "-init_hw_device", "vaapi=vaapi0:{}".format(self.hardware_device.get('hwaccel_device')),
+                    "-hwaccel", "vaapi",
+                    "-hwaccel_output_format", "vaapi",
+                    "-hwaccel_device", "vaapi0",
+                ]
+                # Use 'NV12' for hardware surfaces. I would think that 10-bit encoding encoding using
+                #   the P010 input surfaces is an advanced feature
+                self.advanced_options = [
+                    "-filter_hw_device", "vaapi0",
+                    "-vf", "format=nv12|vaapi,hwupload",
+                ]
+            else:
+                # Encode only (no decoding)
+                #   REF: https://trac.ffmpeg.org/wiki/Hardware/VAAPI#Encode-only (sorta)
+                self.main_options = [
+                    "-vaapi_device", self.hardware_device.get('hwaccel_device'),
+                ]
+                # Use 'NV12' for hardware surfaces. I would think that 10-bit encoding encoding using
+                #   the P010 input surfaces is an advanced feature
+                self.advanced_options = [
+                    "-vf", "format=nv12|vaapi,hwupload",
+                ]
+        else:
+            # Decode an input with hardware if possible, output in normal memory to encode with another encoder not vaapi:
+            #   REF: https://trac.ffmpeg.org/wiki/Hardware/VAAPI#Decode-only
+            self.main_options = [
+                "-hwaccel", "vaapi",
+                "-hwaccel_device", self.hardware_device.get('hwaccel_device')
+            ]
 
-        return args
-
-    def generate_cuda_args(self):
+    def generate_cuda_main_args(self):
         """
         Generate a list of args for using an NVIDIA CUDA decoder
 
         :return:
         """
-        args = ["-hwaccel", "cuda", "-hwaccel_device", self.hardware_decoder.get('hwaccel_device')]
-
-        return args
+        self.main_options = ["-hwaccel", "cuda", "-hwaccel_device", self.hardware_device.get('hwaccel_device')]
 
     def list_available_cuda_decoders(self):
         """
@@ -154,7 +193,7 @@ class HardwareAccelerationHandle(object):
 
         return decoders
 
-    def list_available_vaapi_decoders(self):
+    def list_available_vaapi_devices(self):
         """
         Return a list of available VAAPI decoder devices
 
@@ -178,8 +217,8 @@ class HardwareAccelerationHandle(object):
 
 if __name__ == "__main__":
     hw_a = HardwareAccelerationHandle('blah')
-    print(hw_a.get_decoders())
-    for hardware_decoder in hw_a.get_decoders():
-        hw_a.hardware_decoder = hardware_decoder
+    print(hw_a.get_hwaccel_devices())
+    for hardware_decoder in hw_a.get_hwaccel_devices():
+        hw_a.hardware_device = hardware_decoder
         break
     print(hw_a.args())

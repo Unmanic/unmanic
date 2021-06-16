@@ -182,17 +182,23 @@ class LibraryScanner(threading.Thread):
                 pathname = os.path.join(root, file_path)
 
                 # Test file to be added to task list. Add it if required
-                file_test = FileTest(self.settings, pathname)
-                result, issues = file_test.should_file_be_added_to_task_list()
-                # Log any error messages
-                for issue in issues:
-                    if type(issue) is dict:
-                        self._log(issue.get('message'))
-                    else:
-                        self._log(issue)
-                # If file needs to be added, then add it
-                if result:
-                    self.add_path_to_queue(pathname)
+                try:
+                    file_test = FileTest(self.settings, pathname)
+                    result, issues = file_test.should_file_be_added_to_task_list()
+                    # Log any error messages
+                    for issue in issues:
+                        if type(issue) is dict:
+                            self._log(issue.get('message'))
+                        else:
+                            self._log(issue)
+                    # If file needs to be added, then add it
+                    if result:
+                        self.add_path_to_queue(pathname)
+                except UnicodeEncodeError:
+                    self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
+                except Exception as e:
+                    self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e),
+                              level="exception")
 
     def register_unmanic(self):
         from unmanic.libs import session

@@ -10,9 +10,13 @@ ENV \
 
 
 # Install the runtime dependencies
-# TODO: Remove intel-opencl-icd and replace with suggested build by Jellyfin
-#   https://jellyfin.org/docs/general/administration/hardware-acceleration.html
-#   https://github.com/jellyfin/jellyfin/blob/master/Dockerfile
+# X86 Specific:
+#   Intel VAAPI Tone mapping dependencies:
+#       Prefer NEO to Beignet since the latter one doesn't support Comet Lake or newer for now.
+#       Do not use the intel-opencl-icd package from repo since they will not build with RELEASE_WITH_REGKEYS enabled.
+#   REF:
+#       https://jellyfin.org/docs/general/administration/hardware-acceleration.html
+#       https://github.com/jellyfin/jellyfin/blob/master/Dockerfile
 RUN \
     echo "**** Install runtime packages ****" \
         && apt-get update \
@@ -27,33 +31,40 @@ RUN \
             libxcb1 \
             libxext6 \
             libxml2 \
-            vainfo \
+            locales \
     && \
     echo "**** Install arch specific packages for $(uname -m) ****" \
         && sleep 2 \
         && \
         if uname -m | grep -q x86; then \
-            echo "**** Add Intel Graphics repository  ****" \
+            echo "**** Add build dependencies ****" \
                 && apt-get install -y \
-                    gnupg \
-                && echo "deb [arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main" > /etc/apt/sources.list.d/intel-graphics.list \
-                && apt-key adv --fetch-keys https://repositories.intel.com/graphics/intel-graphics.key \
-            && \
-            echo "**** Install Intel Media Drivers  ****" \
-                && apt-get update \
-                && apt-get install -y \
-                    i965-va-driver \
-                    intel-opencl-icd \
-                    intel-level-zero-gpu level-zero \
-                    intel-media-va-driver-non-free libmfx1 \
+                    wget \
             && \
             echo "**** Install MESA Media Drivers for AMD VAAPI ****" \
                 && apt-get install -y \
                     mesa-va-drivers \
             && \
+            echo "**** Install Intel Media Drivers  ****" \
+                && export GMMLIB_VERSION="20.3.2" \
+                && export IGC_VERSION="1.0.5435" \
+                && export NEO_VERSION="20.46.18421" \
+                && export LEVEL_ZERO_VERSION="1.0.18421" \
+                && mkdir /tmp/intel-compute-runtime \
+                && cd /tmp/intel-compute-runtime \
+                && wget https://github.com/intel/compute-runtime/releases/download/${NEO_VERSION}/intel-gmmlib_${GMMLIB_VERSION}_amd64.deb \
+                && wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-${IGC_VERSION}/intel-igc-core_${IGC_VERSION}_amd64.deb \
+                && wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-${IGC_VERSION}/intel-igc-opencl_${IGC_VERSION}_amd64.deb \
+                && wget https://github.com/intel/compute-runtime/releases/download/${NEO_VERSION}/intel-opencl_${NEO_VERSION}_amd64.deb \
+                && wget https://github.com/intel/compute-runtime/releases/download/${NEO_VERSION}/intel-ocloc_${NEO_VERSION}_amd64.deb \
+                && wget https://github.com/intel/compute-runtime/releases/download/${NEO_VERSION}/intel-level-zero-gpu_${LEVEL_ZERO_VERSION}_amd64.deb \
+                && dpkg -i *.deb \
+                && cd / \
+                && rm -rf /tmp/intel-compute-runtime \
+            && \
             echo "**** Remove build packages ****" \
                 && apt-get remove -y \
-                    gnupg \
+                    wget \
             && \
             echo ; \
         fi \
@@ -86,7 +97,7 @@ RUN \
                 && apt-get install --no-install-recommends --no-install-suggests -y \
                     jellyfin-ffmpeg \
                     openssl \
-                    locales \
+                    vainfo \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
             && \
@@ -103,13 +114,12 @@ RUN \
                 && apt-get update \
                 && apt-get install --no-install-recommends --no-install-suggests -y \
                     ffmpeg \
-                    libssl-dev \
                     ca-certificates \
                     libfontconfig1 \
                     libfreetype6 \
-                    libomxil-bellagio0 \
                     libomxil-bellagio-bin \
-                    locales \
+                    libomxil-bellagio0 \
+                    libssl-dev \
             && \
             echo ; \
         fi \
@@ -130,15 +140,14 @@ RUN \
                 && apt-get update \
                 && apt-get install --no-install-recommends --no-install-suggests -y \
                     jellyfin-ffmpeg \
-                    libssl-dev \
                     libfontconfig1 \
                     libfreetype6 \
-                    libomxil-bellagio0 \
                     libomxil-bellagio-bin \
+                    libomxil-bellagio0 \
                     libraspberrypi0 \
-                    vainfo \
+                    libssl-dev \
                     libva2 \
-                    locales \
+                    vainfo \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
             && \

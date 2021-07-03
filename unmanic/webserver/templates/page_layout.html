@@ -1,27 +1,11 @@
-<!DOCTYPE html>
-<!-- 
-Template Name: Metronic - Responsive Admin Dashboard Template build with Twitter Bootstrap 3.3.6
-Version: 4.5.4
-Author: KeenThemes
-Website: http://www.keenthemes.com/
-Contact: support@keenthemes.com
-Follow: www.twitter.com/keenthemes
-Like: www.facebook.com/keenthemes
-Purchase: http://themeforest.net/item/metronic-responsive-admin-dashboard-template/4021469?ref=keenthemes
-License: You must have a valid license purchased only from themeforest(the above link) in order to legally use the theme for your project.
--->
-<!-- Page template: Admin 5 - Horizontal Tab - Material -->
-<!--[if IE 8]>
-<html lang="en" class="ie8 no-js"> <![endif]-->
-<!--[if IE 9]>
-<html lang="en" class="ie9 no-js"> <![endif]-->
-<!--[if !IE]><!-->
+<!doctype html>
 <html lang="en">
-<!--<![endif]-->
-<!-- BEGIN HEAD -->
-
 <head>
-    <meta charset="utf-8"/>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="/assets/img/favicon.ico"/>
+
     <title>{% block title %}{{ _("Site_Name") }}{% end %}</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta content="width=device-width, initial-scale=1" name="viewport"/>
@@ -34,39 +18,39 @@ License: You must have a valid license purchased only from themeforest(the above
         const UNMANIC_VERSION = '{{ escape(handler.config.read_version()) }}';
     </script>
 
-    <!-- BEGIN LAYOUT FIRST STYLES -->
-    <link href="//fonts.googleapis.com/css?family=Oswald:400,300,700" rel="stylesheet" type="text/css"/>
-    <!-- END LAYOUT FIRST STYLES -->
-    <!-- BEGIN GLOBAL MANDATORY STYLES -->
-    <link href="//fonts.googleapis.com/css?family=Open+Sans:400,300,600,700&subset=all" rel="stylesheet" type="text/css"/>
-    <link href="/assets/global/plugins/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
-    <link href="/assets/global/plugins/simple-line-icons/simple-line-icons.min.css" rel="stylesheet" type="text/css"/>
-    <link href="/assets/global/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
-    <link href="/assets/global/plugins/uniform/css/uniform.default.css" rel="stylesheet" type="text/css"/>
-    <link href="/assets/global/plugins/bootstrap-switch/css/bootstrap-switch.min.css" rel="stylesheet" type="text/css"/>
-    <link href="/assets/global/plugins/bootstrap-select/css/bootstrap-select.min.css" rel="stylesheet" type="text/css">
-    <!-- END GLOBAL MANDATORY STYLES -->
-    <!-- BEGIN PAGE LEVEL PLUGINS -->
+    <!-- VENDOR STYLES -->
+    <link rel="stylesheet"
+          href="/assets/vendor/font-awesome/css/font-awesome.css?version={{ escape(handler.config.read_version()) }}"/>
+    <link rel="stylesheet"
+          href="/assets/vendor/simple-line-icons/css/simple-line-icons.css?version={{ escape(handler.config.read_version()) }}"/>
+    <link rel="stylesheet"
+          href="/assets/vendor/socicon/css/socicon.css?version={{ escape(handler.config.read_version()) }}"/>
+    <link rel="stylesheet"
+          href="/assets/vendor/jquery.uniform/themes/default/css/uniform.default.css?version={{ escape(handler.config.read_version()) }}"/>
 
-    {# Template - Lock #}
-    <link href="/assets/pages/css/lock.min.css" rel="stylesheet" type="text/css"/>
+    <!-- BUILT STYLES -->
+    <link rel="stylesheet" href="/assets/css/starter.css?version={{ escape(handler.config.read_version()) }}">
 
+    <!-- PLUGIN STYLES -->
+    <link rel="stylesheet"
+          href="/assets/plugins/extendible-bbcode-parser/xbbcode.css?version={{ escape(handler.config.read_version()) }}"/>
+
+    <!-- BEGIN PAGE LEVEL STYLES -->
     {% block style %}{% end %}
+    <!-- END PAGE LEVEL STYLES -->
 
-    <!-- END PAGE LEVEL PLUGINS -->
-    <!-- BEGIN THEME GLOBAL STYLES -->
-    <link href="/assets/global/plugins/socicon/socicon.css" rel="stylesheet" type="text/css"/>
-    <link href="/assets/global/css/components-md.min.css" rel="stylesheet" id="style_components" type="text/css"/>
-    <link href="/assets/global/css/plugins-md.min.css" rel="stylesheet" type="text/css"/>
-    <link href="/assets/global/plugins/extendible-bbcode-parser/xbbcode.css?version=2{{ escape(handler.config.read_version()) }}"
-          rel="stylesheet" type="text/css"/>
-    <!-- END THEME GLOBAL STYLES -->
-    <!-- BEGIN THEME LAYOUT STYLES -->
-    <link href="/assets/layouts/layout5/css/layout.min.css" rel="stylesheet" type="text/css"/>
-    <link href="/assets/layouts/layout5/css/custom.css?version={{ escape(handler.config.read_version()) }}" rel="stylesheet"
-          type="text/css"/>
-    <!-- END THEME LAYOUT STYLES -->
-    <link rel="shortcut icon" href="/assets/favicon.ico"/>
+    <!-- THEME STYLES -->
+    <link rel="stylesheet" href="/assets/css/components-md.css">
+    <link rel="stylesheet" href="/assets/css/plugins-md.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+
+    <!-- CUSTOM STYLES -->
+    <link rel="stylesheet" href="/assets/css/custom.css">
+    <link rel="stylesheet" href="/assets/css/lock.css">
+
+    <!-- FONTS -->
+    <link href="//fonts.googleapis.com/css?family=Oswald:400,300,700" rel="stylesheet" type="text/css"/>
+    <link href="//fonts.googleapis.com/css?family=Open+Sans:400,300,600,700&subset=all" rel="stylesheet" type="text/css"/>
 
     <!-- CUSTOM HEAD ELEMENTS -->
     {% block head %}{% end %}
@@ -94,7 +78,7 @@ License: You must have a valid license purchased only from themeforest(the above
                     <!-- End Toggle Button -->
                     <!-- BEGIN LOGO -->
                     <a id="index" class="page-logo" href="/">
-                        <img src="/assets/logo.png" alt="Logo"> </a>
+                        <img src="/assets/img/logo.png" alt="Logo"> </a>
                     <!-- END LOGO -->
                     <!-- BEGIN TOP RIGHT ACTIONS -->
                     <div class="topbar-actions">
@@ -232,53 +216,46 @@ License: You must have a valid license purchased only from themeforest(the above
     </div>
 </div>
 <!-- END CONTAINER -->
-<!--[if lt IE 9]>
-<script src="/assets/global/plugins/respond.min.js"></script>
-<script src="/assets/global/plugins/excanvas.min.js"></script>
-<![endif]-->
-<!-- BEGIN CORE PLUGINS -->
-<script src="/assets/global/plugins/jquery.min.js" type="text/javascript"></script>
-<script src="/assets/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-<script src="/assets/global/plugins/js.cookie.min.js" type="text/javascript"></script>
-<script src="/assets/global/plugins/bootstrap-hover-dropdown/bootstrap-hover-dropdown.min.js" type="text/javascript"></script>
-<script src="/assets/global/plugins/jquery-slimscroll/jquery.slimscroll.min.js" type="text/javascript"></script>
-<script src="/assets/global/plugins/jquery.blockui.min.js" type="text/javascript"></script>
-<script src="/assets/global/plugins/uniform/jquery.uniform.min.js" type="text/javascript"></script>
-<script src="/assets/global/plugins/bootstrap-select/js/bootstrap-select.min.js" type="text/javascript"></script>
-<script src="/assets/global/plugins/bootstrap-switch/js/bootstrap-switch.min.js" type="text/javascript"></script>
-<script src="/assets/global/plugins/extendible-bbcode-parser/xbbcode.js?version=1{{ escape(handler.config.read_version()) }}"></script>
-<!-- END CORE PLUGINS -->
-<!-- BEGIN PAGE LEVEL PLUGINS -->
+
+
+<!-- VENDOR SCRIPTS -->
+<script src="/assets/vendor/jquery/dist/jquery.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/js-cookie/src/js.cookie.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/jquery-blockui/jquery.blockUI.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/jquery.uniform/jquery.uniform.js?version={{ escape(handler.config.read_version()) }}"></script>
+{# TODO: Bump to latest version in NPM repo #}
+<script src="/assets/plugins/jquery-slimscroll/jquery.slimscroll.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/handlebars/dist/handlebars.js?version={{ escape(handler.config.read_version()) }}"></script>
+
+<!-- BUILT SCRIPTS -->
+<script type="module" src="/assets/js/starter.js?version={{ escape(handler.config.read_version()) }}"></script>
+
+<!-- PLUGIN SCRIPTS -->
+
+<!-- BEGIN PAGE LEVEL PLUGIN SCRIPTS -->
 {% block plugins %}{% end %}
-{# Handlebars #}
-<script src="/assets/global/plugins/handlebars/handlebars.js" type="text/javascript"></script>
-<script src="/assets/global/scripts/templates.js?version={{ escape(handler.config.read_version()) }}"
-        type="text/javascript"></script>
-{# File Browser #}
-<script src="/assets/global/scripts/file-browser.js?version={{ escape(handler.config.read_version()) }}"
-        type="text/javascript"></script>
-<!-- END PAGE LEVEL PLUGINS -->
-<!-- BEGIN THEME GLOBAL SCRIPTS -->
-<script src="/assets/global/scripts/app.min.js" type="text/javascript"></script>
-<script src="/assets/global/scripts/helpers.js?version={{ escape(handler.config.read_version()) }}"
-        type="text/javascript"></script>
-<script src="/assets/global/scripts/api.js?version={{ escape(handler.config.read_version()) }}"
-        type="text/javascript"></script>
-<script src="/assets/pages/scripts/session.js?version={{ escape(handler.config.read_version()) }}"
-        type="text/javascript"></script>
-<!-- END THEME GLOBAL SCRIPTS -->
-<!-- BEGIN PAGE LEVEL SCRIPTS -->
+<!-- END PAGE LEVEL PLUGIN SCRIPTS -->
+
+<!-- THEME SCRIPTS -->
+<script src="/assets/js/app.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/js/lock.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/js/layout.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/js/quick-sidebar.js?version={{ escape(handler.config.read_version()) }}"></script>
+
+<!-- BEGIN PAGE LEVEL THEME SCRIPTS -->
 {% block scripts %}{% end %}
-{# Template - Lock #}
-<script src="/assets/pages/scripts/lock.min.js" type="text/javascript"></script>
-<!-- END PAGE LEVEL SCRIPTS -->
-<!-- BEGIN THEME LAYOUT SCRIPTS -->
-<script src="/assets/layouts/layout5/scripts/layout.min.js" type="text/javascript"></script>
-<script src="/assets/layouts/global/scripts/quick-sidebar.min.js" type="text/javascript"></script>
-<!-- END THEME LAYOUT SCRIPTS -->
+<!-- END PAGE LEVEL THEME SCRIPTS -->
+
+<!-- CUSTOM SCRIPTS -->
+<script src="/assets/js/session.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/plugins/extendible-bbcode-parser/xbbcode.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/js/templates.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/js/file-browser.js?version={{ escape(handler.config.read_version()) }}"></script>
+
 <!-- BEGIN CUSTOM INLINE SCRIPTS -->
 {% block inline_scripts %}{% end %}
 <!-- END CUSTOM INLINE SCRIPTS -->
+
 </body>
 
 </html>

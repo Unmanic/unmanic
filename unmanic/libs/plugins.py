@@ -208,7 +208,7 @@ class PluginsHandler(object, metaclass=SingletonType):
 
                 # If no icon is provide, set a default
                 if not plugin["icon"]:
-                    plugin["icon"] = "/assets/global/img/plugin-icon-default.svg"
+                    plugin["icon"] = "/assets/img/plugin-icon-default.svg"
                 return_list.append(plugin)
         return return_list
 

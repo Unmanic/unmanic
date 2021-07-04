@@ -4,60 +4,41 @@
 {% block title %}Dashboard | Unmanic{% end %}
 {% block page %}main{% end %}
 
-
 {% block head %}
-<link href="/assets/pages/css/dashboard.css?version={{ escape(handler.config.read_version()) }}" rel="stylesheet"
-      type="text/css"/>
+<link rel="stylesheet" type="text/css"
+      href="/assets/css/dashboard.css?version={{ escape(handler.config.read_version()) }}"/>
 {% end %}
 
-{% block style %}
-<link href="../assets/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css"/>
-<link href="../assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css"/>
+{% block page_plugin_styles %}
+{# START DATATABLES #}
+<link rel="stylesheet" type="text/css"
+      href="/assets/plugins/datatables/datatables.min.css?version={{ escape(handler.config.read_version()) }}"/>
+<link rel="stylesheet" type="text/css"
+      href="/assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css?version={{ escape(handler.config.read_version()) }}"/>
+{# END DATATABLES #}
+{% end %}
+{% block page_plugins %}
+{# START PIECHARTS #}
+<script type="text/javascript"
+        src="/assets/global/plugins/jquery-easypiechart/jquery.easypiechart.min.js?version={{ escape(handler.config.read_version()) }}"></script>
+{# END PIECHARTS #}
+{# START DATATABLES #}
+<script type="text/javascript"
+        src="/assets/js/datatable.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script type="text/javascript"
+        src="/assets/plugins/datatables/datatables.min.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script type="text/javascript"
+        src="/assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js?version={{ escape(handler.config.read_version()) }}"></script>
+{# END DATATABLES #}
 {% end %}
 
-{% block plugins %}
-<script src="../assets/global/plugins/moment.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/bootstrap-daterangepicker/daterangepicker.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/morris/morris.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/morris/raphael-min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/counterup/jquery.waypoints.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/counterup/jquery.counterup.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/amcharts/amcharts/amcharts.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/amcharts/amcharts/serial.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/amcharts/amcharts/pie.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/amcharts/amcharts/radar.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/amcharts/amcharts/themes/light.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/amcharts/amcharts/themes/patterns.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/amcharts/amcharts/themes/chalk.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/amcharts/ammap/ammap.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/amcharts/ammap/maps/js/worldLow.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/amcharts/amstockcharts/amstock.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/fullcalendar/fullcalendar.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/flot/jquery.flot.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/flot/jquery.flot.resize.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/flot/jquery.flot.categories.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/jquery-easypiechart/jquery.easypiechart.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/jquery.sparkline.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/jqvmap/jqvmap/jquery.vmap.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/jqvmap/jqvmap/maps/jquery.vmap.russia.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/jqvmap/jqvmap/maps/jquery.vmap.world.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/jqvmap/jqvmap/maps/jquery.vmap.europe.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/jqvmap/jqvmap/maps/jquery.vmap.germany.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/jqvmap/jqvmap/maps/jquery.vmap.usa.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/jqvmap/jqvmap/data/jquery.vmap.sampledata.js" type="text/javascript"></script>
-<script src="../assets/js/datatable.js" type="text/javascript"></script>
-<script src="../assets/plugins/datatables/datatables.min.js" type="text/javascript"></script>
-<script src="../assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
-{% end %}
-
-{% block scripts %}
-
-<script src="../assets/pages/scripts/dashboard.js?version={{ escape(handler.config.read_version()) }}"
-        type="text/javascript"></script>
-
-<script src="../assets/pages/scripts/table-datatables-managed.min.js" type="text/javascript"></script>
-<script src="../assets/pages/scripts/pending.js?version={{ escape(handler.config.read_version()) }}"
-        type="text/javascript"></script>
+{% block page_theme_scripts %}
+{# START PAGE COMPONENTS #}
+<script type="text/javascript"
+        src="/assets/js/page_components/dashboard/dashboard.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script type="text/javascript"
+        src="/assets/js/page_components/dashboard/pending.js?version={{ escape(handler.config.read_version()) }}"></script>
+{# END PAGE COMPONENTS #}
 {% end %}
 
 
@@ -174,56 +155,6 @@
         </div>
     </div>
     <!-- END JOB STATISTICS -->
-    <!-- BEGIN SERVER STATISTICS -->
-    <!-- TODO: Implement stats -->
-    <!-- <div class="col-md-6 col-sm-6">
-        <div class="portlet light bordered">
-            <div class="portlet-title">
-                <div class="caption">
-                    <i class="icon-equalizer font-yellow"></i>
-                    <span class="caption-subject font-yellow bold uppercase">Server Stats</span>
-                    <span class="caption-helper">monthly stats...</span>
-                </div>
-                <div class="tools">
-                    <a href="" class="collapse"> </a>
-                    <a href="#portlet-config" data-toggle="modal" class="config"> </a>
-                    <a href="" class="reload"> </a>
-                    <a href="" class="remove"> </a>
-                </div>
-            </div>
-            <div class="portlet-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="sparkline-chart">
-                            <div class="number" id="sparkline_bar5"></div>
-                            <a class="title" href="javascript:;"> Disk I/O
-                                <i class="icon-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="margin-bottom-10 visible-sm"> </div>
-                    <div class="col-md-4">
-                        <div class="sparkline-chart">
-                            <div class="number" id="sparkline_bar6"></div>
-                            <a class="title" href="javascript:;"> CPU Load
-                                <i class="icon-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="margin-bottom-10 visible-sm"> </div>
-                    <div class="col-md-4">
-                        <div class="sparkline-chart">
-                            <div class="number" id="sparkline_line"></div>
-                            <a class="title" href="javascript:;"> Load Rate
-                                <i class="icon-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div> -->
-    <!-- END SERVER STATISTICS -->
 </div>
 <div class="row">
     <div class="col-md-6 col-sm-6">

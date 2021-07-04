@@ -19,8 +19,10 @@
   },
   "scripts": {
     "postinstall": "vendor-copy",
-    "cleaninstall": "rimraf assets/css && rimraf assets/vendor && npm i",
+    "cleaninstall": "npm run clean && npm i",
+    "distclean": "npm install --only=dev && npm run clean && rimraf node_modules",
     "build": "npm run assets",
+    "clean": "rimraf assets/css && rimraf assets/vendor",
     "css-compile": "node-sass --include-path node_modules --output-style compressed --source-map true --source-map-contents true --precision 6 scss -o assets/css/",
     "css-lint": "stylelint scss/",
     "css-prefix": "postcss --replace assets/css/starter.css --use autoprefixer --map",

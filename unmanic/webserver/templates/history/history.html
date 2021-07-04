@@ -5,32 +5,41 @@
 {% block title %}History | Unmanic{% end %}
 {% block page %}history{% end %}
 
-
 {% block head %}
 {#Emptyness and sadness#}
 {% end %}
 
-{% block style %}
+{% block page_plugin_styles %}
 {# START DATATABLES #}
-<link href="/assets/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css"/>
-<link href="/assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" type="text/css"
+      href="/assets/plugins/datatables/datatables.min.css?version={{ escape(handler.config.read_version()) }}"/>
+<link rel="stylesheet" type="text/css"
+      href="/assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css?version={{ escape(handler.config.read_version()) }}"/>
+{# END DATATABLES #}
+{% end %}
+{% block page_plugins %}
+{# START DATATABLES #}
+<script type="text/javascript"
+        src="/assets/js/datatable.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script type="text/javascript"
+        src="/assets/plugins/datatables/datatables.min.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script type="text/javascript"
+        src="/assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js?version={{ escape(handler.config.read_version()) }}"></script>
 {# END DATATABLES #}
 {% end %}
 
-{% block plugins %}
-{# START DATATABLES #}
-<script src="/assets/js/datatable.js?version={{ escape(handler.config.read_version()) }}" type="text/javascript"></script>
-<script src="/assets/plugins/datatables/datatables.min.js" type="text/javascript"></script>
-<script src="/assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
-{# END DATATABLES #}
+{% block vendor_scripts %}
 {# START HIGHCHARTS #}
-<script src="/assets/global/plugins/highcharts/js/highcharts.js" type="text/javascript"></script>
-<script src="/assets/global/plugins/highcharts/js/highcharts-3d.js" type="text/javascript"></script>
-<script src="/assets/global/plugins/highcharts/js/highcharts-more.js" type="text/javascript"></script>
+<script type="text/javascript"
+        src="/assets/vendor/highcharts/lib/highcharts.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script type="text/javascript"
+        src="/assets/vendor/highcharts/lib/highcharts-3d.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script type="text/javascript"
+        src="/assets/vendor/highcharts/lib/highcharts-more.js?version={{ escape(handler.config.read_version()) }}"></script>
 {# END HIGHCHARTS #}
 {% end %}
 
-{% block scripts %}
+{% block page_theme_scripts %}
 {# START PAGE COMPONENTS #}
 <script type="text/javascript"
         src="/assets/js/page_components/history/history.js?version={{ escape(handler.config.read_version()) }}"></script>
@@ -104,6 +113,5 @@
                         </div>
 
                     </div>
-
 
 {% end %}

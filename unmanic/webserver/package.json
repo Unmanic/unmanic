@@ -1,20 +1,25 @@
 {
-  "name": "bootstrap-npm-starter",
-  "version": "1.4.0",
+  "name": "unmanic-webui",
+  "version": "1.0.0",
   "private": true,
-  "description": "Demo project for building a Bootstrap powered site via npm.",
-  "author": "mdo",
-  "license": "MIT",
+  "description": "Unmanic webui.",
+  "author": "Josh.5",
+  "license": "GPL-3.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/twbs/bootstrap-npm-starter.git"
+    "url": "git+https://github.com/Unmanic/unmanic.git"
   },
   "bugs": {
-    "url": "https://github.com/twbs/bootstrap-npm-starter/issues"
+    "url": "https://github.com/Unmanic/unmanic/issues"
   },
-  "homepage": "https://github.com/twbs/bootstrap-npm-starter#readme",
+  "homepage": "https://unmanic.app",
+  "engines": {
+    "node": ">=14.17.2",
+    "npm": ">=6.14.13"
+  },
   "scripts": {
     "postinstall": "vendor-copy",
+    "cleaninstall": "rimraf assets/css && rimraf assets/vendor && npm i",
     "build": "npm run assets",
     "css-compile": "node-sass --include-path node_modules --output-style compressed --source-map true --source-map-contents true --precision 6 scss -o assets/css/",
     "css-lint": "stylelint scss/",
@@ -44,6 +49,8 @@
     "handlebars": "^4.7.7",
     "jquery": "^1.11.3",
     "jquery-blockui": "^2.7.0",
+    "jquery-ui-dist": "^1.12.1",
+    "jquery.flowchart": "^1.1.0",
     "jquery.uniform": "^2.1.3",
     "js-cookie": "^2.0.4",
     "popper.js": "^1.16.1",
@@ -52,16 +59,17 @@
     "vendor-copy": "^3.0.1"
   },
   "devDependencies": {
-    "autoprefixer": "^10.2.5",
-    "node-sass": "^5.0.0",
-    "nodemon": "^2.0.7",
+    "autoprefixer": "^10.2.6",
+    "node-sass": "^6.0.1",
+    "nodemon": "^2.0.9",
     "npm-run-all": "^4.1.5",
-    "postcss": "^8.2.10",
+    "postcss": "^8.3.5",
     "postcss-cli": "^8.3.1",
-    "purgecss": "^4.0.2",
-    "serve": "^11.3.2",
-    "stylelint": "^13.12.0",
-    "stylelint-config-twbs-bootstrap": "^2.1.0"
+    "purgecss": "^4.0.3",
+    "rimraf": "^3.0.2",
+    "serve": "^12.0.0",
+    "stylelint": "^13.13.1",
+    "stylelint-config-twbs-bootstrap": "^2.2.1"
   },
   "vendorCopy": [
     {
@@ -75,6 +83,14 @@
     {
       "from": "node_modules/jquery-blockui",
       "to": "assets/vendor/jquery-blockui"
+    },
+    {
+      "from": "node_modules/jquery-ui-dist",
+      "to": "assets/vendor/jquery-ui-dist"
+    },
+    {
+      "from": "node_modules/jquery.flowchart",
+      "to": "assets/vendor/jquery.flowchart"
     },
     {
       "from": "node_modules/jquery.uniform",
@@ -93,12 +109,12 @@
       "to": "assets/vendor/bootstrap-hover-dropdown"
     },
     {
-      "from": "node_modules/bootstrap-switch",
-      "to": "assets/vendor/bootstrap-switch"
-    },
-    {
       "from": "node_modules/bootstrap-select",
       "to": "assets/vendor/bootstrap-select"
+    },
+    {
+      "from": "node_modules/bootstrap-switch",
+      "to": "assets/vendor/bootstrap-switch"
     },
     {
       "from": "node_modules/font-awesome",

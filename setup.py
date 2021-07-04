@@ -32,6 +32,7 @@
 import json
 import os
 import shutil
+import subprocess
 import sys
 import glob
 from setuptools import setup, find_packages, Command
@@ -72,6 +73,7 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
     def run(self):
         setuptools.command.build_py.build_py.run(self)
         self.run_command('write-build-version')
+        self.run_command('build-web')
 
 
 class WriteVersionCommand(Command):
@@ -92,6 +94,34 @@ class WriteVersionCommand(Command):
         }
         with open(version_file, 'w') as f:
             json.dump(data, f)
+
+
+class BuildWebUICommand(setuptools.command.build_py.build_py):
+    """WebUI build command."""
+
+    def run(self):
+        setuptools.command.build_py.build_py.run(self)
+        # Start by clearing out anything if this was pulled from a dirty tree
+        shutil.rmtree(os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'node_modules')),
+                      ignore_errors=True)
+        # Clean our build env
+        subprocess.run(
+            ["npm", "--prefix", os.path.join('.', 'build', 'lib', src_dir, 'webserver'), "run", "distclean"],
+            check=True
+        )
+        # Install all modules
+        subprocess.run(
+            ["npm", "--prefix", os.path.join('.', 'build', 'lib', src_dir, 'webserver'), "install"],
+            check=True
+        )
+        # Build the WebUI
+        subprocess.run(
+            ["npm", "--prefix", os.path.join('.', 'build', 'lib', src_dir, 'webserver'), "run", "build"],
+            check=True
+        )
+        # Remove the node_modules from the package (we will not distribute these)
+        shutil.rmtree(os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'node_modules')),
+                      ignore_errors=True)
 
 
 class CleanCommand(Command):
@@ -131,6 +161,7 @@ class FullVersionCommand(Command):
 cmd_class = {
     'build_py':            BuildPyCommand,
     'write-build-version': WriteVersionCommand,
+    'build-web':           BuildWebUICommand,
     'clean':               CleanCommand,
     'fullversion':         FullVersionCommand,
 }

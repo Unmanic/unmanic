@@ -9,8 +9,10 @@
 
 {% block page_plugin_styles %}
 {# START DATATABLES #}
-<link href="/assets/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css"/>
-<link href="/assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" type="text/css"
+      href="/assets/plugins/datatables/datatables.min.css?version={{ escape(handler.config.read_version()) }}"/>
+<link rel="stylesheet" type="text/css"
+      href="/assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css?version={{ escape(handler.config.read_version()) }}"/>
 {# END DATATABLES #}
 {% end %}
 {% block page_plugins %}

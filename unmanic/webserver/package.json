@@ -47,6 +47,7 @@
     "datatables-bootstrap": "^0.0.1",
     "font-awesome": "^4.4.0",
     "handlebars": "^4.7.7",
+    "highcharts": "^4.1.10",
     "jquery": "^1.11.3",
     "jquery-blockui": "^2.7.0",
     "jquery-ui-dist": "^1.12.1",
@@ -99,6 +100,10 @@
     {
       "from": "node_modules/handlebars",
       "to": "assets/vendor/handlebars"
+    },
+    {
+      "from": "node_modules/highcharts",
+      "to": "assets/vendor/highcharts"
     },
     {
       "from": "node_modules/bootstrap-sass",

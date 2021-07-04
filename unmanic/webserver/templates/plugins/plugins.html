@@ -2,59 +2,55 @@
 {% block title %}Plugins | Unmanic{% end %}
 {% block page %}plugins{% end %}
 
-
 {% block head %}
-<link href="/assets/pages/css/plugins.css?version={{ escape(handler.config.read_version()) }}" rel="stylesheet"
-      type="text/css"/>
+<link rel="stylesheet" type="text/css" href="/assets/css/plugins.css?version={{ escape(handler.config.read_version()) }}"/>
+<link rel="stylesheet" type="text/css" href="/assets/css/plugin-repo.css?version={{ escape(handler.config.read_version()) }}"/>
 {% end %}
 
-{% block style %}
-{# Template - Datatables #}
-<link href="../assets/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css"/>
-<link href="../assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css"/>
-
-{# Template - Search #}
-<link href="../assets/global/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css" rel="stylesheet" type="text/css"/>
-<link href="../assets/global/plugins/fancybox/source/jquery.fancybox.css" rel="stylesheet" type="text/css"/>
-<link href="../assets/pages/css/search.min.css" rel="stylesheet" type="text/css"/>
-
-{# Template - Flowcharts #}
-<link href="../assets/global/plugins/jquery-ui/jquery-ui.min.css" rel="stylesheet" type="text/css"/>
-<link href="../assets/global/plugins/sdrdis-jquery.flowchart-d66c7cf/jquery.flowchart.css" rel="stylesheet" type="text/css"/>
+{% block page_plugin_styles %}
+{# START DATATABLES #}
+<link href="/assets/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css"/>
+<link href="/assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css"/>
+{# END DATATABLES #}
+{% end %}
+{% block page_plugins %}
+{# START DATATABLES #}
+<script type="text/javascript"
+        src="/assets/js/datatable.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script type="text/javascript"
+        src="/assets/plugins/datatables/datatables.min.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script type="text/javascript"
+        src="/assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js?version={{ escape(handler.config.read_version()) }}"></script>
+{# END DATATABLES #}
 {% end %}
 
-{% block plugins %}
-{# Template - Datatables #}
-<script src="../assets/js/datatable.js" type="text/javascript"></script>
-<script src="../assets/plugins/datatables/datatables.min.js" type="text/javascript"></script>
-<script src="../assets/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
-
-{# Template - Search #}
-<script src="../assets/global/plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/fancybox/source/jquery.fancybox.pack.js" type="text/javascript"></script>
-<script src="../assets/pages/scripts/search.min.js" type="text/javascript"></script>
-
-{# Template - Flowcharts #}
-<script src="../assets/global/plugins/jquery-ui/jquery-ui.min.js" type="text/javascript"></script>
-<script src="../assets/global/plugins/sdrdis-jquery.flowchart-d66c7cf/jquery.flowchart.js" type="text/javascript"></script>
+{% block vendor_style %}
+{# START JQUERY.FLOWCHART #}
+<link rel="stylesheet" type="text/css"
+      href="/assets/vendor/jquery-ui-dist/jquery-ui.css?version={{ escape(handler.config.read_version()) }}"/>
+<link rel="stylesheet" type="text/css"
+      href="/assets/vendor/jquery.flowchart/jquery.flowchart.css?version={{ escape(handler.config.read_version()) }}"/>
+{# END JQUERY.FLOWCHART #}
+{% end %}
+{% block vendor_scripts %}
+{# START JQUERY.FLOWCHART #}
+<script type="text/javascript"
+        src="/assets/vendor/jquery-ui-dist/jquery-ui.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script type="text/javascript"
+        src="/assets/vendor/jquery.flowchart/jquery.flowchart.js?version={{ escape(handler.config.read_version()) }}"></script>
+{# END JQUERY.FLOWCHART #}
 {% end %}
 
-{% block scripts %}
-{# Unmanic #}
-<script src="../assets/pages/scripts/plugins.js?version={{ escape(handler.config.read_version()) }}"
-        type="text/javascript"></script>
-<script src="../assets/pages/scripts/plugin-flow.js?version={{ escape(handler.config.read_version()) }}"
-        type="text/javascript"></script>
+{% block page_theme_scripts %}
+{# START PAGE COMPONENTS #}
+<script type="text/javascript"
+        src="/assets/js/page_components/plugins/plugins.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script type="text/javascript"
+        src="/assets/js/page_components/plugins/plugin-flow.js?version={{ escape(handler.config.read_version()) }}"></script>
+{# END PAGE COMPONENTS #}
 {% end %}
-
-{% block inline_scripts %}
-{# Template - Datatables #}
-<script src="../assets/pages/scripts/table-datatables-managed.min.js" type="text/javascript"></script>
-{% end %}
-
 
 {% block content %}
-
 
 <div class="row">
     <div class="col-md-12">

@@ -76,17 +76,6 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
                     else:
                         self.set_header("Content-Type", "text/html")
                         self.render("history/history-conversion-details.html", job_data=job_data)
-        if query == 'reloadCompletedTaskList':
-            job_id = None
-            if self.get_query_arguments('jobId'):
-                job_id = self.get_query_arguments('jobId')[0]
-            self.set_page_data(job_id)
-            if self.get_query_arguments('json'):
-                self.set_header("Content-Type", "application/json")
-                self.write(json.dumps(self.data))
-            else:
-                self.set_header("Content-Type", "text/html")
-                self.render("history/history-completed-tasks-list.html", config=self.config, data=self.data)
 
     def get_historical_tasks(self):
         history_logging = history.History(self.config)

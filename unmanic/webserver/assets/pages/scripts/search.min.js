@@ -1,1 +1,0 @@
-var Search=function(){return{init:function(){$(".date-picker").datepicker({rtl:App.isRTL(),orientation:"left",autoclose:!0})}}}();jQuery(document).ready(function(){Search.init()});

@@ -27,6 +27,7 @@
           href="/assets/vendor/socicon/css/socicon.css?version={{ escape(handler.config.read_version()) }}"/>
     <link rel="stylesheet"
           href="/assets/vendor/jquery.uniform/themes/default/css/uniform.default.css?version={{ escape(handler.config.read_version()) }}"/>
+    {% block vendor_style %}{% end %}
 
     <!-- BUILT STYLES -->
     <link rel="stylesheet" href="/assets/css/starter.css?version={{ escape(handler.config.read_version()) }}">
@@ -36,6 +37,8 @@
           href="/assets/plugins/extendible-bbcode-parser/xbbcode.css?version={{ escape(handler.config.read_version()) }}"/>
 
     <!-- BEGIN PAGE LEVEL STYLES -->
+    {#TODO: Depricate style for page_plugin_styles#}
+    {% block page_plugin_styles %}{% end %}
     {% block style %}{% end %}
     <!-- END PAGE LEVEL STYLES -->
 
@@ -107,7 +110,7 @@
                                    style="background-color:#009dc7;" href="#"
                                    target="_blank">
                                     <span class="support-btn-text">
-                                        <img src="/assets/global/img/coffee-btn-image.png" alt="donations"
+                                        <img src="/assets/img/coffee-btn-image.png" alt="donations"
                                              class="support-btn-img">
                                         Support Future Development
                                     </span>
@@ -222,10 +225,16 @@
 <script src="/assets/vendor/jquery/dist/jquery.js?version={{ escape(handler.config.read_version()) }}"></script>
 <script src="/assets/vendor/js-cookie/src/js.cookie.js?version={{ escape(handler.config.read_version()) }}"></script>
 <script src="/assets/vendor/jquery-blockui/jquery.blockUI.js?version={{ escape(handler.config.read_version()) }}"></script>
-<script src="/assets/vendor/jquery.uniform/jquery.uniform.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/jquery.uniform/dist/jquery.uniform.min.js?version={{ escape(handler.config.read_version()) }}"></script>
 {# TODO: Bump to latest version in NPM repo #}
 <script src="/assets/plugins/jquery-slimscroll/jquery.slimscroll.js?version={{ escape(handler.config.read_version()) }}"></script>
 <script src="/assets/vendor/handlebars/dist/handlebars.js?version={{ escape(handler.config.read_version()) }}"></script>
+
+<script src="/assets/vendor/bootstrap-sass/assets/javascripts/bootstrap.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/bootstrap-hover-dropdown/bootstrap-hover-dropdown.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/bootstrap-switch/dist/js/bootstrap-switch.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/bootstrap-select/dist/js/bootstrap-select.js?version={{ escape(handler.config.read_version()) }}"></script>
+{% block vendor_scripts %}{% end %}
 
 <!-- BUILT SCRIPTS -->
 <script type="module" src="/assets/js/starter.js?version={{ escape(handler.config.read_version()) }}"></script>
@@ -233,6 +242,8 @@
 <!-- PLUGIN SCRIPTS -->
 
 <!-- BEGIN PAGE LEVEL PLUGIN SCRIPTS -->
+{#TODO: Depricate plugins for page_plugins#}
+{% block page_plugins %}{% end %}
 {% block plugins %}{% end %}
 <!-- END PAGE LEVEL PLUGIN SCRIPTS -->
 
@@ -243,6 +254,8 @@
 <script src="/assets/js/quick-sidebar.js?version={{ escape(handler.config.read_version()) }}"></script>
 
 <!-- BEGIN PAGE LEVEL THEME SCRIPTS -->
+{#TODO: Depricate plugins for page_plugins#}
+{% block page_theme_scripts %}{% end %}
 {% block scripts %}{% end %}
 <!-- END PAGE LEVEL THEME SCRIPTS -->
 

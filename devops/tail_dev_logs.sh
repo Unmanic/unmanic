@@ -36,7 +36,7 @@ config_dir=${SCRIPT_PATH}/../dev_environment/config
 unmanic_dev_logs_dir=${config_dir}/.unmanic/logs
 
 
-if ! command -v grcat; then
+if ! command -v grcat &> /dev/null; then
     echo "This script needs 'grcat' for formatting the logs."
     echo "You must first install the 'grc' package..."
     echo
@@ -46,13 +46,35 @@ if ! command -v grcat; then
     exit 1
 fi
 
-# Tail all current log files:
-#filters=":DEBUG:"
-filters=""
+# Parse args for what logs to tail and what filters to apply
+log_dir="${unmanic_dev_logs_dir}"
+logfiles="unmanic.log"
+for ARG in ${@}; do
+    case ${ARG} in
+        --local)
+            log_dir="${HOME}/.unmanic/logs";
+            ;;
+        --tornado)
+            logfiles="${logfiles} tornado.log";
+            ;;
+        --filters*)
+            # EG: ":DEBUG:"
+            filters=$(echo ${ARG} | awk -F'=' '{print $2}');
+            ;;
+        *)
+            echo "Unrecognised param. Exiting!"
+            exit 1
+            ;;
+    esac
+done
+
 if [[ -z ${filters} ]]; then
-    tail -fn10 ${unmanic_dev_logs_dir}/*.log | grcat ${SCRIPT_PATH}/../.grc.conf.unmanic.logs
+    pushd "${log_dir}" || exit 1
+    tail -fn10 ${logfiles} | grcat ${SCRIPT_PATH}/../docker/root/.grc.conf.unmanic.logs
+    popd &> /dev/null || exit 1
 else
-    tail -fn10 ${unmanic_dev_logs_dir}/*.log | stdbuf -o0 grep -v "${filters}" | grcat ${SCRIPT_PATH}/../.grc.conf.unmanic.logs
+    pushd "${log_dir}" || exit 1
+    echo "Filter logs with '${filters}'"
+    tail -fn10 ${logfiles} | stdbuf -o0 grep -v "${filters}" | grcat ${SCRIPT_PATH}/../docker/root/.grc.conf.unmanic.logs
+    popd &> /dev/null || exit 1
 fi
-
-

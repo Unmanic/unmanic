@@ -32,7 +32,7 @@
 SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd );
 PROJECT_BASE=$(realpath ${SCRIPT_PATH}/..);
 
-CMD="cd ${PROJECT_BASE}/unmanic/webserver/ && npm run watch"
+CMD="cd ${PROJECT_BASE}/unmanic/webserver/ && npm run build && npm run watch"
 
 echo "${CMD}"
 bash -c "${CMD}"

@@ -50,6 +50,7 @@ let Dashboard = function () {
                     $(this).data('easyPieChart').options.barColor = App.getBrandColor('yellow');
                     $(this).data('easyPieChart').update(default_percent_value);
                     $('span', this).text('IDLE');
+                    $('span', this).css('margin-left', '-14%');
                     // Set subtitle text
                     $(group_id + ' .worker-subtitle').each(function () {
                         $(this).text(default_current_file);
@@ -61,9 +62,11 @@ let Dashboard = function () {
                     if (typeof element.progress.percent !== 'undefined') {
                         $(this).data('easyPieChart').update(element.progress.percent);
                         $('span', this).text(element.progress.percent + '%');
+                        $('span', this).css('margin-left', '-7%');
                     } else {
                         $(this).data('easyPieChart').update(0);
                         $('span', this).text('IDLE');
+                        $('span', this).css('margin-left', '-14%');
                     }
                     // Set subtitle text
                     $(group_id + ' .worker-subtitle').each(function () {

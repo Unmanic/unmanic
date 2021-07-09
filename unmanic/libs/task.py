@@ -313,9 +313,6 @@ class Task(object):
             # This will also save the task.
             self.set_status('pending')
 
-            # Read back the task from the database (ensures that our data has been recorded correctly)
-            self.read_and_set_task_by_absolute_path(abspath)
-            self._log("Task read from database", level="debug")
             return True
         except IntegrityError as e:
             self._log("Cancel creating new task for {} - {}".format(abspath, e), level="info")

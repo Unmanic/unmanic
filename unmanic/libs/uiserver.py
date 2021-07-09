@@ -125,19 +125,28 @@ class UIServer(threading.Thread):
 
             # Set tornado.access logging to file. Disable propagation of logs
             tornado_access = logging.getLogger("tornado.access")
-            tornado_access.setLevel(logging.INFO)
+            if self.developer:
+                tornado_access.setLevel(logging.DEBUG)
+            else:
+                tornado_access.setLevel(logging.INFO)
             tornado_access.addHandler(file_handler)
             tornado_access.propagate = False
 
             # Set tornado.application logging to file. Enable propagation of logs
             tornado_application = logging.getLogger("tornado.application")
-            tornado_application.setLevel(logging.INFO)
+            if self.developer:
+                tornado_application.setLevel(logging.DEBUG)
+            else:
+                tornado_application.setLevel(logging.INFO)
             tornado_application.addHandler(file_handler)
             tornado_application.propagate = True  # Send logs also to root logger (command line)
 
             # Set tornado.general logging to file. Enable propagation of logs
             tornado_general = logging.getLogger("tornado.general")
-            tornado_general.setLevel(logging.INFO)
+            if self.developer:
+                tornado_general.setLevel(logging.DEBUG)
+            else:
+                tornado_general.setLevel(logging.INFO)
             tornado_general.addHandler(file_handler)
             tornado_general.propagate = True  # Send logs also to root logger (command line)
 

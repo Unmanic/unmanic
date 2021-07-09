@@ -50,7 +50,7 @@
     "font-awesome": "^4.4.0",
     "handlebars": "^4.7.7",
     "highcharts": "^4.1.10",
-    "jquery": "^1.11.3",
+    "jquery": "^3.5.0",
     "jquery-blockui": "^2.7.0",
     "jquery-ui-dist": "^1.12.1",
     "jquery.flowchart": "^1.1.0",

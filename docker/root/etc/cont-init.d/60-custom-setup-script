@@ -1,0 +1,9 @@
+#!/usr/bin/with-contenv bash
+
+
+if [[ -f /config/startup.sh ]]; then
+
+    echo "**** (custom-setup-script) Calling custom user setup script ****";
+    source /config/startup.sh
+
+fi

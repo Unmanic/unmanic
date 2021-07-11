@@ -154,6 +154,7 @@ class UIServer(threading.Thread):
         # Check if this is a development environment or not
         if self.developer:
             tornado_settings['autoreload'] = True
+            tornado_settings['serve_traceback'] = True
 
     def run(self):
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())

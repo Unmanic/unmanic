@@ -67,7 +67,7 @@ class WorkerThread(threading.Thread):
         # Worker handles connection to ffmpeg
         self.ffmpeg = None
         # Record the runners info including all plugins
-        self.worker_runners_info = []
+        self.worker_runners_info = {}
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -82,8 +82,8 @@ class WorkerThread(threading.Thread):
             'progress':              self.get_job_progress(),
             'start_time':            self.start_time,
             'current_file':          "",
-            'ffmpeg_log_tail':       [],
-            'runners_info':          [],
+            'worker_log_tail':       [],
+            'runners_info':          {},
         }
         if self.current_task:
             # Fetch the current file
@@ -92,11 +92,11 @@ class WorkerThread(threading.Thread):
             except Exception as e:
                 self._log("Exception in fetching the current file of worker {}:".format(self.name), message2=str(e),
                           level="exception")
-            # Append the ffmpeg log tail
+            # Append the worker log tail
             try:
                 if self.ffmpeg:
                     if self.ffmpeg.ffmpeg_cmd_stdout:
-                        status['ffmpeg_log_tail'] = self.ffmpeg.ffmpeg_cmd_stdout[-19:]
+                        status['worker_log_tail'] = self.ffmpeg.ffmpeg_cmd_stdout[-19:]
             except Exception as e:
                 self._log("Exception in fetching ffmpeg log tail of worker {}:".format(self.name), message2=str(e),
                           level="exception")

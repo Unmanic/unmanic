@@ -108,7 +108,7 @@ class ApiHistoryHandler(BaseApiHandler):
         :return:
         """
         # Fetch historical tasks
-        history_logging = history.History(self.config)
+        history_logging = history.History()
         # Delete by ID
         return history_logging.delete_historic_tasks_recursively(id_list=historic_task_ids)
 
@@ -121,7 +121,7 @@ class ApiHistoryHandler(BaseApiHandler):
         """
         success = True
         # Fetch historical tasks
-        history_logging = history.History(self.config)
+        history_logging = history.History()
         # Get total count
         records_by_id = history_logging.get_current_path_of_historic_tasks_by_id(id_list=historic_task_ids)
         # records_by_id = history_logging.get_historic_task_list_filtered_and_sorted(id_list=historic_task_ids)
@@ -135,7 +135,7 @@ class ApiHistoryHandler(BaseApiHandler):
                 continue
 
             # Create a new task
-            new_task = task.Task(tornado.log.app_log)
+            new_task = task.Task()
 
             # Run a probe on the file for current data
             source_data = common.fetch_file_data_by_path(abspath)
@@ -176,7 +176,7 @@ class ApiHistoryHandler(BaseApiHandler):
         }
 
         # Fetch historical tasks
-        history_logging = history.History(self.config)
+        history_logging = history.History()
         # Get total count
         records_total_count = history_logging.get_total_historic_task_list_count()
         # Get quantity after filters (without pagination)

@@ -4,6 +4,13 @@
   border: 0 !important;
 }
 
+.container-fluid {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+}
+
 .unmanic-file-browser-list-item-folder {
   cursor: pointer;
 }

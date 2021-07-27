@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.session_api.py
+    unmanic.history_api.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     10 Mar 2021, (7:14 PM)
+    Date:                     24 Jul 2021, (9:31 AM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -31,12 +31,14 @@
 """
 
 import tornado.log
+
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
-from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
+from unmanic.webserver.api_v2.base_api_handler import BaseApiError, BaseApiHandler
+from unmanic.webserver.helpers import completed_tasks
 
 
-class ApiSessionHandler(BaseApiHandler):
+class ApiHistoryHandler(BaseApiHandler):
     name = None
     session = None
     config = None
@@ -45,14 +47,20 @@ class ApiSessionHandler(BaseApiHandler):
 
     routes = [
         {
-            "path_pattern":      r"/session/state",
-            "supported_methods": ["GET"],
-            "call_method":       "get_session_state",
+            "path_pattern":      r"/history/tasks",
+            "supported_methods": ["POST"],
+            "call_method":       "get_completed_tasks",
         },
         {
-            "path_pattern":      r"/session/reload",
-            "supported_methods": ["GET"],
-            "call_method":       "session_reload",
+            "path_pattern":      r"/history/tasks",
+            "supported_methods": ["DELETE"],
+            "call_method":       "delete_completed_tasks",
+            "parameters":        [
+                {
+                    "key":      "id_list",
+                    "required": True,
+                }
+            ],
         },
     ]
 
@@ -63,22 +71,29 @@ class ApiSessionHandler(BaseApiHandler):
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
 
-    def get_session_state(self, *args, **kwargs):
+    def get_completed_tasks(self, *args, **kwargs):
         try:
-            if not self.session.created:
-                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Session has not yet been created.")
-                self.write_error()
-                return
-            else:
-                self.write_success({
-                    "level":       self.session.level,
-                    "picture_uri": self.session.picture_uri,
-                    "name":        self.session.name,
-                    "email":       self.session.email,
-                    "created":     self.session.created,
-                    "uuid":        self.session.uuid,
-                })
-                return
+            json_request = self.read_json_request()
+
+            params = {
+                'start':        json_request.get('start', '0'),
+                'length':       json_request.get('length', '10'),
+                'search_value': json_request.get('search_value', ''),
+                'order':        {
+                    "column": json_request.get('order_by', 'finish_time'),
+                    "dir":    json_request.get('order_direction', 'desc'),
+                }
+            }
+            task_list = completed_tasks.prepare_filtered_completed_tasks(params)
+
+            self.write_success({
+                "recordsTotal":    task_list.get('recordsTotal'),
+                "recordsFiltered": task_list.get('recordsFiltered'),
+                "successCount":    task_list.get('successCount'),
+                "failedCount":     task_list.get('failedCount'),
+                "results":         task_list.get('results'),
+            })
+            return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
             return
@@ -86,15 +101,17 @@ class ApiSessionHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def session_reload(self, *args, **kwargs):
+    def delete_completed_tasks(self, *args, **kwargs):
         try:
-            if not self.session.register_unmanic(self.session.get_installation_uuid(), force=True):
-                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to reload session")
+            json_request = self.read_json_request()
+
+            if not completed_tasks.remove_completed_tasks(json_request.get('id_list', [])):
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to delete the completed tasks by their IDs")
                 self.write_error()
                 return
-            else:
-                self.write_success()
-                return
+
+            self.write_success()
+            return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
             return

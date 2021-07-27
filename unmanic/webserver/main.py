@@ -66,8 +66,9 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
             self.handle_ajax_call(self.get_query_arguments('ajax')[0])
         else:
             self.set_header("Content-Type", "text/html")
-            self.render("main/main.html", time_now=time.time(),
-                        session=self.session)
+            # self.render("main/main.html", time_now=time.time(),
+            #             session=self.session)
+            self.render("spa/index.html")
 
     def handle_ajax_call(self, query):
         self.set_header("Content-Type", "application/json")
@@ -139,7 +140,7 @@ class DashboardWebSocket(tornado.websocket.WebSocketHandler):
     async def async_completed_tasks_info(self):
         while self.sending_completed_tasks_info:
             return_data = []
-            history_logging = history.History(self.config)
+            history_logging = history.History()
             historic_task_list = list(history_logging.get_historic_task_list(20))
             for historical_item in historic_task_list:
                 if (int(historical_item['finish_time']) + 60) > int(time.time()):

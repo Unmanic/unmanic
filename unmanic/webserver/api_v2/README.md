@@ -6,6 +6,7 @@
     - 200: for all successfully returned data.
     - 400: for errors caused by the client request.
     - 404: for an incorrectly structured API endpoint.
+    - 405: for a request to an API endpoint with a disallowed method.
     - 500: status for internal errors and exception handling.
 1. All unsuccessful return codes listed above should be accompanied by at least an error message in the format of:
    ```
@@ -16,6 +17,9 @@
     ```
     try:
         ...
+    except BaseApiError as bae:
+        tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+        return
     except Exception as e:
         self.set_status(self.ERROR_INTERNAL, reason=str(e))
         self.write_error()

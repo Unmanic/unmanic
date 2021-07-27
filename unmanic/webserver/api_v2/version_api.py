@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.session_api.py
+    unmanic.version_api.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     10 Mar 2021, (7:14 PM)
+    Date:                     11 Jul 2021, (9:41 PM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -31,12 +31,13 @@
 """
 
 import tornado.log
+from unmanic import config
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
-from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
+from unmanic.webserver.api_v2.base_api_handler import BaseApiError, BaseApiHandler
 
 
-class ApiSessionHandler(BaseApiHandler):
+class ApiVersionHandler(BaseApiHandler):
     name = None
     session = None
     config = None
@@ -45,56 +46,26 @@ class ApiSessionHandler(BaseApiHandler):
 
     routes = [
         {
-            "path_pattern":      r"/session/state",
+            "path_pattern":      r"/version/read",
             "supported_methods": ["GET"],
-            "call_method":       "get_session_state",
-        },
-        {
-            "path_pattern":      r"/session/reload",
-            "supported_methods": ["GET"],
-            "call_method":       "session_reload",
+            "call_method":       "get_unmanic_version",
         },
     ]
 
     def initialize(self, **kwargs):
-        self.name = 'session_api'
+        self.name = 'plugins_api'
         self.session = session.Session()
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
+        self.config = config.CONFIG()
 
-    def get_session_state(self, *args, **kwargs):
+    def get_unmanic_version(self, *args, **kwargs):
         try:
-            if not self.session.created:
-                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Session has not yet been created.")
-                self.write_error()
-                return
-            else:
-                self.write_success({
-                    "level":       self.session.level,
-                    "picture_uri": self.session.picture_uri,
-                    "name":        self.session.name,
-                    "email":       self.session.email,
-                    "created":     self.session.created,
-                    "uuid":        self.session.uuid,
-                })
-                return
-        except BaseApiError as bae:
-            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
-            return
-        except Exception as e:
-            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
-            self.write_error()
-
-    def session_reload(self, *args, **kwargs):
-        try:
-            if not self.session.register_unmanic(self.session.get_installation_uuid(), force=True):
-                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to reload session")
-                self.write_error()
-                return
-            else:
-                self.write_success()
-                return
+            version = self.config.read_version()
+            self.write_success({
+                "version": version,
+            })
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
             return

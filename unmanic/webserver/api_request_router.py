@@ -31,6 +31,7 @@
 """
 
 import importlib
+import tornado.routing
 import tornado.web
 import tornado.log
 

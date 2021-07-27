@@ -108,7 +108,7 @@ class TestClass(object):
 
     def setup_test_task(self, pathname):
         # Create a new task and set the source
-        self.test_task = task.Task(self.data_queues["logging"].get_logger("Task"))
+        self.test_task = task.Task()
 
         # Fill test_task with data
         from unmanic.libs import common

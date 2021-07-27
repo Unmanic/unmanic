@@ -87,10 +87,6 @@ class CONFIG(object, metaclass=SingletonType):
         if self.settings and self.db_connection:
             self.settings.save()
 
-        # TODO: Remove temporary beta data migration
-        history_logging = history.History(self)
-        history_logging.migrate_old_beta_data()
-
     def _log(self, message, message2='', level="info"):
         """
         Generic logging method. Can be implemented on any unmanic class

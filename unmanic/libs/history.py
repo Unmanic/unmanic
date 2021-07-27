@@ -35,6 +35,7 @@ import json
 import time
 from operator import attrgetter
 
+from unmanic import config
 from unmanic.libs import common, unlogger
 from unmanic.libs.unmodels import db, HistoricTasks, \
     HistoricTaskSettings, \
@@ -55,9 +56,9 @@ class History(object):
     Record statistical data for historical jobs
     """
 
-    def __init__(self, settings=None):
+    def __init__(self):
         self.name = 'History'
-        self.settings = settings
+        self.settings = config.CONFIG()
 
     def _log(self, message, message2='', level="info"):
         unmanic_logging = unlogger.UnmanicLogger.__call__()
@@ -117,80 +118,6 @@ class History(object):
             except Exception as e:
                 self._log("Exception in reading completed job data from file:", message2=str(e), level="exception")
         return data
-
-    def migrate_old_beta_data(self):
-        """
-        Temporary function to migrate old JSON data to database
-        TODO: Remove this function post release. It will not be required.
-
-        :return:
-        """
-        self._log("migrate_old_beta_data function is temporary. To be removed post release.", level="warning")
-
-        # Get paths to old historical json files. These are needed for the cleanup
-        if not os.path.exists(self.settings.get_config_path()):
-            os.makedirs(self.settings.get_config_path())
-        history_file = os.path.join(self.settings.get_config_path(), 'history.json')
-        completed_job_details_dir = os.path.join(self.settings.get_config_path(), 'completed_job_details')
-
-        # Check if we need to execute this migration
-        if not os.path.exists(history_file):
-            # Migration has already run. no need to continue
-            self._log("No job history migration required. No history.json file exists.", level="debug")
-            return
-
-        # Read current history log and migrate each entry
-        history_log = self.read_history_log()
-        for historical_job in history_log:
-
-            # Fetch completed job data (if it exists)
-            try:
-                completed_job_data = self.read_completed_job_data(historical_job['job_id'])
-            except Exception as e:
-                self._log("Missing critical data in completed_job_data JSON dump. Ignore this record.", str(e),
-                          level="debug")
-                continue
-
-            # No completed job data exists for this job
-            if not completed_job_data:
-                continue
-
-            # Append ffmpeg_log to completed_job_data
-            completed_job_data['ffmpeg_log'] = []
-
-            # Set path of job details file (to be deleted post migration)
-            job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(historical_job['job_id']))
-
-            # Create new format dictionary from job data
-            task_data = {
-                'task_label':          historical_job['description'],
-                'task_success':        historical_job['success'],
-                'start_time':          completed_job_data['statistics']['start_time'],
-                'finish_time':         completed_job_data['statistics']['finish_time'],
-                'processed_by_worker': completed_job_data['statistics']['processed_by_worker'],
-                'task_dump':           completed_job_data,
-            }
-
-            try:
-                result = self.save_task_history(task_data)
-                if not result:
-                    raise Exception('Failed to migrate historical file data to database')
-
-                # Remove json file
-                os.remove(job_details_file)
-
-            except Exception as error:
-                self._log("Failed to save historic task entry to database.", error, level="error")
-                continue
-
-            # Success
-            self._log("Migrated historical task to DB:", historical_job['abspath'], level="info")
-
-        # If completed_job_details_dir is empty, delete it
-        files = os.listdir(completed_job_details_dir)
-        if len(files) == 0:
-            os.rmdir(completed_job_details_dir)
-            os.remove(history_file)
 
     def get_historic_task_list(self, limit=None):
         """

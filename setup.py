@@ -74,6 +74,7 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
         setuptools.command.build_py.build_py.run(self)
         self.run_command('write-build-version')
         self.run_command('build-web')
+        self.run_command('build-frontend')
 
 
 class WriteVersionCommand(Command):
@@ -124,6 +125,34 @@ class BuildWebUICommand(setuptools.command.build_py.build_py):
                       ignore_errors=True)
 
 
+# This replaces BuildWebUICommand
+class BuildFrontendCommand(setuptools.command.build_py.build_py):
+    """Frontend build command."""
+
+    def run(self):
+        setuptools.command.build_py.build_py.run(self)
+        # Start by clearing out anything if this was pulled from a dirty tree
+        shutil.rmtree(os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'templates', 'spa')),
+                      ignore_errors=True)
+        # Install all modules
+        subprocess.run(
+            ["npm", "--prefix", os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'frontend'), "install"],
+            check=True
+        )
+        # Build the frontend
+        subprocess.run(
+            ["npm", "--prefix", os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'frontend'), "run", "build:publish"],
+            check=True
+        )
+        # Move built dist to templates directory
+        shutil.move(
+            os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'frontend', 'dist', 'spa'),
+            os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'templates', 'spa'))
+        # Remove the frontend source from the package (we will not distribute these)
+        shutil.rmtree(os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'frontend')),
+                      ignore_errors=True)
+
+
 class CleanCommand(Command):
     """Custom clean command to tidy up the project root."""
     user_options = []
@@ -162,6 +191,7 @@ cmd_class = {
     'build_py':            BuildPyCommand,
     'write-build-version': WriteVersionCommand,
     'build-web':           BuildWebUICommand,
+    'build-frontend':      BuildFrontendCommand,
     'clean':               CleanCommand,
     'fullversion':         FullVersionCommand,
 }

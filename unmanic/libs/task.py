@@ -37,7 +37,7 @@ from operator import attrgetter
 
 from playhouse.shortcuts import model_to_dict, dict_to_model
 
-from unmanic.libs import common, ffmpeg
+from unmanic.libs import common, ffmpeg, unlogger
 from unmanic.libs.unffmpeg import containers
 from unmanic.libs.unmodels import Settings
 from unmanic.libs.unmodels.taskprobe import TaskProbe
@@ -83,14 +83,15 @@ class Task(object):
 
     """
 
-    def __init__(self, logger):
+    def __init__(self):
         self.name = 'Task'
         self.task = None
         self.task_dict = None
         self.settings = None
         # TODO: Rename to probe
         self.source = None
-        self.logger = logger
+        unmanic_logging = unlogger.UnmanicLogger.__call__()
+        self.logger = unmanic_logging.get_logger(__class__.__name__)
         self.destination = None
         self.statistics = {}
         self.errors = []
@@ -546,6 +547,8 @@ class Task(object):
         }
         pending_task_results = self.get_task_list_filtered_and_sorted(order=order, start=0, length=1,
                                                                               search_value=None, id_list=None, status=None)
+
+        task_top_priority = 1
         for pending_task_result in pending_task_results:
             task_top_priority = pending_task_result.get('priority')
             break

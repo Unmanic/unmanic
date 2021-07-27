@@ -78,11 +78,11 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
                         self.render("history/history-conversion-details.html", job_data=job_data)
 
     def get_historical_tasks(self):
-        history_logging = history.History(self.config)
+        history_logging = history.History()
         return history_logging.get_historic_task_list()
 
     def get_historical_job_data_for_template(self, job_id):
-        history_logging = history.History(self.config)
+        history_logging = history.History()
         task_data = history_logging.get_historic_task_data_dictionary(job_id)
         if not task_data:
             return False

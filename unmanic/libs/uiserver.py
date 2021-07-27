@@ -47,12 +47,6 @@ from tornado.web import Application, StaticFileHandler, RedirectHandler
 from unmanic import config
 from unmanic.libs import common
 from unmanic.libs.singleton import SingletonType
-from unmanic.webserver.api_request_router import APIRequestRouter
-from unmanic.webserver.history import HistoryUIRequestHandler
-from unmanic.webserver.main import MainUIRequestHandler, DashboardWebSocket
-from unmanic.webserver.plugins import PluginsUIRequestHandler
-from unmanic.webserver.settings import SettingsUIRequestHandler
-from unmanic.webserver.helpers.element_filebrowser import ElementFileBrowserUIRequestHandler
 
 templates_dir = os.path.abspath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'webserver', 'templates'))
@@ -60,13 +54,18 @@ templates_dir = os.path.abspath(
 tornado_settings = {
     'template_loader': Loader(templates_dir),
     'static_path':     os.path.join(os.path.dirname(__file__), "..", "webserver", "assets"),
+    'static_css':      os.path.join(os.path.dirname(__file__), "..", "webserver", "templates", "spa", "css"),
+    'static_fonts':    os.path.join(os.path.dirname(__file__), "..", "webserver", "templates", "spa", "fonts"),
+    'static_icons':    os.path.join(os.path.dirname(__file__), "..", "webserver", "templates", "spa", "icons"),
+    'static_img':      os.path.join(os.path.dirname(__file__), "..", "webserver", "templates", "spa", "img"),
+    'static_js':       os.path.join(os.path.dirname(__file__), "..", "webserver", "templates", "spa", "js"),
     'debug':           True,
     'autoreload':      False,
 }
 
 
 class UnmanicDataQueues(object, metaclass=SingletonType):
-    _unmanic_data_queues = []
+    _unmanic_data_queues = {}
 
     def __init__(self):
         pass
@@ -76,6 +75,19 @@ class UnmanicDataQueues(object, metaclass=SingletonType):
 
     def get_unmanic_data_queues(self):
         return self._unmanic_data_queues
+
+
+class UnmanicRunningTreads(object, metaclass=SingletonType):
+    _unmanic_threads = {}
+
+    def __init__(self):
+        pass
+
+    def set_unmanic_running_threads(self, unmanic_threads):
+        self._unmanic_threads = unmanic_threads
+
+    def get_unmanic_running_thread(self, name):
+        return self._unmanic_threads.get(name)
 
 
 class UIServer(threading.Thread):
@@ -100,6 +112,12 @@ class UIServer(threading.Thread):
         # Add a singleton for handling the data queues for sending data to unmanic's other processes
         udq = UnmanicDataQueues()
         udq.set_unmanic_data_queues(unmanic_data_queues)
+        urt = UnmanicRunningTreads()
+        urt.set_unmanic_running_threads(
+            {
+                'foreman': foreman
+            }
+        )
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -187,12 +205,40 @@ class UIServer(threading.Thread):
         self._log("Leaving UIServer loop...")
 
     def make_web_app(self):
+        from unmanic.webserver.api_request_router import APIRequestRouter
+        from unmanic.webserver.history import HistoryUIRequestHandler
+        from unmanic.webserver.main import MainUIRequestHandler, DashboardWebSocket
+        from unmanic.webserver.plugins import PluginsUIRequestHandler
+        from unmanic.webserver.settings import SettingsUIRequestHandler
+        from unmanic.webserver.helpers.element_filebrowser import ElementFileBrowserUIRequestHandler
+        from unmanic.webserver.websocket import UnmanicWebsocketHandler
+
         # Start with web application routes
         app = Application([
+            (r"/websocket", UnmanicWebsocketHandler),
+            (r"/css/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_css']
+            )),
+            (r"/fonts/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_fonts']
+            )),
+            (r"/icons/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_icons']
+            )),
+            (r"/img/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_img']
+            )),
+            (r"/js/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_js']
+            )),
             (r"/assets/(.*)", StaticFileHandler, dict(
                 path=tornado_settings['static_path']
             )),
-            (r"/dashboard/(.*)", MainUIRequestHandler, dict(
+            (r"/trigger/(.*)", MainUIRequestHandler, dict(
+                data_queues=self.data_queues,
+                foreman=self.foreman,
+            )),
+            (r"/unmanic-dashboard/(.*)", MainUIRequestHandler, dict(
                 data_queues=self.data_queues,
                 foreman=self.foreman,
             )),
@@ -211,6 +257,9 @@ class UIServer(threading.Thread):
             )),
             (r"/filebrowser/(.*)", ElementFileBrowserUIRequestHandler, dict(
                 data_queues=self.data_queues,
+            )),
+            (r"/dashboard/(.*)", RedirectHandler, dict(
+                url="/unmanic-dashboard/"
             )),
             (r"/(.*)", RedirectHandler, dict(
                 url="/dashboard/"

@@ -113,7 +113,7 @@ class FileTest(object):
         :return:
         """
         # Fetch historical tasks
-        history_logging = history.History(self.settings)
+        history_logging = history.History()
         task_results = history_logging.get_historic_tasks_list_with_source_probe(abspath=self.path, task_success=False)
         if not task_results:
             # No results were found matching that pathname

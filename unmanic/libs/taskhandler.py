@@ -136,7 +136,7 @@ class TaskHandler(threading.Thread):
         """
         abspath = os.path.abspath(pathname)
         # Create a new task
-        new_task = task.Task(self.data_queues["logging"].get_logger("Task"))
+        new_task = task.Task()
 
         source_data = common.fetch_file_data_by_path(pathname)
 

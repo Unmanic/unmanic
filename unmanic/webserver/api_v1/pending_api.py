@@ -42,6 +42,7 @@ from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v1.base_api_handler import BaseApiHandler
 
 from unmanic.libs import task, common
+from unmanic.webserver.helpers import pending_tasks
 
 
 class ApiPendingHandler(BaseApiHandler):
@@ -98,18 +99,18 @@ class ApiPendingHandler(BaseApiHandler):
 
         # Move a list of tasks to the top of the queue
         if request_dict.get("customActionName") == "move-to-top-of-task-list":
-            if not self.reorder_pending_tasks(request_dict.get("id"), "top"):
+            if not pending_tasks.reorder_pending_tasks(request_dict.get("id"), "top"):
                 self.write(json.dumps({"success": False}))
                 return
 
         # Move a list of tasks to the top of the queue
         if request_dict.get("customActionName") == "move-to-bottom-of-task-list":
-            if not self.reorder_pending_tasks(request_dict.get("id"), "bottom"):
+            if not pending_tasks.reorder_pending_tasks(request_dict.get("id"), "bottom"):
                 self.write(json.dumps({"success": False}))
                 return
 
         # Return a list of tasks based on the request JSON body
-        results = self.prepare_filtered_pending_tasks(request_dict)
+        results = pending_tasks.prepare_filtered_pending_tasks_for_table(request_dict)
         self.write(json.dumps(results))
 
     def trigger_library_rescan(self):
@@ -140,7 +141,7 @@ class ApiPendingHandler(BaseApiHandler):
         :return:
         """
         # Fetch tasks
-        task_handler = task.Task(self.unmanic_data_queues.get('logging').get_logger("UIServer"))
+        task_handler = task.Task()
         # Delete by ID
         return task_handler.delete_tasks_recursively(id_list=pending_task_ids)
 
@@ -154,7 +155,7 @@ class ApiPendingHandler(BaseApiHandler):
         :return:
         """
         # Fetch tasks
-        task_handler = task.Task(self.unmanic_data_queues.get('logging').get_logger("UIServer"))
+        task_handler = task.Task()
 
         return task_handler.reorder_tasks(pending_task_ids, direction)
 
@@ -186,7 +187,7 @@ class ApiPendingHandler(BaseApiHandler):
             return
 
         # Create a new task
-        new_task = task.Task(tornado.log.app_log)
+        new_task = task.Task()
 
         # Run a probe on the file for current data
         source_data = common.fetch_file_data_by_path(abspath)
@@ -198,62 +199,3 @@ class ApiPendingHandler(BaseApiHandler):
             return
 
         self.write(json.dumps({"success": True}))
-
-    def prepare_filtered_pending_tasks(self, request_dict):
-        """
-        Returns a object of records filtered and sorted
-        according to the provided request.
-
-        :param request_dict:
-        :return:
-        """
-
-        # Generate filters for query
-        draw = request_dict.get('draw')
-        start = request_dict.get('start')
-        length = request_dict.get('length')
-
-        search = request_dict.get('search')
-        search_value = search.get("value")
-
-        # Force sort order always by ID desc
-        order = {
-            "column": 'priority',
-            "dir":    'desc',
-        }
-
-        # Fetch tasks
-        task_handler = task.Task(self.unmanic_data_queues.get('logging').get_logger("UIServer"))
-        # Get total count
-        records_total_count = task_handler.get_total_task_list_count()
-        # Get quantity after filters (without pagination)
-        records_filtered_count = task_handler.get_task_list_filtered_and_sorted(order=order, start=0, length=0,
-                                                                                search_value=search_value,
-                                                                                status='pending').count()
-        # Get filtered/sorted results
-        pending_task_results = task_handler.get_task_list_filtered_and_sorted(order=order, start=start, length=length,
-                                                                              search_value=search_value, status='pending')
-
-        # Build return data
-        return_data = {
-            "draw":         draw,
-            "recordsTotal": records_total_count,
-            "recordsFiltered": records_filtered_count,
-            "successCount":    0,
-            "failedCount":     0,
-            "data":            []
-        }
-
-        # Iterate over tasks and append them to the task data
-        for pending_task in pending_task_results:
-            # Set params as required in template
-            item = {
-                'id':       pending_task['id'],
-                'selected': False,
-                'abspath':  pending_task['abspath'],
-                'status':   pending_task['status'],
-            }
-            return_data["data"].append(item)
-
-        # Return results
-        return return_data

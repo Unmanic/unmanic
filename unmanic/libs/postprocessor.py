@@ -309,7 +309,7 @@ class PostProcessor(threading.Thread):
         :return:
         """
         self._log("Writing task history log.", level='debug')
-        history_logging = history.History(self.settings)
+        history_logging = history.History()
         task_dump = self.current_task.task_dump()
 
         try:

@@ -145,6 +145,18 @@ def prepare_filtered_pending_tasks(params):
     return return_data
 
 
+def remove_pending_tasks(pending_task_ids):
+    """
+    Removes a list of pending tasks
+
+    :param pending_task_ids:
+    :return:
+    """
+    # Delete by ID
+    task_handler = task.Task()
+    return task_handler.delete_tasks_recursively(id_list=pending_task_ids)
+
+
 def reorder_pending_tasks(pending_task_ids, direction="top"):
     """
     Moves a list of pending tasks to either the top of the

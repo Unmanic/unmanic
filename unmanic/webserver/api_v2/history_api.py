@@ -32,6 +32,7 @@
 
 import tornado.log
 
+from unmanic import config
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiError, BaseApiHandler
@@ -62,6 +63,17 @@ class ApiHistoryHandler(BaseApiHandler):
                 }
             ],
         },
+        {
+            "path_pattern":      r"/history/reprocess",
+            "supported_methods": ["POST"],
+            "call_method":       "add_completed_tasks_to_pending_list",
+            "parameters":        [
+                {
+                    "key":      "id_list",
+                    "required": True,
+                }
+            ],
+        }
     ]
 
     def initialize(self, **kwargs):
@@ -70,6 +82,7 @@ class ApiHistoryHandler(BaseApiHandler):
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
+        self.config = config.CONFIG()
 
     def get_completed_tasks(self, *args, **kwargs):
         try:
@@ -107,6 +120,32 @@ class ApiHistoryHandler(BaseApiHandler):
 
             if not completed_tasks.remove_completed_tasks(json_request.get('id_list', [])):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to delete the completed tasks by their IDs")
+                self.write_error()
+                return
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def add_completed_tasks_to_pending_list(self, *args, **kwargs):
+        try:
+            json_request = self.read_json_request()
+
+            errors = completed_tasks.add_historic_tasks_to_pending_tasks_list(json_request.get('id_list', []), self.config)
+            if errors:
+                failed_ids = ''
+                for task_id in errors:
+                    failed_ids += " {}".format(task_id)
+                    tornado.log.app_log.error(
+                        "ApiHistoryHandler.{}: {}".format(self.route.get('call_method'), errors.get(task_id)))
+                self.set_status(self.STATUS_ERROR_INTERNAL,
+                                reason="Failed to add the provided completed tasks to the pending task list: '{}'".format(
+                                    failed_ids))
                 self.write_error()
                 return
 

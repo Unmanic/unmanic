@@ -29,9 +29,10 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import os
 import time
 
-from unmanic.libs import history
+from unmanic.libs import common, history, task
 
 
 def prepare_filtered_completed_tasks(params):
@@ -103,3 +104,41 @@ def remove_completed_tasks(completed_task_ids):
     # Delete by ID
     task_handler = history.History()
     return task_handler.delete_historic_tasks_recursively(id_list=completed_task_ids)
+
+
+def add_historic_tasks_to_pending_tasks_list(historic_task_ids, config):
+    """
+    Adds a list of historical tasks to the pending tasks list.
+
+    :param historic_task_ids:
+    :param config:
+    :return:
+    """
+    errors = {}
+    # Fetch historical tasks
+    history_logging = history.History()
+    # Get total count
+    records_by_id = history_logging.get_current_path_of_historic_tasks_by_id(id_list=historic_task_ids)
+    for record in records_by_id:
+        record_errors = []
+        # Fetch the abspath name
+        abspath = os.path.abspath(record.get("abspath"))
+
+        # Ensure path exists
+        if not os.path.exists(abspath):
+            errors[record.get("id")] = "Path does not exist - '{}'".format(abspath)
+            continue
+
+        # Create a new task
+        new_task = task.Task()
+
+        # Run a probe on the file for current data
+        source_data = common.fetch_file_data_by_path(abspath)
+
+        if not new_task.create_task_by_absolute_path(abspath, config, source_data):
+            # If file exists in task queue already this will return false.
+            # Do not carry on.
+            errors[record.get("id")] = "File already in task queue - '{}'".format(abspath)
+
+        continue
+    return errors

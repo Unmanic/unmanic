@@ -41,6 +41,7 @@ from unmanic import config
 from unmanic.webserver.api_v1.base_api_handler import BaseApiHandler
 
 from unmanic.libs import history, task, common
+from unmanic.webserver.helpers import completed_tasks
 
 
 class ApiHistoryHandler(BaseApiHandler):
@@ -83,8 +84,8 @@ class ApiHistoryHandler(BaseApiHandler):
         # Return a list of historical tasks to the pending task list.
         #   (on success will continue to return the current list of historical tasks)
         if request_dict.get("customActionName") == "add-to-pending":
-            success = self.add_historic_tasks_to_pending_tasks_list(request_dict.get("id"))
-            if not success:
+            errors = completed_tasks.add_historic_tasks_to_pending_tasks_list(request_dict.get('id'), self.config)
+            if errors:
                 self.write(json.dumps({"success": False}))
                 return
 
@@ -111,42 +112,6 @@ class ApiHistoryHandler(BaseApiHandler):
         history_logging = history.History()
         # Delete by ID
         return history_logging.delete_historic_tasks_recursively(id_list=historic_task_ids)
-
-    def add_historic_tasks_to_pending_tasks_list(self, historic_task_ids):
-        """
-        Adds a list of historical tasks to the pending tasks list.
-
-        :param historic_task_ids:
-        :return:
-        """
-        success = True
-        # Fetch historical tasks
-        history_logging = history.History()
-        # Get total count
-        records_by_id = history_logging.get_current_path_of_historic_tasks_by_id(id_list=historic_task_ids)
-        # records_by_id = history_logging.get_historic_task_list_filtered_and_sorted(id_list=historic_task_ids)
-        for record in records_by_id:
-            # Fetch the abspath name
-            abspath = os.path.abspath(record.get("abspath"))
-
-            # Ensure path exists
-            if not os.path.exists(abspath):
-                success = False
-                continue
-
-            # Create a new task
-            new_task = task.Task()
-
-            # Run a probe on the file for current data
-            source_data = common.fetch_file_data_by_path(abspath)
-
-            if not new_task.create_task_by_absolute_path(abspath, self.config, source_data):
-                # If file exists in task queue already this will return false.
-                # Do not carry on.
-                success = False
-
-            continue
-        return success
 
     def prepare_filtered_historic_tasks(self, request_dict):
         """

@@ -94,9 +94,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Fetch full git repository
+    # Fetch full git repository and all submodules
     - name: Checkout project
       uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
 
     # Checkout tags
     - name: Fetch tags

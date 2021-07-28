@@ -51,6 +51,17 @@ class ApiPendingHandler(BaseApiHandler):
             "call_method":       "get_pending_tasks",
         },
         {
+            "path_pattern":      r"/pending/tasks",
+            "supported_methods": ["DELETE"],
+            "call_method":       "delete_pending_tasks",
+            "parameters":        [
+                {
+                    "key":      "id_list",
+                    "required": True,
+                }
+            ],
+        },
+        {
             "path_pattern":      r"/pending/reorder",
             "supported_methods": ["POST"],
             "call_method":       "reorder_pending_tasks",
@@ -94,6 +105,24 @@ class ApiPendingHandler(BaseApiHandler):
                 "recordsFiltered": task_list.get('recordsFiltered'),
                 "results":         task_list.get('results'),
             })
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def delete_pending_tasks(self, *args, **kwargs):
+        try:
+            json_request = self.read_json_request()
+
+            if not pending_tasks.remove_pending_tasks(json_request.get('id_list', [])):
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to delete the pending tasks by their IDs")
+                self.write_error()
+                return
+
+            self.write_success()
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

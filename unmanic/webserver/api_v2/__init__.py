@@ -33,6 +33,7 @@
 from __future__ import absolute_import
 import warnings
 
+from .docs_api import ApiDocsHandler
 from .history_api import ApiHistoryHandler
 from .pending_api import ApiPendingHandler
 from .session_api import ApiSessionHandler
@@ -41,6 +42,7 @@ from .version_api import ApiVersionHandler
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
 
 __all__ = (
+    'ApiDocsHandler',
     'ApiHistoryHandler',
     'ApiPendingHandler',
     'ApiSessionHandler',

@@ -215,32 +215,8 @@ class UIServer(threading.Thread):
 
         # Start with web application routes
         app = Application([
-            (r"/websocket", UnmanicWebsocketHandler),
-            (r"/css/(.*)", StaticFileHandler, dict(
-                path=tornado_settings['static_css']
-            )),
-            (r"/fonts/(.*)", StaticFileHandler, dict(
-                path=tornado_settings['static_fonts']
-            )),
-            (r"/icons/(.*)", StaticFileHandler, dict(
-                path=tornado_settings['static_icons']
-            )),
-            (r"/img/(.*)", StaticFileHandler, dict(
-                path=tornado_settings['static_img']
-            )),
-            (r"/js/(.*)", StaticFileHandler, dict(
-                path=tornado_settings['static_js']
-            )),
             (r"/assets/(.*)", StaticFileHandler, dict(
                 path=tornado_settings['static_path']
-            )),
-            (r"/trigger/(.*)", MainUIRequestHandler, dict(
-                data_queues=self.data_queues,
-                foreman=self.foreman,
-            )),
-            (r"/unmanic-dashboard/(.*)", MainUIRequestHandler, dict(
-                data_queues=self.data_queues,
-                foreman=self.foreman,
             )),
             (r"/dashws", DashboardWebSocket, dict(
                 data_queues=self.data_queues,
@@ -258,11 +234,33 @@ class UIServer(threading.Thread):
             (r"/filebrowser/(.*)", ElementFileBrowserUIRequestHandler, dict(
                 data_queues=self.data_queues,
             )),
-            (r"/dashboard/(.*)", RedirectHandler, dict(
-                url="/unmanic-dashboard/"
+
+            (r"/websocket", UnmanicWebsocketHandler),
+            (r"/css/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_css']
+            )),
+            (r"/fonts/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_fonts']
+            )),
+            (r"/icons/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_icons']
+            )),
+            (r"/img/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_img']
+            )),
+            (r"/js/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_js']
+            )),
+            (r"/unmanic-dashboard/(.*)", MainUIRequestHandler, dict(
+                data_queues=self.data_queues,
+                foreman=self.foreman,
+            )),
+            (r"/trigger/(.*)", MainUIRequestHandler, dict(
+                data_queues=self.data_queues,
+                foreman=self.foreman,
             )),
             (r"/(.*)", RedirectHandler, dict(
-                url="/dashboard/"
+                url="/unmanic-dashboard//"
             )),
         ], **tornado_settings)
 

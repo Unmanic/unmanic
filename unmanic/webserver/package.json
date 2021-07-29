@@ -30,7 +30,7 @@
     "assets": "npm-run-all css-compile css-prefix",
     "server": "serve --listen 3000",
     "start": "npm-run-all --parallel watch server",
-    "watch": "nodemon -e html,scss -x \"npm run assets\"",
+    "watch": "nodemon --ignore 'assets/vendor/**' -e html,scss -x \"npm run assets\"",
     "test": "npm run css-lint && npm run assets"
   },
   "keywords": [

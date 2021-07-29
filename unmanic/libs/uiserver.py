@@ -260,7 +260,7 @@ class UIServer(threading.Thread):
                 foreman=self.foreman,
             )),
             (r"/(.*)", RedirectHandler, dict(
-                url="/unmanic-dashboard//"
+                url="/unmanic-dashboard/"
             )),
         ], **tornado_settings)
 

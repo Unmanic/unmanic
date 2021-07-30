@@ -127,10 +127,12 @@ class PluginSettings(object, metaclass=SingletonType):
 
         # Ensure plugin has this setting
         if key not in self.settings:
-            return
+            return False
 
         # Set the configured value
         self.settings_configured[key] = value
 
         # Export the settings again
         self.__export_configured_settings()
+
+        return True

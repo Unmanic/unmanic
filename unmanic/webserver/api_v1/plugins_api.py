@@ -339,6 +339,7 @@ class ApiPluginsHandler(BaseApiHandler):
                     "input_type":     None,
                     "label":          None,
                     "select_options": [],
+                    "range_options":  {},
                 }
 
                 plugin_setting_meta = plugin_settings_meta.get(key, {})
@@ -356,6 +357,7 @@ class ApiPluginsHandler(BaseApiHandler):
                     "textarea",
                     "select",
                     "checkbox",
+                    "range",
                     "browse_directory",
                 ]
                 if form_input['input_type'] not in supported_input_types:
@@ -370,6 +372,13 @@ class ApiPluginsHandler(BaseApiHandler):
                 if form_input['input_type'] == 'select':
                     form_input['select_options'] = plugin_setting_meta.get('select_options', [])
                     if not form_input['select_options']:
+                        # No options are given. Revert back to text input
+                        form_input['input_type'] = 'text'
+
+                # Set options if form input is range
+                if form_input['input_type'] == 'range':
+                    form_input['range_options'] = plugin_setting_meta.get('range_options', {})
+                    if not form_input['range_options']:
                         # No options are given. Revert back to text input
                         form_input['input_type'] = 'text'
 
@@ -436,7 +445,8 @@ class ApiPluginsHandler(BaseApiHandler):
             if plugin_installed:
                 plugin_data['settings'] = self.__get_plugin_settings(plugin_result.get('plugin_id'))
                 plugin_data['changelog'] = "".join(self.__get_plugin_changelog(plugin_result.get('plugin_id')))
-                plugin_data['description'] += "\n" + "".join(self.__get_plugin_long_description(plugin_result.get('plugin_id')))
+                plugin_data['description'] += "\n" + "".join(
+                    self.__get_plugin_long_description(plugin_result.get('plugin_id')))
             break
 
         return plugin_data

@@ -131,6 +131,49 @@
                                             </div>
                                         {{/ifEquals}}
 
+                                        {{#ifEquals input_type "range"}}
+                                            <!-- Range input -->
+                                            <div class="form-group form-md-line-input">
+                                                <input type="hidden" class="form-control"
+                                                       id="{{key_id}}"
+                                                       name="{{key_id}}"
+                                                       placeholder="{{value}}"
+                                                       value="{{value}}">
+                                                <label for="{{key_id}}">{{label}}</label>
+                                                <div id="{{key_id}}_slider"></div>
+                                            </div>
+                                            <script>
+                                                let slider = document.getElementById('{{key_id}}_slider');
+
+                                                noUiSlider.create(slider, {
+                                                    start: [{{value}}],
+                                                    tooltips: [
+                                                        true // tooltip with default formatting
+                                                    ],
+                                                    format: {
+                                                        // 'to' the formatted value. Receives a number.
+                                                        to: function (value) {
+                                                            return Math.round(value);
+                                                        },
+                                                        // 'from' the formatted value.
+                                                        // Receives a string, should return a number.
+                                                        from: function (value) {
+                                                            return Math.round(value);
+                                                        }
+                                                    },
+                                                    connect: true,
+                                                    range: {
+                                                        'min': {{range_options.min}},
+                                                        'max': {{range_options.max}}
+                                                    }
+                                                });
+                                                slider.noUiSlider.on('update', function (values, handle) {
+                                                    let input = document.getElementById('{{key_id}}');
+                                                    input.value = values[handle];
+                                                });
+                                            </script>
+                                        {{/ifEquals}}
+
                                         {{#ifEquals input_type "browse_directory"}}
                                             <!-- Directory browser input -->
                                             <div class="form-group form-md-line-input">

@@ -11,5 +11,10 @@ if [[ -e /app/unmanic/service.py ]]; then
     ln -sf /app/unmanic /usr/local/lib/python3.8/dist-packages/unmanic
 fi
 
+unmanic_params=''
+if [[ "${DEBUGGING}" == 'true' ]]; then
+    unmanic_params="--dev ${unmanic_params}"
+fi
+
 chmod +x /usr/bin/unmanic
-exec s6-setuidgid root /usr/bin/unmanic
+exec s6-setuidgid root /usr/bin/unmanic "${unmanic_params}"

@@ -97,6 +97,11 @@ class PluginExecutor(object):
         if os.path.exists(plugin_site_packages_dir) and plugin_site_packages_dir not in sys.path:
             sys.path.append(plugin_site_packages_dir)
 
+    @staticmethod
+    def __include_plugin_directory(path):
+        if os.path.exists(path) and path not in sys.path:
+            sys.path.append(path)
+
     def __load_plugin_module(self, plugin_id, path):
         """
         Loads and returns the python module from a given plugin path.
@@ -111,6 +116,9 @@ class PluginExecutor(object):
 
         # Get main module file
         plugin_module_path = os.path.join(path, 'plugin.py')
+
+        # Add plugin directory to sys path prior to loading the module so any included modules may be imported
+        self.__include_plugin_directory(path)
 
         # Add site-packages directory to sys path prior to loading the module
         self.__include_plugin_site_packages(path)

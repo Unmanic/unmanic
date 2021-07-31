@@ -443,9 +443,6 @@ const fillPluginInfo = function (template_data) {
     // Block the plugin info
     blockElementByID("configure-plugin-body");
 
-    // Empty the current plugin info
-    $("div#configure-plugin-body").html('');
-
     // Fetch template and display
     var template = Handlebars.getTemplateFromURL('plugins/plugin-info');
     $("div#configure-plugin-body").html(template(template_data));
@@ -487,8 +484,6 @@ const showPluginInfo = function (plugin_id) {
 const submitPluginSettings = function () {
     var plugin_settings_form = $('#plugin_settings_form');
 
-    console.log(plugin_settings_form.serializeArray());
-
     $.ajax({
         type: 'POST',
         url: '/api/v1/plugins/settings/update',
@@ -498,6 +493,11 @@ const submitPluginSettings = function () {
             if (data.success) {
                 // If query was successful, process data
                 console.log('Plugin settings updated.');
+                let activeElementId = document.activeElement.id;
+                fillPluginInfo(data);
+                if (activeElementId) {
+                    document.getElementById(activeElementId).focus();
+                }
             } else {
                 // Our query was unsuccessful
                 console.error('An error occurred while submitting the plugin settings form.');

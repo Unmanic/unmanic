@@ -67,126 +67,152 @@
                             <div class="form-body">
                                 {{#each settings}}
                                     {{#with this}}
-                                        {{#ifEquals input_type "text"}}
-                                            <!-- Text input -->
-                                            <div class="form-group form-md-line-input">
-                                                <input type="text" class="form-control"
-                                                       id="{{key_id}}"
-                                                       name="{{key_id}}"
-                                                       placeholder="{{value}}"
-                                                       value="{{value}}">
-                                                <label for="{{key_id}}">{{label}}</label>
-                                            </div>
-                                        {{/ifEquals}}
+                                        {{#ifEquals display "visible"}}
+                                            {{#ifEquals input_type "text"}}
+                                                <!-- Text input -->
+                                                <div class="form-group form-md-line-input">
+                                                    <input type="text" class="form-control"
+                                                           id="{{key_id}}"
+                                                           name="{{key_id}}"
+                                                           placeholder="{{value}}"
+                                                           value="{{value}}">
+                                                    <label for="{{key_id}}">{{label}}</label>
+                                                </div>
+                                            {{/ifEquals}}
 
-                                        {{#ifEquals input_type "textarea"}}
-                                            <!-- Textarea input -->
-                                            <div class="form-group form-md-line-input">
+                                            {{#ifEquals input_type "textarea"}}
+                                                <!-- Textarea input -->
+                                                <div class="form-group form-md-line-input">
                                                 <textarea class="form-control" rows="3"
                                                           id="{{key_id}}"
                                                           name="{{key_id}}"
                                                           placeholder="{{value}}">{{value}}</textarea>
-                                                <label for="{{key_id}}">{{label}}</label>
-                                            </div>
-                                        {{/ifEquals}}
+                                                    <label for="{{key_id}}">{{label}}</label>
+                                                </div>
+                                            {{/ifEquals}}
 
-                                        {{#ifEquals input_type "select"}}
-                                            <!-- Select input -->
-                                            <div class="form-group form-md-line-input">
-                                                <select class="form-control"
-                                                        id="{{key_id}}"
-                                                        name="{{key_id}}">
-                                                    {{#setSelectedOption value}}
-                                                        {{#each select_options}}
-                                                            {{#with this}}
-                                                                <option value="{{value}}">{{label}}</option>
-                                                            {{/with}}
-                                                        {{/each}}
-                                                    {{/setSelectedOption}}
-                                                </select>
-                                                <label for="{{key_id}}">{{label}}</label>
-                                            </div>
-                                        {{/ifEquals}}
+                                            {{#ifEquals input_type "select"}}
+                                                <!-- Select input -->
+                                                <div class="form-group form-md-line-input">
+                                                    <select class="form-control"
+                                                            id="{{key_id}}"
+                                                            name="{{key_id}}">
+                                                        {{#setSelectedOption value}}
+                                                            {{#each select_options}}
+                                                                {{#with this}}
+                                                                    <option value="{{value}}">{{label}}</option>
+                                                                {{/with}}
+                                                            {{/each}}
+                                                        {{/setSelectedOption}}
+                                                    </select>
+                                                    <label for="{{key_id}}">{{label}}</label>
+                                                </div>
+                                                <script>
+                                                    const inputElement = document.getElementById('{{key_id}}');
+                                                    const originalValue = inputElement.value;
+                                                    inputElement.addEventListener('change', (event) => {
+                                                        if (originalValue !== event.target.value) {
+                                                            submitPluginSettings();
+                                                        }
+                                                    });
+                                                </script>
+                                            {{/ifEquals}}
 
-                                        {{#ifEquals input_type "checkbox"}}
-                                            <!-- Checkbox input -->
-                                            <div class="form-group form-md-checkboxes">
-                                                <label>{{label}}</label>
-                                                <div class="md-checkbox-inline">
-                                                    <div class="md-checkbox">
-                                                        <input type='hidden' id="{{key_id}}"
-                                                               name="{{key_id}}"
-                                                               value='{{value}}'>
-                                                        <input type="checkbox" id="{{key_id}}_checkbox"
-                                                               onclick="toggleCheckboxHiddenInput('{{key_id}}_checkbox', '{{key_id}}')"
-                                                               {{#if value}}checked=""{{/if}}
-                                                               class="md-check">
-                                                        <label for="{{key_id}}_checkbox">
-                                                            <span class="inc"></span>
-                                                            <span class="check"></span>
-                                                            <span class="box"></span>
-                                                        </label>
+                                            {{#ifEquals input_type "checkbox"}}
+                                                <!-- Checkbox input -->
+                                                <div class="form-group form-md-checkboxes">
+                                                    <label>{{label}}</label>
+                                                    <div class="md-checkbox-inline">
+                                                        <div class="md-checkbox">
+                                                            <input type='hidden' id="{{key_id}}"
+                                                                   name="{{key_id}}"
+                                                                   value='{{value}}'>
+                                                            <input type="checkbox" id="{{key_id}}_checkbox"
+                                                                   onclick="toggleCheckboxHiddenInput('{{key_id}}_checkbox', '{{key_id}}')"
+                                                                   {{#if value}}checked=""{{/if}}
+                                                                   class="md-check">
+                                                            <label for="{{key_id}}_checkbox">
+                                                                <span></span>
+                                                                <span class="check"></span>
+                                                                <span class="box"></span>
+                                                            </label>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        {{/ifEquals}}
-
-                                        {{#ifEquals input_type "range"}}
-                                            <!-- Range input -->
-                                            <div class="form-group form-md-line-input">
-                                                <input type="hidden" class="form-control"
-                                                       id="{{key_id}}"
-                                                       name="{{key_id}}"
-                                                       placeholder="{{value}}"
-                                                       value="{{value}}">
-                                                <label for="{{key_id}}">{{label}}</label>
-                                                <div id="{{key_id}}_slider"></div>
-                                            </div>
-                                            <script>
-                                                let slider = document.getElementById('{{key_id}}_slider');
-
-                                                noUiSlider.create(slider, {
-                                                    start: [{{value}}],
-                                                    tooltips: [
-                                                        true // tooltip with default formatting
-                                                    ],
-                                                    format: {
-                                                        // 'to' the formatted value. Receives a number.
-                                                        to: function (value) {
-                                                            return Math.round(value);
-                                                        },
-                                                        // 'from' the formatted value.
-                                                        // Receives a string, should return a number.
-                                                        from: function (value) {
-                                                            return Math.round(value);
+                                                <script>
+                                                    const inputElement = document.getElementById('{{key_id}}');
+                                                    const originalValue = inputElement.value;
+                                                    const checkboxElement = document.getElementById('{{key_id}}_checkbox');
+                                                    checkboxElement.addEventListener('change', (event) => {
+                                                        if (originalValue !== event.target.value) {
+                                                            submitPluginSettings();
                                                         }
-                                                    },
-                                                    connect: true,
-                                                    range: {
-                                                        'min': {{range_options.min}},
-                                                        'max': {{range_options.max}}
-                                                    }
-                                                });
-                                                slider.noUiSlider.on('update', function (values, handle) {
-                                                    let input = document.getElementById('{{key_id}}');
-                                                    input.value = values[handle];
-                                                });
-                                            </script>
-                                        {{/ifEquals}}
+                                                    });
+                                                </script>
+                                            {{/ifEquals}}
 
-                                        {{#ifEquals input_type "browse_directory"}}
-                                            <!-- Directory browser input -->
-                                            <div class="form-group form-md-line-input">
-                                                <div class="input-group">
-                                                    <div class="input-group-control">
-                                                        <input type="text" class="form-control"
-                                                               id="{{key_id}}"
-                                                               name="{{key_id}}"
-                                                               placeholder="{{value}}"
-                                                               value="{{value}}">
-                                                        <label for="{{key_id}}">{{label}}</label>
+                                            {{#ifEquals input_type "range"}}
+                                                <!-- Range input -->
+                                                <div class="form-group form-md-line-input">
+                                                    <input type="hidden" class="form-control"
+                                                           id="{{key_id}}"
+                                                           name="{{key_id}}"
+                                                           placeholder="{{value}}"
+                                                           value="{{value}}">
+                                                    <label for="{{key_id}}">{{label}}</label>
+                                                    <div style="width:90%; margin-left:auto; margin-right:auto;">
+                                                        <div id="{{key_id}}_slider"></div>
                                                     </div>
-                                                    <span class="input-group-btn btn-right">
+                                                </div>
+                                                <script>
+                                                    const slider = document.getElementById('{{key_id}}_slider');
+                                                    const inputElement = document.getElementById('{{key_id}}');
+
+                                                    noUiSlider.create(slider, {
+                                                        start: [{{value}}],
+                                                        tooltips: [
+                                                            {
+                                                                to: function (value) {
+                                                                    return Math.round(value) + '{{range_options.suffix}}';
+                                                                }
+                                                            }
+                                                        ],
+                                                        format: {
+                                                            // 'to' the formatted value. Receives a number.
+                                                            to: function (value) {
+                                                                return Math.round(value);
+                                                            },
+                                                            // 'from' the formatted value.
+                                                            // Receives a string, should return a number.
+                                                            from: function (value) {
+                                                                return Math.round(value);
+                                                            }
+                                                        },
+                                                        connect: true,
+                                                        range: {
+                                                            'min': {{range_options.min}},
+                                                            'max': {{range_options.max}}
+                                                        }
+                                                    });
+                                                    slider.noUiSlider.on('update', function (values, handle) {
+                                                        inputElement.value = values[handle];
+                                                    });
+                                                </script>
+                                            {{/ifEquals}}
+
+                                            {{#ifEquals input_type "browse_directory"}}
+                                                <!-- Directory browser input -->
+                                                <div class="form-group form-md-line-input">
+                                                    <div class="input-group">
+                                                        <div class="input-group-control">
+                                                            <input type="text" class="form-control"
+                                                                   id="{{key_id}}"
+                                                                   name="{{key_id}}"
+                                                                   placeholder="{{value}}"
+                                                                   value="{{value}}">
+                                                            <label for="{{key_id}}">{{label}}</label>
+                                                        </div>
+                                                        <span class="input-group-btn btn-right">
                                                         <a class="btn green sbold upppercase"
                                                            href="#unmanic-filebrowser-popup"
                                                            data-toggle="modal"
@@ -194,8 +220,9 @@
                                                                 Browse… <i class="fa fa-share"></i>
                                                         </a>
                                                     </span>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            {{/ifEquals}}
                                         {{/ifEquals}}
                                     {{/with}}
                                 {{/each}}

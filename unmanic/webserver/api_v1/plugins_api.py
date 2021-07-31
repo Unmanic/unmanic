@@ -340,6 +340,7 @@ class ApiPluginsHandler(BaseApiHandler):
                     "label":          None,
                     "select_options": [],
                     "range_options":  {},
+                    "display":        "visible",
                 }
 
                 plugin_setting_meta = plugin_settings_meta.get(key, {})
@@ -363,6 +364,9 @@ class ApiPluginsHandler(BaseApiHandler):
                 if form_input['input_type'] not in supported_input_types:
                     form_input['input_type'] = "text"
 
+                # Set input display options
+                form_input['display'] = plugin_setting_meta.get('display', 'visible')
+
                 # Set input label text
                 form_input['label'] = plugin_setting_meta.get('label', None)
                 if not form_input['label']:
@@ -377,10 +381,14 @@ class ApiPluginsHandler(BaseApiHandler):
 
                 # Set options if form input is range
                 if form_input['input_type'] == 'range':
-                    form_input['range_options'] = plugin_setting_meta.get('range_options', {})
-                    if not form_input['range_options']:
+                    range_options = plugin_setting_meta.get('range_options')
+                    if not range_options:
                         # No options are given. Revert back to text input
                         form_input['input_type'] = 'text'
+                    else:
+                        form_input['range_options'] = range_options
+                        if not range_options.get('suffix'):
+                            form_input['range_options']['suffix'] = ''
 
                 settings.append(form_input)
         return settings
@@ -503,7 +511,7 @@ class ApiPluginsHandler(BaseApiHandler):
             # If the save function was successful
             if saved_all_settings:
                 # Update settings in plugin data that will be returned
-                plugin_data['settings'] = settings_to_save
+                plugin_data['settings'] = self.__get_plugin_settings(plugin_id)
                 result = True
 
         self.write(json.dumps({"success": result, "plugin_info": plugin_data}))

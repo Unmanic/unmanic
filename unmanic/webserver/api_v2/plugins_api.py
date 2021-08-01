@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.plugins_api.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     25 Oct 2020, (9:07 PM)
+    Date:                     01 Aug 2021, (9:30 AM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -29,26 +29,3 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
-from __future__ import absolute_import
-import warnings
-
-from .docs_api import ApiDocsHandler
-from .history_api import ApiHistoryHandler
-from .pending_api import ApiPendingHandler
-from .session_api import ApiSessionHandler
-from .version_api import ApiVersionHandler
-
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'ApiDocsHandler',
-    'ApiHistoryHandler',
-    'ApiPendingHandler',
-    'ApiSessionHandler',
-    'ApiVersionHandler',
-)
-
-
-def list_all_handlers():
-    return __all__

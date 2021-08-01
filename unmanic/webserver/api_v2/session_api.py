@@ -34,10 +34,10 @@ import tornado.log
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
+from unmanic.webserver.api_v2.schema.schemas import SessionStateSuccessSchema
 
 
 class ApiSessionHandler(BaseApiHandler):
-    name = None
     session = None
     config = None
     params = None
@@ -51,33 +51,76 @@ class ApiSessionHandler(BaseApiHandler):
         },
         {
             "path_pattern":      r"/session/reload",
-            "supported_methods": ["GET"],
+            "supported_methods": ["PUT"],
             "call_method":       "session_reload",
         },
     ]
 
     def initialize(self, **kwargs):
-        self.name = 'session_api'
         self.session = session.Session()
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
 
     def get_session_state(self, *args, **kwargs):
+        """
+        Session - state
+        ---
+        description: Returns the application session state.
+        responses:
+            200:
+                description: 'Sample response: Returns the application session state.'
+                content:
+                    application/json:
+                        schema:
+                            SessionStateSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
         try:
             if not self.session.created:
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Session has not yet been created.")
                 self.write_error()
                 return
             else:
-                self.write_success({
-                    "level":       self.session.level,
-                    "picture_uri": self.session.picture_uri,
-                    "name":        self.session.name,
-                    "email":       self.session.email,
-                    "created":     self.session.created,
-                    "uuid":        self.session.uuid,
-                })
+                response = self.build_response(
+                    SessionStateSuccessSchema(),
+                    {
+                        "level":       self.session.level,
+                        "picture_uri": self.session.picture_uri,
+                        "name":        self.session.name,
+                        "email":       self.session.email,
+                        "created":     self.session.created,
+                        "uuid":        self.session.uuid,
+                    }
+                )
+                self.write_success(response)
                 return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
@@ -87,6 +130,46 @@ class ApiSessionHandler(BaseApiHandler):
             self.write_error()
 
     def session_reload(self, *args, **kwargs):
+        """
+        Session - reload
+        ---
+        description: Reload the current session.
+        responses:
+            200:
+                description: 'Success: Reloaded the current session.'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
         try:
             if not self.session.register_unmanic(self.session.get_installation_uuid(), force=True):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to reload session")

@@ -4,3 +4,9 @@ pytest>=5.4.1
 teamcity-messages==1.25
 wheel==0.33.6
 setuptools>=39.0.1
+
+# API schema exporting
+apispec
+apispec_webframeworks
+pyyaml
+swagger-ui-py

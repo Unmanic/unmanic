@@ -57,6 +57,10 @@ def prepare_filtered_completed_tasks(params):
     history_logging = history.History()
     # Get total count
     records_total_count = history_logging.get_total_historic_task_list_count()
+    # Get total success count
+    records_total_success_count = history_logging.get_historic_task_list_filtered_and_sorted(task_success=True).count()
+    # Get total failed count
+    records_total_failed_count = history_logging.get_historic_task_list_filtered_and_sorted(task_success=False).count()
     # Get quantity after filters (without pagination)
     records_filtered_count = history_logging.get_historic_task_list_filtered_and_sorted(order=order, start=0, length=0,
                                                                                         search_value=search_value).count()
@@ -68,8 +72,8 @@ def prepare_filtered_completed_tasks(params):
     return_data = {
         "recordsTotal":    records_total_count,
         "recordsFiltered": records_filtered_count,
-        "successCount":    records_filtered_count,
-        "failedCount":     records_filtered_count,
+        "successCount":    records_total_success_count,
+        "failedCount":     records_total_failed_count,
         "results":         []
     }
 
@@ -83,12 +87,6 @@ def prepare_filtered_completed_tasks(params):
             'finish_time':  task['finish_time'],
         }
         return_data["results"].append(item)
-
-        # Increment counters
-        if task['task_success']:
-            return_data["successCount"] += 1
-        else:
-            return_data["failedCount"] += 1
 
     # Return results
     return return_data

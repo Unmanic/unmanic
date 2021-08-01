@@ -35,10 +35,10 @@ from unmanic import config
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiError, BaseApiHandler
+from unmanic.webserver.api_v2.schema.schemas import VersionReadSuccessSchema
 
 
 class ApiVersionHandler(BaseApiHandler):
-    name = None
     session = None
     config = None
     params = None
@@ -53,7 +53,6 @@ class ApiVersionHandler(BaseApiHandler):
     ]
 
     def initialize(self, **kwargs):
-        self.name = 'plugins_api'
         self.session = session.Session()
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
@@ -61,11 +60,56 @@ class ApiVersionHandler(BaseApiHandler):
         self.config = config.CONFIG()
 
     def get_unmanic_version(self, *args, **kwargs):
+        """
+        Version - read
+        ---
+        description: Returns the application version.
+        responses:
+            200:
+                description: 'Sample response: Returns the application version.'
+                content:
+                    application/json:
+                        schema:
+                            VersionReadSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
         try:
             version = self.config.read_version()
-            self.write_success({
-                "version": version,
-            })
+            response = self.build_response(
+                VersionReadSuccessSchema(),
+                {
+                    "version": version,
+                }
+            )
+            self.write_success(response)
+            return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
             return

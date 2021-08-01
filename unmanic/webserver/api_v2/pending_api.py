@@ -34,11 +34,12 @@ import tornado.log
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
-from unmanic.webserver.helpers import completed_tasks, pending_tasks
+from unmanic.webserver.api_v2.schema.schemas import RequestPendingTasksReorderSchema, PendingTasksSchema, \
+    RequestPendingTableDataSchema, RequestTableUpdateByIdList
+from unmanic.webserver.helpers import pending_tasks
 
 
 class ApiPendingHandler(BaseApiHandler):
-    name = None
     session = None
     config = None
     params = None
@@ -54,40 +55,70 @@ class ApiPendingHandler(BaseApiHandler):
             "path_pattern":      r"/pending/tasks",
             "supported_methods": ["DELETE"],
             "call_method":       "delete_pending_tasks",
-            "parameters":        [
-                {
-                    "key":      "id_list",
-                    "required": True,
-                }
-            ],
         },
         {
             "path_pattern":      r"/pending/reorder",
             "supported_methods": ["POST"],
             "call_method":       "reorder_pending_tasks",
-            "parameters":        [
-                {
-                    "key":      "id_list",
-                    "required": True,
-                },
-                {
-                    "key":      "position",
-                    "required": True,
-                }
-            ],
         },
     ]
 
     def initialize(self, **kwargs):
-        self.name = 'session_api'
         self.session = session.Session()
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
 
     def get_pending_tasks(self, *args, **kwargs):
+        """
+        Pending - list tasks
+        ---
+        description: Returns a list of pending tasks.
+        requestBody:
+            description: Returns a list of pending tasks.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestPendingTableDataSchema
+        responses:
+            200:
+                description: 'Sample response: Returns a list of pending tasks.'
+                content:
+                    application/json:
+                        schema:
+                            PendingTasksSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
         try:
-            json_request = self.read_json_request()
+            json_request = self.read_json_request(RequestPendingTableDataSchema())
 
             params = {
                 'start':        json_request.get('start', '0'),
@@ -100,11 +131,15 @@ class ApiPendingHandler(BaseApiHandler):
             }
             task_list = pending_tasks.prepare_filtered_pending_tasks(params)
 
-            self.write_success({
-                "recordsTotal":    task_list.get('recordsTotal'),
-                "recordsFiltered": task_list.get('recordsFiltered'),
-                "results":         task_list.get('results'),
-            })
+            response = self.build_response(
+                PendingTasksSchema(),
+                {
+                    "recordsTotal":    task_list.get('recordsTotal'),
+                    "recordsFiltered": task_list.get('recordsFiltered'),
+                    "results":         task_list.get('results'),
+                }
+            )
+            self.write_success(response)
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
@@ -114,8 +149,55 @@ class ApiPendingHandler(BaseApiHandler):
             self.write_error()
 
     def delete_pending_tasks(self, *args, **kwargs):
+        """
+        Pending - delete
+        ---
+        description: Delete a list of pending tasks.
+        requestBody:
+            description: Requested list of items to delete.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestTableUpdateByIdList
+        responses:
+            200:
+                description: 'Success: Deleted a list of pending tasks.'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
         try:
-            json_request = self.read_json_request()
+            json_request = self.read_json_request(RequestTableUpdateByIdList())
 
             if not pending_tasks.remove_pending_tasks(json_request.get('id_list', [])):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to delete the pending tasks by their IDs")
@@ -132,8 +214,55 @@ class ApiPendingHandler(BaseApiHandler):
             self.write_error()
 
     def reorder_pending_tasks(self, *args, **kwargs):
+        """
+        Pending - reorder
+        ---
+        description: Reorder a list of pending tasks.
+        requestBody:
+            description: Requested list of items to reorder.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestPendingTasksReorderSchema
+        responses:
+            200:
+                description: 'Success: Reorder a list of pending tasks.'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
         try:
-            json_request = self.read_json_request()
+            json_request = self.read_json_request(RequestPendingTasksReorderSchema())
 
             if not pending_tasks.reorder_pending_tasks(json_request.get('id_list', []), json_request.get('direction', 'top')):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to save new order")

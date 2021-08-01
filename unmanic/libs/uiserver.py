@@ -270,6 +270,25 @@ class UIServer(threading.Thread):
             APIRequestRouter(app)
         ), ])
 
+        if self.developer:
+            self._log("API Docs - Updating...", level="debug")
+            from unmanic.webserver.api_v2.schema.swagger import generate_swagger_file
+            errors = generate_swagger_file()
+            for error in errors:
+                self._log(error, level="warn")
+            else:
+                self._log("API Docs - Updated successfully", level="debug")
+
+            # Start the Swagger UI. Automatically generated swagger.json can also
+            # be served using a separate Swagger-service.
+            from swagger_ui import tornado_api_doc
+            tornado_api_doc(
+                app,
+                config_path=os.path.join(os.path.dirname(__file__), "..", "webserver", "docs", "api_schema_v2.json"),
+                url_prefix="/swagger",
+                title="Unmanic application API"
+            )
+
         return app
 
 

@@ -41,6 +41,7 @@ from typing import (
 import tornado.web
 import tornado.log
 import tornado.routing
+from marshmallow import Schema, exceptions
 
 from tornado.web import RequestHandler
 
@@ -58,6 +59,7 @@ class BaseApiHandler(RequestHandler):
     api_version = 2
     routes = []
     route = {}
+    error_messages = {}
 
     """
     Valid API return status codes:
@@ -77,7 +79,13 @@ class BaseApiHandler(RequestHandler):
         """
         self.set_header("Content-Type", 'application/json; charset="utf-8"')
 
-    def read_json_request(self):
+    def read_json_request(self, schema: Schema):
+        """
+
+        :param schema:
+        :type schema: Schema descendant
+        :return:
+        """
         # Ensure body can be JSON decoded
         try:
             json_data = json.loads(self.request.body)
@@ -86,32 +94,51 @@ class BaseApiHandler(RequestHandler):
             self.write_error()
             raise BaseApiError("Expected request body to be JSON. Received '{}'".format(self.request.body))
 
-        # Ensure request contains all required data
-        missing_parameters = []
-        for parameter in self.route.get('parameters', []):
-            parameter.get('required')
-            if parameter.get('required'):
-                if not parameter.get('key') in json_data:
-                    missing_parameters.append(parameter.get('key'))
-        if missing_parameters:
-            self.set_status(self.STATUS_ERROR_EXTERNAL, reason="Missing required parameter(s): {}".format(missing_parameters))
+        request_validation_errors = schema.validate(json_data)
+        if request_validation_errors:
+            self.error_messages = request_validation_errors
+            self.set_status(self.STATUS_ERROR_EXTERNAL, reason="Failed request schema validation")
             self.write_error()
-            raise BaseApiError("Missing required parameter(s): {}".format(missing_parameters))
+            raise BaseApiError("Failed schema validation: {}".format(str(request_validation_errors)))
 
-        return json_data
+        return schema.dump(schema.load(json_data))
 
-    def write_success(self, data = {}):
+    def build_response(self, schema: Schema, response):
+        """
+        Validate the given response against a given Schema.
+        Return the response data as a serialized object according to the given Schema's fields.
+
+        :param schema:
+        :param response:
+        :return:
+        """
+        # Validate that schema.
+        # This is not normally done with responses, but I want to be strict about ensuring the schema is up-to-date
+        validation_errors = schema.validate(response)
+
+        if validation_errors:
+            # Throw an exception here with all the errors.
+            # This will be caught and handled by the 500 internal error
+            raise exceptions.ValidationError(validation_errors)
+
+        # Build schema object from response
+        data = schema.dump(response)
+        return data
+
+    def write_success(self, response=None):
         """
         Write data out as HTTP code 200
         Finishes this response, ending the HTTP request.
 
-        :param data:
+        :param response:
         :return:
         """
+        if response is None:
+            response = {'success': True}
         self.set_status(self.STATUS_SUCCESS)
-        self.finish(data)
+        self.finish(response)
 
-    def write_error(self, **kwargs: Any) -> None:
+    def write_error(self, status_code=None, **kwargs: Any) -> None:
         """
         Set the default error message.
         This overwrites the RequestHandler method.
@@ -125,10 +152,18 @@ class BaseApiHandler(RequestHandler):
         the "current" exception for purposes of methods like
         ``sys.exc_info()`` or ``traceback.format_exc``.
 
+        :param status_code:
         :param kwargs:
         :return:
         """
-        status_code = self.get_status()
+        if status_code is None:
+            status_code = self.get_status()
+        response = {
+            'error':    "%(code)d: %(message)s" % {"code": status_code, "message": self._reason},
+            'messages': {},
+        }
+        if self.error_messages:
+            response['messages'] = self.error_messages
         if self.settings.get("serve_traceback"):
             exc_info = kwargs.get('exc_info')
             if not exc_info:
@@ -139,14 +174,8 @@ class BaseApiHandler(RequestHandler):
             if exc_info and exc_info[0]:
                 for line in traceback.format_exception(*exc_info):
                     traceback_lines.append(line)
-            self.finish({
-                'error':     "%(code)d: %(message)s" % {"code": status_code, "message": self._reason},
-                'traceback': traceback_lines,
-            })
-        else:
-            self.finish({
-                'error': "%(code)d: %(message)s" % {"code": status_code, "message": self._reason},
-            })
+            response['traceback'] = traceback_lines
+        self.finish(response)
 
     def handle_endpoint_not_found(self):
         """
@@ -155,8 +184,11 @@ class BaseApiHandler(RequestHandler):
 
         :return:
         """
+        response = {
+            'error': "%(code)d: Endpoint not found" % {"code": self.STATUS_ERROR_ENDPOINT_NOT_FOUND}
+        }
         self.set_status(self.STATUS_ERROR_ENDPOINT_NOT_FOUND)
-        self.finish({'error': 'Endpoint not found'})
+        self.finish(response)
 
     def handle_method_not_allowed(self):
         """
@@ -165,8 +197,14 @@ class BaseApiHandler(RequestHandler):
 
         :return:
         """
+        response = {
+            'error': "%(code)d: Method '%(method)s' not allowed" % {
+                "code":   self.STATUS_ERROR_METHOD_NOT_ALLOWED,
+                "method": self.request.method
+            }
+        }
         self.set_status(self.STATUS_ERROR_METHOD_NOT_ALLOWED)
-        self.finish({'error': "Method '{}' not allowed".format(self.request.method)})
+        self.finish(response)
 
     def action_route(self):
         """
@@ -192,7 +230,6 @@ class BaseApiHandler(RequestHandler):
                     matched_route_with_unsupported_method = True
                     continue
 
-
                 # This route matches the current request URI and does not have any params.
                 # Set this route and call the configured method.
                 tornado.log.app_log.debug("Routing API to {}.{}()".format(self.__class__.__name__, route.get("call_method")),
@@ -200,8 +237,6 @@ class BaseApiHandler(RequestHandler):
                 self.route = route
                 getattr(self, route.get("call_method"))()
                 return
-
-
 
             # Fetch the path match from this route's path pattern
             path_match = tornado.routing.PathMatches(route.get("path_pattern"))
@@ -254,6 +289,15 @@ class BaseApiHandler(RequestHandler):
     def post(self, path):
         """
         Route all POST requests to the 'action_route()' method
+
+        :param path:
+        :return:
+        """
+        self.action_route()
+
+    def put(self, path):
+        """
+        Route all PUT requests to the 'action_route()' method
 
         :param path:
         :return:

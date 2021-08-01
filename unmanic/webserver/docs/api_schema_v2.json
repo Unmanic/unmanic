@@ -1,0 +1,1079 @@
+{
+    "info": {
+        "description": "Documentation for the Unmanic application API",
+        "title": "Unmanic API",
+        "version": 2
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8888/api/v2/",
+            "description": "Local environment"
+        }
+    ],
+    "paths": {
+        "/docs/privacypolicy": {
+            "get": {
+                "description": "Returns the privacy policy.",
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns the privacy policy.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DocumentContentSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                },
+                ":param args": null,
+                ":param kwargs": null,
+                ":return": null
+            }
+        },
+        "/history/tasks": {
+            "post": {
+                "description": "Returns a list of completed tasks.",
+                "requestBody": {
+                    "description": "Returns a list of completed tasks.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestHistoryTableData"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns a list of completed tasks.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CompletedTasks"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                },
+                ":param args": null,
+                ":param kwargs": null,
+                ":return": null
+            },
+            "delete": {
+                "description": "Delete a list of completed tasks.",
+                "requestBody": {
+                    "description": "Requested list of items to delete.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestTableUpdateByIdList"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success: Deleted a list of completed tasks.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                },
+                ":param args": null,
+                ":param kwargs": null,
+                ":return": null
+            }
+        },
+        "/history/reprocess": {
+            "post": {
+                "description": "Add a list of completed tasks back to the Pending Tasks queue.",
+                "requestBody": {
+                    "description": "Requested list of items to reprocess.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestTableUpdateByIdList"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success: Requested list of items to reprocess.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                },
+                ":param args": null,
+                ":param kwargs": null,
+                ":return": null
+            }
+        },
+        "/pending/tasks": {
+            "post": {
+                "description": "Returns a list of pending tasks.",
+                "requestBody": {
+                    "description": "Returns a list of pending tasks.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestPendingTableData"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns a list of pending tasks.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PendingTasks"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                },
+                ":param args": null,
+                ":param kwargs": null,
+                ":return": null
+            },
+            "delete": {
+                "description": "Delete a list of pending tasks.",
+                "requestBody": {
+                    "description": "Requested list of items to delete.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestTableUpdateByIdList"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success: Deleted a list of pending tasks.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                },
+                ":param args": null,
+                ":param kwargs": null,
+                ":return": null
+            }
+        },
+        "/pending/reorder": {
+            "post": {
+                "description": "Reorder a list of pending tasks.",
+                "requestBody": {
+                    "description": "Requested list of items to reorder.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestPendingTasksReorder"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success: Reorder a list of pending tasks.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                },
+                ":param args": null,
+                ":param kwargs": null,
+                ":return": null
+            }
+        },
+        "/session/state": {
+            "get": {
+                "description": "Returns the application session state.",
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns the application session state.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SessionStateSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                },
+                ":param args": null,
+                ":param kwargs": null,
+                ":return": null
+            }
+        },
+        "/session/reload": {
+            "put": {
+                "description": "Reload the current session.",
+                "responses": {
+                    "200": {
+                        "description": "Success: Reloaded the current session.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                },
+                ":param args": null,
+                ":param kwargs": null,
+                ":return": null
+            }
+        },
+        "/version/read": {
+            "get": {
+                "description": "Returns the application version.",
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns the application version.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VersionReadSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                },
+                ":param args": null,
+                ":param kwargs": null,
+                ":return": null
+            }
+        }
+    },
+    "openapi": "3.0.2",
+    "components": {
+        "schemas": {
+            "DocumentContentSuccess": {
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "array",
+                        "minItems": 1,
+                        "description": "Document contents read line-by-line into a list",
+                        "example": [
+                            "First line\n",
+                            "Second line\n",
+                            "\n"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "content"
+                ]
+            },
+            "BadRequest": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "description": "Return status code and reason",
+                        "example": "400: Failed request schema validation"
+                    },
+                    "messages": {
+                        "type": "object",
+                        "description": "Attached request body validation errors",
+                        "example": {
+                            "name": [
+                                "The thing that went wrong."
+                            ]
+                        }
+                    },
+                    "traceback": {
+                        "type": "array",
+                        "description": "Attached exception traceback (if developer mode is enabled)",
+                        "example": [
+                            "Traceback (most recent call last):\n",
+                            "...",
+                            "json.decoder.JSONDecodeError: Expecting value: line 3 column 14 (char 45)\n"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "error",
+                    "messages"
+                ]
+            },
+            "BadEndpoint": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "description": "Return status code and reason",
+                        "example": "404: Endpoint not found"
+                    }
+                },
+                "required": [
+                    "error"
+                ]
+            },
+            "BadMethod": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "description": "Return status code and reason",
+                        "example": "405: Method 'GET' not allowed"
+                    }
+                },
+                "required": [
+                    "error"
+                ]
+            },
+            "InternalError": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "description": "Return status code and reason",
+                        "example": "500: Caught exception message"
+                    },
+                    "messages": {
+                        "type": "object",
+                        "description": "Attached request body validation errors",
+                        "example": {
+                            "name": [
+                                "The thing that went wrong."
+                            ]
+                        }
+                    },
+                    "traceback": {
+                        "type": "array",
+                        "description": "Attached exception traceback (if developer mode is enabled)",
+                        "example": [
+                            "Traceback (most recent call last):\n",
+                            "...",
+                            "json.decoder.JSONDecodeError: Expecting value: line 3 column 14 (char 45)\n"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "error",
+                    "messages"
+                ]
+            },
+            "RequestHistoryTableData": {
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Start row number to select from",
+                        "example": 0
+                    },
+                    "length": {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of rows to select",
+                        "example": 10
+                    },
+                    "search_value": {
+                        "type": "string",
+                        "default": "",
+                        "description": "String to filter search results by",
+                        "example": "items with this text in the value"
+                    },
+                    "order_by": {
+                        "type": "string",
+                        "default": "finish_time",
+                        "example": "finish_time"
+                    },
+                    "order_direction": {
+                        "type": "string",
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "description": "Order direction ('asc' or 'desc')",
+                        "example": "desc"
+                    }
+                }
+            },
+            "CompletedTasksResults": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Item ID",
+                        "example": 1
+                    },
+                    "task_label": {
+                        "type": "string",
+                        "description": "Item label",
+                        "example": "example.mp4"
+                    },
+                    "task_success": {
+                        "type": "boolean",
+                        "description": "Item success status",
+                        "example": true
+                    },
+                    "finish_time": {
+                        "type": "integer",
+                        "description": "Item finish time",
+                        "example": 1627392616.6400812
+                    }
+                },
+                "required": [
+                    "finish_time",
+                    "id",
+                    "task_label",
+                    "task_success"
+                ]
+            },
+            "CompletedTasks": {
+                "type": "object",
+                "properties": {
+                    "recordsTotal": {
+                        "type": "integer",
+                        "description": "Total number of records in this table",
+                        "example": 329
+                    },
+                    "recordsFiltered": {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Total number of records after filters have been applied",
+                        "example": 10
+                    },
+                    "results": {
+                        "minItems": 1,
+                        "description": "Results",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CompletedTasksResults"
+                        }
+                    },
+                    "successCount": {
+                        "type": "integer",
+                        "description": "Total count of times with a success status in the results list",
+                        "example": 337
+                    },
+                    "failedCount": {
+                        "type": "integer",
+                        "description": "Total count of times with a failed status in the results list",
+                        "example": 2
+                    }
+                },
+                "required": [
+                    "failedCount",
+                    "results",
+                    "successCount"
+                ]
+            },
+            "RequestTableUpdateByIdList": {
+                "type": "object",
+                "properties": {
+                    "id_list": {
+                        "type": "array",
+                        "minItems": 1,
+                        "description": "Start row number to select from",
+                        "example": 0,
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "required": [
+                    "id_list"
+                ]
+            },
+            "BaseSuccess": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "This is always \"True\" when a request succeeds",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "success"
+                ]
+            },
+            "RequestPendingTableData": {
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Start row number to select from",
+                        "example": 0
+                    },
+                    "length": {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of rows to select",
+                        "example": 10
+                    },
+                    "search_value": {
+                        "type": "string",
+                        "default": "",
+                        "description": "String to filter search results by",
+                        "example": "items with this text in the value"
+                    },
+                    "order_by": {
+                        "type": "string",
+                        "default": "priority",
+                        "example": "priority"
+                    },
+                    "order_direction": {
+                        "type": "string",
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "description": "Order direction ('asc' or 'desc')",
+                        "example": "desc"
+                    }
+                }
+            },
+            "PendingTasks": {
+                "type": "object",
+                "properties": {
+                    "recordsTotal": {
+                        "type": "integer",
+                        "description": "Total number of records in this table",
+                        "example": 329
+                    },
+                    "recordsFiltered": {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Total number of records after filters have been applied",
+                        "example": 10
+                    },
+                    "results": {
+                        "minItems": 0,
+                        "description": "Results",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CompletedTasksResults"
+                        }
+                    }
+                },
+                "required": [
+                    "results"
+                ]
+            },
+            "RequestPendingTasksReorder": {
+                "type": "object",
+                "properties": {
+                    "id_list": {
+                        "type": "array",
+                        "minItems": 1,
+                        "description": "Start row number to select from",
+                        "example": 0,
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "position": {
+                        "type": "string",
+                        "enum": [
+                            "top",
+                            "bottom"
+                        ],
+                        "description": "Position to move given list of items to ('top' or 'bottom')",
+                        "example": "top"
+                    }
+                },
+                "required": [
+                    "id_list",
+                    "position"
+                ]
+            },
+            "SessionStateSuccess": {
+                "type": "object",
+                "properties": {
+                    "level": {
+                        "type": "integer",
+                        "description": "User level",
+                        "example": 0
+                    },
+                    "picture_uri": {
+                        "type": "string",
+                        "description": "User picture",
+                        "example": "https://c8.patreon.com/2/200/561356054"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "User name",
+                        "example": "ExampleUsername123"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "User email",
+                        "example": "example@gmail.com"
+                    },
+                    "created": {
+                        "type": "number",
+                        "description": "Session time created",
+                        "example": 1627793093.676484
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "description": "Installation uuid",
+                        "example": "b429fcc7-9ce1-bcb3-2b8a-b094747f226e"
+                    }
+                },
+                "required": [
+                    "level",
+                    "uuid"
+                ]
+            },
+            "VersionReadSuccess": {
+                "type": "object",
+                "properties": {
+                    "version": {
+                        "type": "string",
+                        "description": "Application version",
+                        "example": "1.0.0"
+                    }
+                },
+                "required": [
+                    "version"
+                ]
+            }
+        }
+    }
+}

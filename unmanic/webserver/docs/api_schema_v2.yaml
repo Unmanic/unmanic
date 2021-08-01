@@ -1,0 +1,722 @@
+components:
+  schemas:
+    BadEndpoint:
+      properties:
+        error:
+          description: Return status code and reason
+          example: '404: Endpoint not found'
+          type: string
+      required:
+      - error
+      type: object
+    BadMethod:
+      properties:
+        error:
+          description: Return status code and reason
+          example: '405: Method ''GET'' not allowed'
+          type: string
+      required:
+      - error
+      type: object
+    BadRequest:
+      properties:
+        error:
+          description: Return status code and reason
+          example: '400: Failed request schema validation'
+          type: string
+        messages:
+          description: Attached request body validation errors
+          example: &id001
+            name:
+            - The thing that went wrong.
+          type: object
+        traceback:
+          description: Attached exception traceback (if developer mode is enabled)
+          example: &id002
+          - 'Traceback (most recent call last):
+
+            '
+          - '...'
+          - 'json.decoder.JSONDecodeError: Expecting value: line 3 column 14 (char
+            45)
+
+            '
+          items:
+            type: string
+          type: array
+      required:
+      - error
+      - messages
+      type: object
+    BaseSuccess:
+      properties:
+        success:
+          description: This is always "True" when a request succeeds
+          example: true
+          type: boolean
+      required:
+      - success
+      type: object
+    CompletedTasks:
+      properties:
+        recordsTotal:
+          description: Total number of records in this table
+          example: 329
+          type: integer
+        recordsFiltered:
+          default: 10
+          description: Total number of records after filters have been applied
+          example: 10
+          type: integer
+        results:
+          description: Results
+          items:
+            $ref: '#/components/schemas/CompletedTasksResults'
+          minItems: 1
+          type: array
+        successCount:
+          description: Total count of times with a success status in the results list
+          example: 337
+          type: integer
+        failedCount:
+          description: Total count of times with a failed status in the results list
+          example: 2
+          type: integer
+      required:
+      - failedCount
+      - results
+      - successCount
+      type: object
+    CompletedTasksResults:
+      properties:
+        id:
+          description: Item ID
+          example: 1
+          type: integer
+        task_label:
+          description: Item label
+          example: example.mp4
+          type: string
+        task_success:
+          description: Item success status
+          example: true
+          type: boolean
+        finish_time:
+          description: Item finish time
+          example: 1627392616.6400812
+          type: integer
+      required:
+      - finish_time
+      - id
+      - task_label
+      - task_success
+      type: object
+    DocumentContentSuccess:
+      properties:
+        content:
+          description: Document contents read line-by-line into a list
+          example:
+          - 'First line
+
+            '
+          - 'Second line
+
+            '
+          - '
+
+            '
+          items:
+            type: string
+          minItems: 1
+          type: array
+      required:
+      - content
+      type: object
+    InternalError:
+      properties:
+        error:
+          description: Return status code and reason
+          example: '500: Caught exception message'
+          type: string
+        messages:
+          description: Attached request body validation errors
+          example: *id001
+          type: object
+        traceback:
+          description: Attached exception traceback (if developer mode is enabled)
+          example: *id002
+          items:
+            type: string
+          type: array
+      required:
+      - error
+      - messages
+      type: object
+    PendingTasks:
+      properties:
+        recordsTotal:
+          description: Total number of records in this table
+          example: 329
+          type: integer
+        recordsFiltered:
+          default: 10
+          description: Total number of records after filters have been applied
+          example: 10
+          type: integer
+        results:
+          description: Results
+          items:
+            $ref: '#/components/schemas/CompletedTasksResults'
+          minItems: 0
+          type: array
+      required:
+      - results
+      type: object
+    RequestHistoryTableData:
+      properties:
+        start:
+          default: 0
+          description: Start row number to select from
+          example: 0
+          type: integer
+        length:
+          default: 10
+          description: Number of rows to select
+          example: 10
+          type: integer
+        search_value:
+          default: ''
+          description: String to filter search results by
+          example: items with this text in the value
+          type: string
+        order_by:
+          default: finish_time
+          example: finish_time
+          type: string
+        order_direction:
+          description: Order direction ('asc' or 'desc')
+          enum:
+          - asc
+          - desc
+          example: desc
+          type: string
+      type: object
+    RequestPendingTableData:
+      properties:
+        start:
+          default: 0
+          description: Start row number to select from
+          example: 0
+          type: integer
+        length:
+          default: 10
+          description: Number of rows to select
+          example: 10
+          type: integer
+        search_value:
+          default: ''
+          description: String to filter search results by
+          example: items with this text in the value
+          type: string
+        order_by:
+          default: priority
+          example: priority
+          type: string
+        order_direction:
+          description: Order direction ('asc' or 'desc')
+          enum:
+          - asc
+          - desc
+          example: desc
+          type: string
+      type: object
+    RequestPendingTasksReorder:
+      properties:
+        id_list:
+          description: Start row number to select from
+          example: 0
+          items:
+            type: integer
+          minItems: 1
+          type: array
+        position:
+          description: Position to move given list of items to ('top' or 'bottom')
+          enum:
+          - top
+          - bottom
+          example: top
+          type: string
+      required:
+      - id_list
+      - position
+      type: object
+    RequestTableUpdateByIdList:
+      properties:
+        id_list:
+          description: Start row number to select from
+          example: 0
+          items:
+            type: integer
+          minItems: 1
+          type: array
+      required:
+      - id_list
+      type: object
+    SessionStateSuccess:
+      properties:
+        level:
+          description: User level
+          example: 0
+          type: integer
+        picture_uri:
+          description: User picture
+          example: https://c8.patreon.com/2/200/561356054
+          type: string
+        name:
+          description: User name
+          example: ExampleUsername123
+          type: string
+        email:
+          description: User email
+          example: example@gmail.com
+          type: string
+        created:
+          description: Session time created
+          example: 1627793093.676484
+          type: number
+        uuid:
+          description: Installation uuid
+          example: b429fcc7-9ce1-bcb3-2b8a-b094747f226e
+          type: string
+      required:
+      - level
+      - uuid
+      type: object
+    VersionReadSuccess:
+      properties:
+        version:
+          description: Application version
+          example: 1.0.0
+          type: string
+      required:
+      - version
+      type: object
+info:
+  description: Documentation for the Unmanic application API
+  title: Unmanic API
+  version: 2
+openapi: 3.0.2
+paths:
+  /docs/privacypolicy:
+    get:
+      :param args: null
+      :param kwargs: null
+      :return: null
+      description: Returns the privacy policy.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentContentSuccess'
+          description: 'Sample response: Returns the privacy policy.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /history/tasks:
+    post:
+      :param args: null
+      :param kwargs: null
+      :return: null
+      description: Returns a list of completed tasks.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestHistoryTableData'
+        description: Returns a list of completed tasks.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletedTasks'
+          description: 'Sample response: Returns a list of completed tasks.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+    delete:
+      :param args: null
+      :param kwargs: null
+      :return: null
+      description: Delete a list of completed tasks.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestTableUpdateByIdList'
+        description: Requested list of items to delete.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Success: Deleted a list of completed tasks.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /history/reprocess:
+    post:
+      :param args: null
+      :param kwargs: null
+      :return: null
+      description: Add a list of completed tasks back to the Pending Tasks queue.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestTableUpdateByIdList'
+        description: Requested list of items to reprocess.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Success: Requested list of items to reprocess.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /pending/tasks:
+    post:
+      :param args: null
+      :param kwargs: null
+      :return: null
+      description: Returns a list of pending tasks.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestPendingTableData'
+        description: Returns a list of pending tasks.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingTasks'
+          description: 'Sample response: Returns a list of pending tasks.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+    delete:
+      :param args: null
+      :param kwargs: null
+      :return: null
+      description: Delete a list of pending tasks.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestTableUpdateByIdList'
+        description: Requested list of items to delete.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Success: Deleted a list of pending tasks.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /pending/reorder:
+    post:
+      :param args: null
+      :param kwargs: null
+      :return: null
+      description: Reorder a list of pending tasks.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestPendingTasksReorder'
+        description: Requested list of items to reorder.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Success: Reorder a list of pending tasks.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /session/state:
+    get:
+      :param args: null
+      :param kwargs: null
+      :return: null
+      description: Returns the application session state.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStateSuccess'
+          description: 'Sample response: Returns the application session state.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /session/reload:
+    put:
+      :param args: null
+      :param kwargs: null
+      :return: null
+      description: Reload the current session.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Success: Reloaded the current session.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /version/read:
+    get:
+      :param args: null
+      :param kwargs: null
+      :return: null
+      description: Returns the application version.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionReadSuccess'
+          description: 'Sample response: Returns the application version.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+servers:
+- description: Local environment
+  url: http://localhost:8888/api/v2/

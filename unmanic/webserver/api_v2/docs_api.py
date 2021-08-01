@@ -35,10 +35,10 @@ import tornado.log
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
+from unmanic.webserver.api_v2.schema.schemas import DocumentContentSuccessSchema
 
 
 class ApiDocsHandler(BaseApiHandler):
-    name = None
     session = None
     config = None
     params = None
@@ -53,13 +53,52 @@ class ApiDocsHandler(BaseApiHandler):
     ]
 
     def initialize(self, **kwargs):
-        self.name = 'session_api'
         self.session = session.Session()
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
 
     def get_privacy_policy(self, *args, **kwargs):
+        """
+        Docs - read privacy policy
+        ---
+        description: Returns the privacy policy.
+        responses:
+            200:
+                description: 'Sample response: Returns the privacy policy.'
+                content:
+                    application/json:
+                        schema:
+                            DocumentContentSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
         try:
             privacy_policy_content = []
             privacy_policy_file = os.path.join(os.path.dirname(__file__), '..', 'docs', 'privacy_policy.md')
@@ -71,9 +110,13 @@ class ApiDocsHandler(BaseApiHandler):
                 self.write_error()
                 return
             else:
-                self.write_success({
-                    "content": privacy_policy_content,
-                })
+                response = self.build_response(
+                    DocumentContentSuccessSchema(),
+                    {
+                        "content": privacy_policy_content,
+                    }
+                )
+                self.write_success(response)
                 return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

@@ -62,7 +62,7 @@ class ApiSessionHandler(BaseApiHandler):
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
 
-    def get_session_state(self, *args, **kwargs):
+    def get_session_state(self):
         """
         Session - state
         ---
@@ -98,10 +98,6 @@ class ApiSessionHandler(BaseApiHandler):
                     application/json:
                         schema:
                             InternalErrorSchema
-
-        :param args:
-        :param kwargs:
-        :return:
         """
         try:
             if not self.session.created:
@@ -129,7 +125,7 @@ class ApiSessionHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def session_reload(self, *args, **kwargs):
+    def session_reload(self):
         """
         Session - reload
         ---
@@ -165,10 +161,6 @@ class ApiSessionHandler(BaseApiHandler):
                     application/json:
                         schema:
                             InternalErrorSchema
-
-        :param args:
-        :param kwargs:
-        :return:
         """
         try:
             if not self.session.register_unmanic(self.session.get_installation_uuid(), force=True):

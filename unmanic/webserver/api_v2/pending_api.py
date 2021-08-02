@@ -69,7 +69,7 @@ class ApiPendingHandler(BaseApiHandler):
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
 
-    def get_pending_tasks(self, *args, **kwargs):
+    def get_pending_tasks(self):
         """
         Pending - list tasks
         ---
@@ -112,10 +112,6 @@ class ApiPendingHandler(BaseApiHandler):
                     application/json:
                         schema:
                             InternalErrorSchema
-
-        :param args:
-        :param kwargs:
-        :return:
         """
         try:
             json_request = self.read_json_request(RequestPendingTableDataSchema())
@@ -148,7 +144,7 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def delete_pending_tasks(self, *args, **kwargs):
+    def delete_pending_tasks(self):
         """
         Pending - delete
         ---
@@ -191,10 +187,6 @@ class ApiPendingHandler(BaseApiHandler):
                     application/json:
                         schema:
                             InternalErrorSchema
-
-        :param args:
-        :param kwargs:
-        :return:
         """
         try:
             json_request = self.read_json_request(RequestTableUpdateByIdList())
@@ -213,7 +205,7 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def reorder_pending_tasks(self, *args, **kwargs):
+    def reorder_pending_tasks(self):
         """
         Pending - reorder
         ---
@@ -256,10 +248,6 @@ class ApiPendingHandler(BaseApiHandler):
                     application/json:
                         schema:
                             InternalErrorSchema
-
-        :param args:
-        :param kwargs:
-        :return:
         """
         try:
             json_request = self.read_json_request(RequestPendingTasksReorderSchema())

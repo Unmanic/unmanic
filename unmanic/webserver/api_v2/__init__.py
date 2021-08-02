@@ -36,6 +36,7 @@ import warnings
 from .docs_api import ApiDocsHandler
 from .history_api import ApiHistoryHandler
 from .pending_api import ApiPendingHandler
+from .plugins_api import ApiPluginsHandler
 from .session_api import ApiSessionHandler
 from .version_api import ApiVersionHandler
 
@@ -45,6 +46,7 @@ __all__ = (
     'ApiDocsHandler',
     'ApiHistoryHandler',
     'ApiPendingHandler',
+    'ApiPluginsHandler',
     'ApiSessionHandler',
     'ApiVersionHandler',
 )

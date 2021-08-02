@@ -33,6 +33,7 @@ import importlib
 import json
 import os
 
+import yaml
 from apispec import APISpec
 from apispec.exceptions import APISpecError
 from apispec.ext.marshmallow import MarshmallowPlugin
@@ -40,7 +41,16 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from unmanic.webserver.api_v2 import list_all_handlers
 from unmanic.webserver.api_v2.schema.unmanic import UnmanicSpecPlugin
 
-api_version = 2
+API_VERSION = "2"
+OPENAPI_SPEC_SECURITY = """
+components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+security:
+  - BasicAuth: []
+"""
 
 
 def find_all_handlers():
@@ -61,19 +71,21 @@ def generate_swagger_file():
     """
     errors = []
 
-    file_location = os.path.join(os.path.dirname(__file__), '..', '..', 'docs', 'api_schema_v{}'.format(api_version))
+    file_location = os.path.join(os.path.dirname(__file__), '..', '..', 'docs', 'api_schema_v{}'.format(API_VERSION))
 
     # Starting to generate Swagger spec file. All the relevant
     # information can be found from here https://apispec.readthedocs.io/
+    security_settings = yaml.safe_load(OPENAPI_SPEC_SECURITY)
     spec = APISpec(
         title="Unmanic API",
-        version=api_version,
-        openapi_version="3.0.2",
+        version=str(API_VERSION),
+        openapi_version="3.0.0",
         info=dict(description="Documentation for the Unmanic application API"),
         plugins=[UnmanicSpecPlugin(), MarshmallowPlugin()],
         servers=[
-            {"url": "http://localhost:8888/api/v{}/".format(api_version), "description": "Local environment", },
+            {"url": "http://localhost:8888/api/v{}/".format(API_VERSION), "description": "Local environment", },
         ],
+        **security_settings
     )
     # Looping through all the handlers and trying to register them.
     # Handlers without docstring will raise errors. That's why we
@@ -89,7 +101,8 @@ def generate_swagger_file():
     # Write the Swagger file into specified location.
     with open('{}.json'.format(file_location), "w", encoding="utf-8") as file:
         json.dump(spec.to_dict(), file, ensure_ascii=False, indent=4)
+    # TODO: Remove YAML. It sucks!
     with open('{}.yaml'.format(file_location), "w", encoding="utf-8") as file:
-        file.writelines(spec.to_yaml())
+        file.write(spec.to_yaml())
 
     return errors

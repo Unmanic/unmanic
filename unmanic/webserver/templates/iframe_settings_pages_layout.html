@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="/assets/img/favicon.ico"/>
+
+    <title>{% block title %}{{ _("Site_Name") }}{% end %}</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta content="width=device-width, initial-scale=1" name="viewport"/>
+    <meta content="" name="description"
+          content="Unmanic - a simple tool for optimising your video library to a single, uniform format."/>
+    <meta content="" name="author" content="Josh.5"/>
+
+    <!-- Add the application version for scripts to use -->
+    <script>
+        const UNMANIC_VERSION = '{{ escape(handler.config.read_version()) }}';
+    </script>
+
+    <!-- VENDOR STYLES -->
+    <link rel="stylesheet"
+          href="/assets/vendor/font-awesome/css/font-awesome.css?version={{ escape(handler.config.read_version()) }}"/>
+    <link rel="stylesheet"
+          href="/assets/vendor/simple-line-icons/css/simple-line-icons.css?version={{ escape(handler.config.read_version()) }}"/>
+    <link rel="stylesheet"
+          href="/assets/vendor/socicon/css/socicon.css?version={{ escape(handler.config.read_version()) }}"/>
+    <link rel="stylesheet"
+          href="/assets/vendor/jquery.uniform/themes/default/css/uniform.default.css?version={{ escape(handler.config.read_version()) }}"/>
+    <link rel="stylesheet"
+          href="/assets/vendor/nouislider/dist/nouislider.css?version={{ escape(handler.config.read_version()) }}"/>
+    {% block vendor_style %}{% end %}
+
+    <!-- BUILT STYLES -->
+    <link rel="stylesheet" href="/assets/css/starter.css?version={{ escape(handler.config.read_version()) }}">
+
+    <!-- PLUGIN STYLES -->
+    <link rel="stylesheet"
+          href="/assets/plugins/extendible-bbcode-parser/xbbcode.css?version={{ escape(handler.config.read_version()) }}"/>
+
+    <!-- BEGIN PAGE LEVEL STYLES -->
+    {#TODO: Depricate style for page_plugin_styles#}
+    {% block page_plugin_styles %}{% end %}
+    {% block style %}{% end %}
+    <!-- END PAGE LEVEL STYLES -->
+
+    <!-- THEME STYLES -->
+    <link rel="stylesheet" href="/assets/css/components-md.css">
+    <link rel="stylesheet" href="/assets/css/plugins-md.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+
+    <!-- CUSTOM STYLES -->
+    <link rel="stylesheet" href="/assets/css/custom.css">
+    <link rel="stylesheet" href="/assets/css/lock.css">
+
+    <!-- FONTS -->
+    <link href="//fonts.googleapis.com/css?family=Oswald:400,300,700" rel="stylesheet" type="text/css"/>
+    <link href="//fonts.googleapis.com/css?family=Open+Sans:400,300,600,700&subset=all" rel="stylesheet" type="text/css"/>
+
+    <!-- CUSTOM HEAD ELEMENTS -->
+    {% block head %}{% end %}
+
+    <style>
+        body {
+            background: #fff;
+        }
+        .page-content {
+            margin: 0;
+            padding-top: 24px;
+        }
+        .dropdown-menu {
+            top: 0;
+        }
+    </style>
+</head>
+<!-- END HEAD -->
+
+<body class="page-header-fixed page-sidebar-closed-hide-logo page-md">
+<!-- BEGIN CONTAINER -->
+<div class="wrapper">
+{#
+    <!-- BEGIN HEADER -->
+    <header class="page-header">
+        <nav class="navbar mega-menu" role="navigation">
+            <div class="container-fluid">
+                <!-- BEGIN HEADER MENU -->
+                <div class="nav-collapse collapse navbar-collapse navbar-responsive-collapse">
+                    <ul class="nav navbar-nav">
+                        <li class="dropdown dropdown-fw  {% if handler.name == 'settings' %}active open selected{% end %}">
+                            {% if handler.name == 'settings' %}
+                            <ul class="dropdown-menu dropdown-menu-fw">
+                                <li class="dropdown {% if handler.step == 'general' %}active{% end %}">
+                                    <a href="/settings/?step=general">
+                                        <i class="fa fa-cog"></i> General</a>
+                                </li>
+                                <li class="dropdown {% if handler.step == 'container' %}active{% end %}">
+                                    <a href="/settings/?step=container">
+                                        <i class="fa fa-file-archive-o"></i> Container </a>
+                                </li>
+                                <li class="dropdown {% if handler.step == 'video' %}active{% end %}">
+                                    <a href="/settings/?step=video">
+                                        <i class="fa fa-file-video-o"></i> Video Encoding </a>
+                                </li>
+                                <li class="dropdown {% if handler.step == 'audio' %}active{% end %}">
+                                    <a href="/settings/?step=audio">
+                                        <i class="fa fa-file-audio-o"></i> Audio Encoding </a>
+                                </li>
+                                <li class="dropdown {% if handler.step == 'advanced' %}active{% end %}">
+                                    <a href="/settings/?step=advanced">
+                                        <i class="fa fa-unlock-alt"></i> Advanced Options </a>
+                                </li>
+                                <li class="dropdown {% if handler.step == 'advanced' %}active{% end %}">
+                                    <a href="/settings/?step=plugins">
+                                        <i class="icon-puzzle"></i> Plugins </a>
+                                </li>
+                            </ul>
+                            {% end %}
+                        </li>
+                    </ul>
+                </div>
+                <!-- END HEADER MENU -->
+            </div>
+            <!--/container-->
+        </nav>
+    </header>
+    <!-- END HEADER -->
+#}
+
+    <div class="container-fluid">
+        <div class="page-content" {% if handler.name != 'settings' %}style="padding-top:30px"{% end %} >
+            <!-- BEGIN PAGE BASE CONTENT -->
+            {% block content %}{% end %}
+            {% include "./global/support-future-development.html" %}
+            <!-- END PAGE BASE CONTENT -->
+        </div>
+
+        <!-- BEGIN GLOBAL POPUPS -->
+        {# :components_bootstrap_select: #}
+        <div id="unmanic-filebrowser-popup" class="modal fade" tabindex="-1"></div>
+        <!-- END FOOTER -->
+    </div>
+</div>
+<!-- END CONTAINER -->
+
+
+<!-- VENDOR SCRIPTS -->
+<script src="/assets/vendor/jquery/dist/jquery.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/js-cookie/src/js.cookie.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/jquery-blockui/jquery.blockUI.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/jquery.uniform/dist/jquery.uniform.min.js?version={{ escape(handler.config.read_version()) }}"></script>
+{# TODO: Bump to latest version in NPM repo #}
+<script src="/assets/plugins/jquery-slimscroll/jquery.slimscroll.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/handlebars/dist/handlebars.js?version={{ escape(handler.config.read_version()) }}"></script>
+
+<script src="/assets/vendor/bootstrap-sass/assets/javascripts/bootstrap.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/bootstrap-hover-dropdown/bootstrap-hover-dropdown.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/bootstrap-switch/dist/js/bootstrap-switch.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/vendor/bootstrap-select/dist/js/bootstrap-select.js?version={{ escape(handler.config.read_version()) }}"></script>
+
+<script src="/assets/vendor/nouislider/dist/nouislider.js?version={{ escape(handler.config.read_version()) }}"></script>
+{% block vendor_scripts %}{% end %}
+
+<!-- BUILT SCRIPTS -->
+<script type="module" src="/assets/js/starter.js?version={{ escape(handler.config.read_version()) }}"></script>
+
+<!-- PLUGIN SCRIPTS -->
+
+<!-- BEGIN PAGE LEVEL PLUGIN SCRIPTS -->
+{#TODO: Depricate plugins for page_plugins#}
+{% block page_plugins %}{% end %}
+{% block plugins %}{% end %}
+<!-- END PAGE LEVEL PLUGIN SCRIPTS -->
+
+<!-- THEME SCRIPTS -->
+<script src="/assets/js/app.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/js/lock.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/js/layout.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/js/quick-sidebar.js?version={{ escape(handler.config.read_version()) }}"></script>
+
+<!-- BEGIN PAGE LEVEL THEME SCRIPTS -->
+{#TODO: Depricate plugins for page_plugins#}
+{% block page_theme_scripts %}{% end %}
+{% block scripts %}{% end %}
+<!-- END PAGE LEVEL THEME SCRIPTS -->
+
+<!-- CUSTOM SCRIPTS -->
+<script src="/assets/js/session.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/plugins/extendible-bbcode-parser/xbbcode.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/js/templates.js?version={{ escape(handler.config.read_version()) }}"></script>
+<script src="/assets/js/file-browser.js?version={{ escape(handler.config.read_version()) }}"></script>
+
+<!-- BEGIN CUSTOM INLINE SCRIPTS -->
+{% block inline_scripts %}{% end %}
+<!-- END CUSTOM INLINE SCRIPTS -->
+
+</body>
+
+</html>

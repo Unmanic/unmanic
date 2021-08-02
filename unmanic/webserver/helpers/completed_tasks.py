@@ -45,9 +45,9 @@ def prepare_filtered_completed_tasks(params):
     """
     start = params.get('start', 0)
     length = params.get('length', 0)
+
     search_value = params.get('search_value', '')
 
-    # Force sort order always by ID desc
     order = params.get('order', {
         "column": 'finish_time',
         "dir":    'desc',

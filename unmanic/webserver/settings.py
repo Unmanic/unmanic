@@ -58,8 +58,14 @@ class SettingsUIRequestHandler(tornado.web.RequestHandler):
         step_list = self.get_query_arguments('step')
         if step_list:
             self.step = step_list[0]
-        self.components = [x for x in self.request.path.split("/") if x]
-        self.render("settings/settings.html", config=self.config, session=self.session)
+        if self.step == 'plugins':
+            # Move plugins to settings for now...
+            # This will all be deprecated once migrated to the new frontend
+            data = self.get_plugin_data()
+            self.render("plugins/plugins.html", config=self.config, data=data, session=self.session)
+        else:
+            self.components = [x for x in self.request.path.split("/") if x]
+            self.render("settings/settings.html", config=self.config, session=self.session)
 
     def post(self, path):
         if self.get_body_arguments('ajax'):
@@ -93,3 +99,29 @@ class SettingsUIRequestHandler(tornado.web.RequestHandler):
         elif query == 'reload_audio_stream_encoder_cloning_selection':
             self.config.set_config_item('audio_codec_cloning', self.get_argument('selected_audio_codec_cloning'))
             self.render("settings/audio_encoding/audio_stream_encoder_cloning.html", config=self.config)
+
+    def get_plugin_data(self):
+        return {
+            'plugin_types': [
+                {
+                    'id':          'library_management_file_test',
+                    'name':        'Library Management - File test',
+                    'plugin_type': 'library_management.file_test',
+                },
+                {
+                    'id':          'worker_process',
+                    'name':        'Worker - Processing file',
+                    'plugin_type': 'worker.process_item',
+                },
+                {
+                    'id':          'postprocessor_file_movement',
+                    'name':        'Post-processor - File movements',
+                    'plugin_type': 'postprocessor.file_move',
+                },
+                {
+                    'id':          'postprocessor_task_results',
+                    'name':        'Post-processor - Marking task success/failure',
+                    'plugin_type': 'postprocessor.task_result',
+                },
+            ]
+        }

@@ -72,7 +72,7 @@ class ApiHistoryHandler(BaseApiHandler):
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
         self.config = config.CONFIG()
 
-    def get_completed_tasks(self, *args, **kwargs):
+    def get_completed_tasks(self):
         """
         History - list tasks
         ---
@@ -115,10 +115,6 @@ class ApiHistoryHandler(BaseApiHandler):
                     application/json:
                         schema:
                             InternalErrorSchema
-
-        :param args:
-        :param kwargs:
-        :return:
         """
         try:
             json_request = self.read_json_request(RequestHistoryTableDataSchema())
@@ -153,7 +149,7 @@ class ApiHistoryHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def delete_completed_tasks(self, *args, **kwargs):
+    def delete_completed_tasks(self):
         """
         History - delete
         ---
@@ -196,10 +192,6 @@ class ApiHistoryHandler(BaseApiHandler):
                     application/json:
                         schema:
                             InternalErrorSchema
-
-        :param args:
-        :param kwargs:
-        :return:
         """
         try:
             json_request = self.read_json_request(RequestTableUpdateByIdList())
@@ -218,7 +210,7 @@ class ApiHistoryHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def add_completed_tasks_to_pending_list(self, *args, **kwargs):
+    def add_completed_tasks_to_pending_list(self):
         """
         History - reprocess
         ---
@@ -261,10 +253,6 @@ class ApiHistoryHandler(BaseApiHandler):
                     application/json:
                         schema:
                             InternalErrorSchema
-
-        :param args:
-        :param kwargs:
-        :return:
         """
         try:
             json_request = self.read_json_request(RequestTableUpdateByIdList())

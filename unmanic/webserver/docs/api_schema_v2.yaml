@@ -71,7 +71,7 @@ components:
         results:
           description: Results
           items:
-            $ref: '#/components/schemas/CompletedTasksResults'
+            $ref: '#/components/schemas/CompletedTasksTableResults'
           minItems: 1
           type: array
         successCount:
@@ -87,7 +87,7 @@ components:
       - results
       - successCount
       type: object
-    CompletedTasksResults:
+    CompletedTasksTableResults:
       properties:
         id:
           description: Item ID
@@ -166,11 +166,114 @@ components:
         results:
           description: Results
           items:
-            $ref: '#/components/schemas/CompletedTasksResults'
+            $ref: '#/components/schemas/PendingTasksTableResults'
           minItems: 0
           type: array
       required:
       - results
+      type: object
+    PendingTasksTableResults:
+      properties:
+        id:
+          description: Item ID
+          example: 1
+          type: integer
+        abspath:
+          description: File absolute path
+          example: example.mp4
+          type: string
+        priority:
+          description: The current priority (higher is greater)
+          example: 100
+          type: integer
+      required:
+      - abspath
+      - id
+      - priority
+      type: object
+    PluginStatus:
+      properties:
+        enabled:
+          description: Is the plugin enabled
+          example: true
+          type: boolean
+        update_available:
+          description: Does the plugin have an update available
+          example: true
+          type: boolean
+      required:
+      - enabled
+      - update_available
+      type: object
+    PluginsData:
+      properties:
+        recordsTotal:
+          description: Total number of records in this table
+          example: 329
+          type: integer
+        recordsFiltered:
+          default: 10
+          description: Total number of records after filters have been applied
+          example: 10
+          type: integer
+        results:
+          description: Results
+          items:
+            $ref: '#/components/schemas/PluginsTableResults'
+          minItems: 0
+          type: array
+      required:
+      - results
+      type: object
+    PluginsTableResults:
+      properties:
+        id:
+          description: Item ID
+          example: 1
+          type: integer
+        plugin_id:
+          description: The plugin ID
+          example: encoder_video_h264_nvenc
+          type: string
+        icon:
+          description: The plugin icon
+          example: https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png
+          type: string
+        name:
+          description: The plugin name
+          example: Video Encoder H264 - h264_nvenc
+          type: string
+        description:
+          description: The plugin description
+          example: Ensure all video streams are encoded with the H264 codec using
+            the h264_nvenc encoder.
+          type: string
+        tags:
+          description: The plugin tags
+          example: video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia
+          type: string
+        author:
+          description: The plugin author
+          example: encoder_video_h264_nvenc
+          type: string
+        version:
+          description: The plugin version
+          example: Josh.5
+          type: string
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PluginStatus'
+          description: The plugin status
+      required:
+      - author
+      - description
+      - icon
+      - id
+      - name
+      - plugin_id
+      - status
+      - tags
+      - version
       type: object
     RequestHistoryTableData:
       properties:
@@ -250,6 +353,35 @@ components:
       - id_list
       - position
       type: object
+    RequestPluginsTableData:
+      properties:
+        start:
+          default: 0
+          description: Start row number to select from
+          example: 0
+          type: integer
+        length:
+          default: 10
+          description: Number of rows to select
+          example: 10
+          type: integer
+        search_value:
+          default: ''
+          description: String to filter search results by
+          example: items with this text in the value
+          type: string
+        order_by:
+          default: name
+          example: name
+          type: string
+        order_direction:
+          description: Order direction ('asc' or 'desc')
+          enum:
+          - asc
+          - desc
+          example: desc
+          type: string
+      type: object
     RequestTableUpdateByIdList:
       properties:
         id_list:
@@ -301,17 +433,18 @@ components:
       required:
       - version
       type: object
+  securitySchemes:
+    BasicAuth:
+      scheme: basic
+      type: http
 info:
   description: Documentation for the Unmanic application API
   title: Unmanic API
-  version: 2
-openapi: 3.0.2
+  version: '2'
+openapi: 3.0.0
 paths:
   /docs/privacypolicy:
     get:
-      :param args: null
-      :param kwargs: null
-      :return: null
       description: Returns the privacy policy.
       responses:
         '200':
@@ -346,9 +479,6 @@ paths:
           description: Internal error; Check `error` for exception
   /history/tasks:
     post:
-      :param args: null
-      :param kwargs: null
-      :return: null
       description: Returns a list of completed tasks.
       requestBody:
         content:
@@ -389,9 +519,6 @@ paths:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
     delete:
-      :param args: null
-      :param kwargs: null
-      :return: null
       description: Delete a list of completed tasks.
       requestBody:
         content:
@@ -433,9 +560,6 @@ paths:
           description: Internal error; Check `error` for exception
   /history/reprocess:
     post:
-      :param args: null
-      :param kwargs: null
-      :return: null
       description: Add a list of completed tasks back to the Pending Tasks queue.
       requestBody:
         content:
@@ -477,9 +601,6 @@ paths:
           description: Internal error; Check `error` for exception
   /pending/tasks:
     post:
-      :param args: null
-      :param kwargs: null
-      :return: null
       description: Returns a list of pending tasks.
       requestBody:
         content:
@@ -520,9 +641,6 @@ paths:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
     delete:
-      :param args: null
-      :param kwargs: null
-      :return: null
       description: Delete a list of pending tasks.
       requestBody:
         content:
@@ -564,9 +682,6 @@ paths:
           description: Internal error; Check `error` for exception
   /pending/reorder:
     post:
-      :param args: null
-      :param kwargs: null
-      :return: null
       description: Reorder a list of pending tasks.
       requestBody:
         content:
@@ -606,11 +721,213 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
+  /plugins/installed:
+    post:
+      description: Returns a list of installed plugins.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestPluginsTableData'
+        description: Returns a list of installed plugins.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginsData'
+          description: 'Sample response: Returns a list of installed plugins.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/enable:
+    post:
+      description: Enable a list of plugins.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestTableUpdateByIdList'
+        description: Requested list of plugins to enable.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Success: Deleted a list of completed tasks.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/disable:
+    post:
+      description: Disable a list of plugins.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestTableUpdateByIdList'
+        description: Requested list of plugins to disable.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Success: Deleted a list of completed tasks.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/update:
+    post:
+      description: Update a list of plugins.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestTableUpdateByIdList'
+        description: Requested list of plugins to update.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Success: Deleted a list of completed tasks.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/remove:
+    delete:
+      description: Remove a list of plugins.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestTableUpdateByIdList'
+        description: Requested list of plugins to remove.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Success: Deleted a list of completed tasks.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
   /session/state:
     get:
-      :param args: null
-      :param kwargs: null
-      :return: null
       description: Returns the application session state.
       responses:
         '200':
@@ -645,9 +962,6 @@ paths:
           description: Internal error; Check `error` for exception
   /session/reload:
     put:
-      :param args: null
-      :param kwargs: null
-      :return: null
       description: Reload the current session.
       responses:
         '200':
@@ -682,9 +996,6 @@ paths:
           description: Internal error; Check `error` for exception
   /version/read:
     get:
-      :param args: null
-      :param kwargs: null
-      :return: null
       description: Returns the application version.
       responses:
         '200':
@@ -717,6 +1028,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
+security:
+- BasicAuth: []
 servers:
 - description: Local environment
   url: http://localhost:8888/api/v2/

@@ -59,7 +59,7 @@ class ApiVersionHandler(BaseApiHandler):
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
         self.config = config.CONFIG()
 
-    def get_unmanic_version(self, *args, **kwargs):
+    def get_unmanic_version(self):
         """
         Version - read
         ---
@@ -95,10 +95,6 @@ class ApiVersionHandler(BaseApiHandler):
                     application/json:
                         schema:
                             InternalErrorSchema
-
-        :param args:
-        :param kwargs:
-        :return:
         """
         try:
             version = self.config.read_version()

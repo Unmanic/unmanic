@@ -103,9 +103,9 @@ def prepare_filtered_pending_tasks(params):
     """
     start = params.get('start', 0)
     length = params.get('length', 0)
+
     search_value = params.get('search_value', '')
 
-    # Force sort order always by ID desc
     order = params.get('order', {
         "column": 'priority',
         "dir":    'desc',
@@ -137,7 +137,6 @@ def prepare_filtered_pending_tasks(params):
             'id':       pending_task['id'],
             'abspath':  pending_task['abspath'],
             'priority': pending_task['priority'],
-            'status':   pending_task['status'],
         }
         return_data["results"].append(item)
 

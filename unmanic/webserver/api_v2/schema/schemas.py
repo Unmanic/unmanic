@@ -209,7 +209,7 @@ class RequestHistoryTableDataSchema(RequestTableDataSchema):
     )
 
 
-class CompletedTasksResultsSchema(BaseSchema):
+class CompletedTasksTableResultsSchema(BaseSchema):
     """Schema for completed tasks results returned by the table"""
 
     id = fields.Int(
@@ -235,7 +235,7 @@ class CompletedTasksResultsSchema(BaseSchema):
 
 
 class CompletedTasksSchema(TableRecordsSuccessSchema):
-    """Schema for updating completed task table by ID"""
+    """Schema for returning a list of completed task results"""
 
     successCount = fields.Int(
         required=True,
@@ -248,7 +248,7 @@ class CompletedTasksSchema(TableRecordsSuccessSchema):
         example=2,
     )
     results = fields.Nested(
-        CompletedTasksResultsSchema,
+        CompletedTasksTableResultsSchema,
         required=True,
         description="Results",
         many=True,
@@ -268,7 +268,7 @@ class RequestPendingTableDataSchema(RequestTableDataSchema):
     )
 
 
-class PendingTasksResultsSchema(BaseSchema):
+class PendingTasksTableResultsSchema(BaseSchema):
     """Schema for pending task results returned by the table"""
 
     id = fields.Int(
@@ -276,28 +276,23 @@ class PendingTasksResultsSchema(BaseSchema):
         description="Item ID",
         example=1,
     )
-    task_label = fields.Str(
+    abspath = fields.Str(
         required=True,
-        description="Item label",
+        description="File absolute path",
         example="example.mp4",
     )
-    task_success = fields.Boolean(
+    priority = fields.Int(
         required=True,
-        description="Item success status",
-        example=True,
-    )
-    finish_time = fields.Int(
-        required=True,
-        description="Item finish time",
-        example=1627392616.6400812,
+        description="The current priority (higher is greater)",
+        example=100,
     )
 
 
 class PendingTasksSchema(TableRecordsSuccessSchema):
-    """Schema for updating pending task table by ID"""
+    """Schema for returning a list of pending task results"""
 
     results = fields.Nested(
-        CompletedTasksResultsSchema,
+        PendingTasksTableResultsSchema,
         required=True,
         description="Results",
         many=True,
@@ -313,6 +308,93 @@ class RequestPendingTasksReorderSchema(RequestTableUpdateByIdList):
         description="Position to move given list of items to ('top' or 'bottom')",
         example="top",
         validate=validate.OneOf(["top", "bottom"]),
+    )
+
+
+# PLUGINS
+# =======
+
+class RequestPluginsTableDataSchema(RequestTableDataSchema):
+    """Schema for requesting plugins from the table"""
+
+    order_by = fields.Str(
+        example="name",
+        load_default="name",
+    )
+
+
+class PluginStatusSchema(BaseSchema):
+    enabled = fields.Boolean(
+        required=True,
+        description="Is the plugin enabled",
+        example=True,
+    )
+    update_available = fields.Boolean(
+        required=True,
+        description="Does the plugin have an update available",
+        example=True,
+    )
+
+
+class PluginsTableResultsSchema(BaseSchema):
+    """Schema for pending task results returned by the table"""
+
+    id = fields.Int(
+        required=True,
+        description="Item ID",
+        example=1,
+    )
+    plugin_id = fields.Str(
+        required=True,
+        description="The plugin ID",
+        example="encoder_video_h264_nvenc",
+    )
+    icon = fields.Str(
+        required=True,
+        description="The plugin icon",
+        example="https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png",
+    )
+    name = fields.Str(
+        required=True,
+        description="The plugin name",
+        example="Video Encoder H264 - h264_nvenc",
+    )
+    description = fields.Str(
+        required=True,
+        description="The plugin description",
+        example="Ensure all video streams are encoded with the H264 codec using the h264_nvenc encoder.",
+    )
+    tags = fields.Str(
+        required=True,
+        description="The plugin tags",
+        example="video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia",
+    )
+    author = fields.Str(
+        required=True,
+        description="The plugin author",
+        example="encoder_video_h264_nvenc",
+    )
+    version = fields.Str(
+        required=True,
+        description="The plugin version",
+        example="Josh.5",
+    )
+    status = fields.Nested(
+        PluginStatusSchema,
+        required=True,
+        description="The plugin status",
+    )
+
+
+class PluginsDataSchema(TableRecordsSuccessSchema):
+    """Schema for returning a list of plugin table results"""
+
+    results = fields.Nested(
+        PluginsTableResultsSchema,
+        required=True,
+        description="Results",
+        many=True,
+        validate=validate.Length(min=0),
     )
 
 

@@ -58,7 +58,7 @@ class ApiDocsHandler(BaseApiHandler):
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
 
-    def get_privacy_policy(self, *args, **kwargs):
+    def get_privacy_policy(self):
         """
         Docs - read privacy policy
         ---
@@ -94,10 +94,6 @@ class ApiDocsHandler(BaseApiHandler):
                     application/json:
                         schema:
                             InternalErrorSchema
-
-        :param args:
-        :param kwargs:
-        :return:
         """
         try:
             privacy_policy_content = []

@@ -535,6 +535,186 @@
                     "results"
                 ]
             },
+            "RequestPluginsInfo": {
+                "type": "object",
+                "properties": {
+                    "plugin_id": {
+                        "type": "string",
+                        "example": "dts_to_dd"
+                    }
+                },
+                "required": [
+                    "plugin_id"
+                ]
+            },
+            "PluginsConfigInputItem": {
+                "type": "object",
+                "properties": {
+                    "key_id": {
+                        "type": "string",
+                        "description": "The config input base64 encoded key (used for linking keys containing spaces, etc.)",
+                        "example": "c8f122656ed2acabde9b57101a4c8ec7"
+                    },
+                    "key": {
+                        "type": "string",
+                        "description": "The config input key or name",
+                        "example": "downmix_dts_hd_ma"
+                    },
+                    "value": {
+                        "description": "The current value of this config input",
+                        "example": false
+                    },
+                    "input_type": {
+                        "type": "string",
+                        "description": "The config input type",
+                        "example": "checkbox"
+                    },
+                    "label": {
+                        "type": "string",
+                        "description": "The label used to define this config input",
+                        "example": "Downmix DTS-HD Master Audio (max 5.1 channels)?"
+                    },
+                    "select_options": {
+                        "type": "array",
+                        "description": "Additional options if the input_type is set to 'select'",
+                        "example": [
+                            {
+                                "value": "first",
+                                "label": "First Option"
+                            },
+                            {
+                                "value": "second",
+                                "label": "Second Option"
+                            }
+                        ],
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "slider_options": {
+                        "type": "object",
+                        "description": "Additional options if the input_type is set to 'slider'",
+                        "example": {
+                            "min": 1,
+                            "max": 8,
+                            "suffix": "M"
+                        }
+                    },
+                    "display": {
+                        "type": "string",
+                        "description": "Should the setting input be displayed (visible, hidden)",
+                        "example": "visible"
+                    }
+                },
+                "required": [
+                    "display",
+                    "input_type",
+                    "key",
+                    "key_id",
+                    "label",
+                    "select_options",
+                    "slider_options",
+                    "value"
+                ]
+            },
+            "PluginsInfoResults": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Item ID",
+                        "example": 1
+                    },
+                    "plugin_id": {
+                        "type": "string",
+                        "description": "The plugin ID",
+                        "example": "encoder_video_h264_nvenc"
+                    },
+                    "icon": {
+                        "type": "string",
+                        "description": "The plugin icon",
+                        "example": "https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The plugin name",
+                        "example": "Video Encoder H264 - h264_nvenc"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "The plugin description",
+                        "example": "Ensure all video streams are encoded with the H264 codec using the h264_nvenc encoder."
+                    },
+                    "tags": {
+                        "type": "string",
+                        "description": "The plugin tags",
+                        "example": "video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia"
+                    },
+                    "author": {
+                        "type": "string",
+                        "description": "The plugin author",
+                        "example": "encoder_video_h264_nvenc"
+                    },
+                    "version": {
+                        "type": "string",
+                        "description": "The plugin version",
+                        "example": "Josh.5"
+                    },
+                    "status": {
+                        "description": "The plugin status",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PluginStatus"
+                            }
+                        ]
+                    },
+                    "changelog": {
+                        "type": "string",
+                        "description": "The plugin changelog",
+                        "example": "[b][color=56adda]0.0.1[/color][/b]• initial version"
+                    },
+                    "settings": {
+                        "description": "The plugin settings",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PluginsConfigInputItem"
+                        }
+                    }
+                },
+                "required": [
+                    "author",
+                    "changelog",
+                    "description",
+                    "icon",
+                    "id",
+                    "name",
+                    "plugin_id",
+                    "settings",
+                    "status",
+                    "tags",
+                    "version"
+                ]
+            },
+            "RequestPluginsSettingsSave": {
+                "type": "object",
+                "properties": {
+                    "plugin_id": {
+                        "type": "string",
+                        "example": "dts_to_dd"
+                    },
+                    "settings": {
+                        "description": "The plugin settings",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PluginsConfigInputItem"
+                        }
+                    }
+                },
+                "required": [
+                    "plugin_id",
+                    "settings"
+                ]
+            },
             "SessionStateSuccess": {
                 "type": "object",
                 "properties": {
@@ -1345,6 +1525,142 @@
                 "responses": {
                     "200": {
                         "description": "Success: Deleted a list of completed tasks.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/info": {
+            "post": {
+                "description": "Returns a the metadata and settings of a requested plugin.",
+                "requestBody": {
+                    "description": "Returns a list of installed plugins.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestPluginsInfo"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns a the metadata and settings of a requested plugin.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PluginsInfoResults"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/settings/update": {
+            "post": {
+                "description": "Saves the settings of a single plugin.",
+                "requestBody": {
+                    "description": "Returns a list of installed plugins.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestPluginsSettingsSave"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Saves the settings of a single plugin.",
                         "content": {
                             "application/json": {
                                 "schema": {

@@ -29,7 +29,10 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import hashlib
+
 from unmanic.libs.plugins import PluginsHandler
+from unmanic.libs.unplugins import PluginExecutor
 
 
 def prepare_filtered_plugins(params):
@@ -138,3 +141,197 @@ def update_plugins(plugin_table_ids):
     """
     plugins_handler = PluginsHandler()
     return plugins_handler.update_plugins_by_db_table_id(plugin_table_ids)
+
+
+def get_plugin_settings(plugin_id):
+    """
+    Given a plugin installation ID, return a list of plugin settings for that plugin
+
+    :param plugin_id:
+    :return:
+    """
+    settings = []
+
+    # Check plugin for settings
+    plugin_executor = PluginExecutor()
+    plugin_settings, plugin_settings_meta = plugin_executor.get_plugin_settings(plugin_id)
+    if plugin_settings:
+        for key in plugin_settings:
+            form_input = {
+                "key_id":         hashlib.md5(key.encode('utf8')).hexdigest(),
+                "key":            key,
+                "value":          plugin_settings.get(key),
+                "input_type":     None,
+                "label":          None,
+                "select_options": [],
+                "slider_options": {},
+                "display":        "visible",
+            }
+
+            plugin_setting_meta = plugin_settings_meta.get(key, {})
+
+            # Set input type for form
+            form_input['input_type'] = plugin_setting_meta.get('input_type', None)
+            if not form_input['input_type']:
+                form_input['input_type'] = "text"
+                if isinstance(form_input['value'], bool):
+                    form_input['input_type'] = "checkbox"
+
+            # Handle unsupported input types (where they may be supported in future versions of Unmanic)
+            supported_input_types = [
+                "text",
+                "textarea",
+                "select",
+                "checkbox",
+                "slider",
+                "browse_directory",
+            ]
+            if form_input['input_type'] not in supported_input_types:
+                form_input['input_type'] = "text"
+
+            # Set input display options
+            form_input['display'] = plugin_setting_meta.get('display', 'visible')
+
+            # Set input label text
+            form_input['label'] = plugin_setting_meta.get('label', None)
+            if not form_input['label']:
+                form_input['label'] = key
+
+            # Set options if form input is select
+            if form_input['input_type'] == 'select':
+                form_input['select_options'] = plugin_setting_meta.get('select_options', [])
+                if not form_input['select_options']:
+                    # No options are given. Revert back to text input
+                    form_input['input_type'] = 'text'
+
+            # Set options if form input is slider
+            if form_input['input_type'] == 'slider':
+                slider_options = plugin_setting_meta.get('slider_options')
+                if not slider_options:
+                    # No options are given. Revert back to text input
+                    form_input['input_type'] = 'text'
+                else:
+                    form_input['slider_options'] = slider_options
+                    if not slider_options.get('suffix'):
+                        form_input['slider_options']['suffix'] = ''
+
+            settings.append(form_input)
+    return settings
+
+
+def get_plugin_changelog(plugin_id):
+    """
+    Given a plugin installation ID, return a list of lines read from the plugin's changelog
+
+    :param plugin_id:
+    :return:
+    """
+    # Fetch plugin changelog
+    plugin_executor = PluginExecutor()
+    return plugin_executor.get_plugin_changelog(plugin_id)
+
+
+def get_plugin_long_description(plugin_id):
+    """
+    Given a plugin installation ID, return a list of lines read from the plugin's changelog
+
+    :param plugin_id:
+    :return:
+    """
+    # Fetch plugin changelog
+    plugin_executor = PluginExecutor()
+    return plugin_executor.get_plugin_long_description(plugin_id)
+
+
+def prepare_plugin_info_and_settings(plugin_id):
+    """
+    Returns a object of plugin metadata and current settings for the requested plugin_id
+
+    :param plugin_id:
+    :return:
+    """
+    plugins_handler = PluginsHandler()
+
+    plugin_installed = True
+    plugin_results = plugins_handler.get_plugin_list_filtered_and_sorted(plugin_id=plugin_id)
+    if not plugin_results:
+        # This plugin is not installed
+        plugin_installed = False
+
+        # Try to fetch it from the repository
+        plugin_list = plugins_handler.get_installable_plugins_list()
+        for plugin in plugin_list:
+            if plugin.get('id') == plugin_id:
+                # Create changelog text from remote changelog text file
+                plugin['changelog'] = plugins_handler.read_remote_changelog_file(plugin.get('changelog_url'))
+                # Create list as the 'plugin_results' var above will also have returned a list if any results were found.
+                plugin_results = [plugin]
+                break
+
+    # Iterate over plugins and append them to the plugin data
+    plugin_data = {}
+    for plugin_result in plugin_results:
+        # Set plugin status
+        plugin_status = {
+            "enabled":          plugin_result.get('enabled'),
+            "update_available": plugin_result.get('update_available'),
+        }
+        # Set params as required in template
+        plugin_data = {
+            'id':          plugin_result.get('id'),
+            'plugin_id':   plugin_result.get('plugin_id'),
+            'icon':        plugin_result.get('icon'),
+            'name':        plugin_result.get('name'),
+            'description': plugin_result.get('description'),
+            'tags':        plugin_result.get('tags'),
+            'author':      plugin_result.get('author'),
+            'version':     plugin_result.get('version'),
+            'changelog':   plugin_result.get('changelog', ''),
+            'status':      plugin_status,
+            'settings':    [],
+        }
+        if plugin_installed:
+            plugin_data['settings'] = get_plugin_settings(plugin_result.get('plugin_id'))
+            plugin_data['changelog'] = "".join(get_plugin_changelog(plugin_result.get('plugin_id')))
+            plugin_data['description'] += "\n" + "".join(
+                get_plugin_long_description(plugin_result.get('plugin_id')))
+        break
+
+    return plugin_data
+
+
+def update_plugin_settings(plugin_id, settings):
+    # Fetch plugin info (and settings if any)
+    plugin_data = prepare_plugin_info_and_settings(plugin_id)
+
+    # If no plugin data was found for the posted plugin table ID, then return a failure response
+    if not plugin_data:
+        return False
+
+    # Loop over all plugin settings in order to find matches in the posted params
+    settings_to_save = {}
+    for s in settings:
+        key = s.get('key')
+        key_id = s.get('key_id')
+        input_type = s.get('input_type')
+        # Check if setting is in params
+        value = s.get('value')
+        # Check if value should be boolean
+        if input_type == 'checkbox':
+            if isinstance(value, str):
+                value = True if value.lower() == 'true' else False
+            elif isinstance(value, int):
+                value = True if value > 0 else False
+        # Add that to our dictionary of settings to save
+        settings_to_save[key] = value
+
+    # If we found settings that need to be saved, save them...
+    if settings_to_save:
+        plugin_executor = PluginExecutor()
+        saved_all_settings = plugin_executor.save_plugin_settings(plugin_data.get('plugin_id'), settings_to_save)
+        # If the save function was successful
+        if saved_all_settings:
+            # Update settings in plugin data that will be returned
+            return True
+
+    return False

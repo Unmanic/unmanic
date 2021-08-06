@@ -34,7 +34,8 @@ import tornado.log
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
-from unmanic.webserver.api_v2.schema.schemas import PluginsDataSchema, RequestPluginsTableDataSchema, \
+from unmanic.webserver.api_v2.schema.schemas import PluginsDataSchema, PluginsInfoResultsSchema, RequestPluginsInfoSchema, \
+    RequestPluginsSettingsSaveSchema, RequestPluginsTableDataSchema, \
     RequestTableUpdateByIdList
 from unmanic.webserver.helpers import plugins
 
@@ -70,6 +71,16 @@ class ApiPluginsHandler(BaseApiHandler):
             "path_pattern":      r"/plugins/remove",
             "supported_methods": ["DELETE"],
             "call_method":       "remove_plugins",
+        },
+        {
+            "path_pattern":      r"/plugins/info",
+            "supported_methods": ["POST"],
+            "call_method":       "get_plugin_info",
+        },
+        {
+            "path_pattern":      r"/plugins/settings/update",
+            "supported_methods": ["POST"],
+            "call_method":       "update_plugin_settings",
         },
     ]
 
@@ -386,6 +397,141 @@ class ApiPluginsHandler(BaseApiHandler):
 
             if not plugins.remove_plugins(json_request.get('id_list', [])):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to remove the plugins by their IDs")
+                self.write_error()
+                return
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def get_plugin_info(self):
+        """
+        Plugins - return a requested plugin's metadata and settings
+        ---
+        description: Returns a the metadata and settings of a requested plugin.
+        requestBody:
+            description: Returns a list of installed plugins.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestPluginsInfoSchema
+        responses:
+            200:
+                description: 'Sample response: Returns a the metadata and settings of a requested plugin.'
+                content:
+                    application/json:
+                        schema:
+                            PluginsInfoResultsSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(RequestPluginsInfoSchema())
+
+            plugins_info = plugins.prepare_plugin_info_and_settings(json_request.get('plugin_id'))
+
+            response = self.build_response(
+                PluginsInfoResultsSchema(),
+                {
+                    "id":          plugins_info.get('id'),
+                    "plugin_id":   plugins_info.get('plugin_id'),
+                    "icon":        plugins_info.get('icon'),
+                    "name":        plugins_info.get('name'),
+                    "description": plugins_info.get('description'),
+                    "tags":        plugins_info.get('tags'),
+                    "author":      plugins_info.get('author'),
+                    "version":     plugins_info.get('version'),
+                    "changelog":   plugins_info.get('changelog'),
+                    "status":      plugins_info.get('status'),
+                    "settings":    plugins_info.get('settings')
+                }
+            )
+            self.write_success(response)
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def update_plugin_settings(self):
+        """
+        Plugins - Save the settings of a single plugin
+        ---
+        description: Saves the settings of a single plugin.
+        requestBody:
+            description: Returns a list of installed plugins.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestPluginsSettingsSaveSchema
+        responses:
+            200:
+                description: 'Sample response: Saves the settings of a single plugin.'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(RequestPluginsSettingsSaveSchema())
+
+            if not plugins.update_plugin_settings(json_request.get('plugin_id'), json_request.get('settings')):
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to save plugins settings")
                 self.write_error()
                 return
 

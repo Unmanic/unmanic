@@ -398,6 +398,105 @@ class PluginsDataSchema(TableRecordsSuccessSchema):
     )
 
 
+class RequestPluginsInfoSchema(BaseSchema):
+    """Schema for requesting plugins info by the plugin install ID"""
+
+    plugin_id = fields.Str(
+        required=True,
+        example="dts_to_dd",
+    )
+
+
+class PluginsConfigInputItemSchema(BaseSchema):
+    """Schema for plugin config input items"""
+
+    key_id = fields.Str(
+        required=True,
+        description="The config input base64 encoded key (used for linking keys containing spaces, etc.)",
+        example="c8f122656ed2acabde9b57101a4c8ec7",
+    )
+    key = fields.Str(
+        required=True,
+        description="The config input key or name",
+        example="downmix_dts_hd_ma",
+    )
+    value = fields.Raw(
+        required=True,
+        description="The current value of this config input",
+        example=False,
+    )
+    input_type = fields.Str(
+        required=True,
+        description="The config input type",
+        example="checkbox",
+    )
+    label = fields.Str(
+        required=True,
+        description="The label used to define this config input",
+        example="Downmix DTS-HD Master Audio (max 5.1 channels)?",
+    )
+    select_options = fields.List(
+        cls_or_instance=fields.Dict,
+        required=True,
+        description="Additional options if the input_type is set to 'select'",
+        example=[
+            {
+                'value': "first",
+                'label': "First Option",
+            },
+            {
+                'value': "second",
+                'label': "Second Option",
+            },
+        ],
+    )
+    slider_options = fields.Dict(
+        required=True,
+        description="Additional options if the input_type is set to 'slider'",
+        example={
+            "min":    1,
+            "max":    8,
+            "suffix": "M"
+        },
+    )
+    display = fields.Str(
+        required=True,
+        description="Should the setting input be displayed (visible, hidden)",
+        example="visible",
+    )
+
+
+class PluginsInfoResultsSchema(PluginsTableResultsSchema):
+    """Schema for pending task results returned by the table"""
+
+    changelog = fields.Str(
+        required=True,
+        description="The plugin changelog",
+        example="[b][color=56adda]0.0.1[/color][/b]• initial version",
+    )
+    settings = fields.Nested(
+        PluginsConfigInputItemSchema,
+        required=True,
+        many=True,
+        description="The plugin settings",
+    )
+
+
+class RequestPluginsSettingsSaveSchema(BaseSchema):
+    """Schema for requesting the update of a plugins settings by the plugin install ID"""
+
+    plugin_id = fields.Str(
+        required=True,
+        example="dts_to_dd",
+    )
+    settings = fields.Nested(
+        PluginsConfigInputItemSchema,
+        required=True,
+        many=True,
+        description="The plugin settings",
+    )
+
+
 # SESSION
 # =======
 

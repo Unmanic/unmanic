@@ -257,3 +257,8 @@ const drawFlow = function (plugin_type, plugin_type_id, plugin_flow) {
     });*/
 
 };
+
+jQuery(document).ready(function() {
+    reloadPluginFlow();
+});
+

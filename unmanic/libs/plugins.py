@@ -268,10 +268,11 @@ class PluginsHandler(object, metaclass=SingletonType):
         uuid = session.get_installation_uuid()
         post_data = {
             "uuid":      uuid,
-            "plugin_id": plugin.get("id"),
+            "plugin_id": plugin.get("plugin_id"),
             "author":    plugin.get("author"),
             "version":   plugin.get("version"),
         }
+        print(post_data)
         try:
             repo_data = session.api_post(1, 'unmanic-plugin/install', post_data)
             if not repo_data.get('success'):
@@ -282,7 +283,7 @@ class PluginsHandler(object, metaclass=SingletonType):
 
     def install_plugin_by_id(self, plugin_id):
         """
-        Find the patching plugin info for the given plugin ID.
+        Find the matching plugin info for the given plugin ID.
         Download the plugin if it is found and return the result.
         If it is not found, return False.
 
@@ -296,7 +297,7 @@ class PluginsHandler(object, metaclass=SingletonType):
 
                 if success:
                     try:
-                        plugin_directory = self.get_plugin_path(plugin.get("id"))
+                        plugin_directory = self.get_plugin_path(plugin.get("plugin_id"))
                         return self.write_plugin_data_to_db(plugin, plugin_directory)
                     except Exception as e:
                         self._log("Exception while saving plugin info for '{}' to DB.".format(plugin), str(e),
@@ -315,16 +316,16 @@ class PluginsHandler(object, metaclass=SingletonType):
         # Try to fetch URL
         try:
             # Fetch remote zip file
-            destination = self.get_plugin_download_cache_path(plugin.get("id"), plugin.get("version"))
-            self._log("Downloading plugin '{}' to '{}'".format(plugin.get("url"), destination), level='debug')
-            with requests.get(plugin.get("url"), stream=True, allow_redirects=True) as r:
+            destination = self.get_plugin_download_cache_path(plugin.get("plugin_id"), plugin.get("version"))
+            self._log("Downloading plugin '{}' to '{}'".format(plugin.get("package_url"), destination), level='debug')
+            with requests.get(plugin.get("package_url"), stream=True, allow_redirects=True) as r:
                 r.raise_for_status()
                 with open(destination, 'wb') as f:
                     for chunk in r.iter_content(chunk_size=128):
                         f.write(chunk)
 
             # Extract zip file contents
-            plugin_directory = self.get_plugin_path(plugin.get("id"))
+            plugin_directory = self.get_plugin_path(plugin.get("plugin_id"))
             self._log("Extracting plugin to '{}'".format(plugin_directory), level='debug')
             with zipfile.ZipFile(destination, "r") as zip_ref:
                 zip_ref.extractall(plugin_directory)
@@ -347,7 +348,7 @@ class PluginsHandler(object, metaclass=SingletonType):
     def write_plugin_data_to_db(plugin, plugin_directory):
         # Add installed plugin to database
         plugin_data = {
-            Plugins.plugin_id:        plugin.get("id"),
+            Plugins.plugin_id:        plugin.get("plugin_id"),
             Plugins.name:             plugin.get("name"),
             Plugins.author:           plugin.get("author"),
             Plugins.version:          plugin.get("version"),
@@ -357,12 +358,12 @@ class PluginsHandler(object, metaclass=SingletonType):
             Plugins.local_path:       plugin_directory,
             Plugins.update_available: False,
         }
-        plugin_entry = Plugins.get_or_none(plugin_id=plugin.get("id"))
+        plugin_entry = Plugins.get_or_none(plugin_id=plugin.get("plugin_id"))
         if plugin_entry is not None:
             # Update the existing entry
             update_query = (Plugins
                             .update(plugin_data)
-                            .where(Plugins.plugin_id == plugin.get("id")))
+                            .where(Plugins.plugin_id == plugin.get("plugin_id")))
             update_query.execute()
         else:
             # Insert a new entry

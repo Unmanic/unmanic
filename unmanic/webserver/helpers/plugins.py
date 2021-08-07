@@ -243,10 +243,11 @@ def get_plugin_long_description(plugin_id):
     return plugin_executor.get_plugin_long_description(plugin_id)
 
 
-def prepare_plugin_info_and_settings(plugin_id):
+def prepare_plugin_info_and_settings(plugin_id, prefer_local=True):
     """
     Returns a object of plugin metadata and current settings for the requested plugin_id
 
+    :param prefer_local:
     :param plugin_id:
     :return:
     """
@@ -254,14 +255,16 @@ def prepare_plugin_info_and_settings(plugin_id):
 
     plugin_installed = True
     plugin_results = plugins_handler.get_plugin_list_filtered_and_sorted(plugin_id=plugin_id)
+
     if not plugin_results:
         # This plugin is not installed
         plugin_installed = False
 
+    if not plugin_results or not prefer_local:
         # Try to fetch it from the repository
         plugin_list = plugins_handler.get_installable_plugins_list()
         for plugin in plugin_list:
-            if plugin.get('id') == plugin_id:
+            if plugin.get('plugin_id') == plugin_id:
                 # Create changelog text from remote changelog text file
                 plugin['changelog'] = plugins_handler.read_remote_changelog_file(plugin.get('changelog_url'))
                 # Create list as the 'plugin_results' var above will also have returned a list if any results were found.
@@ -273,8 +276,9 @@ def prepare_plugin_info_and_settings(plugin_id):
     for plugin_result in plugin_results:
         # Set plugin status
         plugin_status = {
-            "enabled":          plugin_result.get('enabled'),
-            "update_available": plugin_result.get('update_available'),
+            "installed":        plugin_result.get('installed', False),
+            "enabled":          plugin_result.get('enabled', False),
+            "update_available": plugin_result.get('update_available', False),
         }
         # Set params as required in template
         plugin_data = {
@@ -335,3 +339,16 @@ def update_plugin_settings(plugin_id, settings):
             return True
 
     return False
+
+
+def prepare_installable_plugins_list():
+    """
+    Return a list of plugins able to be installed.
+    At the moment this does not employ any pagination. The lists are small enough
+    that it can all be done frontend. However that may change in the future.
+
+    :return:
+    """
+    plugins = PluginsHandler()
+    # Fetch a list of plugin data cached locally
+    return plugins.get_installable_plugins_list()

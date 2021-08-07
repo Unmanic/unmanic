@@ -352,3 +352,16 @@ def prepare_installable_plugins_list():
     plugins = PluginsHandler()
     # Fetch a list of plugin data cached locally
     return plugins.get_installable_plugins_list()
+
+
+def install_plugin_by_id(plugin_id):
+    """
+    Install a plugin given its Plugin ID
+
+    :param plugin_id:
+    :return:
+    """
+
+    # Fetch a list of plugin data cached locally
+    plugins = PluginsHandler()
+    return plugins.install_plugin_by_id(plugin_id)

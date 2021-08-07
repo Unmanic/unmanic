@@ -35,7 +35,7 @@ from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
 from unmanic.webserver.api_v2.schema.schemas import PluginsDataSchema, PluginsInfoResultsSchema, \
-    PluginsInstallableResultsSchema, RequestPluginsInfoSchema, \
+    PluginsInstallableResultsSchema, RequestPluginsByIdSchema, RequestPluginsInfoSchema, \
     RequestPluginsSettingsSaveSchema, RequestPluginsTableDataSchema, \
     RequestTableUpdateByIdList
 from unmanic.webserver.helpers import plugins
@@ -88,6 +88,11 @@ class ApiPluginsHandler(BaseApiHandler):
             "supported_methods": ["GET"],
             "call_method":       "get_installable_plugin_list",
         },
+        {
+            "path_pattern":      r"/plugins/install",
+            "supported_methods": ["PUT"],
+            "call_method":       "install_plugin_by_id",
+        },
     ]
 
     def initialize(self, **kwargs):
@@ -102,7 +107,7 @@ class ApiPluginsHandler(BaseApiHandler):
         ---
         description: Returns a list of installed plugins.
         requestBody:
-            description: Returns a list of installed plugins.
+            description: Requested a list of installed plugins.
             required: True
             content:
                 application/json:
@@ -421,7 +426,7 @@ class ApiPluginsHandler(BaseApiHandler):
         ---
         description: Returns a the metadata and settings of a requested plugin.
         requestBody:
-            description: Returns a list of installed plugins.
+            description: Requested a single plugin to install.
             required: True
             content:
                 application/json:
@@ -599,6 +604,67 @@ class ApiPluginsHandler(BaseApiHandler):
                 }
             )
             self.write_success(response)
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def install_plugin_by_id(self):
+        """
+        Plugins - Install a single plugin by its plugin ID
+        ---
+        description: Installs a plugin by its plugin ID.
+        requestBody:
+            description: Returns a list of installed plugins.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestPluginsByIdSchema
+        responses:
+            200:
+                description: 'Sample response: Installs a plugin by its plugin ID.'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(RequestPluginsByIdSchema())
+
+            if not plugins.install_plugin_by_id(json_request.get('plugin_id')):
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to install/update plugin")
+                self.write_error()
+                return
+
+            self.write_success()
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

@@ -807,6 +807,18 @@
                     "plugins"
                 ]
             },
+            "RequestPluginsById": {
+                "type": "object",
+                "properties": {
+                    "plugin_id": {
+                        "type": "string",
+                        "example": "dts_to_dd"
+                    }
+                },
+                "required": [
+                    "plugin_id"
+                ]
+            },
             "SessionStateSuccess": {
                 "type": "object",
                 "properties": {
@@ -1332,7 +1344,7 @@
             "post": {
                 "description": "Returns a list of installed plugins.",
                 "requestBody": {
-                    "description": "Returns a list of installed plugins.",
+                    "description": "Requested a list of installed plugins.",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -1672,7 +1684,7 @@
             "post": {
                 "description": "Returns a the metadata and settings of a requested plugin.",
                 "requestBody": {
-                    "description": "Returns a list of installed plugins.",
+                    "description": "Requested a single plugin to install.",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -1814,6 +1826,74 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/PluginsInstallableResults"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/install": {
+            "put": {
+                "description": "Installs a plugin by its plugin ID.",
+                "requestBody": {
+                    "description": "Returns a list of installed plugins.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestPluginsById"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Installs a plugin by its plugin ID.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
                                 }
                             }
                         }

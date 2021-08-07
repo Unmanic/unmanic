@@ -75,4 +75,4 @@ class PluginsUIRequestHandler(tornado.web.RequestHandler):
         }
 
     def get(self, path):
-        self.render("plugins/plugins.html", config=self.config, data=self.data, session=self.session)
+        self.render("plugins/plugin-flow.html", config=self.config, data=self.data, session=self.session)

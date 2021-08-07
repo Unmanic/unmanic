@@ -225,7 +225,7 @@ class UIServer(threading.Thread):
             (r"/history/(.*)", HistoryUIRequestHandler, dict(
                 data_queues=self.data_queues,
             )),
-            (r"/plugins/(.*)", PluginsUIRequestHandler, dict(
+            (r"/plugin-flow/(.*)", PluginsUIRequestHandler, dict(
                 data_queues=self.data_queues,
             )),
             (r"/settings/(.*)", SettingsUIRequestHandler, dict(

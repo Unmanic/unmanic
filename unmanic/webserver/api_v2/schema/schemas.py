@@ -340,6 +340,13 @@ class PluginStatusSchema(BaseSchema):
         example=True,
     )
 
+class RequestPluginsByIdSchema(BaseSchema):
+    """Schema to request data pertaining to a plugin by it's Plugin ID"""
+
+    plugin_id = fields.Str(
+        required=True,
+        example="dts_to_dd",
+    )
 
 class PluginsMetadataResultsSchema(BaseSchema):
     """Schema for plugin metadata that will be returned by various requests """
@@ -413,13 +420,9 @@ class PluginsDataSchema(TableRecordsSuccessSchema):
     )
 
 
-class RequestPluginsInfoSchema(BaseSchema):
-    """Schema for requesting plugins info by the plugin install ID"""
+class RequestPluginsInfoSchema(RequestPluginsByIdSchema):
+    """Schema for requesting plugins info by a given Plugin ID"""
 
-    plugin_id = fields.Str(
-        required=True,
-        example="dts_to_dd",
-    )
     prefer_local = fields.Boolean(
         required=False,
         load_default=True,

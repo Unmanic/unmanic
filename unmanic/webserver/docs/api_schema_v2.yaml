@@ -533,6 +533,14 @@ components:
       - id_list
       - position
       type: object
+    RequestPluginsById:
+      properties:
+        plugin_id:
+          example: dts_to_dd
+          type: string
+      required:
+      - plugin_id
+      type: object
     RequestPluginsInfo:
       properties:
         plugin_id:
@@ -935,7 +943,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RequestPluginsTableData'
-        description: Returns a list of installed plugins.
+        description: Requested a list of installed plugins.
         required: true
       responses:
         '200':
@@ -1140,7 +1148,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RequestPluginsInfo'
-        description: Returns a list of installed plugins.
+        description: Requested a single plugin to install.
         required: true
       responses:
         '200':
@@ -1225,6 +1233,47 @@ paths:
               schema:
                 $ref: '#/components/schemas/PluginsInstallableResults'
           description: 'Sample response: Returns a list of installable plugins.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/install:
+    put:
+      description: Installs a plugin by its plugin ID.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestPluginsById'
+        description: Returns a list of installed plugins.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Sample response: Installs a plugin by its plugin ID.'
         '400':
           content:
             application/json:

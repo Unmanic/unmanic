@@ -186,11 +186,13 @@ class PluginsHandler(object, metaclass=SingletonType):
 
             # Loop over
             for plugin in repo_data.get("plugins", []):
-                plugin["url"] = "{0}/{1}/{1}-{2}.zip".format(repo_data_directory, plugin.get('id'), plugin.get('version'))
-                plugin["changelog_url"] = "{0}/{1}/changelog.txt".format(repo_data_directory, plugin.get('id'))
+                plugin_package_url = "{0}/{1}/{1}-{2}.zip".format(repo_data_directory, plugin.get('id'), plugin.get('version'))
+                plugin_changelog_url = "{0}/{1}/changelog.txt".format(repo_data_directory, plugin.get('id'))
 
                 # Check if plugin is already installed:
-                plugin["installed"] = False
+                plugin_status = {
+                    'installed': False,
+                }
                 plugin_directory = os.path.join(self.settings.get_plugins_path(), plugin.get('id'))
                 if os.path.exists(plugin_directory):
                     # Read plugin info.json
@@ -201,15 +203,36 @@ class PluginsHandler(object, metaclass=SingletonType):
                     # Parse the currently installed version number and check if it matches
                     remote_version = plugin.get('version')
                     if local_version == remote_version:
-                        plugin["installed"] = True
+                        plugin_status = {
+                            'installed': True,
+                            'update_available': False,
+                        }
                     else:
                         # There is an update available
                         self.flag_plugin_for_update_by_id(plugin.get("id"))
+                        plugin_status = {
+                            'installed': True,
+                            'update_available': True,
+                        }
 
                 # If no icon is provide, set a default
-                if not plugin["icon"]:
-                    plugin["icon"] = "/assets/img/plugin-icon-default.svg"
-                return_list.append(plugin)
+                plugin_icon = "/assets/img/plugin-icon-default.svg"
+                if plugin["icon"]:
+                    plugin_icon = plugin.get('icon')
+                return_list.append(
+                    {
+                        'plugin_id':     plugin.get('id'),
+                        'name':          plugin.get('name'),
+                        'author':        plugin.get('author'),
+                        'description':   plugin.get('description'),
+                        'version':       plugin.get('version'),
+                        'icon':          plugin_icon,
+                        'tags':          plugin.get('tags'),
+                        'status':        plugin_status,
+                        'package_url':   plugin_package_url,
+                        'changelog_url': plugin_changelog_url,
+                    }
+                )
         return return_list
 
     def get_installable_plugins_list(self):
@@ -222,7 +245,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             repo_id = self.get_plugin_repo_id(repo_path)
             repo_data = self.read_repo_data(repo_id)
             plugins_in_repo = self.get_plugins_in_repo_data(repo_data)
-            return_list = return_list + plugins_in_repo
+            return_list += plugins_in_repo
 
         return return_list
 
@@ -268,7 +291,7 @@ class PluginsHandler(object, metaclass=SingletonType):
         """
         plugin_list = self.get_installable_plugins_list()
         for plugin in plugin_list:
-            if plugin.get('id') == plugin_id:
+            if plugin.get('plugin_id') == plugin_id:
                 success = self.install_plugin(plugin)
 
                 if success:

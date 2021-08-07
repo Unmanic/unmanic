@@ -428,6 +428,11 @@
             "PluginStatus": {
                 "type": "object",
                 "properties": {
+                    "installed": {
+                        "type": "boolean",
+                        "description": "Is the plugin installed",
+                        "example": true
+                    },
                     "enabled": {
                         "type": "boolean",
                         "description": "Is the plugin enabled",
@@ -438,54 +443,45 @@
                         "description": "Does the plugin have an update available",
                         "example": true
                     }
-                },
-                "required": [
-                    "enabled",
-                    "update_available"
-                ]
+                }
             },
             "PluginsTableResults": {
                 "type": "object",
                 "properties": {
-                    "id": {
-                        "type": "integer",
-                        "description": "Item ID",
-                        "example": 1
-                    },
                     "plugin_id": {
                         "type": "string",
                         "description": "The plugin ID",
                         "example": "encoder_video_h264_nvenc"
-                    },
-                    "icon": {
-                        "type": "string",
-                        "description": "The plugin icon",
-                        "example": "https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png"
                     },
                     "name": {
                         "type": "string",
                         "description": "The plugin name",
                         "example": "Video Encoder H264 - h264_nvenc"
                     },
-                    "description": {
-                        "type": "string",
-                        "description": "The plugin description",
-                        "example": "Ensure all video streams are encoded with the H264 codec using the h264_nvenc encoder."
-                    },
-                    "tags": {
-                        "type": "string",
-                        "description": "The plugin tags",
-                        "example": "video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia"
-                    },
                     "author": {
                         "type": "string",
                         "description": "The plugin author",
                         "example": "encoder_video_h264_nvenc"
                     },
+                    "description": {
+                        "type": "string",
+                        "description": "The plugin description",
+                        "example": "Ensure all video streams are encoded with the H264 codec using the h264_nvenc encoder."
+                    },
                     "version": {
                         "type": "string",
                         "description": "The plugin version",
                         "example": "Josh.5"
+                    },
+                    "icon": {
+                        "type": "string",
+                        "description": "The plugin icon",
+                        "example": "https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png"
+                    },
+                    "tags": {
+                        "type": "string",
+                        "description": "The plugin tags",
+                        "example": "video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia"
                     },
                     "status": {
                         "description": "The plugin status",
@@ -494,6 +490,16 @@
                                 "$ref": "#/components/schemas/PluginStatus"
                             }
                         ]
+                    },
+                    "changelog": {
+                        "type": "string",
+                        "description": "The plugin changelog",
+                        "example": "[b][color=56adda]0.0.1[/color][/b]• initial version"
+                    },
+                    "id": {
+                        "type": "integer",
+                        "description": "Item table ID",
+                        "example": 1
                     }
                 },
                 "required": [
@@ -541,6 +547,11 @@
                     "plugin_id": {
                         "type": "string",
                         "example": "dts_to_dd"
+                    },
+                    "prefer_local": {
+                        "type": "boolean",
+                        "default": true,
+                        "example": true
                     }
                 },
                 "required": [
@@ -620,45 +631,40 @@
             "PluginsInfoResults": {
                 "type": "object",
                 "properties": {
-                    "id": {
-                        "type": "integer",
-                        "description": "Item ID",
-                        "example": 1
-                    },
                     "plugin_id": {
                         "type": "string",
                         "description": "The plugin ID",
                         "example": "encoder_video_h264_nvenc"
-                    },
-                    "icon": {
-                        "type": "string",
-                        "description": "The plugin icon",
-                        "example": "https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png"
                     },
                     "name": {
                         "type": "string",
                         "description": "The plugin name",
                         "example": "Video Encoder H264 - h264_nvenc"
                     },
-                    "description": {
-                        "type": "string",
-                        "description": "The plugin description",
-                        "example": "Ensure all video streams are encoded with the H264 codec using the h264_nvenc encoder."
-                    },
-                    "tags": {
-                        "type": "string",
-                        "description": "The plugin tags",
-                        "example": "video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia"
-                    },
                     "author": {
                         "type": "string",
                         "description": "The plugin author",
                         "example": "encoder_video_h264_nvenc"
                     },
+                    "description": {
+                        "type": "string",
+                        "description": "The plugin description",
+                        "example": "Ensure all video streams are encoded with the H264 codec using the h264_nvenc encoder."
+                    },
                     "version": {
                         "type": "string",
                         "description": "The plugin version",
                         "example": "Josh.5"
+                    },
+                    "icon": {
+                        "type": "string",
+                        "description": "The plugin icon",
+                        "example": "https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png"
+                    },
+                    "tags": {
+                        "type": "string",
+                        "description": "The plugin tags",
+                        "example": "video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia"
                     },
                     "status": {
                         "description": "The plugin status",
@@ -683,13 +689,10 @@
                 },
                 "required": [
                     "author",
-                    "changelog",
                     "description",
                     "icon",
-                    "id",
                     "name",
                     "plugin_id",
-                    "settings",
                     "status",
                     "tags",
                     "version"
@@ -713,6 +716,95 @@
                 "required": [
                     "plugin_id",
                     "settings"
+                ]
+            },
+            "PluginsMetadataInstallableResults": {
+                "type": "object",
+                "properties": {
+                    "plugin_id": {
+                        "type": "string",
+                        "description": "The plugin ID",
+                        "example": "encoder_video_h264_nvenc"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The plugin name",
+                        "example": "Video Encoder H264 - h264_nvenc"
+                    },
+                    "author": {
+                        "type": "string",
+                        "description": "The plugin author",
+                        "example": "encoder_video_h264_nvenc"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "The plugin description",
+                        "example": "Ensure all video streams are encoded with the H264 codec using the h264_nvenc encoder."
+                    },
+                    "version": {
+                        "type": "string",
+                        "description": "The plugin version",
+                        "example": "Josh.5"
+                    },
+                    "icon": {
+                        "type": "string",
+                        "description": "The plugin icon",
+                        "example": "https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png"
+                    },
+                    "tags": {
+                        "type": "string",
+                        "description": "The plugin tags",
+                        "example": "video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia"
+                    },
+                    "status": {
+                        "description": "The plugin status",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PluginStatus"
+                            }
+                        ]
+                    },
+                    "changelog": {
+                        "type": "string",
+                        "description": "The plugin changelog",
+                        "example": "[b][color=56adda]0.0.1[/color][/b]• initial version"
+                    },
+                    "package_url": {
+                        "type": "string",
+                        "description": "The plugin package download URL",
+                        "example": "https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/encoder_video_h264_nvenc/encoder_video_h264_nvenc-1.0.0.zip"
+                    },
+                    "changelog_url": {
+                        "type": "string",
+                        "description": "The plugin package download URL",
+                        "example": "https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/encoder_video_h264_nvenc/encoder_video_h264_nvenc-1.0.0.zip"
+                    }
+                },
+                "required": [
+                    "author",
+                    "description",
+                    "icon",
+                    "name",
+                    "plugin_id",
+                    "status",
+                    "tags",
+                    "version"
+                ]
+            },
+            "PluginsInstallableResults": {
+                "type": "object",
+                "properties": {
+                    "plugins": {
+                        "minItems": 0,
+                        "description": "Results",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PluginsMetadataInstallableResults"
+                        }
+                    }
+                },
+                "required": [
+                    "plugins"
                 ]
             },
             "SessionStateSuccess": {
@@ -1665,6 +1757,63 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/installable": {
+            "get": {
+                "description": "Returns a list of installable plugins.",
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns a list of installable plugins.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PluginsInstallableResults"
                                 }
                             }
                         }

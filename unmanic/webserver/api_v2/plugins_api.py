@@ -34,7 +34,8 @@ import tornado.log
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
-from unmanic.webserver.api_v2.schema.schemas import PluginsDataSchema, PluginsInfoResultsSchema, RequestPluginsInfoSchema, \
+from unmanic.webserver.api_v2.schema.schemas import PluginsDataSchema, PluginsInfoResultsSchema, \
+    PluginsInstallableResultsSchema, RequestPluginsInfoSchema, \
     RequestPluginsSettingsSaveSchema, RequestPluginsTableDataSchema, \
     RequestTableUpdateByIdList
 from unmanic.webserver.helpers import plugins
@@ -81,6 +82,11 @@ class ApiPluginsHandler(BaseApiHandler):
             "path_pattern":      r"/plugins/settings/update",
             "supported_methods": ["POST"],
             "call_method":       "update_plugin_settings",
+        },
+        {
+            "path_pattern":      r"/plugins/installable",
+            "supported_methods": ["GET"],
+            "call_method":       "get_installable_plugin_list",
         },
     ]
 
@@ -456,12 +462,14 @@ class ApiPluginsHandler(BaseApiHandler):
         try:
             json_request = self.read_json_request(RequestPluginsInfoSchema())
 
-            plugins_info = plugins.prepare_plugin_info_and_settings(json_request.get('plugin_id'))
+            plugin_id = json_request.get('plugin_id')
+            prefer_local = json_request.get('prefer_local')
+
+            plugins_info = plugins.prepare_plugin_info_and_settings(plugin_id, prefer_local)
 
             response = self.build_response(
                 PluginsInfoResultsSchema(),
                 {
-                    "id":          plugins_info.get('id'),
                     "plugin_id":   plugins_info.get('plugin_id'),
                     "icon":        plugins_info.get('icon'),
                     "name":        plugins_info.get('name'),
@@ -536,6 +544,61 @@ class ApiPluginsHandler(BaseApiHandler):
                 return
 
             self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def get_installable_plugin_list(self):
+        """
+        Plugins - Read all installable plugins
+        ---
+        description: Returns a list of installable plugins.
+        responses:
+            200:
+                description: 'Sample response: Returns a list of installable plugins.'
+                content:
+                    application/json:
+                        schema:
+                            PluginsInstallableResultsSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            installable_plugins_list = plugins.prepare_installable_plugins_list()
+
+            response = self.build_response(
+                PluginsInstallableResultsSchema(),
+                {
+                    "plugins": installable_plugins_list
+                }
+            )
+            self.write_success(response)
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

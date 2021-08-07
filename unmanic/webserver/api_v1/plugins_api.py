@@ -427,7 +427,7 @@ class ApiPluginsHandler(BaseApiHandler):
             # Try to fetch it from the repository
             plugin_list = plugins.get_installable_plugins_list()
             for plugin in plugin_list:
-                if plugin.get('id') == plugin_id:
+                if plugin.get('plugin_id') == plugin_id:
                     # Create changelog text from remote changelog text file
                     plugin['changelog'] = plugins.read_remote_changelog_file(plugin.get('changelog_url'))
                     # Create list as the 'plugin_results' var above will also have returned a list if any results were found.

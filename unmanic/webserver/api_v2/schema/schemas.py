@@ -324,65 +324,80 @@ class RequestPluginsTableDataSchema(RequestTableDataSchema):
 
 
 class PluginStatusSchema(BaseSchema):
+    installed = fields.Boolean(
+        required=False,
+        description="Is the plugin installed",
+        example=True,
+    )
     enabled = fields.Boolean(
-        required=True,
+        required=False,
         description="Is the plugin enabled",
         example=True,
     )
     update_available = fields.Boolean(
-        required=True,
+        required=False,
         description="Does the plugin have an update available",
         example=True,
     )
 
 
-class PluginsTableResultsSchema(BaseSchema):
-    """Schema for pending task results returned by the table"""
+class PluginsMetadataResultsSchema(BaseSchema):
+    """Schema for plugin metadata that will be returned by various requests """
 
-    id = fields.Int(
-        required=True,
-        description="Item ID",
-        example=1,
-    )
     plugin_id = fields.Str(
         required=True,
         description="The plugin ID",
         example="encoder_video_h264_nvenc",
-    )
-    icon = fields.Str(
-        required=True,
-        description="The plugin icon",
-        example="https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png",
     )
     name = fields.Str(
         required=True,
         description="The plugin name",
         example="Video Encoder H264 - h264_nvenc",
     )
-    description = fields.Str(
-        required=True,
-        description="The plugin description",
-        example="Ensure all video streams are encoded with the H264 codec using the h264_nvenc encoder.",
-    )
-    tags = fields.Str(
-        required=True,
-        description="The plugin tags",
-        example="video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia",
-    )
     author = fields.Str(
         required=True,
         description="The plugin author",
         example="encoder_video_h264_nvenc",
+    )
+    description = fields.Str(
+        required=True,
+        description="The plugin description",
+        example="Ensure all video streams are encoded with the H264 codec using the h264_nvenc encoder.",
     )
     version = fields.Str(
         required=True,
         description="The plugin version",
         example="Josh.5",
     )
+    icon = fields.Str(
+        required=True,
+        description="The plugin icon",
+        example="https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png",
+    )
+    tags = fields.Str(
+        required=True,
+        description="The plugin tags",
+        example="video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia",
+    )
     status = fields.Nested(
         PluginStatusSchema,
         required=True,
         description="The plugin status",
+    )
+    changelog = fields.Str(
+        required=False,
+        description="The plugin changelog",
+        example="[b][color=56adda]0.0.1[/color][/b]• initial version",
+    )
+
+
+class PluginsTableResultsSchema(PluginsMetadataResultsSchema):
+    """Schema for pending task results returned by the table"""
+
+    id = fields.Int(
+        required=True,
+        description="Item table ID",
+        example=1,
     )
 
 
@@ -404,6 +419,11 @@ class RequestPluginsInfoSchema(BaseSchema):
     plugin_id = fields.Str(
         required=True,
         example="dts_to_dd",
+    )
+    prefer_local = fields.Boolean(
+        required=False,
+        load_default=True,
+        example=True,
     )
 
 
@@ -466,17 +486,12 @@ class PluginsConfigInputItemSchema(BaseSchema):
     )
 
 
-class PluginsInfoResultsSchema(PluginsTableResultsSchema):
+class PluginsInfoResultsSchema(PluginsMetadataResultsSchema):
     """Schema for pending task results returned by the table"""
 
-    changelog = fields.Str(
-        required=True,
-        description="The plugin changelog",
-        example="[b][color=56adda]0.0.1[/color][/b]• initial version",
-    )
     settings = fields.Nested(
         PluginsConfigInputItemSchema,
-        required=True,
+        required=False,
         many=True,
         description="The plugin settings",
     )
@@ -494,6 +509,33 @@ class RequestPluginsSettingsSaveSchema(BaseSchema):
         required=True,
         many=True,
         description="The plugin settings",
+    )
+
+
+class PluginsMetadataInstallableResultsSchema(PluginsMetadataResultsSchema):
+    """Schema for plugin metadata that will be returned when fetching installable plugins """
+
+    package_url = fields.Str(
+        required=False,
+        description="The plugin package download URL",
+        example="https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/encoder_video_h264_nvenc/encoder_video_h264_nvenc-1.0.0.zip",
+    )
+    changelog_url = fields.Str(
+        required=False,
+        description="The plugin package download URL",
+        example="https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/encoder_video_h264_nvenc/encoder_video_h264_nvenc-1.0.0.zip",
+    )
+
+
+class PluginsInstallableResultsSchema(BaseSchema):
+    """Schema for installable plugins lists that are returned"""
+
+    plugins = fields.Nested(
+        PluginsMetadataInstallableResultsSchema,
+        required=True,
+        description="Results",
+        many=True,
+        validate=validate.Length(min=0),
     )
 
 

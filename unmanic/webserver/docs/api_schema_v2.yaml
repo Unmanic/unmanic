@@ -193,6 +193,10 @@ components:
       type: object
     PluginStatus:
       properties:
+        installed:
+          description: Is the plugin installed
+          example: true
+          type: boolean
         enabled:
           description: Is the plugin enabled
           example: true
@@ -201,9 +205,6 @@ components:
           description: Does the plugin have an update available
           example: true
           type: boolean
-      required:
-      - enabled
-      - update_available
       type: object
     PluginsConfigInputItem:
       properties:
@@ -280,38 +281,34 @@ components:
       type: object
     PluginsInfoResults:
       properties:
-        id:
-          description: Item ID
-          example: 1
-          type: integer
         plugin_id:
           description: The plugin ID
           example: encoder_video_h264_nvenc
           type: string
-        icon:
-          description: The plugin icon
-          example: https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png
-          type: string
         name:
           description: The plugin name
           example: Video Encoder H264 - h264_nvenc
+          type: string
+        author:
+          description: The plugin author
+          example: encoder_video_h264_nvenc
           type: string
         description:
           description: The plugin description
           example: Ensure all video streams are encoded with the H264 codec using
             the h264_nvenc encoder.
           type: string
-        tags:
-          description: The plugin tags
-          example: video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia
-          type: string
-        author:
-          description: The plugin author
-          example: encoder_video_h264_nvenc
-          type: string
         version:
           description: The plugin version
           example: Josh.5
+          type: string
+        icon:
+          description: The plugin icon
+          example: https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png
+          type: string
+        tags:
+          description: The plugin tags
+          example: video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia
           type: string
         status:
           allOf:
@@ -328,56 +325,125 @@ components:
           type: array
       required:
       - author
-      - changelog
       - description
       - icon
-      - id
       - name
       - plugin_id
-      - settings
       - status
       - tags
       - version
       type: object
-    PluginsTableResults:
+    PluginsInstallableResults:
       properties:
-        id:
-          description: Item ID
-          example: 1
-          type: integer
+        plugins:
+          description: Results
+          items:
+            $ref: '#/components/schemas/PluginsMetadataInstallableResults'
+          minItems: 0
+          type: array
+      required:
+      - plugins
+      type: object
+    PluginsMetadataInstallableResults:
+      properties:
         plugin_id:
           description: The plugin ID
           example: encoder_video_h264_nvenc
           type: string
-        icon:
-          description: The plugin icon
-          example: https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png
-          type: string
         name:
           description: The plugin name
           example: Video Encoder H264 - h264_nvenc
+          type: string
+        author:
+          description: The plugin author
+          example: encoder_video_h264_nvenc
           type: string
         description:
           description: The plugin description
           example: Ensure all video streams are encoded with the H264 codec using
             the h264_nvenc encoder.
           type: string
-        tags:
-          description: The plugin tags
-          example: video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia
-          type: string
-        author:
-          description: The plugin author
-          example: encoder_video_h264_nvenc
-          type: string
         version:
           description: The plugin version
           example: Josh.5
+          type: string
+        icon:
+          description: The plugin icon
+          example: https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png
+          type: string
+        tags:
+          description: The plugin tags
+          example: video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia
           type: string
         status:
           allOf:
           - $ref: '#/components/schemas/PluginStatus'
           description: The plugin status
+        changelog:
+          description: The plugin changelog
+          example: "[b][color=56adda]0.0.1[/color][/b]\u2022 initial version"
+          type: string
+        package_url:
+          description: The plugin package download URL
+          example: https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/encoder_video_h264_nvenc/encoder_video_h264_nvenc-1.0.0.zip
+          type: string
+        changelog_url:
+          description: The plugin package download URL
+          example: https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/encoder_video_h264_nvenc/encoder_video_h264_nvenc-1.0.0.zip
+          type: string
+      required:
+      - author
+      - description
+      - icon
+      - name
+      - plugin_id
+      - status
+      - tags
+      - version
+      type: object
+    PluginsTableResults:
+      properties:
+        plugin_id:
+          description: The plugin ID
+          example: encoder_video_h264_nvenc
+          type: string
+        name:
+          description: The plugin name
+          example: Video Encoder H264 - h264_nvenc
+          type: string
+        author:
+          description: The plugin author
+          example: encoder_video_h264_nvenc
+          type: string
+        description:
+          description: The plugin description
+          example: Ensure all video streams are encoded with the H264 codec using
+            the h264_nvenc encoder.
+          type: string
+        version:
+          description: The plugin version
+          example: Josh.5
+          type: string
+        icon:
+          description: The plugin icon
+          example: https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png
+          type: string
+        tags:
+          description: The plugin tags
+          example: video,encoder,ffmpeg,worker,nvenc,nvdec,nvidia
+          type: string
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PluginStatus'
+          description: The plugin status
+        changelog:
+          description: The plugin changelog
+          example: "[b][color=56adda]0.0.1[/color][/b]\u2022 initial version"
+          type: string
+        id:
+          description: Item table ID
+          example: 1
+          type: integer
       required:
       - author
       - description
@@ -472,6 +538,10 @@ components:
         plugin_id:
           example: dts_to_dd
           type: string
+        prefer_local:
+          default: true
+          example: true
+          type: boolean
       required:
       - plugin_id
       type: object
@@ -1121,6 +1191,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
           description: 'Sample response: Saves the settings of a single plugin.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/installable:
+    get:
+      description: Returns a list of installable plugins.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginsInstallableResults'
+          description: 'Sample response: Returns a list of installable plugins.'
         '400':
           content:
             application/json:

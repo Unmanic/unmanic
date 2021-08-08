@@ -551,8 +551,8 @@ components:
     RequestPendingTasksReorder:
       properties:
         id_list:
-          description: Start row number to select from
-          example: 0
+          description: List of table IDs
+          example: &id003 []
           items:
             type: integer
           minItems: 1
@@ -634,8 +634,8 @@ components:
     RequestTableUpdateByIdList:
       properties:
         id_list:
-          description: Start row number to select from
-          example: 0
+          description: List of table IDs
+          example: *id003
           items:
             type: integer
           minItems: 1
@@ -651,6 +651,7 @@ components:
           - https://raw.githubusercontent.com/Josh5/unmanic-plugins/repo/repo.json
           items:
             type: string
+          minItems: 0
           type: array
       required:
       - repos_list

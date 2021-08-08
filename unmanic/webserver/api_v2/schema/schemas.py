@@ -150,8 +150,8 @@ class RequestTableUpdateByIdList(BaseSchema):
     id_list = fields.List(
         cls_or_instance=fields.Int,
         required=True,
-        description="Start row number to select from",
-        example=0,
+        description="List of table IDs",
+        example=[],
         validate=validate.Length(min=1),
     )
 
@@ -579,6 +579,7 @@ class RequestUpdatePluginReposListSchema(BaseSchema):
         example=[
             'https://raw.githubusercontent.com/Josh5/unmanic-plugins/repo/repo.json',
         ],
+        validate=validate.Length(min=0),
     )
 
 

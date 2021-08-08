@@ -401,3 +401,13 @@ def prepare_plugin_repos_list():
         repo['name'] = repo_metadata.get('name')
 
     return return_repos
+
+
+def reload_plugin_repos_data():
+    """
+    Reloads all plugin repos data from the configured URL path
+
+    :return:
+    """
+    plugins = PluginsHandler()
+    return plugins.update_plugin_repos()

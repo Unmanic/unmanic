@@ -819,6 +819,71 @@
                     "plugin_id"
                 ]
             },
+            "RequestUpdatePluginReposList": {
+                "type": "object",
+                "properties": {
+                    "repos_list": {
+                        "type": "array",
+                        "description": "A list of repost to save",
+                        "example": [
+                            "https://raw.githubusercontent.com/Josh5/unmanic-plugins/repo/repo.json"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "repos_list"
+                ]
+            },
+            "PluginReposMetadataResults": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The plugin repo ID",
+                        "example": "repository.josh5"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The plugin repo name",
+                        "example": "Josh.5 Development Plugins for Unmanic"
+                    },
+                    "icon": {
+                        "type": "string",
+                        "description": "The plugin repo icon",
+                        "example": "https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/icon.png"
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "The plugin repo URL path",
+                        "example": "https://raw.githubusercontent.com/Josh5/unmanic-plugins/repo/repo.json"
+                    }
+                },
+                "required": [
+                    "icon",
+                    "id",
+                    "name",
+                    "path"
+                ]
+            },
+            "PluginReposListResults": {
+                "type": "object",
+                "properties": {
+                    "repos": {
+                        "minItems": 0,
+                        "description": "Results",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PluginReposMetadataResults"
+                        }
+                    }
+                },
+                "required": [
+                    "repos"
+                ]
+            },
             "SessionStateSuccess": {
                 "type": "object",
                 "properties": {
@@ -1752,7 +1817,7 @@
             "post": {
                 "description": "Saves the settings of a single plugin.",
                 "requestBody": {
-                    "description": "Returns a list of installed plugins.",
+                    "description": "Requested a plugins settings be updated.",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -1875,9 +1940,9 @@
         },
         "/plugins/install": {
             "put": {
-                "description": "Installs a plugin by its plugin ID.",
+                "description": "Installs a plugin by its Plugin ID.",
                 "requestBody": {
-                    "description": "Returns a list of installed plugins.",
+                    "description": "Requested a plugin be installed by its Plugin ID.",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -1889,11 +1954,136 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Sample response: Installs a plugin by its plugin ID.",
+                        "description": "Sample response: Installs a plugin by its Plugin ID.",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/repos/update": {
+            "post": {
+                "description": "Updates the plugin repo list.",
+                "requestBody": {
+                    "description": "Requested an update to the plugin repo list.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestUpdatePluginReposList"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Updates the plugin repo list.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/repos/list": {
+            "get": {
+                "description": "Returns a list of plugin repos.",
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns a list of plugin repos.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PluginReposListResults"
                                 }
                             }
                         }

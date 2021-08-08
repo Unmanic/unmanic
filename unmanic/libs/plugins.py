@@ -108,8 +108,13 @@ class PluginsHandler(object, metaclass=SingletonType):
 
         return repo_list
 
-    @staticmethod
-    def set_plugin_repos(repo_list):
+    def set_plugin_repos(self, repo_list):
+        # Ensure list of repo URLs is valid
+        for repo_path in repo_list:
+            repo_data = self.fetch_remote_repo_data(repo_path)
+            if not repo_data:
+                return False
+
         # Remove all existing repos
         PluginRepos.delete().execute()
 
@@ -119,6 +124,21 @@ class PluginsHandler(object, metaclass=SingletonType):
             data.append({"path": repo_path})
 
         PluginRepos.insert_many(data).execute()
+
+        return True
+
+    def fetch_remote_repo_data(self, repo_path):
+        # Fetch remote JSON file
+        session = Session()
+        uuid = session.get_installation_uuid()
+        post_data = {
+            "uuid":     uuid,
+            "repo_url": repo_path
+        }
+        repo_data = session.api_post(1, 'unmanic-plugin-repo/uuid/{}'.format(uuid), post_data)
+        self._log("Repo info {}.".format(repo_path), repo_data, level="info")
+
+        return repo_data
 
     def update_plugin_repos(self):
         """
@@ -135,23 +155,10 @@ class PluginsHandler(object, metaclass=SingletonType):
             repo_path = repo.get('path')
             repo_id = self.get_plugin_repo_id(repo_path)
 
-            # If success, dump JSON to file
-            # Else, log error and catch any exceptions
-            pass
             # Try to fetch URL
             try:
                 # Fetch remote JSON file
-                session = Session()
-                uuid = session.get_installation_uuid()
-                post_data = {
-                    "uuid":     uuid,
-                    "repo_url": repo_path
-                }
-                repo_data = session.api_post(1, 'unmanic-plugin-repo/uuid/{}'.format(uuid), post_data)
-
-                # Load JSON to python object
-                # repo_data = json.loads(repo_json)
-                self._log("Repo info {}.".format(repo_path), repo_data, level="info")
+                repo_data = self.fetch_remote_repo_data(repo_path)
 
                 # Dumb object to local JSON file
                 repo_cache = self.get_repo_cache_file(repo_id)
@@ -204,14 +211,14 @@ class PluginsHandler(object, metaclass=SingletonType):
                     remote_version = plugin.get('version')
                     if local_version == remote_version:
                         plugin_status = {
-                            'installed': True,
+                            'installed':        True,
                             'update_available': False,
                         }
                     else:
                         # There is an update available
                         self.flag_plugin_for_update_by_id(plugin.get("id"))
                         plugin_status = {
-                            'installed': True,
+                            'installed':        True,
                             'update_available': True,
                         }
 
@@ -272,7 +279,6 @@ class PluginsHandler(object, metaclass=SingletonType):
             "author":    plugin.get("author"),
             "version":   plugin.get("version"),
         }
-        print(post_data)
         try:
             repo_data = session.api_post(1, 'unmanic-plugin/install', post_data)
             if not repo_data.get('success'):

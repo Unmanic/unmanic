@@ -365,3 +365,39 @@ def install_plugin_by_id(plugin_id):
     # Fetch a list of plugin data cached locally
     plugins = PluginsHandler()
     return plugins.install_plugin_by_id(plugin_id)
+
+
+def save_plugin_repos_list(repos_list):
+    plugins = PluginsHandler()
+    return plugins.set_plugin_repos(repos_list)
+
+
+def prepare_plugin_repos_list():
+    """
+    Return a list of plugin repos available to download from
+
+    :return:
+    """
+    return_repos = []
+
+    plugins = PluginsHandler()
+    # Fetch the data again from the database
+    current_repos = plugins.get_plugin_repos()
+
+    # Remove the default plugin repo from the list
+    default_repo = plugins.get_default_repo()
+    for repo in current_repos:
+        if not repo.get("path").startswith(default_repo):
+            return_repos.append(repo)
+
+    # Append metadata from repo cache files
+    for repo in return_repos:
+        repo_path = repo.get('path')
+        repo_id = plugins.get_plugin_repo_id(repo_path)
+        repo_data = plugins.read_repo_data(repo_id)
+        repo_metadata = repo_data.get('repo', {})
+        repo['id'] = repo_metadata.get('id')
+        repo['icon'] = repo_metadata.get('icon')
+        repo['name'] = repo_metadata.get('name')
+
+    return return_repos

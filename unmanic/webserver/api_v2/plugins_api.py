@@ -103,6 +103,11 @@ class ApiPluginsHandler(BaseApiHandler):
             "supported_methods": ["GET"],
             "call_method":       "get_repo_list",
         },
+        {
+            "path_pattern":      r"/plugins/repos/reload",
+            "supported_methods": ["PUT"],
+            "call_method":       "reload_repo_data",
+        },
     ]
 
     def initialize(self, **kwargs):
@@ -791,6 +796,58 @@ class ApiPluginsHandler(BaseApiHandler):
                 }
             )
             self.write_success(response)
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def reload_repo_data(self):
+        """
+        Plugins - Reload plugin repositories remote data
+        ---
+        description: Reload plugin repositories remote data.
+        responses:
+            200:
+                description: 'Success: Reload plugin repositories remote data.'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            if not plugins.reload_plugin_repos_data():
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to pull latest plugin repo data")
+                self.write_error()
+                return
+
+            self.write_success()
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

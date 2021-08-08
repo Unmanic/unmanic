@@ -149,27 +149,21 @@ class PluginsHandler(object, metaclass=SingletonType):
         plugins_directory = self.settings.get_plugins_path()
         if not os.path.exists(plugins_directory):
             os.makedirs(plugins_directory)
-        success = True
         current_repos_list = self.get_plugin_repos()
         for repo in current_repos_list:
             repo_path = repo.get('path')
             repo_id = self.get_plugin_repo_id(repo_path)
 
-            # Try to fetch URL
-            try:
-                # Fetch remote JSON file
-                repo_data = self.fetch_remote_repo_data(repo_path)
+            # Fetch remote JSON file
+            repo_data = self.fetch_remote_repo_data(repo_path)
 
-                # Dumb object to local JSON file
-                repo_cache = self.get_repo_cache_file(repo_id)
-                self._log("Repo cache file '{}'.".format(repo_cache), level="info")
-                with open(repo_cache, 'w') as f:
-                    json.dump(repo_data, f, indent=4)
+            # Dumb object to local JSON file
+            repo_cache = self.get_repo_cache_file(repo_id)
+            self._log("Repo cache file '{}'.".format(repo_cache), level="info")
+            with open(repo_cache, 'w') as f:
+                json.dump(repo_data, f, indent=4)
 
-            except Exception as e:
-                success = False
-                self._log("Exception while updating repo {}.".format(repo_path), str(e), level="exception")
-        return success
+        return True
 
     def read_repo_data(self, repo_id):
         repo_cache = self.get_repo_cache_file(repo_id)

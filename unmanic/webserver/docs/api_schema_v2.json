@@ -248,8 +248,8 @@
                     "id_list": {
                         "type": "array",
                         "minItems": 1,
-                        "description": "Start row number to select from",
-                        "example": 0,
+                        "description": "List of table IDs",
+                        "example": [],
                         "items": {
                             "type": "integer"
                         }
@@ -367,8 +367,8 @@
                     "id_list": {
                         "type": "array",
                         "minItems": 1,
-                        "description": "Start row number to select from",
-                        "example": 0,
+                        "description": "List of table IDs",
+                        "example": [],
                         "items": {
                             "type": "integer"
                         }
@@ -824,6 +824,7 @@
                 "properties": {
                     "repos_list": {
                         "type": "array",
+                        "minItems": 0,
                         "description": "A list of repost to save",
                         "example": [
                             "https://raw.githubusercontent.com/Josh5/unmanic-plugins/repo/repo.json"

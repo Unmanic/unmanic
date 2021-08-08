@@ -191,6 +191,41 @@ components:
       - id
       - priority
       type: object
+    PluginReposListResults:
+      properties:
+        repos:
+          description: Results
+          items:
+            $ref: '#/components/schemas/PluginReposMetadataResults'
+          minItems: 0
+          type: array
+      required:
+      - repos
+      type: object
+    PluginReposMetadataResults:
+      properties:
+        id:
+          description: The plugin repo ID
+          example: repository.josh5
+          type: string
+        name:
+          description: The plugin repo name
+          example: Josh.5 Development Plugins for Unmanic
+          type: string
+        icon:
+          description: The plugin repo icon
+          example: https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/icon.png
+          type: string
+        path:
+          description: The plugin repo URL path
+          example: https://raw.githubusercontent.com/Josh5/unmanic-plugins/repo/repo.json
+          type: string
+      required:
+      - icon
+      - id
+      - name
+      - path
+      type: object
     PluginStatus:
       properties:
         installed:
@@ -607,6 +642,18 @@ components:
           type: array
       required:
       - id_list
+      type: object
+    RequestUpdatePluginReposList:
+      properties:
+        repos_list:
+          description: A list of repost to save
+          example:
+          - https://raw.githubusercontent.com/Josh5/unmanic-plugins/repo/repo.json
+          items:
+            type: string
+          type: array
+      required:
+      - repos_list
       type: object
     SessionStateSuccess:
       properties:
@@ -1190,7 +1237,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RequestPluginsSettingsSave'
-        description: Returns a list of installed plugins.
+        description: Requested a plugins settings be updated.
         required: true
       responses:
         '200':
@@ -1259,13 +1306,13 @@ paths:
           description: Internal error; Check `error` for exception
   /plugins/install:
     put:
-      description: Installs a plugin by its plugin ID.
+      description: Installs a plugin by its Plugin ID.
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/RequestPluginsById'
-        description: Returns a list of installed plugins.
+        description: Requested a plugin be installed by its Plugin ID.
         required: true
       responses:
         '200':
@@ -1273,7 +1320,82 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Sample response: Installs a plugin by its plugin ID.'
+          description: 'Sample response: Installs a plugin by its Plugin ID.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/repos/update:
+    post:
+      description: Updates the plugin repo list.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestUpdatePluginReposList'
+        description: Requested an update to the plugin repo list.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Sample response: Updates the plugin repo list.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/repos/list:
+    get:
+      description: Returns a list of plugin repos.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginReposListResults'
+          description: 'Sample response: Returns a list of plugin repos.'
         '400':
           content:
             application/json:

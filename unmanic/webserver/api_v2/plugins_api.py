@@ -34,10 +34,10 @@ import tornado.log
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
-from unmanic.webserver.api_v2.schema.schemas import PluginsDataSchema, PluginsInfoResultsSchema, \
+from unmanic.webserver.api_v2.schema.schemas import PluginReposListResultsSchema, PluginsDataSchema, PluginsInfoResultsSchema, \
     PluginsInstallableResultsSchema, RequestPluginsByIdSchema, RequestPluginsInfoSchema, \
     RequestPluginsSettingsSaveSchema, RequestPluginsTableDataSchema, \
-    RequestTableUpdateByIdList
+    RequestTableUpdateByIdList, RequestUpdatePluginReposListSchema
 from unmanic.webserver.helpers import plugins
 
 
@@ -92,6 +92,16 @@ class ApiPluginsHandler(BaseApiHandler):
             "path_pattern":      r"/plugins/install",
             "supported_methods": ["PUT"],
             "call_method":       "install_plugin_by_id",
+        },
+        {
+            "path_pattern":      r"/plugins/repos/update",
+            "supported_methods": ["POST"],
+            "call_method":       "update_repo_list",
+        },
+        {
+            "path_pattern":      r"/plugins/repos/list",
+            "supported_methods": ["GET"],
+            "call_method":       "get_repo_list",
         },
     ]
 
@@ -502,7 +512,7 @@ class ApiPluginsHandler(BaseApiHandler):
         ---
         description: Saves the settings of a single plugin.
         requestBody:
-            description: Returns a list of installed plugins.
+            description: Requested a plugins settings be updated.
             required: True
             content:
                 application/json:
@@ -614,11 +624,11 @@ class ApiPluginsHandler(BaseApiHandler):
 
     def install_plugin_by_id(self):
         """
-        Plugins - Install a single plugin by its plugin ID
+        Plugins - Install a single plugin by its Plugin ID
         ---
-        description: Installs a plugin by its plugin ID.
+        description: Installs a plugin by its Plugin ID.
         requestBody:
-            description: Returns a list of installed plugins.
+            description: Requested a plugin be installed by its Plugin ID.
             required: True
             content:
                 application/json:
@@ -626,7 +636,7 @@ class ApiPluginsHandler(BaseApiHandler):
                         RequestPluginsByIdSchema
         responses:
             200:
-                description: 'Sample response: Installs a plugin by its plugin ID.'
+                description: 'Sample response: Installs a plugin by its Plugin ID.'
                 content:
                     application/json:
                         schema:
@@ -665,6 +675,122 @@ class ApiPluginsHandler(BaseApiHandler):
                 return
 
             self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def update_repo_list(self):
+        """
+        Plugins - Update the plugin repo list
+        ---
+        description: Updates the plugin repo list.
+        requestBody:
+            description: Requested an update to the plugin repo list.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestUpdatePluginReposListSchema
+        responses:
+            200:
+                description: 'Sample response: Updates the plugin repo list.'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(RequestUpdatePluginReposListSchema())
+
+            if not plugins.save_plugin_repos_list(json_request.get('repos_list')):
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to update plugin repo list")
+                self.write_error()
+                return
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def get_repo_list(self):
+        """
+        Plugins - Read all configured plugin repos
+        ---
+        description: Returns a list of plugin repos.
+        responses:
+            200:
+                description: 'Sample response: Returns a list of plugin repos.'
+                content:
+                    application/json:
+                        schema:
+                            PluginReposListResultsSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            plugin_repos_list = plugins.prepare_plugin_repos_list()
+
+            response = self.build_response(
+                PluginReposListResultsSchema(),
+                {
+                    "repos": plugin_repos_list
+                }
+            )
+            self.write_success(response)
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

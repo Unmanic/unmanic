@@ -340,6 +340,7 @@ class PluginStatusSchema(BaseSchema):
         example=True,
     )
 
+
 class RequestPluginsByIdSchema(BaseSchema):
     """Schema to request data pertaining to a plugin by it's Plugin ID"""
 
@@ -347,6 +348,7 @@ class RequestPluginsByIdSchema(BaseSchema):
         required=True,
         example="dts_to_dd",
     )
+
 
 class PluginsMetadataResultsSchema(BaseSchema):
     """Schema for plugin metadata that will be returned by various requests """
@@ -535,6 +537,56 @@ class PluginsInstallableResultsSchema(BaseSchema):
 
     plugins = fields.Nested(
         PluginsMetadataInstallableResultsSchema,
+        required=True,
+        description="Results",
+        many=True,
+        validate=validate.Length(min=0),
+    )
+
+
+class PluginReposMetadataResultsSchema(BaseSchema):
+    """Schema for plugin repo metadata that will be returned when fetching repo lists"""
+
+    id = fields.Str(
+        required=True,
+        description="The plugin repo ID",
+        example="repository.josh5",
+    )
+    name = fields.Str(
+        required=True,
+        description="The plugin repo name",
+        example="Josh.5 Development Plugins for Unmanic",
+    )
+    icon = fields.Str(
+        required=True,
+        description="The plugin repo icon",
+        example="https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/icon.png",
+    )
+    path = fields.Str(
+        required=True,
+        description="The plugin repo URL path",
+        example="https://raw.githubusercontent.com/Josh5/unmanic-plugins/repo/repo.json",
+    )
+
+
+class RequestUpdatePluginReposListSchema(BaseSchema):
+    """Schema to request an update of the plugin repos list"""
+
+    repos_list = fields.List(
+        cls_or_instance=fields.Str,
+        required=True,
+        description="A list of repost to save",
+        example=[
+            'https://raw.githubusercontent.com/Josh5/unmanic-plugins/repo/repo.json',
+        ],
+    )
+
+
+class PluginReposListResultsSchema(BaseSchema):
+    """Schema for plugin repo lists that are returned"""
+
+    repos = fields.Nested(
+        PluginReposMetadataResultsSchema,
         required=True,
         description="Results",
         many=True,

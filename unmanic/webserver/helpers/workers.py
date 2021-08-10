@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.workers.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     25 Oct 2020, (9:07 PM)
+    Date:                     11 Aug 2021, (10:45 AM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -29,30 +29,28 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
-from __future__ import absolute_import
-import warnings
-
-from .docs_api import ApiDocsHandler
-from .history_api import ApiHistoryHandler
-from .pending_api import ApiPendingHandler
-from .plugins_api import ApiPluginsHandler
-from .session_api import ApiSessionHandler
-from .version_api import ApiVersionHandler
-from .workers_api import ApiWorkersHandler
-
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'ApiDocsHandler',
-    'ApiHistoryHandler',
-    'ApiPendingHandler',
-    'ApiPluginsHandler',
-    'ApiSessionHandler',
-    'ApiVersionHandler',
-    'ApiWorkersHandler'
-)
+from unmanic.libs.uiserver import UnmanicRunningTreads
 
 
-def list_all_handlers():
-    return __all__
+def pause_worker_by_id(worker_id: int):
+    """
+    Pause a worker given that worker's ID
+
+    :param worker_id:
+    :return:
+    """
+    urt = UnmanicRunningTreads()
+    foreman = urt.get_unmanic_running_thread('foreman')
+    return foreman.pause_worker_thread(worker_id)
+
+
+def resume_worker_by_id(worker_id: int):
+    """
+    Resume a worker given that worker's ID
+
+    :param worker_id:
+    :return:
+    """
+    urt = UnmanicRunningTreads()
+    foreman = urt.get_unmanic_running_thread('foreman')
+    return foreman.resume_worker_thread(worker_id)

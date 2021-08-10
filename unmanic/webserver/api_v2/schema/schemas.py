@@ -644,3 +644,15 @@ class VersionReadSuccessSchema(BaseSchema):
         description="Application version",
         example="1.0.0",
     )
+
+
+# WORKERS
+# =======
+
+class RequestWorkerByIdSchema(BaseSchema):
+    """Schema to request a worker by the worker's ID"""
+
+    worker_id = fields.Str(
+        required=True,
+        example="1",
+    )

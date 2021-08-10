@@ -4,6 +4,7 @@
 ### Building the Source
 Before building the image, you need to have built the unmanic python package:
 ```bash
+rm -fv ./dist/unmanic-*
 python3 ./setup.py sdist bdist_wheel
 ```
 

@@ -656,6 +656,14 @@ components:
       required:
       - repos_list
       type: object
+    RequestWorkerById:
+      properties:
+        worker_id:
+          example: '1'
+          type: string
+      required:
+      - worker_id
+      type: object
     SessionStateSuccess:
       properties:
         level:
@@ -1533,6 +1541,88 @@ paths:
               schema:
                 $ref: '#/components/schemas/VersionReadSuccess'
           description: 'Sample response: Returns the application version.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /workers/worker/pause:
+    put:
+      description: Pauses a worker by its ID.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestWorkerById'
+        description: Requested a worker be paused by its ID.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Sample response: Pauses a worker by its ID.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /workers/worker/resume:
+    put:
+      description: Resumes a worker by its ID.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestWorkerById'
+        description: Requested a worker be resumed by its ID.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Sample response: Resumes a worker by its ID.'
         '400':
           content:
             application/json:

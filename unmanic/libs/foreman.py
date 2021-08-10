@@ -58,6 +58,7 @@ class WorkerThread(threading.Thread):
         self.task_queue = task_queue
         self.complete_queue = complete_queue
         self.idle = True
+        self.paused = False
         self.current_task = None
         self.redundant_flag = threading.Event()
         self.redundant_flag.clear()
@@ -75,15 +76,16 @@ class WorkerThread(threading.Thread):
 
     def get_status(self):
         status = {
-            'id':                    str(self.thread_id),
-            'name':                  self.name,
-            'idle':                  self.idle,
-            'pid':                   self.ident,
-            'progress':              self.get_job_progress(),
-            'start_time':            self.start_time,
-            'current_file':          "",
-            'worker_log_tail':       [],
-            'runners_info':          {},
+            'id':              str(self.thread_id),
+            'name':            self.name,
+            'idle':            self.idle,
+            'paused':          self.paused,
+            'pid':             self.ident,
+            'progress':        self.get_job_progress(),
+            'start_time':      self.start_time,
+            'current_file':    "",
+            'worker_log_tail': [],
+            'runners_info':    {},
         }
         if self.current_task:
             # Fetch the current file
@@ -254,7 +256,7 @@ class WorkerThread(threading.Thread):
                 if success:
                     # If file conversion was successful
                     self._log("Successfully ran worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'),
-                                                                                   data.get("file_in")))
+                                                                                         data.get("file_in")))
                     # Set the file in as the file out for the next loop
                     file_in = data.get("file_out")
                 else:
@@ -266,7 +268,7 @@ class WorkerThread(threading.Thread):
                     overall_success = False
             else:
                 self._log("Worker process '{}' set to not run the FFMPEG command.".format(plugin_module.get('plugin_id')),
-                                                                                          level='debug')
+                          level='debug')
 
             self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = True
             self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'complete'
@@ -351,8 +353,14 @@ class WorkerThread(threading.Thread):
     def run(self):
         self._log("Starting {}".format(self.name))
         while not self.redundant_flag.is_set():
+            time.sleep(5)
+            # If the Foreman has paused this worker, then dont do anything
+            if self.paused:
+                continue
+            # Set the worker as Idle - This will announce to the Foreman that its ready for a task
             self.idle = True
             while not self.redundant_flag.is_set() and not self.task_queue.empty():
+                time.sleep(.2)
                 try:
                     self.set_current_task(self.task_queue.get_nowait())
                     self.process_task_queue_item()
@@ -361,7 +369,6 @@ class WorkerThread(threading.Thread):
                 except Exception as e:
                     self._log("Exception in processing job with {}:".format(self.name), message2=str(e),
                               level="exception")
-            time.sleep(5)
         self._log("Stopping {}".format(self.name))
 
 
@@ -389,6 +396,19 @@ class Foreman(threading.Thread):
         for thread in range(len(self.worker_threads)):
             self.mark_worker_thread_as_redundant(thread)
 
+    def get_worker_count(self):
+        """Returns the worker count as an integer"""
+        return int(self.settings.get_number_of_workers())
+
+    def validate_worker_config(self):
+        valid = False
+
+        # Ensure that the enabled plugins are compatible with the PluginHandler version
+        plugin_handler = PluginsHandler()
+        if not plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages')):
+            valid = True
+        return valid
+
     def init_worker_threads(self):
         # Remove any redundant idle workers from our list
         thread_keys = [t for t in self.worker_threads]
@@ -398,22 +418,32 @@ class Foreman(threading.Thread):
                     del self.worker_threads[thread]
 
         # Check that we have enough workers running. Spawn new ones as required.
-        if len(self.worker_threads) < int(self.settings.get_number_of_workers()):
+        if len(self.worker_threads) < self.get_worker_count():
             self._log("Foreman Threads under the configured limit. Spawning more...")
             # Not enough workers, create some
-            for i in range(int(self.settings.get_number_of_workers())):
+            for i in range(self.get_worker_count()):
                 if i not in self.worker_threads:
                     # This worker does not yet exists, create it
                     self.start_worker_thread(i)
 
         # Check if we have to many workers running and stop the ones that are idle
-        if len(self.worker_threads) > int(self.settings.get_number_of_workers()):
+        if len(self.worker_threads) > self.get_worker_count():
             self._log("Foreman Threads exceed the configured limit. Marking some for removal...", level='debug')
             # Too many workers, stop any idle ones
             for thread in self.worker_threads:
                 if self.worker_threads[thread].idle:
                     # This thread id is greater than the max number available. We should set it as redundant
                     self.mark_worker_thread_as_redundant(thread)
+
+    def pause_worker_threads(self):
+        """Pause all threads"""
+        for thread in self.worker_threads:
+            self.pause_worker_thread(thread)
+
+    def resume_worker_threads(self):
+        """Resume all threads"""
+        for thread in self.worker_threads:
+            self.resume_worker_thread(thread)
 
     def start_worker_thread(self, worker_id):
         thread = WorkerThread(worker_id, "Worker-{}".format(worker_id), self.settings, self.data_queues,
@@ -428,6 +458,30 @@ class Foreman(threading.Thread):
                 return True
         return False
 
+    def pause_worker_thread(self, worker_id):
+        """
+        Pauses a single worker thread
+        TODO: This should also pause any current subprocesses
+
+        :param worker_id:
+        :type worker_id:
+        :return:
+        :rtype:
+        """
+        self.worker_threads[worker_id].paused = True
+
+    def resume_worker_thread(self, worker_id):
+        """
+        Resume a single worker thread
+        TODO: This should also resume any current subprocesses
+
+        :param worker_id:
+        :type worker_id:
+        :return:
+        :rtype:
+        """
+        self.worker_threads[worker_id].paused = False
+
     def mark_worker_thread_as_redundant(self, worker_id):
         self.worker_threads[worker_id].redundant_flag.set()
         self.remove_list.append(worker_id)
@@ -440,6 +494,7 @@ class Foreman(threading.Thread):
         while not self.abort_flag.is_set():
             time.sleep(1)
 
+            # Fetch all completed tasks from workers
             while not self.abort_flag.is_set() and not self.complete_queue.empty():
                 time.sleep(.2)
                 try:
@@ -451,9 +506,15 @@ class Foreman(threading.Thread):
                     self._log("Exception when fetching completed task report from worker", message2=str(e),
                               level="exception")
 
-            # First setup the correct number of workers
+            # Setup the correct number of workers
             if not self.abort_flag.is_set():
                 self.init_worker_threads()
+
+            # If the worker config is not valid, then pause all workers until it is
+            if not self.validate_worker_config():
+                # Pause all workers
+                self.pause_worker_threads()
+                continue
 
             if not self.abort_flag.is_set() and not self.task_queue.task_list_pending_is_empty():
                 time.sleep(.2)

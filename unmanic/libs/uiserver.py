@@ -33,9 +33,9 @@
 import os
 import socket
 import threading
-import queue
 import asyncio
 import logging
+from queue import Queue
 
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
@@ -62,6 +62,75 @@ tornado_settings = {
     'debug':           True,
     'autoreload':      False,
 }
+
+
+class FrontendPushMessages(Queue, metaclass=SingletonType):
+    """
+    Handles messages passed to the frontend.
+
+    Messages are sent as objects. These objects require the following fields:
+        - 'id'          : A unique ID of the message. Prevents messages duplication
+        - 'type'        : The type of message - 'error', 'warning', 'success', or 'info'
+        - 'code'        : A code to represent an I18n string for the frontend to display
+        - 'message'     : Additional message string that can be appended to the I18n string displayed on the frontend.
+        - 'timeout'     : The timeout for this message. If set to 0, then the message will persist until manually dismissed.
+
+    """
+
+    def _init(self, maxsize):
+        self.all_items = set()
+        Queue._init(self, maxsize)
+
+    def put(self, item):
+        # Ensure received item is valid
+        self.__validate_item(item)
+        # If it is not already in message list, add it to the list and the queue
+        if item.get('id') not in self.all_items:
+            self.all_items.add(item.get('id'))
+            self.add_to_queue(item)
+
+    def add_to_queue(self, item, block=True, timeout=None):
+        Queue.put(self, item, block, timeout)
+
+    @staticmethod
+    def __validate_item(item):
+        # Ensure all required keys are present
+        for key in ['id', 'type', 'code', 'message', 'timeout']:
+            if not key in item:
+                raise Exception("Frontend message item incorrectly formatted. Missing key: '{}'".format(key))
+
+        # Ensure the given type is valid
+        if item.get('type') not in ['error', 'warning', 'success', 'info']:
+            raise Exception(
+                "Frontend message item's code must be either 'error', 'warning', 'success', or 'info'. Received '{}'".format(
+                    item.get('type')
+                )
+            )
+        return True
+
+    def get_all_items(self):
+        items = []
+        while not self.empty():
+            items.append(self.get())
+        return items
+
+    def requeue_items(self, items):
+        for item in items:
+            self.add_to_queue(item)
+
+    def remove_item(self, item_id):
+        items = self.get_all_items()
+        requeue_items = []
+        for item in items:
+            if item.get('id') != item_id:
+                requeue_items.append(item)
+        self.all_items.remove(item_id)
+        self.requeue_items(requeue_items)
+
+    def read_all_items(self):
+        items = self.get_all_items()
+        self.requeue_items(items)
+        return items
 
 
 class UnmanicDataQueues(object, metaclass=SingletonType):
@@ -290,16 +359,3 @@ class UIServer(threading.Thread):
             )
 
         return app
-
-
-if __name__ == "__main__":
-    print("Starting UI Server")
-    data_queues = {
-        "scheduledtasks": queue.Queue(),
-        "inotifytasks":   queue.Queue()
-    }
-    settings = None
-    uiserver = UIServer(data_queues, settings)
-    uiserver.daemon = True
-    uiserver.start()
-    uiserver.join()

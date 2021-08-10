@@ -422,9 +422,10 @@ class Foreman(threading.Thread):
             self._log("Foreman Threads under the configured limit. Spawning more...")
             # Not enough workers, create some
             for i in range(self.get_worker_count()):
-                if i not in self.worker_threads:
+                worker_id = "W{}".format(i)
+                if worker_id not in self.worker_threads:
                     # This worker does not yet exists, create it
-                    self.start_worker_thread(i)
+                    self.start_worker_thread(worker_id)
 
         # Check if we have to many workers running and stop the ones that are idle
         if len(self.worker_threads) > self.get_worker_count():
@@ -435,12 +436,12 @@ class Foreman(threading.Thread):
                     # This thread id is greater than the max number available. We should set it as redundant
                     self.mark_worker_thread_as_redundant(thread)
 
-    def pause_worker_threads(self):
+    def pause_all_worker_threads(self):
         """Pause all threads"""
         for thread in self.worker_threads:
             self.pause_worker_thread(thread)
 
-    def resume_worker_threads(self):
+    def resume_all_worker_threads(self):
         """Resume all threads"""
         for thread in self.worker_threads:
             self.resume_worker_thread(thread)
@@ -468,7 +469,11 @@ class Foreman(threading.Thread):
         :return:
         :rtype:
         """
+        if not worker_id in self.worker_threads:
+            return False
+
         self.worker_threads[worker_id].paused = True
+        return True
 
     def resume_worker_thread(self, worker_id):
         """
@@ -480,7 +485,11 @@ class Foreman(threading.Thread):
         :return:
         :rtype:
         """
+        if not worker_id in self.worker_threads:
+            return False
+
         self.worker_threads[worker_id].paused = False
+        return True
 
     def mark_worker_thread_as_redundant(self, worker_id):
         self.worker_threads[worker_id].redundant_flag.set()
@@ -513,7 +522,7 @@ class Foreman(threading.Thread):
             # If the worker config is not valid, then pause all workers until it is
             if not self.validate_worker_config():
                 # Pause all workers
-                self.pause_worker_threads()
+                self.pause_all_worker_threads()
                 continue
 
             if not self.abort_flag.is_set() and not self.task_queue.task_list_pending_is_empty():

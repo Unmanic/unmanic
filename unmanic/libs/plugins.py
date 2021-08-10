@@ -649,6 +649,17 @@ class PluginsHandler(object, metaclass=SingletonType):
         # Fetch all enabled plugins
         enabled_plugins = self.get_plugin_list_filtered_and_sorted(enabled=True)
 
+        def add_frontend_message(plugin_id, name):
+            frontend_messages.put(
+                {
+                    'id':      'incompatiblePlugin_{}'.format(plugin_id),
+                    'type':    'error',
+                    'code':    'incompatiblePlugin',
+                    'message': name,
+                    'timeout': 0
+                }
+            )
+
         # Ensure only compatible plugins are enabled
         # If all enabled plugins are compatible, then return true
         incompatible_list = []
@@ -669,15 +680,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             )
             # If the frontend messages queue was included in request, append a message
             if frontend_messages:
-                frontend_messages.put(
-                    {
-                        'id':      'incompatiblePlugin_{}'.format(record.get('plugin_id')),
-                        'type':    'error',
-                        'code':    'incompatiblePlugin',
-                        'message': record.get('name'),
-                        'timeout': 0
-                    }
-                )
+                add_frontend_message(record.get('plugin_id'), record.get('name'))
 
         return incompatible_list
 

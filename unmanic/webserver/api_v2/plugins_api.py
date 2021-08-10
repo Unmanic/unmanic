@@ -238,7 +238,7 @@ class ApiPluginsHandler(BaseApiHandler):
         try:
             json_request = self.read_json_request(RequestTableUpdateByIdList())
 
-            if not plugins.enable_plugins(json_request.get('id_list', [])):
+            if not plugins.enable_plugins(json_request.get('id_list', []), self.unmanic_data_queues.get('frontend_messages')):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to enable the plugins by their IDs")
                 self.write_error()
                 return

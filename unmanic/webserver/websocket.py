@@ -29,6 +29,8 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import json
+import queue
 import time
 import uuid
 
@@ -47,6 +49,7 @@ from unmanic.webserver.helpers import completed_tasks, pending_tasks
 class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
     name = None
     config = None
+    sending_frontend_message = False
     sending_worker_info = False
     sending_pending_tasks_info = False
     sending_completed_tasks_info = False
@@ -68,37 +71,121 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
         self.close_event = tornado.locks.Event()
 
     def on_message(self, message):
-        switcher = {
-            'start_workers_info':         self.start_workers_info,
-            'start_pending_tasks_info':   self.start_pending_tasks_info,
-            'start_completed_tasks_info': self.start_completed_tasks_info,
-        }
-        # Get the function from switcher dictionary
-        func = switcher.get(message, lambda: self.write_message({'success': False}))
-        # Execute the function
-        func()
+        try:
+            message_data = json.loads(message)
+            if message_data.get('command'):
+                # Execute the function
+                getattr(self, message_data.get('command', 'default_failure_response'))(params=message_data.get('params', {}))
+        except json.decoder.JSONDecodeError:
+            tornado.log.app_log.error('Received incorrectly formatted message - {}'.format(message), exc_info=False)
 
     def on_close(self):
         tornado.log.app_log.warning('WS Closed', exc_info=True)
         self.close_event.set()
+        self.sending_frontend_message = False
         self.sending_worker_info = False
         self.sending_completed_tasks_info = False
 
-    def start_workers_info(self):
+    def default_failure_response(self, params=None):
+        """
+        WS Command - default_failure_response
+        Returns a failure response
+
+        :param params:
+        :type params:
+        :return:
+        :rtype:
+        """
+        self.write_message({'success': False})
+
+    def start_frontend_messages(self, params=None):
+        """
+        WS Command - start_frontend_messages
+        Start sending messages from the application to the frontend.
+
+        :param params:
+        :type params:
+        :return:
+        :rtype:
+        """
+        self.sending_frontend_message = True
+        tornado.ioloop.IOLoop.current().spawn_callback(self.async_frontend_message)
+
+    def start_workers_info(self, params=None):
+        """
+        WS Command - start_workers_info
+        Start sending information pertaining to the workers
+
+        :param params:
+        :type params:
+        :return:
+        :rtype:
+        """
         self.sending_worker_info = True
         tornado.ioloop.IOLoop.current().spawn_callback(self.async_workers_info)
 
-    def start_pending_tasks_info(self):
+    def start_pending_tasks_info(self, params=None):
+        """
+        WS Command - start_pending_tasks_info
+        Start sending information pertaining to the pending tasks list
+
+        :param params:
+        :type params:
+        :return:
+        :rtype:
+        """
         self.sending_pending_tasks_info = True
         tornado.ioloop.IOLoop.current().spawn_callback(self.async_pending_tasks_info)
 
-    def start_completed_tasks_info(self):
+    def start_completed_tasks_info(self, params=None):
+        """
+        WS Command - start_completed_tasks_info
+        Start sending information pertaining to the completed tasks list
+
+        :param params:
+        :type params:
+        :return:
+        :rtype:
+        """
         self.sending_completed_tasks_info = True
         tornado.ioloop.IOLoop.current().spawn_callback(self.async_completed_tasks_info)
+
+    def dismiss_message(self, params=None):
+        """
+        WS Command - dismiss_message
+        Dismiss a specified message by id.
+
+        params:
+            - message_id    - The ID of the message to be dismissed
+
+        :param params:
+        :type params:
+        :return:
+        :rtype:
+        """
+        frontend_messages = self.data_queues.get('frontend_messages')
+        frontend_messages.remove_item(params.get('message_id', ''))
 
     async def send(self, message):
         if self.ws_connection:
             await self.write_message(message)
+
+    async def async_frontend_message(self):
+        while self.sending_frontend_message:
+            frontend_messages = self.data_queues.get('frontend_messages')
+            frontend_message_items = frontend_messages.read_all_items()
+            # Send message to client
+            await self.send(
+                {
+                    'success':   True,
+                    'server_id': self.server_id,
+                    'type':      'frontend_message',
+                    'data':      frontend_message_items,
+                }
+            )
+
+            # Sleep for X seconds
+            await gen.sleep(10)
 
     async def async_workers_info(self):
         while self.sending_worker_info:

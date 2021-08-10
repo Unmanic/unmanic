@@ -49,7 +49,15 @@ from unmanic.libs.unplugins import plugin_types, PluginExecutor
 
 
 class PluginsHandler(object, metaclass=SingletonType):
-    # Set the default repo to main repo
+    """
+    Set plugin version.
+    Plugins must be compatible with this version to be installed.
+    """
+    version: int = 1
+
+    """
+    Set the default repo to main repo
+    """
     default_repo = 'https://unmanic.app/api/v1/unmanic-plugin-repo/uuid'
 
     def __init__(self, *args, **kwargs):
@@ -173,6 +181,16 @@ class PluginsHandler(object, metaclass=SingletonType):
             return repo_data
         return {}
 
+    def get_plugin_info(self, plugin_id):
+        plugin_info = {}
+        plugin_directory = os.path.join(self.settings.get_plugins_path(), plugin_id)
+        if os.path.exists(plugin_directory):
+            # Read plugin info.json
+            info_file = os.path.join(plugin_directory, 'info.json')
+            with open(info_file) as json_file:
+                plugin_info = json.load(json_file)
+        return plugin_info
+
     def get_plugins_in_repo_data(self, repo_data):
         return_list = []
         if 'repo' in repo_data and 'plugins' in repo_data:
@@ -187,6 +205,12 @@ class PluginsHandler(object, metaclass=SingletonType):
 
             # Loop over
             for plugin in repo_data.get("plugins", []):
+                # Only show plugins that are compatible with this version
+                # Plugins will require a 'compatibility' entry in their info.json file.
+                #   This must list the plugin handler versions that it is compatible with
+                if not self.version in plugin.get('compatibility', []):
+                    continue
+
                 plugin_package_url = "{0}/{1}/{1}-{2}.zip".format(repo_data_directory, plugin.get('id'), plugin.get('version'))
                 plugin_changelog_url = "{0}/{1}/changelog.txt".format(repo_data_directory, plugin.get('id'))
 
@@ -194,12 +218,8 @@ class PluginsHandler(object, metaclass=SingletonType):
                 plugin_status = {
                     'installed': False,
                 }
-                plugin_directory = os.path.join(self.settings.get_plugins_path(), plugin.get('id'))
-                if os.path.exists(plugin_directory):
-                    # Read plugin info.json
-                    info_file = os.path.join(plugin_directory, 'info.json')
-                    with open(info_file) as json_file:
-                        plugin_info = json.load(json_file)
+                plugin_info = self.get_plugin_info(plugin.get('id'))
+                if plugin_info:
                     local_version = plugin_info.get('version')
                     # Parse the currently installed version number and check if it matches
                     remote_version = plugin.get('version')
@@ -427,7 +447,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             # No plugin entries exist yet
             self._log("No plugins exist yet.", level="warning")
 
-    def enable_plugin_by_db_table_id(self, plugin_table_ids):
+    def enable_plugin_by_db_table_id(self, plugin_table_ids, frontend_messages=None):
         self._log("Enable plugins '{}'".format(plugin_table_ids), level='debug')
 
         # Refresh session
@@ -436,6 +456,10 @@ class PluginsHandler(object, metaclass=SingletonType):
 
         # Update enabled plugins
         if not self.ensure_session_level_for_plugins(s.level):
+            return False
+
+        # Ensure all currently enabled plugins are compatible
+        if self.get_incompatible_enabled_plugins(frontend_messages):
             return False
 
         # Enable the matching entries in the table
@@ -613,6 +637,49 @@ class PluginsHandler(object, metaclass=SingletonType):
         # Disable plugins
         Plugins.update(enabled=False).execute()
         return False
+
+    def get_incompatible_enabled_plugins(self, frontend_messages=None):
+        """
+        Ensure that the currently installed plugins are compatible with this PluginsHandler version
+
+        :param frontend_messages:
+        :return:
+        :rtype:
+        """
+        # Fetch all enabled plugins
+        enabled_plugins = self.get_plugin_list_filtered_and_sorted(enabled=True)
+
+        # Ensure only compatible plugins are enabled
+        # If all enabled plugins are compatible, then return true
+        incompatible_list = []
+        for record in enabled_plugins:
+            # Ensure plugin is compatible
+            plugin_info = self.get_plugin_info(record.get('plugin_id'))
+            if plugin_info:
+                # Plugins will require a 'compatibility' entry in their info.json file.
+                #   This must list the plugin handler versions that it is compatible with
+                if self.version in plugin_info.get('compatibility', []):
+                    continue
+
+            incompatible_list.append(
+                {
+                    'plugin_id': record.get('plugin_id'),
+                    'name':      record.get('name'),
+                }
+            )
+            # If the frontend messages queue was included in request, append a message
+            if frontend_messages:
+                frontend_messages.put(
+                    {
+                        'id':      'incompatiblePlugin_{}'.format(record.get('plugin_id')),
+                        'type':    'error',
+                        'code':    'incompatiblePlugin',
+                        'message': record.get('name'),
+                        'timeout': 0
+                    }
+                )
+
+        return incompatible_list
 
     @staticmethod
     def test_plugin_runner(plugin_id, plugin_type, test_data=None):

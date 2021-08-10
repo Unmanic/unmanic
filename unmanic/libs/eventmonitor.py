@@ -33,6 +33,8 @@ import os
 import threading
 import time
 
+from unmanic.libs.plugins import PluginsHandler
+
 try:
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
@@ -156,6 +158,12 @@ class EventMonitorManager(threading.Thread):
         # Otherwise close this thread now.
         self._log("Starting EventMonitorManager loop")
         while not self.abort_flag.is_set():
+
+            # Ensure all enabled plugins are compatible before starting the event monitor
+            if not self.all_plugins_are_compatible():
+                time.sleep(2)
+                continue
+
             # Check settings to ensure the event monitor should be enabled...
             if self.settings.get_enable_inotify():
                 # If enabled, ensure it is running and start it if it is not
@@ -170,6 +178,13 @@ class EventMonitorManager(threading.Thread):
 
         self.stop_event_processor()
         self._log("Leaving EventMonitorManager loop...")
+
+    def all_plugins_are_compatible(self):
+        """Ensure all plugins are compatible before running"""
+        plugin_handler = PluginsHandler()
+        if plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages')):
+            return False
+        return True
 
     def start_event_processor(self):
         """

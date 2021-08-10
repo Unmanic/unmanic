@@ -44,7 +44,7 @@ from unmanic.libs.filetest import FileTest
 from unmanic.libs.taskqueue import TaskQueue
 from unmanic.libs.postprocessor import PostProcessor
 from unmanic.libs.taskhandler import TaskHandler
-from unmanic.libs.uiserver import UIServer
+from unmanic.libs.uiserver import FrontendPushMessages, UIServer
 from unmanic.libs.foreman import Foreman
 from unmanic.libs.unplugins.pluginscli import PluginsCLI
 
@@ -58,6 +58,7 @@ class LibraryScanner(threading.Thread):
         self.interval = 0
         self.firstrun = True
         self.settings = settings
+        self.data_queues = data_queues
         self.logger = data_queues["logging"].get_logger(self.name)
         self.scheduledtasks = data_queues["scheduledtasks"]
         self.library_scanner_triggers = data_queues["library_scanner_triggers"]
@@ -156,6 +157,14 @@ class LibraryScanner(threading.Thread):
         self._log("Leaving LibraryScanner Monitor loop...")
 
     def scheduled_job(self):
+        from unmanic.libs.plugins import PluginsHandler
+        plugin_handler = PluginsHandler()
+        incompatible_plugins = plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages'))
+        if incompatible_plugins:
+            self._log("Skipping library scanner due incompatible plugins.", level='warning')
+            for incompatible_plugin in incompatible_plugins:
+                self._log("Found incompatible plugin '{}'".format(incompatible_plugin.get('plugin_id')), level='warning')
+            return
         self._log("Running full library scan")
         self.scan_library_path(self.settings.get_library_path())
 
@@ -327,6 +336,7 @@ class Service:
             "scheduledtasks":           queue.Queue(),
             "inotifytasks":             queue.Queue(),
             "progress_reports":         queue.Queue(),
+            "frontend_messages":        FrontendPushMessages(),
             "logging":                  unmanic_logging
         }
 

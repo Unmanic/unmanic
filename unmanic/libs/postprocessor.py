@@ -67,6 +67,7 @@ class PostProcessor(threading.Thread):
     def __init__(self, data_queues, settings, task_queue):
         super(PostProcessor, self).__init__(name='PostProcessor')
         self.logger = data_queues["logging"].get_logger(self.name)
+        self.data_queues = data_queues
         self.settings = settings
         self.task_queue = task_queue
         self.abort_flag = threading.Event()
@@ -113,6 +114,10 @@ class PostProcessor(threading.Thread):
         while not self.abort_flag.is_set():
             time.sleep(1)
 
+            if not self.all_plugins_are_compatible():
+                time.sleep(2)
+                continue
+
             while not self.abort_flag.is_set() and not self.task_queue.task_list_processed_is_empty():
                 time.sleep(.2)
                 self.current_task = self.task_queue.get_next_processed_tasks()
@@ -131,6 +136,13 @@ class PostProcessor(threading.Thread):
                     self.current_task.delete()
 
         self._log("Leaving PostProcessor Monitor loop...")
+
+    def all_plugins_are_compatible(self):
+        """Ensure all plugins are compatible before running"""
+        plugin_handler = PluginsHandler()
+        if plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages')):
+            return False
+        return True
 
     def post_process_file(self):
         # Init plugins handler

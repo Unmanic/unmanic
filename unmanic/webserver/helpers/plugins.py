@@ -99,15 +99,16 @@ def prepare_filtered_plugins(params):
     return return_data
 
 
-def enable_plugins(plugin_table_ids):
+def enable_plugins(plugin_table_ids, frontend_messages=None):
     """
     Enables a list of plugins
 
+    :param frontend_messages:
     :param plugin_table_ids:
     :return:
     """
     plugins_handler = PluginsHandler()
-    return plugins_handler.enable_plugin_by_db_table_id(plugin_table_ids)
+    return plugins_handler.enable_plugin_by_db_table_id(plugin_table_ids, frontend_messages)
 
 
 def disable_plugins(plugin_table_ids):

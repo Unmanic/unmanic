@@ -40,55 +40,41 @@ class ProcessItem(PluginType):
     Runner function - enables additional configured processing jobs during the worker stages of a task.
 
     The 'data' object argument includes:
-        exec_ffmpeg             - Boolean, should Unmanic run FFMPEG with the data returned from this plugin.
-        file_probe              - A dictionary object containing the current file probe state.
-        ffmpeg_args             - A list of Unmanic's default FFMPEG args.
-        file_in                 - The source file to be processed by the FFMPEG command.
-        file_out                - The destination that the FFMPEG command will output.
-        original_file_path      - The absolute path to the original library file.
+        exec_command            - A command that Unmanic should execute. Can be empty.
+        command_progress_parser - A function that Unmanic can use to parse the STDOUT of the command to collect progress stats. Can be empty.
+        file_in                 - The source file to be processed by the command.
+        file_out                - The destination that the command should output (may be the same as the file_in if necessary).
+        original_file_path      - The absolute path to the original file.
+        repeat                  - Boolean, should this runner be executed again once completed with the same variables.
 
     :param data:
     :return:
     """
     data_schema = {
-        "exec_ffmpeg":        {
-            "required": True,
-            "type":     bool,
-        },
-        "file_probe":         {
-            "required": True,
-            "type":     dict,
-            "children": {
-                "streams": {
-                    "required": True,
-                    "type":     list,
-                },
-                "format":  {
-                    "required": True,
-                    "type":     dict,
-                },
-            },
-        },
-        "ffmpeg_args":        {
+        "exec_command":            {
             "required": True,
             "type":     list,
         },
-        "file_in":            {
+        "command_progress_parser": {
+            "required": True,
+            "type":     'callable',
+        },
+        "file_in":                 {
             "required": True,
             "type":     str,
         },
-        "file_out":           {
+        "file_out":                {
             "required": True,
             "type":     str,
         },
-        "original_file_path": {
+        "original_file_path":      {
             "required": False,
             "type":     str,
         },
     }
     test_data = {
-        'exec_ffmpeg':        True,
-        'ffmpeg_args':        [
+        'exec_command':            [
+            'ffmpeg',
             '-i',
             '/library/TEST_FILE.mkv',
             '-hide_banner',
@@ -129,425 +115,8 @@ class ProcessItem(PluginType):
             '-y',
             '/tmp/unmanic/unmanic_file_conversion-1616571944.7296784/TEST_FILE-1616571944.7296877-WORKING-1.mp4'
         ],
-        'file_in':            '/library/TEST_FILE.mkv',
-        'file_out':           '/tmp/unmanic/unmanic_file_conversion-1616571944.7296784/TEST_FILE-1616571944.7296877-WORKING-1.mp4',
-        'file_probe':         {
-            'format':  {
-                'bit_rate':    '5536191',
-                'duration':    '4585.462000',
-                'filename':    '/library/TEST_FILE.mkv',
-                'format_name': 'matroska,webm',
-                'nb_programs': 0,
-                'nb_streams':  7,
-                'probe_score': 100,
-                'size':        '3173249493',
-                'start_time':  '0.000000',
-                'tags':        {
-                    'creation_time': '2016-09-05T15:58:56.000000Z',
-                    'encoder':       'libebml v1.3.4 + libmatroska '
-                                     'v1.4.5',
-                    'title':         'VIDEO_TITLE'
-                }
-            },
-            'streams': [
-                {
-                    'avg_frame_rate':       '24/1',
-                    'bits_per_raw_sample':  '8',
-                    'chroma_location':      'topleft',
-                    'closed_captions':      0,
-                    'codec_long_name':      'unknown',
-                    'codec_name':           'h264',
-                    'codec_tag':            '0x0000',
-                    'codec_tag_string':     '[0][0][0][0]',
-                    'codec_time_base':      '1/48',
-                    'codec_type':           'video',
-                    'coded_height':         1088,
-                    'coded_width':          1920,
-                    'color_primaries':      'bt709',
-                    'color_range':          'tv',
-                    'color_space':          'bt709',
-                    'color_transfer':       'bt709',
-                    'display_aspect_ratio': '479:269',
-                    'disposition':          {
-                        'attached_pic':     0,
-                        'clean_effects':    0,
-                        'comment':          0,
-                        'default':          1,
-                        'dub':              0,
-                        'forced':           0,
-                        'hearing_impaired': 0,
-                        'karaoke':          0,
-                        'lyrics':           0,
-                        'original':         0,
-                        'timed_thumbnails': 0,
-                        'visual_impaired':  0
-                    },
-                    'field_order':          'progressive',
-                    'has_b_frames':         1,
-                    'height':               1076,
-                    'index':                0,
-                    'is_avc':               'true',
-                    'level':                40,
-                    'nal_length_size':      '4',
-                    'pix_fmt':              'yuv420p',
-                    'profile':              '100',
-                    'r_frame_rate':         '24/1',
-                    'refs':                 1,
-                    'sample_aspect_ratio':  '1:1',
-                    'start_pts':            0,
-                    'start_time':           '0.000000',
-                    'tags':                 {
-                        'language': 'eng',
-                        'title':    'VIDEO_TITLE'
-                    },
-                    'time_base':            '1/1000',
-                    'width':                1916
-                },
-                {
-                    'avg_frame_rate':   '0/0',
-                    'bit_rate':         '384000',
-                    'bits_per_sample':  0,
-                    'channel_layout':   '5.1(side)',
-                    'channels':         6,
-                    'codec_long_name':  'unknown',
-                    'codec_name':       'ac3',
-                    'codec_tag':        '0x0000',
-                    'codec_tag_string': '[0][0][0][0]',
-                    'codec_time_base':  '1/48000',
-                    'codec_type':       'audio',
-                    'disposition':      {
-                        'attached_pic':     0,
-                        'clean_effects':    0,
-                        'comment':          0,
-                        'default':          1,
-                        'dub':              0,
-                        'forced':           0,
-                        'hearing_impaired': 0,
-                        'karaoke':          0,
-                        'lyrics':           0,
-                        'original':         0,
-                        'timed_thumbnails': 0,
-                        'visual_impaired':  0
-                    },
-                    'dmix_mode':        '-1',
-                    'index':            1,
-                    'loro_cmixlev':     '-1.000000',
-                    'loro_surmixlev':   '-1.000000',
-                    'ltrt_cmixlev':     '-1.000000',
-                    'ltrt_surmixlev':   '-1.000000',
-                    'r_frame_rate':     '0/0',
-                    'sample_fmt':       'fltp',
-                    'sample_rate':      '48000',
-                    'start_pts':        0,
-                    'start_time':       '0.000000',
-                    'tags':             {
-                        'language': 'fr',
-                        'title':    'VIDEO_TITLE'
-                    },
-                    'time_base':        '1/1000'
-                },
-                {
-                    'avg_frame_rate':   '0/0',
-                    'bit_rate':         '384000',
-                    'bits_per_sample':  0,
-                    'channel_layout':   '5.1(side)',
-                    'channels':         6,
-                    'codec_long_name':  'unknown',
-                    'codec_name':       'ac3',
-                    'codec_tag':        '0x0000',
-                    'codec_tag_string': '[0][0][0][0]',
-                    'codec_time_base':  '1/48000',
-                    'codec_type':       'audio',
-                    'disposition':      {
-                        'attached_pic':     0,
-                        'clean_effects':    0,
-                        'comment':          0,
-                        'default':          1,
-                        'dub':              0,
-                        'forced':           0,
-                        'hearing_impaired': 0,
-                        'karaoke':          0,
-                        'lyrics':           0,
-                        'original':         0,
-                        'timed_thumbnails': 0,
-                        'visual_impaired':  0
-                    },
-                    'dmix_mode':        '-1',
-                    'index':            2,
-                    'loro_cmixlev':     '-1.000000',
-                    'loro_surmixlev':   '-1.000000',
-                    'ltrt_cmixlev':     '-1.000000',
-                    'ltrt_surmixlev':   '-1.000000',
-                    'r_frame_rate':     '0/0',
-                    'sample_fmt':       'fltp',
-                    'sample_rate':      '48000',
-                    'start_pts':        0,
-                    'start_time':       '0.000000',
-                    'tags':             {
-                        'language': 'eng',
-                        'title':    'VIDEO_TITLE'
-                    },
-                    'time_base':        '1/1000'
-                },
-                {
-                    'avg_frame_rate':   '0/0',
-                    'codec_long_name':  'unknown',
-                    'codec_name':       'subrip',
-                    'codec_tag':        '0x0000',
-                    'codec_tag_string': '[0][0][0][0]',
-                    'codec_time_base':  '0/1',
-                    'codec_type':       'subtitle',
-                    'disposition':      {
-                        'attached_pic':     0,
-                        'clean_effects':    0,
-                        'comment':          0,
-                        'default':          1,
-                        'dub':              0,
-                        'forced':           0,
-                        'hearing_impaired': 0,
-                        'karaoke':          0,
-                        'lyrics':           0,
-                        'original':         0,
-                        'timed_thumbnails': 0,
-                        'visual_impaired':  0
-                    },
-                    'duration':         '4585.462000',
-                    'duration_ts':      4585462,
-                    'index':            3,
-                    'r_frame_rate':     '0/0',
-                    'start_pts':        0,
-                    'start_time':       '0.000000',
-                    'tags':             {
-                        'language': 'fr'
-                    },
-                    'time_base':        '1/1000'
-                },
-                {
-                    'avg_frame_rate':   '0/0',
-                    'codec_long_name':  'unknown',
-                    'codec_name':       'subrip',
-                    'codec_tag':        '0x0000',
-                    'codec_tag_string': '[0][0][0][0]',
-                    'codec_time_base':  '0/1',
-                    'codec_type':       'subtitle',
-                    'disposition':      {
-                        'attached_pic':     0,
-                        'clean_effects':    0,
-                        'comment':          0,
-                        'default':          1,
-                        'dub':              0,
-                        'forced':           0,
-                        'hearing_impaired': 0,
-                        'karaoke':          0,
-                        'lyrics':           0,
-                        'original':         0,
-                        'timed_thumbnails': 0,
-                        'visual_impaired':  0
-                    },
-                    'duration':         '4585.462000',
-                    'duration_ts':      4585462,
-                    'index':            4,
-                    'r_frame_rate':     '0/0',
-                    'start_pts':        0,
-                    'start_time':       '0.000000',
-                    'tags':             {
-                        'language': 'eng'
-                    },
-                    'time_base':        '1/1000'
-                },
-                {
-                    'avg_frame_rate':      '0/0',
-                    'bits_per_raw_sample': '8',
-                    'chroma_location':     'center',
-                    'closed_captions':     0,
-                    'codec_long_name':     'unknown',
-                    'codec_name':          'mjpeg',
-                    'codec_tag':           '0x0000',
-                    'codec_tag_string':    '[0][0][0][0]',
-                    'codec_time_base':     '0/1',
-                    'codec_type':          'video',
-                    'coded_height':        176,
-                    'coded_width':         120,
-                    'color_range':         'pc',
-                    'color_space':         'bt470bg',
-                    'disposition':         {
-                        'attached_pic':     1,
-                        'clean_effects':    0,
-                        'comment':          0,
-                        'default':          0,
-                        'dub':              0,
-                        'forced':           0,
-                        'hearing_impaired': 0,
-                        'karaoke':          0,
-                        'lyrics':           0,
-                        'original':         0,
-                        'timed_thumbnails': 0,
-                        'visual_impaired':  0
-                    },
-                    'duration':            '4585.462000',
-                    'duration_ts':         412691580,
-                    'has_b_frames':        0,
-                    'height':              176,
-                    'index':               5,
-                    'level':               -99,
-                    'pix_fmt':             'yuvj444p',
-                    'profile':             '192',
-                    'r_frame_rate':        '90000/1',
-                    'refs':                1,
-                    'start_pts':           0,
-                    'start_time':          '0.000000',
-                    'tags':                {
-                        'filename': 'small_cover.jpg',
-                        'mimetype': 'image/jpeg'
-                    },
-                    'time_base':           '1/90000',
-                    'width':               120
-                },
-                {
-                    'avg_frame_rate':      '0/0',
-                    'bits_per_raw_sample': '8',
-                    'chroma_location':     'center',
-                    'closed_captions':     0,
-                    'codec_long_name':     'unknown',
-                    'codec_name':          'mjpeg',
-                    'codec_tag':           '0x0000',
-                    'codec_tag_string':    '[0][0][0][0]',
-                    'codec_time_base':     '0/1',
-                    'codec_type':          'video',
-                    'coded_height':        120,
-                    'coded_width':         213,
-                    'color_range':         'pc',
-                    'color_space':         'bt470bg',
-                    'disposition':         {
-                        'attached_pic':     1,
-                        'clean_effects':    0,
-                        'comment':          0,
-                        'default':          0,
-                        'dub':              0,
-                        'forced':           0,
-                        'hearing_impaired': 0,
-                        'karaoke':          0,
-                        'lyrics':           0,
-                        'original':         0,
-                        'timed_thumbnails': 0,
-                        'visual_impaired':  0
-                    },
-                    'duration':            '4585.462000',
-                    'duration_ts':         412691580,
-                    'has_b_frames':        0,
-                    'height':              120,
-                    'index':               6,
-                    'level':               -99,
-                    'pix_fmt':             'yuvj444p',
-                    'profile':             '192',
-                    'r_frame_rate':        '90000/1',
-                    'refs':                1,
-                    'start_pts':           0,
-                    'start_time':          '0.000000',
-                    'tags':                {
-                        'filename': 'small_cover_land.jpg',
-                        'mimetype': 'image/jpeg'
-                    },
-                    'time_base':           '1/90000',
-                    'width':               213
-                },
-                {
-                    'avg_frame_rate':      '0/0',
-                    'bits_per_raw_sample': '8',
-                    'chroma_location':     'center',
-                    'closed_captions':     0,
-                    'codec_long_name':     'unknown',
-                    'codec_name':          'mjpeg',
-                    'codec_tag':           '0x0000',
-                    'codec_tag_string':    '[0][0][0][0]',
-                    'codec_time_base':     '0/1',
-                    'codec_type':          'video',
-                    'coded_height':        882,
-                    'coded_width':         600,
-                    'color_range':         'pc',
-                    'color_space':         'bt470bg',
-                    'disposition':         {
-                        'attached_pic':     1,
-                        'clean_effects':    0,
-                        'comment':          0,
-                        'default':          0,
-                        'dub':              0,
-                        'forced':           0,
-                        'hearing_impaired': 0,
-                        'karaoke':          0,
-                        'lyrics':           0,
-                        'original':         0,
-                        'timed_thumbnails': 0,
-                        'visual_impaired':  0
-                    },
-                    'duration':            '4585.462000',
-                    'duration_ts':         412691580,
-                    'has_b_frames':        0,
-                    'height':              882,
-                    'index':               7,
-                    'level':               -99,
-                    'pix_fmt':             'yuvj444p',
-                    'profile':             '192',
-                    'r_frame_rate':        '90000/1',
-                    'refs':                1,
-                    'start_pts':           0,
-                    'start_time':          '0.000000',
-                    'tags':                {
-                        'filename': 'cover.jpg',
-                        'mimetype': 'image/jpeg'
-                    },
-                    'time_base':           '1/90000',
-                    'width':               600
-                },
-                {
-                    'avg_frame_rate':      '0/0',
-                    'bits_per_raw_sample': '8',
-                    'chroma_location':     'center',
-                    'closed_captions':     0,
-                    'codec_long_name':     'unknown',
-                    'codec_name':          'mjpeg',
-                    'codec_tag':           '0x0000',
-                    'codec_tag_string':    '[0][0][0][0]',
-                    'codec_time_base':     '0/1',
-                    'codec_type':          'video',
-                    'coded_height':        600,
-                    'coded_width':         1067,
-                    'color_range':         'pc',
-                    'color_space':         'bt470bg',
-                    'disposition':         {
-                        'attached_pic':     1,
-                        'clean_effects':    0,
-                        'comment':          0,
-                        'default':          0,
-                        'dub':              0,
-                        'forced':           0,
-                        'hearing_impaired': 0,
-                        'karaoke':          0,
-                        'lyrics':           0,
-                        'original':         0,
-                        'timed_thumbnails': 0,
-                        'visual_impaired':  0
-                    },
-                    'duration':            '4585.462000',
-                    'duration_ts':         412691580,
-                    'has_b_frames':        0,
-                    'height':              600,
-                    'index':               8,
-                    'level':               -99,
-                    'pix_fmt':             'yuvj444p',
-                    'profile':             '192',
-                    'r_frame_rate':        '90000/1',
-                    'refs':                1,
-                    'start_pts':           0,
-                    'start_time':          '0.000000',
-                    'tags':                {
-                        'filename': 'cover_land.jpg',
-                        'mimetype': 'image/jpeg'
-                    },
-                    'time_base':           '1/90000',
-                    'width':               1067
-                }
-            ]
-        },
-        'original_file_path': '/library/TEST_FILE.mkv',
+        'command_progress_parser': exec,
+        'file_in':                 '/library/TEST_FILE.mkv',
+        'file_out':                '/tmp/unmanic/unmanic_file_conversion-1616571944.7296784/TEST_FILE-1616571944.7296877-WORKING-1.mp4',
+        'original_file_path':      '/library/TEST_FILE.mkv',
     }

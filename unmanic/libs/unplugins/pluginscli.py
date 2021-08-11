@@ -222,13 +222,14 @@ class PluginsCLI(object):
         # Write plugin info.json
         info_file = os.path.join(new_plugin_path, 'info.json')
         plugin_info = {
-            "id":          plugin_details.get('plugin_id'),
-            "name":        plugin_details.get('plugin_name'),
-            "author":      "",
-            "version":     "0.0.1",
-            "tags":        "",
-            "description": "",
-            "icon":        ""
+            "id":            plugin_details.get('plugin_id'),
+            "name":          plugin_details.get('plugin_name'),
+            "author":        "",
+            "version":       "0.0.1",
+            "tags":          "",
+            "description":   "",
+            "icon":          "",
+            "compatibility": [PluginsHandler.version]
         }
         if not os.path.exists(info_file):
             with open(info_file, 'w') as outfile:

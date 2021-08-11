@@ -339,7 +339,7 @@ class PluginExecutor(object):
         description = []
         # Get the path for this plugin
         plugin_path = self.__get_plugin_directory(plugin_id)
-        plugin_description = os.path.join(plugin_path, 'description.txt')
+        plugin_description = os.path.join(plugin_path, 'description.md')
         if os.path.exists(plugin_description):
             with open(plugin_description, 'r') as f:
                 description = f.readlines()

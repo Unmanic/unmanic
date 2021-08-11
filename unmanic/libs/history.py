@@ -347,21 +347,21 @@ class History(object):
         Create an entry of the stdout log from the ffmpeg command
 
         Required task_dump params:
-            - ffmpeg_log
+            - log
 
         :param historic_task:
         :param task_dump:
         :return:
         """
-        if 'ffmpeg_log' not in task_dump:
-            self._log('Task dump dict missing ffmpeg_log', json.dumps(task_dump), level="debug")
-            raise Exception('Function param missing ffmpeg_log')
+        if 'log' not in task_dump:
+            self._log('Task dump dict missing "log"', json.dumps(task_dump), level="debug")
+            raise Exception('Function param missing "log"')
 
-        ffmpeg_log = task_dump.get('ffmpeg_log')
+        log = task_dump.get('log')
 
         HistoricTaskFfmpegLog.create(
             historictask_id=historic_task,
-            dump=ffmpeg_log
+            dump=log
         )
 
     def create_historic_task_entry(self, task_data):

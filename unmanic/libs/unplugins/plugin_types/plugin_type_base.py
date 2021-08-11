@@ -124,7 +124,20 @@ class PluginType(object):
             data_type = schema_meta.get('type')
             if key in result_data:
                 child_data = result_data.get(key)
-                if not isinstance(child_data, data_type):
+
+                # Test that the data is of the correct type
+                correct_type = False
+
+                # Callable functions are best tested with the callable function
+                # Everything else should be tested with the isinstance function
+                if data_type == 'callable':
+                    if callable(child_data):
+                        correct_type = True
+                elif isinstance(child_data, data_type):
+                    correct_type = True
+
+                # If data is not of the correct type, then append the error message
+                if not correct_type:
                     error = "Plugin '{0} - {1}()' output data returned incorrect data type in key '{2}{3}'. " \
                             "Expected '{4}', but received '{5}'.".format(plugin_id, plugin_runner,
                                                                          data_tree, key, data_type,

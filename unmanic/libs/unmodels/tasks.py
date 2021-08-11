@@ -48,4 +48,4 @@ class Tasks(BaseModel):
     start_time = DateTimeField(null=True, default=datetime.datetime.now)
     finish_time = DateTimeField(null=True, default=datetime.datetime.now)
     processed_by_worker = TextField(null=True)
-    ffmpeg_log = TextField(null=False, default='')
+    log = TextField(null=False, default='')

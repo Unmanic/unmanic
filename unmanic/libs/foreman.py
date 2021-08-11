@@ -38,6 +38,7 @@ import time
 import sys
 
 from unmanic.libs.plugins import PluginsHandler
+from unmanic.libs.workers import Worker
 
 try:
     from unmanic.libs import common, history, ffmpeg
@@ -248,7 +249,7 @@ class WorkerThread(threading.Thread):
 
             # Only run the conversion process if "exec_ffmpeg" is True
             if data.get("exec_ffmpeg"):
-                self.current_task.save_ffmpeg_log("\n\nRUNNER: \n" + plugin_module.get('name'))
+                self.current_task.save_command_log("\n\nRUNNER: \n" + plugin_module.get('name'))
 
                 # Run conversion process
                 success = self.convert_file(data, plugin_module.get('plugin_id'))
@@ -313,11 +314,11 @@ class WorkerThread(threading.Thread):
                 return False
             if ffmpeg_args:
                 success = self.ffmpeg.convert_file_and_fetch_progress(file_in, ffmpeg_args)
-            self.current_task.save_ffmpeg_log(self.ffmpeg.ffmpeg_cmd_stdout)
+            self.current_task.save_command_log(self.ffmpeg.ffmpeg_cmd_stdout)
 
         except ffmpeg.FFMPEGHandleConversionError as e:
             # Fetch ffmpeg stdout and append it to the current task object (to be saved during post process)
-            self.current_task.save_ffmpeg_log(self.ffmpeg.ffmpeg_cmd_stdout)
+            self.current_task.save_command_log(self.ffmpeg.ffmpeg_cmd_stdout)
             self._log("Error while executing the FFMPEG command {}. "
                       "Download FFMPEG command dump from history for more information.".format(file_in),
                       message2=str(e), level="error")
@@ -447,8 +448,7 @@ class Foreman(threading.Thread):
             self.resume_worker_thread(thread)
 
     def start_worker_thread(self, worker_id):
-        thread = WorkerThread(worker_id, "Worker-{}".format(worker_id), self.settings, self.data_queues,
-                              self.workers_pending_task_queue, self.complete_queue)
+        thread = Worker(worker_id, "Worker-{}".format(worker_id), self.workers_pending_task_queue, self.complete_queue)
         thread.daemon = True
         thread.start()
         self.worker_threads[worker_id] = thread

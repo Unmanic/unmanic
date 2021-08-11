@@ -594,13 +594,7 @@ class FFMPEGHandle(object):
                                         universal_newlines=True, errors='replace')
 
         # Reset cmd stdout
-        self.ffmpeg_cmd_stdout = [
-            '\n\n',
-            'COMMAND:\n',
-            ' '.join(command),
-            '\n\n',
-            'LOG:\n',
-        ]
+        self.ffmpeg_cmd_stdout = []
 
         # Poll process for new output until finished
         while True:

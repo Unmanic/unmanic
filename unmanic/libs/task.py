@@ -225,7 +225,7 @@ class Task(object):
             'destination':         self.destination,
             'statistics':          self.statistics,
             'errors':              self.errors,
-            'ffmpeg_log':          self.task.ffmpeg_log,
+            'log':                 self.task.log,
             'file_probe_data':     {
                 'source': self.get_source_data()
             }
@@ -348,16 +348,16 @@ class Task(object):
             self.task.success = False
         self.save()
 
-    def save_ffmpeg_log(self, ffmpeg_log):
+    def save_command_log(self, log):
         """
-        Sets the task ffmpeg_log
+        Sets the task command log
 
-        :param ffmpeg_log:
+        :param log:
         :return:
         """
         if not self.task:
             raise Exception('Unable to set status. Task has not been set!')
-        self.task.ffmpeg_log += ''.join(ffmpeg_log)
+        self.task.log += ''.join(log)
         self.save()
 
     def save_task(self):

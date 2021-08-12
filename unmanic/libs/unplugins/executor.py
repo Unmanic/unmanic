@@ -322,7 +322,7 @@ class PluginExecutor(object):
         changelog = []
         # Get the path for this plugin
         plugin_path = self.__get_plugin_directory(plugin_id)
-        plugin_changelog = os.path.join(plugin_path, 'changelog.txt')
+        plugin_changelog = os.path.join(plugin_path, 'changelog.md')
         if os.path.exists(plugin_changelog):
             with open(plugin_changelog, 'r') as f:
                 changelog = f.readlines()

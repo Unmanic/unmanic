@@ -29,7 +29,6 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-import json
 import os
 import queue
 import shutil
@@ -37,13 +36,15 @@ import subprocess
 import threading
 import time
 
+import psutil as psutil
+
 from unmanic.libs import common, unlogger
 from unmanic.libs.plugins import PluginsHandler
 
 
 def default_progress_parser(line_text):
     return {
-        'percent': None
+        'percent': ''
     }
 
 
@@ -58,7 +59,7 @@ class Worker(threading.Thread):
     paused = False
     current_task = None
 
-    worker_subprocess = None
+    worker_subprocess = {}
     worker_log = None
     percent = None
 
@@ -141,7 +142,8 @@ class Worker(threading.Thread):
             'runners_info':    {},
             'subprocess':      {
                 'pid':     self.ident,
-                'percent': str(self.percent),
+                'percent': str(self.worker_subprocess.get('percent', 0)),
+                'elapsed': str(self.worker_subprocess.get('elapsed', 0)),
             },
         }
         if self.current_task:
@@ -435,33 +437,51 @@ class Worker(threading.Thread):
         # Convert file
         success = False
         try:
+            proc_start_time = time.time()
             # Execute command
-            self.worker_subprocess = subprocess.Popen(exec_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                                      universal_newlines=True, errors='replace')
+            self.worker_subprocess['proc'] = subprocess.Popen(exec_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                                              universal_newlines=True, errors='replace')
+            # Record PID
+            self.worker_subprocess['pid'] = self.worker_subprocess['proc'].pid
+            # Fetch process using psutil for control (sending SIGSTOP on windows will not work)
+            proc = psutil.Process(pid=self.worker_subprocess['pid'])
 
             # Poll process for new output until finished
-            while True:
-                line_text = self.worker_subprocess.stdout.readline()
+            while not self.redundant_flag.is_set():
+                line_text = self.worker_subprocess['proc'].stdout.readline()
 
                 # Fetch command stdout and append it to the current task object (to be saved during post process)
                 self.worker_log.append(line_text)
 
                 # Check if the command has completed. If it has, exit the loop
-                if line_text == '' and self.worker_subprocess.poll() is not None:
+                if line_text == '' and self.worker_subprocess['proc'].poll() is not None:
                     break
 
                 # Parse the progress
                 try:
                     progress_dict = command_progress_parser(line_text)
-                    self.percent = progress_dict.get('percent')
+                    self.worker_subprocess['percent'] = progress_dict.get('percent')
+                    self.worker_subprocess['elapsed'] = str(time.time() - proc_start_time)
                 except Exception as e:
                     # Only need to show any sort of exception if we have debugging enabled.
                     # So we should log it as a debug rather than an exception.
                     self._log("Exception while parsing command progress", str(e), level='debug')
 
+                # Stop the process if the worker is paused
+                # Then resume it when the worker is resumed
+                if self.paused:
+                    proc.suspend()
+                    while not self.redundant_flag.is_set():
+                        time.sleep(1)
+                        if not self.paused:
+                            proc.resume()
+                            # TODO: elapsed time is used for calculating etc. We should also suspend that somehow here.
+                            break
+                        continue
+
             # Get the final output and the exit status
-            communicate = self.worker_subprocess.communicate()[0]
-            if self.worker_subprocess.returncode == 0:
+            communicate = self.worker_subprocess['proc'].communicate()[0]
+            if self.worker_subprocess['proc'].returncode == 0:
                 return True
             else:
                 self._log("Command run against '{}' exited with non-zero status. "

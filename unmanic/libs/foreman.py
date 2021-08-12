@@ -394,7 +394,10 @@ class Foreman(threading.Thread):
     def stop(self):
         self.abort_flag.set()
         # Stop all workers
-        for thread in range(len(self.worker_threads)):
+        # To avoid having the dictionary change size during iteration,
+        #   we need to first get the thread_keys, then iterate through that
+        thread_keys = [t for t in self.worker_threads]
+        for thread in thread_keys:
             self.mark_worker_thread_as_redundant(thread)
 
     def get_worker_count(self):
@@ -412,6 +415,8 @@ class Foreman(threading.Thread):
 
     def init_worker_threads(self):
         # Remove any redundant idle workers from our list
+        # To avoid having the dictionary change size during iteration,
+        #   we need to first get the thread_keys, then iterate through that
         thread_keys = [t for t in self.worker_threads]
         for thread in thread_keys:
             if thread in self.worker_threads:

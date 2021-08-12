@@ -212,7 +212,7 @@ class PluginsHandler(object, metaclass=SingletonType):
                     continue
 
                 plugin_package_url = "{0}/{1}/{1}-{2}.zip".format(repo_data_directory, plugin.get('id'), plugin.get('version'))
-                plugin_changelog_url = "{0}/{1}/changelog.txt".format(repo_data_directory, plugin.get('id'))
+                plugin_changelog_url = "{0}/{1}/changelog.md".format(repo_data_directory, plugin.get('id'))
 
                 # Check if plugin is already installed:
                 plugin_status = {

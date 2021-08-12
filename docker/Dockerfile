@@ -179,6 +179,24 @@ RUN \
                 python3-setuptools \
                 unzip \
         && \
+        if uname -m | grep -q armv7l; then \
+            echo "**** Install python package build dependencies ****" \
+                && apt-get install --no-install-recommends --no-install-suggests -y \
+                    gcc \
+                    python3-dev \
+            && \
+            echo ; \
+        fi \
+        && \
+        if uname -m | grep -q aarch64; then \
+            echo "**** Install python package build dependencies ****" \
+                && apt-get install --no-install-recommends --no-install-suggests -y \
+                    gcc \
+                    python3-dev \
+            && \
+            echo ; \
+        fi \
+        && \
         echo "**** Install pip packages ****" \
             && python3 -m pip install --no-cache-dir -r /tmp/requirements.txt \
     && \

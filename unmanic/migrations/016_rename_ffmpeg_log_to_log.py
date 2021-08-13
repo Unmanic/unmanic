@@ -36,12 +36,12 @@ SQL = pw.SQL
 def migrate(migrator, database, fake=False, **kwargs):
     """Write your migrations here."""
     # Rename 'ffmpeg_log' field to 'log'' in Tasks model
-    migrator.rename_column('tasks', 'ffmpeg_log', 'log')
+    if any(cm for cm in database.get_columns('tasks') if cm.name == 'ffmpeg_log'):
+        migrator.rename_column('tasks', 'ffmpeg_log', 'log')
 
 
 def rollback(migrator, database, fake=False, **kwargs):
     """Write your rollback migrations here."""
     # Rename 'ffmpeg_log' field to 'log'' in Tasks model
     if any(cm for cm in database.get_columns('tasks') if cm.name == 'log'):
-        # Remove the current column
         migrator.rename_column('tasks', 'log', 'ffmpeg_log')

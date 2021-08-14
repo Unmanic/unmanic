@@ -65,9 +65,6 @@ class CONFIG(object, metaclass=SingletonType):
         self.settings = None
         self.db_connection = db_connection
 
-        # Apply default DB settings
-        # self.apply_default_db_settings(config_path)
-
         # Import env variables and override all previous settings.
         self.import_settings_from_env()
         # Read settings from database
@@ -146,21 +143,6 @@ class CONFIG(object, metaclass=SingletonType):
         """
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         unmanic_logging.setup_logger(self)
-
-    def apply_default_db_settings(self, config_path=None):
-        """
-        Apply the default DB settings.
-
-        :return:
-        """
-        if not config_path:
-            config_path = os.path.join(common.get_home_dir(), '.unmanic', 'config')
-        app_dir = os.path.dirname(os.path.abspath(__file__))
-        self.DATABASE = {
-            "TYPE":           "SQLITE",
-            "FILE":           os.path.join(config_path, 'unmanic.db'),
-            "MIGRATIONS_DIR": os.path.join(app_dir, 'migrations'),
-        }
 
     def import_settings_from_db(self):
         """

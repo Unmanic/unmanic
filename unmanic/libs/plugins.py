@@ -29,7 +29,6 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-import base64
 import hashlib
 import json
 import os
@@ -43,9 +42,9 @@ from unmanic import config
 from unmanic.libs import common, unlogger
 from unmanic.libs.session import Session
 from unmanic.libs.singleton import SingletonType
-from unmanic.libs.unmodels import db, Plugins, PluginRepos
+from unmanic.libs.unmodels import Plugins, PluginRepos
 from unmanic.libs.unmodels.pluginflow import PluginFlow
-from unmanic.libs.unplugins import plugin_types, PluginExecutor
+from unmanic.libs.unplugins import PluginExecutor
 
 
 class PluginsHandler(object, metaclass=SingletonType):

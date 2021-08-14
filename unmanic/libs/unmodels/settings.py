@@ -34,7 +34,7 @@ import os
 from peewee import *
 
 from unmanic.libs import common
-from unmanic.libs.unmodels.basemodel import BaseModel
+from unmanic.libs.unmodels.lib import BaseModel
 
 
 # TODO: Re-order model to match UI layout for easier debugging

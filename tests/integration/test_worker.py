@@ -88,7 +88,8 @@ class TestClass(object):
             "FILE":           os.path.join(config_path, 'unmanic.db'),
             "MIGRATIONS_DIR": os.path.join(app_dir, 'migrations'),
         }
-        self.db_connection = unmodels.Database.select_database(database_settings)
+        from unmanic.libs.unmodels.lib import Database
+        self.db_connection = Database.select_database(database_settings)
 
         # Create required tables
         self.db_connection.create_tables([Settings, Tasks, TaskSettings, TaskProbe, TaskProbeStreams, Plugins, PluginFlow, Installation])

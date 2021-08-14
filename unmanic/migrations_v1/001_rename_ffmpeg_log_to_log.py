@@ -1,4 +1,4 @@
-"""Peewee migrations -- 016_rename_ffmpeg_log_to_log.py.
+"""Peewee migrations -- 001_rename_ffmpeg_log_to_log.py.
 
 Some examples (model - class or model name)::
 
@@ -21,7 +21,6 @@ Some examples (model - class or model name)::
 
 """
 
-import datetime as dt
 import peewee as pw
 from decimal import ROUND_HALF_EVEN
 
@@ -32,16 +31,22 @@ except ImportError:
 
 SQL = pw.SQL
 
+"""NOTES:
+The migrator function 'rename_field' has a bug: https://github.com/klen/peewee_migrate/issues/99
+The simple work-around to this was to skip this method and just directly append a migration to the migrator's ops list.
+Eg. `migrator.ops.append(migrator.migrator.rename_column('tasks', 'ffmpeg_log', 'log'))`
+"""
+
 
 def migrate(migrator, database, fake=False, **kwargs):
     """Write your migrations here."""
     # Rename 'ffmpeg_log' field to 'log'' in Tasks model
     if any(cm for cm in database.get_columns('tasks') if cm.name == 'ffmpeg_log'):
-        migrator.rename_column('tasks', 'ffmpeg_log', 'log')
+        migrator.ops.append(migrator.migrator.rename_column('tasks', 'ffmpeg_log', 'log'))
 
 
 def rollback(migrator, database, fake=False, **kwargs):
     """Write your rollback migrations here."""
-    # Rename 'ffmpeg_log' field to 'log'' in Tasks model
+    # Reverse rename 'ffmpeg_log' field to 'log'' in Tasks model
     if any(cm for cm in database.get_columns('tasks') if cm.name == 'log'):
-        migrator.rename_column('tasks', 'log', 'ffmpeg_log')
+        migrator.ops.append(migrator.migrator.rename_column('tasks', 'log', 'ffmpeg_log'))

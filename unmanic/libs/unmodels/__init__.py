@@ -31,18 +31,13 @@
 """
 
 from __future__ import absolute_import
-import warnings
 
-from .basemodel import BaseModel
-from .basemodel import Database
-from .basemodel import db
 from .historictaskffmpeglog import HistoricTaskFfmpegLog
 from .historictaskprobe import HistoricTaskProbe
 from .historictaskprobestreams import HistoricTaskProbeStreams
 from .historictasks import HistoricTasks
 from .historictasksettings import HistoricTaskSettings
 from .installation import Installation
-from .migrations import Migrations
 from .pluginflow import PluginFlow
 from .pluginrepos import PluginRepos
 from .plugins import Plugins
@@ -55,16 +50,12 @@ from .tasksettings import TaskSettings
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
 
 __all__ = (
-    'BaseModel',
-    'Database',
-    'db',
     'HistoricTaskFfmpegLog',
     'HistoricTaskProbe',
     'HistoricTaskProbeStreams',
     'HistoricTasks',
     'HistoricTaskSettings',
     'Installation',
-    'Migrations',
     'PluginFlow',
     'PluginRepos',
     'Plugins',
@@ -74,3 +65,7 @@ __all__ = (
     'Tasks',
     'TaskSettings',
 )
+
+
+def list_all_models():
+    return __all__

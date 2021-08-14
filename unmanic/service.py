@@ -40,6 +40,7 @@ import signal
 
 from unmanic import config, metadata
 from unmanic.libs import unlogger, common, eventmonitor, ffmpeg, history, unmodels
+from unmanic.libs.db_migrate import Migrations
 from unmanic.libs.filetest import FileTest
 from unmanic.libs.taskqueue import TaskQueue
 from unmanic.libs.postprocessor import PostProcessor
@@ -222,9 +223,10 @@ def init_db():
 
     # Set database connection settings
     database_settings = {
-        "TYPE":           "SQLITE",
-        "FILE":           os.path.join(config_path, 'unmanic.db'),
-        "MIGRATIONS_DIR": os.path.join(app_dir, 'migrations'),
+        "TYPE":                       "SQLITE",
+        "FILE":                       os.path.join(config_path, 'unmanic.db'),
+        "MIGRATIONS_DIR":             os.path.join(app_dir, 'migrations_v1'),
+        "MIGRATIONS_HISTORY_VERSION": 'v1',
     }
 
     # Ensure the config path exists
@@ -232,11 +234,12 @@ def init_db():
         os.makedirs(config_path)
 
     # Create database connection
-    db_connection = unmodels.Database.select_database(database_settings)
+    from unmanic.libs.unmodels.lib import Database
+    db_connection = Database.select_database(database_settings)
 
     # Run database migrations
-    migrations = unmodels.Migrations(database_settings)
-    migrations.run_all()
+    migrations = Migrations(database_settings)
+    migrations.update_schema()
 
     # Return the database connection
     return db_connection

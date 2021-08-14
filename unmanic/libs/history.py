@@ -37,8 +37,7 @@ from operator import attrgetter
 
 from unmanic import config
 from unmanic.libs import common, unlogger
-from unmanic.libs.unmodels import db, HistoricTasks, \
-    HistoricTaskSettings, \
+from unmanic.libs.unmodels import HistoricTasks, \
     HistoricTaskProbe, \
     HistoricTaskProbeStreams, \
     HistoricTaskFfmpegLog

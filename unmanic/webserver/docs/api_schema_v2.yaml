@@ -111,6 +111,34 @@ components:
       - task_label
       - task_success
       type: object
+    DirectoryListingResults:
+      properties:
+        directories:
+          description: A list of directories in the given path
+          example:
+          - label: /home
+            value: home
+          - label: /tmp
+            value: tmp
+          items:
+            type: object
+          minItems: 0
+          type: array
+        files:
+          description: A list of files in the given path
+          example:
+          - label: /file1.txt
+            value: file1.txt
+          - label: /file2.txt
+            value: file2.txt
+          items:
+            type: object
+          minItems: 0
+          type: array
+      required:
+      - directories
+      - files
+      type: object
     DocumentContentSuccess:
       properties:
         content:
@@ -490,6 +518,17 @@ components:
       - tags
       - version
       type: object
+    RequestDirectoryListingData:
+      properties:
+        current_path:
+          default: /
+          example: /
+          type: string
+        list_type:
+          default: all
+          example: directories
+          type: string
+      type: object
     RequestHistoryTableData:
       properties:
         start:
@@ -723,6 +762,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentContentSuccess'
           description: 'Sample response: Returns the privacy policy.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /filebrowser/list:
+    post:
+      description: Returns a list of files and/or subdirectories in a given directory.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestDirectoryListingData'
+        description: Requested a list of files and/or subdirectories in a given directory.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectoryListingResults'
+          description: 'Sample response: Returns a list of files and/or subdirectories
+            in a given directory.'
         '400':
           content:
             application/json:

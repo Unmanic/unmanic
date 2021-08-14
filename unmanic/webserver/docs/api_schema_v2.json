@@ -135,6 +135,66 @@
                     "messages"
                 ]
             },
+            "RequestDirectoryListingData": {
+                "type": "object",
+                "properties": {
+                    "current_path": {
+                        "type": "string",
+                        "default": "/",
+                        "example": "/"
+                    },
+                    "list_type": {
+                        "type": "string",
+                        "default": "all",
+                        "example": "directories"
+                    }
+                }
+            },
+            "DirectoryListingResults": {
+                "type": "object",
+                "properties": {
+                    "directories": {
+                        "type": "array",
+                        "minItems": 0,
+                        "description": "A list of directories in the given path",
+                        "example": [
+                            {
+                                "value": "home",
+                                "label": "/home"
+                            },
+                            {
+                                "value": "tmp",
+                                "label": "/tmp"
+                            }
+                        ],
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "files": {
+                        "type": "array",
+                        "minItems": 0,
+                        "description": "A list of files in the given path",
+                        "example": [
+                            {
+                                "value": "file1.txt",
+                                "label": "/file1.txt"
+                            },
+                            {
+                                "value": "file2.txt",
+                                "label": "/file2.txt"
+                            }
+                        ],
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "required": [
+                    "directories",
+                    "files"
+                ]
+            },
             "RequestHistoryTableData": {
                 "type": "object",
                 "properties": {
@@ -967,6 +1027,74 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/DocumentContentSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/filebrowser/list": {
+            "post": {
+                "description": "Returns a list of files and/or subdirectories in a given directory.",
+                "requestBody": {
+                    "description": "Requested a list of files and/or subdirectories in a given directory.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestDirectoryListingData"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns a list of files and/or subdirectories in a given directory.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DirectoryListingResults"
                                 }
                             }
                         }

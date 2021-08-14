@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.taskprobe.py
+    unmanic.filebrowser_api.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     08 May 2020, (6:35 PM)
+    Date:                     13 Aug 2021, (2:37 PM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -29,21 +29,3 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
-from peewee import *
-from unmanic.libs.unmodels.lib import BaseModel
-from unmanic.libs.unmodels.tasks import Tasks
-
-
-class TaskProbe(BaseModel):
-    """
-    TaskProbe
-    """
-    task_id = ForeignKeyField(Tasks, backref='probe', on_delete='CASCADE', on_update='CASCADE')
-    abspath = TextField(null=False)
-    basename = TextField(null=False)
-    bit_rate = TextField(null=False)
-    format_long_name = TextField(null=False)
-    format_name = TextField(null=False)
-    size = TextField(null=False)
-    duration = TextField(null=False)

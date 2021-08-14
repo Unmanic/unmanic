@@ -78,7 +78,7 @@ class UnmanicLogger(object, metaclass=SingletonType):
             # Create file handler
             log_file = os.path.join(self._settings.get_log_path(), 'unmanic.log')
             self.file_handler = logging.handlers.TimedRotatingFileHandler(log_file, when='midnight', interval=1,
-                                                                           backupCount=7)
+                                                                          backupCount=7)
             # Apply formatter
             self.file_handler.setFormatter(self.formatter)
             # Set log level of file handler...
@@ -101,6 +101,8 @@ class UnmanicLogger(object, metaclass=SingletonType):
         self._logger.removeHandler(self.file_handler)
 
     def setup_logger(self, settings):
+        logger = self.get_logger(__class__.__name__)
+        logger.info("Initialising file logger. All further logs should output to the 'unmanic.log' file")
         # Set/Update our settings
         self._settings = settings
         if not self.file_handler:
@@ -109,7 +111,6 @@ class UnmanicLogger(object, metaclass=SingletonType):
             self._logger.setLevel(logging.DEBUG)
         else:
             self._logger.setLevel(logging.INFO)
-        print("UnmanicLogger - SETUP LOGGER")
 
     def get_logger(self, name=None):
         if name:

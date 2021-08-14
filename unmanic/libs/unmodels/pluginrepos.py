@@ -31,7 +31,7 @@
 """
 
 from peewee import *
-from unmanic.libs.unmodels.basemodel import BaseModel
+from unmanic.libs.unmodels.lib import BaseModel
 
 
 class PluginRepos(BaseModel):

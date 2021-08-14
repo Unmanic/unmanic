@@ -35,7 +35,7 @@ import requests
 from unmanic import config
 from unmanic.libs import common, unlogger
 from unmanic.libs.singleton import SingletonType
-from unmanic.libs.unmodels import db, Installation
+from unmanic.libs.unmodels import Installation
 
 
 class Session(object, metaclass=SingletonType):

@@ -29,3 +29,100 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import os
+
+
+class DirectoryListing(object):
+    """
+    DirectoryListing
+
+    Handle directory listing on the host running Unmanic
+    """
+
+    def __init__(self, list_type=None):
+        self.list_type = 'all'
+        if list_type:
+            self.list_type = list_type
+
+    def fetch_path_data(self, path):
+        """
+        Returns an object filled with data pertaining to a particular path
+
+        :param path:
+        :param list_type:
+        :return:
+        """
+        directories = []
+        files = []
+        if self.list_type == "directories" or self.list_type == "all":
+            directories = self.fetch_directories(path)
+        if self.list_type == "files" or self.list_type == "all":
+            files = self.fetch_files(path)
+        path_data = {
+            "current_path": path,
+            "list_type":    self.list_type,
+            "directories":  directories,
+            "files":        files,
+        }
+        return path_data
+
+    @staticmethod
+    def fetch_directories(path):
+        """
+        Fetch a list of directory objects based on a given path
+
+        :param path:
+        :return:
+        """
+        results = []
+        if os.path.exists(path):
+            # check if this is a root path or if it has a parent
+            parent_path = os.path.join(path, '..')
+            if os.path.exists(parent_path) and os.path.abspath(parent_path) != path:
+                # Path has a parent, Add the double dots
+                results.append(
+                    {
+                        "name":      "..",
+                        "full_path": os.path.abspath(parent_path),
+                    }
+                )
+            for item in sorted(os.listdir(path)):
+                abspath = os.path.abspath(os.path.join(path, item))
+                if os.path.isdir(abspath):
+                    results.append(
+                        {
+                            "name":      item,
+                            "full_path": abspath,
+                        }
+                    )
+        else:
+            # Path doesn't exist!
+            # Just return the root dir as the first directory option
+            results.append(
+                {
+                    "name":      "/",
+                    "full_path": "/",
+                }
+            )
+        return results
+
+    @staticmethod
+    def fetch_files(path):
+        """
+        Fetch a list of file objects based on a given path
+
+        :param path:
+        :return:
+        """
+        results = []
+        if os.path.exists(path):
+            for item in sorted(os.listdir(path)):
+                abspath = os.path.abspath(os.path.join(path, item))
+                if os.path.isfile(abspath):
+                    results.append(
+                        {
+                            "name":      item,
+                            "full_path": abspath,
+                        }
+                    )
+        return results

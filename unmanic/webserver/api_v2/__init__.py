@@ -34,6 +34,7 @@ from __future__ import absolute_import
 import warnings
 
 from .docs_api import ApiDocsHandler
+from .filebrowser_api import ApiFilebrowserHandler
 from .history_api import ApiHistoryHandler
 from .pending_api import ApiPendingHandler
 from .plugins_api import ApiPluginsHandler
@@ -45,6 +46,7 @@ __author__ = 'Josh.5 (jsunnex@gmail.com)'
 
 __all__ = (
     'ApiDocsHandler',
+    'ApiFilebrowserHandler',
     'ApiHistoryHandler',
     'ApiPendingHandler',
     'ApiPluginsHandler',

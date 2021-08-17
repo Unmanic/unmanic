@@ -166,6 +166,8 @@ class LibraryScanner(threading.Thread):
             for incompatible_plugin in incompatible_plugins:
                 self._log("Found incompatible plugin '{}'".format(incompatible_plugin.get('plugin_id')), level='warning')
             return
+        if not plugin_handler.within_enabled_plugin_limits(self.data_queues.get('frontend_messages')):
+            return
         self._log("Running full library scan")
         self.scan_library_path(self.settings.get_library_path())
 

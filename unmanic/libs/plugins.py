@@ -453,14 +453,6 @@ class PluginsHandler(object, metaclass=SingletonType):
         s = Session()
         s.register_unmanic(s.get_installation_uuid())
 
-        # Update enabled plugins
-        if not self.ensure_session_level_for_plugins(s.level):
-            return False
-
-        # Ensure all currently enabled plugins are compatible
-        if self.get_incompatible_enabled_plugins(frontend_messages):
-            return False
-
         # Enable the matching entries in the table
         Plugins.update(enabled=True).where(Plugins.id.in_(plugin_table_ids)).execute()
 
@@ -473,6 +465,10 @@ class PluginsHandler(object, metaclass=SingletonType):
                 continue
             self._log("Failed to enable plugin '{}'".format(record.get('plugin_id')), level='debug')
             return False
+
+        # Warn on any incompatible enabled plugins
+        self.get_incompatible_enabled_plugins(frontend_messages)
+        self.within_enabled_plugin_limits(frontend_messages)
 
         return True
 
@@ -598,9 +594,6 @@ class PluginsHandler(object, metaclass=SingletonType):
         s = Session()
         s.register_unmanic(s.get_installation_uuid())
 
-        # Update enabled plugins
-        self.ensure_session_level_for_plugins(s.level)
-
         # First fetch all enabled plugins
         order = [
             {
@@ -614,6 +607,9 @@ class PluginsHandler(object, metaclass=SingletonType):
             },
         ]
         enabled_plugins = self.get_plugin_list_filtered_and_sorted(order=order, enabled=True, plugin_type=plugin_type)
+        # Validate enabled plugins
+        if not (s.level > 1) and (len(enabled_plugins) > 2):
+            enabled_plugins = []
 
         # Fetch all plugin modules from the given list of enabled plugins
         plugin_executor = PluginExecutor()
@@ -622,20 +618,40 @@ class PluginsHandler(object, metaclass=SingletonType):
         # Return modules
         return plugin_data
 
-    def ensure_session_level_for_plugins(self, level):
-        if level > 1:
-            # Session level is valid for running plugins
+    def within_enabled_plugin_limits(self, frontend_messages=None):
+        """
+        Ensure enabled plugins are within limits
+
+        :param frontend_messages:
+        :return:
+        """
+        # Fetch level from session
+        s = Session()
+        s.register_unmanic(s.get_installation_uuid())
+        if s.level > 1:
             return True
 
-        if level == 0:
-            self._log("Plugin support not available. To enable plugin support, sign in...", level='warning')
-        elif level == 1:
-            self._log("Plugin support not available. Consider becoming a supporter if you wish to enable plugin support.",
-                      level='warning')
+        # Fetch all enabled plugins
+        enabled_plugins = self.get_plugin_list_filtered_and_sorted(enabled=True)
 
-        # Disable plugins
-        Plugins.update(enabled=False).execute()
-        return False
+        def add_frontend_message():
+            # If the frontend messages queue was included in request, append a message
+            if frontend_messages:
+                frontend_messages.put(
+                    {
+                        'id':      'pluginEnabledLimits',
+                        'type':    'error',
+                        'code':    'pluginEnabledLimits',
+                        'message': '',
+                        'timeout': 0
+                    }
+                )
+
+        # Ensure enabled plugins are within limits
+        if len(enabled_plugins) > 2:
+            add_frontend_message()
+            return False
+        return True
 
     def get_incompatible_enabled_plugins(self, frontend_messages=None):
         """
@@ -649,15 +665,17 @@ class PluginsHandler(object, metaclass=SingletonType):
         enabled_plugins = self.get_plugin_list_filtered_and_sorted(enabled=True)
 
         def add_frontend_message(plugin_id, name):
-            frontend_messages.put(
-                {
-                    'id':      'incompatiblePlugin_{}'.format(plugin_id),
-                    'type':    'error',
-                    'code':    'incompatiblePlugin',
-                    'message': name,
-                    'timeout': 0
-                }
-            )
+            # If the frontend messages queue was included in request, append a message
+            if frontend_messages:
+                frontend_messages.put(
+                    {
+                        'id':      'incompatiblePlugin_{}'.format(plugin_id),
+                        'type':    'error',
+                        'code':    'incompatiblePlugin',
+                        'message': name,
+                        'timeout': 0
+                    }
+                )
 
         # Ensure only compatible plugins are enabled
         # If all enabled plugins are compatible, then return true
@@ -677,9 +695,7 @@ class PluginsHandler(object, metaclass=SingletonType):
                     'name':      record.get('name'),
                 }
             )
-            # If the frontend messages queue was included in request, append a message
-            if frontend_messages:
-                add_frontend_message(record.get('plugin_id'), record.get('name'))
+            add_frontend_message(record.get('plugin_id'), record.get('name'))
 
         return incompatible_list
 

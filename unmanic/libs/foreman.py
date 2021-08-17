@@ -411,6 +411,8 @@ class Foreman(threading.Thread):
         plugin_handler = PluginsHandler()
         if not plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages')):
             valid = True
+        if not plugin_handler.within_enabled_plugin_limits(self.data_queues.get('frontend_messages')):
+            valid = False
         return valid
 
     def init_worker_threads(self):

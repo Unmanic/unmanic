@@ -101,7 +101,6 @@ class Session(object, metaclass=SingletonType):
         time_when_session_expires = self.created + 18000
         # Check that the time create is less than 5 hours old
         if time_now < time_when_session_expires:
-            self._log("Session valid ", level="debug")
             return True
         self._log("Session no longer valid ", level="debug")
         return False
@@ -115,7 +114,7 @@ class Session(object, metaclass=SingletonType):
         self.created = time.time()
         from datetime import datetime
         created = datetime.fromtimestamp(self.created)
-        self._log("Updated session at ", created, level="debug")
+        self._log("Updated session at ", str(created), level="debug")
 
     def get_installation_uuid(self):
         """

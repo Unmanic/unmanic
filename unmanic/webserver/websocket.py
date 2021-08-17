@@ -82,9 +82,10 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
     def on_close(self):
         tornado.log.app_log.warning('WS Closed', exc_info=True)
         self.close_event.set()
-        self.sending_frontend_message = False
-        self.sending_worker_info = False
-        self.sending_completed_tasks_info = False
+        self.stop_frontend_messages()
+        self.stop_workers_info()
+        self.stop_pending_tasks_info()
+        self.stop_completed_tasks_info()
 
     def default_failure_response(self, params=None):
         """
@@ -108,8 +109,21 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
         :return:
         :rtype:
         """
-        self.sending_frontend_message = True
-        tornado.ioloop.IOLoop.current().spawn_callback(self.async_frontend_message)
+        if not self.sending_frontend_message:
+            self.sending_frontend_message = True
+            tornado.ioloop.IOLoop.current().spawn_callback(self.async_frontend_message)
+
+    def stop_frontend_messages(self, params=None):
+        """
+        WS Command - stop_frontend_messages
+        Stop sending messages from the application to the frontend.
+
+        :param params:
+        :type params:
+        :return:
+        :rtype:
+        """
+        self.sending_frontend_message = False
 
     def start_workers_info(self, params=None):
         """
@@ -121,8 +135,21 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
         :return:
         :rtype:
         """
-        self.sending_worker_info = True
-        tornado.ioloop.IOLoop.current().spawn_callback(self.async_workers_info)
+        if not self.sending_worker_info:
+            self.sending_worker_info = True
+            tornado.ioloop.IOLoop.current().spawn_callback(self.async_workers_info)
+
+    def stop_workers_info(self, params=None):
+        """
+        WS Command - stop_workers_info
+        Stop sending information pertaining to the workers
+
+        :param params:
+        :type params:
+        :return:
+        :rtype:
+        """
+        self.sending_worker_info = False
 
     def start_pending_tasks_info(self, params=None):
         """
@@ -134,8 +161,21 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
         :return:
         :rtype:
         """
-        self.sending_pending_tasks_info = True
-        tornado.ioloop.IOLoop.current().spawn_callback(self.async_pending_tasks_info)
+        if not self.sending_pending_tasks_info:
+            self.sending_pending_tasks_info = True
+            tornado.ioloop.IOLoop.current().spawn_callback(self.async_pending_tasks_info)
+
+    def stop_pending_tasks_info(self, params=None):
+        """
+        WS Command - stop_pending_tasks_info
+        Stop sending information pertaining to the pending tasks list
+
+        :param params:
+        :type params:
+        :return:
+        :rtype:
+        """
+        self.sending_pending_tasks_info = False
 
     def start_completed_tasks_info(self, params=None):
         """
@@ -147,8 +187,21 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
         :return:
         :rtype:
         """
-        self.sending_completed_tasks_info = True
-        tornado.ioloop.IOLoop.current().spawn_callback(self.async_completed_tasks_info)
+        if not self.sending_completed_tasks_info:
+            self.sending_completed_tasks_info = True
+            tornado.ioloop.IOLoop.current().spawn_callback(self.async_completed_tasks_info)
+
+    def stop_completed_tasks_info(self, params=None):
+        """
+        WS Command - stop_completed_tasks_info
+        Stop sending information pertaining to the completed tasks list
+
+        :param params:
+        :type params:
+        :return:
+        :rtype:
+        """
+        self.sending_completed_tasks_info = False
 
     def dismiss_message(self, params=None):
         """
@@ -185,7 +238,7 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
             )
 
             # Sleep for X seconds
-            await gen.sleep(10)
+            await gen.sleep(5)
 
     async def async_workers_info(self):
         while self.sending_worker_info:

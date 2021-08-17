@@ -181,10 +181,13 @@ class EventMonitorManager(threading.Thread):
 
     def all_plugins_are_compatible(self):
         """Ensure all plugins are compatible before running"""
+        valid = True
         plugin_handler = PluginsHandler()
         if plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages')):
-            return False
-        return True
+            valid = False
+        if not plugin_handler.within_enabled_plugin_limits(self.data_queues.get('frontend_messages')):
+            valid = False
+        return valid
 
     def start_event_processor(self):
         """

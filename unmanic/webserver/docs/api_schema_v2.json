@@ -879,6 +879,103 @@
                     "plugin_id"
                 ]
             },
+            "PluginTypesResults": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "description": "List of Plugin Type IDs supported by this installation",
+                        "example": [
+                            "library_management.file_test",
+                            "postprocessor.file_move",
+                            "postprocessor.task_result",
+                            "worker.process_item"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "results"
+                ]
+            },
+            "RequestPluginsFlowByPluginType": {
+                "type": "object",
+                "properties": {
+                    "plugin_type": {
+                        "type": "string",
+                        "example": "library_management.file_test"
+                    }
+                },
+                "required": [
+                    "plugin_type"
+                ]
+            },
+            "PluginFlowDataResults": {
+                "type": "object",
+                "properties": {
+                    "plugin_id": {
+                        "type": "string",
+                        "description": "The plugin ID",
+                        "example": "encoder_video_h264_nvenc"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The plugin name",
+                        "example": "Video Encoder H264 - h264_nvenc"
+                    },
+                    "author": {
+                        "type": "string",
+                        "description": "The plugin author",
+                        "example": "encoder_video_h264_nvenc"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "The plugin description",
+                        "example": "Ensure all video streams are encoded with the H264 codec using the h264_nvenc encoder."
+                    },
+                    "version": {
+                        "type": "string",
+                        "description": "The plugin version",
+                        "example": "Josh.5"
+                    },
+                    "icon": {
+                        "type": "string",
+                        "description": "The plugin icon",
+                        "example": "https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png"
+                    }
+                },
+                "required": [
+                    "author",
+                    "description",
+                    "icon",
+                    "name",
+                    "plugin_id",
+                    "version"
+                ]
+            },
+            "RequestSavingPluginsFlowByPluginType": {
+                "type": "object",
+                "properties": {
+                    "plugin_type": {
+                        "type": "string",
+                        "example": "library_management.file_test"
+                    },
+                    "plugin_flow": {
+                        "minItems": 1,
+                        "description": "Saved flow",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PluginFlowDataResults"
+                        }
+                    }
+                },
+                "required": [
+                    "plugin_flow",
+                    "plugin_type"
+                ]
+            },
             "RequestUpdatePluginReposList": {
                 "type": "object",
                 "properties": {
@@ -2100,6 +2197,199 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/types": {
+            "get": {
+                "description": "Returns a list of all plugin types.",
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns a list of all plugin types..",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PluginTypesResults"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/flow": {
+            "post": {
+                "description": "Returns the plugin flow for a requested plugin type.",
+                "requestBody": {
+                    "description": "Requests the plugin flow of a given plugin type.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestPluginsFlowByPluginType"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns the plugin flow for a requested plugin type.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PluginsInstallableResults"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/flow/save": {
+            "post": {
+                "description": "Saves the plugin flow for a requested plugin type.",
+                "requestBody": {
+                    "description": "Requests saving the plugin flow for a given plugin type.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestSavingPluginsFlowByPluginType"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Save the plugin flow for a requested plugin type.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PluginsInstallableResults"
                                 }
                             }
                         }

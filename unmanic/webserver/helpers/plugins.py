@@ -56,16 +56,18 @@ def prepare_filtered_plugins(params):
         })
     ]
 
+    enabled = params.get('enabled')
+
     # Fetch Plugins
     plugins = PluginsHandler()
     # Get total count
     records_total_count = plugins.get_total_plugin_list_count()
     # Get quantity after filters (without pagination)
     records_filtered_count = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=0,
-                                                                         search_value=search_value).count()
+                                                                         search_value=search_value, enabled=enabled).count()
     # Get filtered/sorted results
     plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=start, length=length,
-                                                                 search_value=search_value)
+                                                                 search_value=search_value, enabled=enabled)
 
     # Build return data
     return_data = {
@@ -97,6 +99,42 @@ def prepare_filtered_plugins(params):
 
     # Return results
     return return_data
+
+
+def get_all_plugin_types():
+    """
+    Returns a list of all available plugin types
+
+    :return:
+    """
+    plugin_ex = PluginExecutor()
+    return plugin_ex.get_all_plugin_types()
+
+
+def get_enabled_plugin_flows_for_plugin_type(plugin_type):
+    plugin_handler = PluginsHandler()
+    plugin_modules = plugin_handler.get_plugin_modules_by_type(plugin_type)
+
+    # Only return the data that we need
+    return_plugin_flow = []
+    for plugin_module in plugin_modules:
+        return_plugin_flow.append(
+            {
+                "plugin_id":   plugin_module.get("plugin_id"),
+                "name":        plugin_module.get("name", ""),
+                "author":      plugin_module.get("author", ""),
+                "description": plugin_module.get("description", ""),
+                "version":     plugin_module.get("version", ""),
+                "icon":        plugin_module.get("icon", ""),
+            }
+        )
+
+    return return_plugin_flow
+
+
+def save_enabled_plugin_flows_for_plugin_type(plugin_type, plugin_flow):
+    plugins = PluginsHandler()
+    return plugins.set_plugin_flow(plugin_type, plugin_flow)
 
 
 def enable_plugins(plugin_table_ids, frontend_messages=None):

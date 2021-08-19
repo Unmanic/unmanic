@@ -219,6 +219,41 @@ components:
       - id
       - priority
       type: object
+    PluginFlowDataResults:
+      properties:
+        plugin_id:
+          description: The plugin ID
+          example: encoder_video_h264_nvenc
+          type: string
+        name:
+          description: The plugin name
+          example: Video Encoder H264 - h264_nvenc
+          type: string
+        author:
+          description: The plugin author
+          example: encoder_video_h264_nvenc
+          type: string
+        description:
+          description: The plugin description
+          example: Ensure all video streams are encoded with the H264 codec using
+            the h264_nvenc encoder.
+          type: string
+        version:
+          description: The plugin version
+          example: Josh.5
+          type: string
+        icon:
+          description: The plugin icon
+          example: https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png
+          type: string
+      required:
+      - author
+      - description
+      - icon
+      - name
+      - plugin_id
+      - version
+      type: object
     PluginReposListResults:
       properties:
         repos:
@@ -268,6 +303,21 @@ components:
           description: Does the plugin have an update available
           example: true
           type: boolean
+      type: object
+    PluginTypesResults:
+      properties:
+        results:
+          description: List of Plugin Type IDs supported by this installation
+          example:
+          - library_management.file_test
+          - postprocessor.file_move
+          - postprocessor.task_result
+          - worker.process_item
+          items:
+            type: string
+          type: array
+      required:
+      - results
       type: object
     PluginsConfigInputItem:
       properties:
@@ -615,6 +665,14 @@ components:
       required:
       - plugin_id
       type: object
+    RequestPluginsFlowByPluginType:
+      properties:
+        plugin_type:
+          example: library_management.file_test
+          type: string
+      required:
+      - plugin_type
+      type: object
     RequestPluginsInfo:
       properties:
         plugin_id:
@@ -669,6 +727,21 @@ components:
           - desc
           example: desc
           type: string
+      type: object
+    RequestSavingPluginsFlowByPluginType:
+      properties:
+        plugin_type:
+          example: library_management.file_test
+          type: string
+        plugin_flow:
+          description: Saved flow
+          items:
+            $ref: '#/components/schemas/PluginFlowDataResults'
+          minItems: 1
+          type: array
+      required:
+      - plugin_flow
+      - plugin_type
       type: object
     RequestTableUpdateByIdList:
       properties:
@@ -1411,6 +1484,124 @@ paths:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
           description: 'Sample response: Installs a plugin by its Plugin ID.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/types:
+    get:
+      description: Returns a list of all plugin types.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginTypesResults'
+          description: 'Sample response: Returns a list of all plugin types..'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/flow:
+    post:
+      description: Returns the plugin flow for a requested plugin type.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestPluginsFlowByPluginType'
+        description: Requests the plugin flow of a given plugin type.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginsInstallableResults'
+          description: 'Sample response: Returns the plugin flow for a requested plugin
+            type.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/flow/save:
+    post:
+      description: Saves the plugin flow for a requested plugin type.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestSavingPluginsFlowByPluginType'
+        description: Requests saving the plugin flow for a given plugin type.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginsInstallableResults'
+          description: 'Sample response: Save the plugin flow for a requested plugin
+            type.'
         '400':
           content:
             application/json:

@@ -46,12 +46,13 @@ class PluginExecutor(object):
         if not plugins_directory:
             plugins_directory = os.path.join(os.path.expanduser("~"), '.unmanic', 'plugins')
         self.plugins_directory = plugins_directory
-        # TODO: generate this list dynamically
+        # List plugin types in order that they are run
+        # Listing them in order helps for the frontend
         self.plugin_types = [
             "library_management.file_test",
+            "worker.process_item",
             "postprocessor.file_move",
             "postprocessor.task_result",
-            "worker.process_item",
         ]
         self.default_plugin_runner_name = "unmanic_default_stage"
         unmanic_logging = unlogger.UnmanicLogger.__call__()
@@ -252,7 +253,7 @@ class PluginExecutor(object):
                 "name":          "Default Unmanic Process",
                 "author":        "N/A",
                 "version":       "N/A",
-                "icon":          None,
+                "icon":          "",
                 "description":   "The default unmanic process as configured by the Unmanic settings",
                 "plugin_module": None,
                 "plugin_path":   None,

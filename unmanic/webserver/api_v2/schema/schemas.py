@@ -597,6 +597,90 @@ class PluginsInstallableResultsSchema(BaseSchema):
     )
 
 
+class PluginTypesResultsSchema(BaseSchema):
+    """Schema for installable plugins lists that are returned"""
+
+    results = fields.List(
+        cls_or_instance=fields.Str,
+        required=True,
+        description="List of Plugin Type IDs supported by this installation",
+        example=[
+            "library_management.file_test",
+            "postprocessor.file_move",
+            "postprocessor.task_result",
+            "worker.process_item"
+        ],
+    )
+
+
+class RequestPluginsFlowByPluginTypeSchema(BaseSchema):
+    """Schema to request the plugin flow of a given plugin type"""
+
+    plugin_type = fields.Str(
+        required=True,
+        example="library_management.file_test",
+    )
+
+
+class PluginFlowDataResultsSchema(BaseSchema):
+    """Schema for plugin flow data items"""
+
+    plugin_id = fields.Str(
+        required=True,
+        description="The plugin ID",
+        example="encoder_video_h264_nvenc",
+    )
+    name = fields.Str(
+        required=True,
+        description="The plugin name",
+        example="Video Encoder H264 - h264_nvenc",
+    )
+    author = fields.Str(
+        required=True,
+        description="The plugin author",
+        example="encoder_video_h264_nvenc",
+    )
+    description = fields.Str(
+        required=True,
+        description="The plugin description",
+        example="Ensure all video streams are encoded with the H264 codec using the h264_nvenc encoder.",
+    )
+    version = fields.Str(
+        required=True,
+        description="The plugin version",
+        example="Josh.5",
+    )
+    icon = fields.Str(
+        required=True,
+        description="The plugin icon",
+        example="https://raw.githubusercontent.com/Josh5/unmanic-plugins/master/source/encoder_video_h264_nvenc/icon.png",
+    )
+
+
+class PluginFlowResultsSchema(BaseSchema):
+    """Schema for returned plugin flow list"""
+
+    results = fields.Nested(
+        PluginFlowDataResultsSchema,
+        required=True,
+        description="Results",
+        many=True,
+        validate=validate.Length(min=0),
+    )
+
+
+class RequestSavingPluginsFlowByPluginTypeSchema(RequestPluginsFlowByPluginTypeSchema):
+    """Schema to request saving the plugin flow of a given plugin type"""
+
+    plugin_flow = fields.Nested(
+        PluginFlowDataResultsSchema,
+        required=True,
+        description="Saved flow",
+        many=True,
+        validate=validate.Length(min=1),
+    )
+
+
 class PluginReposMetadataResultsSchema(BaseSchema):
     """Schema for plugin repo metadata that will be returned when fetching repo lists"""
 

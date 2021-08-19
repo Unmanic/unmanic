@@ -277,7 +277,6 @@ class UIServer(threading.Thread):
         from unmanic.webserver.api_request_router import APIRequestRouter
         from unmanic.webserver.history import HistoryUIRequestHandler
         from unmanic.webserver.main import MainUIRequestHandler, DashboardWebSocket
-        from unmanic.webserver.plugins import PluginsUIRequestHandler
         from unmanic.webserver.settings import SettingsUIRequestHandler
         from unmanic.webserver.helpers.element_filebrowser import ElementFileBrowserUIRequestHandler
         from unmanic.webserver.websocket import UnmanicWebsocketHandler
@@ -292,9 +291,6 @@ class UIServer(threading.Thread):
                 foreman=self.foreman,
             )),
             (r"/history/(.*)", HistoryUIRequestHandler, dict(
-                data_queues=self.data_queues,
-            )),
-            (r"/plugin-flow/(.*)", PluginsUIRequestHandler, dict(
                 data_queues=self.data_queues,
             )),
             (r"/settings/(.*)", SettingsUIRequestHandler, dict(

@@ -48,7 +48,7 @@ class BaseApiHandler(RequestHandler):
         for route in self.routes:
             # Check if the rout supports the supported http methods
             supported_methods = route.get("supported_methods")
-            if supported_methods and not self.request.method in supported_methods:
+            if supported_methods and self.request.method not in supported_methods:
                 # The request's method is not supported by this route.
                 continue
 

@@ -138,7 +138,8 @@ class FileTest(object):
                     file_issues = data.get('issues')
 
                     # Set the return_value based on the plugin results
-                    # If the add_file_to_pending_tasks returned an answer (True/False) then break the loop. No need to continue.
+                    # If the add_file_to_pending_tasks returned an answer (True/False) then break the loop.
+                    # No need to continue.
                     if data.get('add_file_to_pending_tasks') is not None:
                         return_value = data.get('add_file_to_pending_tasks')
                         break

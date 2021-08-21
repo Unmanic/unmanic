@@ -96,7 +96,7 @@ class FrontendPushMessages(Queue, metaclass=SingletonType):
     def __validate_item(item):
         # Ensure all required keys are present
         for key in ['id', 'type', 'code', 'message', 'timeout']:
-            if not key in item:
+            if key not in item:
                 raise Exception("Frontend message item incorrectly formatted. Missing key: '{}'".format(key))
 
         # Ensure the given type is valid
@@ -264,7 +264,8 @@ class UIServer(threading.Thread):
         try:
             self.server.listen(int(self.config.get_ui_port()))
         except socket.error as e:
-            self._log("Exception when setting WebUI port {}:".format(self.config.get_ui_port()), message2=str(e), level="warning")
+            self._log("Exception when setting WebUI port {}:".format(self.config.get_ui_port()), message2=str(e),
+                      level="warning")
             raise SystemExit
 
         self.io_loop = IOLoop().current()

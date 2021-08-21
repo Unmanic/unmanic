@@ -140,7 +140,7 @@ class Foreman(threading.Thread):
         :return:
         :rtype:
         """
-        if not worker_id in self.worker_threads:
+        if worker_id not in self.worker_threads:
             return False
 
         self.worker_threads[worker_id].paused = True
@@ -155,7 +155,7 @@ class Foreman(threading.Thread):
         :return:
         :rtype:
         """
-        if not worker_id in self.worker_threads:
+        if worker_id not in self.worker_threads:
             return False
 
         self.worker_threads[worker_id].paused = False

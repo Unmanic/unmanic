@@ -25,7 +25,7 @@ import datetime as dt
 import peewee as pw
 from decimal import ROUND_HALF_EVEN
 
-from unmanic.libs.unmodels.taskprobe import TaskProbe
+from unmanic.libs.unmodels.tasksource import TaskProbe
 from unmanic.libs.unmodels.taskprobestreams import TaskProbeStreams
 from unmanic.libs.unmodels.tasks import Tasks
 from unmanic.libs.unmodels.tasksettings import TaskSettings

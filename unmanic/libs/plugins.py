@@ -207,7 +207,7 @@ class PluginsHandler(object, metaclass=SingletonType):
                 # Only show plugins that are compatible with this version
                 # Plugins will require a 'compatibility' entry in their info.json file.
                 #   This must list the plugin handler versions that it is compatible with
-                if not self.version in plugin.get('compatibility', []):
+                if self.version not in plugin.get('compatibility', []):
                     continue
 
                 plugin_package_url = "{0}/{1}/{1}-{2}.zip".format(repo_data_directory, plugin.get('id'), plugin.get('version'))
@@ -402,20 +402,15 @@ class PluginsHandler(object, metaclass=SingletonType):
             query = (Plugins.select())
 
             if plugin_type:
-                join_condition = (
-                    (PluginFlow.plugin_id == Plugins.id) &
-                    (PluginFlow.plugin_type == plugin_type))
+                join_condition = ((PluginFlow.plugin_id == Plugins.id) & (PluginFlow.plugin_type == plugin_type))
                 query = query.join(PluginFlow, join_type='LEFT OUTER JOIN', on=join_condition)
 
             if id_list:
                 query = query.where(Plugins.id.in_(id_list))
 
             if search_value:
-                query = query.where(
-                    (Plugins.name.contains(search_value)) |
-                    (Plugins.author.contains(search_value)) |
-                    (Plugins.tags.contains(search_value))
-                )
+                query = query.where((Plugins.name.contains(search_value)) | (Plugins.author.contains(search_value)) | (
+                    Plugins.tags.contains(search_value)))
 
             if plugin_id is not None:
                 query = query.where(Plugins.plugin_id.in_([plugin_id]))

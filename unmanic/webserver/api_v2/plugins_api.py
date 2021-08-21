@@ -35,10 +35,9 @@ from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
 from unmanic.webserver.api_v2.schema.schemas import PluginFlowResultsSchema, PluginReposListResultsSchema, \
-    PluginTypesResultsSchema, PluginsDataSchema, \
-    PluginsInfoResultsSchema, \
-    PluginsInstallableResultsSchema, RequestPluginsByIdSchema, RequestPluginsFlowByPluginTypeSchema, RequestPluginsInfoSchema, \
-    RequestPluginsSettingsSaveSchema, RequestPluginsTableDataSchema, \
+    PluginTypesResultsSchema, PluginsDataSchema, PluginsInfoResultsSchema, \
+    PluginsInstallableResultsSchema, RequestPluginsByIdSchema, RequestPluginsFlowByPluginTypeSchema, \
+    RequestPluginsInfoSchema, RequestPluginsSettingsSaveSchema, RequestPluginsTableDataSchema, \
     RequestSavingPluginsFlowByPluginTypeSchema, RequestTableUpdateByIdList, RequestUpdatePluginReposListSchema
 from unmanic.webserver.helpers import plugins
 

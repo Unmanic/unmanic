@@ -184,6 +184,7 @@ def ffmpeg_available_decoders():
 
     return ffmpeg_cmd(params)
 
+
 def ffmpeg_available_hw_acceleration_methods():
     """
     Return the raw output of hardware accelration methods supported by ffmpeg

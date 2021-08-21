@@ -87,9 +87,11 @@ def print_table(table_data, col_list=None, sep='\uFFFA', max_col_width=9):
     Author: Thierry Husson
 
     """
-    if not col_list: col_list = list(table_data[0].keys() if table_data else [])
+    if not col_list:
+        col_list = list(table_data[0].keys() if table_data else [])
     my_list = [col_list]  # 1st row = header
-    for item in table_data: my_list.append([str(item[col] or '') for col in col_list])
+    for item in table_data:
+        my_list.append([str(item[col] or '') for col in col_list])
     original_col_size = [max(map(len, (sep.join(col)).split(sep))) for col in zip(*my_list)]
     col_size = []
     for col in original_col_size:
@@ -98,12 +100,14 @@ def print_table(table_data, col_list=None, sep='\uFFFA', max_col_width=9):
         col_size.append(col)
     format_str = ' | '.join(["{{:<{}}}".format(i) for i in col_size])
     line = format_str.replace(' | ', '-+-').format(*['-' * i for i in col_size])
-    item = my_list.pop(0);
+    item = my_list.pop(0)
     line_done = False
     while my_list:
         if all(not i for i in item):
             item = my_list.pop(0)
-            if line and (sep != '\uFFFA' or not line_done): print(line); line_done = True
+            if line and (sep != '\uFFFA' or not line_done):
+                print(line)
+                line_done = True
         row = [i[:max_col_width].split(sep, 1) for i in item]
         print(format_str.format(*[i[0] for i in row]))
         item = [i[1] if len(i) > 1 else '' for i in row]

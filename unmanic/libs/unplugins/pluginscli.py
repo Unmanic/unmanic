@@ -50,6 +50,7 @@ menus = {
             message="What would you like to do?",
             choices=[
                 'Test installed plugins',
+                'Test enabled plugins',
                 'List installed plugins',
                 'Create new plugin',
                 'Reload all plugins from disk',
@@ -121,7 +122,7 @@ class PluginsCLI(object):
 
     def __init__(self, plugins_directory=None):
         # Read settings
-        self.settings = config.CONFIG()
+        self.settings = config.Config()
 
         # Set plugins directory
         if not plugins_directory:
@@ -347,14 +348,7 @@ class PluginsCLI(object):
         print()
 
     @staticmethod
-    def test_installed_plugins():
-        """
-        Test all plugin runners for correct return data
-
-        :return:
-        """
-        plugin_executor = PluginExecutor()
-
+    def __get_installed_plugins(limit_enabled=False):
         plugins = PluginsHandler()
         order = [
             {
@@ -362,7 +356,21 @@ class PluginsCLI(object):
                 "dir":    'asc',
             },
         ]
-        plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
+        if limit_enabled:
+            return plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None, enabled=True)
+        return plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
+
+    def test_installed_plugins(self, limit_enabled=False):
+        """
+        Test all plugin runners for correct return data.
+        If limit_enabled is True, only enabled plugins will be tested.
+
+        :param limit_enabled:
+        :return:
+        """
+        plugin_executor = PluginExecutor()
+
+        plugin_results = self.__get_installed_plugins(limit_enabled=limit_enabled)
         for plugin_result in plugin_results:
             # plugin_runners = plugin_executor.get_plugin_runners('worker.process_item')
             print("{1}Testing plugin: '{0}'{2}".format(plugin_result.get("name"), BColours.HEADER, BColours.ENDC))
@@ -401,9 +409,13 @@ class PluginsCLI(object):
             print()
             print()
 
+    def test_enabled_plugins(self):
+        self.test_installed_plugins(limit_enabled=True)
+
     def main(self, arg):
         switcher = {
             'Test installed plugins':       'test_installed_plugins',
+            'Test enabled plugins':         'test_enabled_plugins',
             'List installed plugins':       'list_installed_plugins',
             'Create new plugin':            'create_new_plugins',
             'Reload all plugins from disk': 'reload_plugin_from_disk',

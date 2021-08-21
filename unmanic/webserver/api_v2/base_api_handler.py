@@ -215,7 +215,7 @@ class BaseApiHandler(RequestHandler):
 
         :return:
         """
-        request_api_endpoint = re.sub('^\/api\/v\d', '', self.request.uri)
+        request_api_endpoint = re.sub('^/api/v\d', '', self.request.uri)
         matched_route_with_unsupported_method = False
         for route in self.routes:
             # Get supported methods
@@ -224,7 +224,7 @@ class BaseApiHandler(RequestHandler):
             # Check if this route matches the request endpoint and does not have any params
             if list(filter(None, request_api_endpoint.split('/'))) == list(filter(None, route.get("path_pattern").split('/'))):
                 # Check if this endpoint supports the request HTTP method
-                if not self.request.method in supported_methods:
+                if self.request.method not in supported_methods:
                     # The request's method is not supported by this route.
                     # Mark as having found a matching route, but with an un-supported HTTP method
                     matched_route_with_unsupported_method = True
@@ -247,7 +247,7 @@ class BaseApiHandler(RequestHandler):
             # If we have a match and were returned some params, load that method
             if params:
                 # Check if this endpoint supports the request HTTP method
-                if not self.request.method in supported_methods:
+                if self.request.method not in supported_methods:
                     # The request's method is not supported by this route.
                     # Mark as having found a matching route, but with an un-supported HTTP method
                     matched_route_with_unsupported_method = True

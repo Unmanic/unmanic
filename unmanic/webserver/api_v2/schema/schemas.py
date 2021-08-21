@@ -581,12 +581,12 @@ class PluginsMetadataInstallableResultsSchema(PluginsMetadataResultsSchema):
     package_url = fields.Str(
         required=False,
         description="The plugin package download URL",
-        example="https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/encoder_video_h264_nvenc/encoder_video_h264_nvenc-1.0.0.zip",
+        example="https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/plugin_id/plugin_id-1.0.0.zip",
     )
     changelog_url = fields.Str(
         required=False,
         description="The plugin package download URL",
-        example="https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/encoder_video_h264_nvenc/encoder_video_h264_nvenc-1.0.0.zip",
+        example="https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/plugin_id/changelog.md",
     )
 
 

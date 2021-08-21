@@ -90,7 +90,7 @@ class HardwareAccelerationHandle(object):
                 if vaapi_devices:
                     self.hardware_device = vaapi_devices[0]
                     self.generate_vaapi_main_args()
-                    #self.main_options = self.main_options + ['-vaapi_device', vaapi_device.get('hwaccel_device')]
+                    # self.main_options = self.main_options + ['-vaapi_device', vaapi_device.get('hwaccel_device')]
 
     def update_main_options(self, main_options):
         return main_options + self.main_options

@@ -29,16 +29,13 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
-"""
-Singleton metaclass
-"""
 import threading
 
 lock = threading.Lock()
 
 
 class SingletonType(type):
+    """Singleton metaclass"""
     _instances = {}
 
     def __call__(cls, *args, **kwargs):

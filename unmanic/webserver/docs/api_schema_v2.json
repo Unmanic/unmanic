@@ -278,7 +278,7 @@
                         "example": 10
                     },
                     "results": {
-                        "minItems": 1,
+                        "minItems": 0,
                         "description": "Results",
                         "type": "array",
                         "items": {
@@ -386,12 +386,18 @@
                         "type": "integer",
                         "description": "The current priority (higher is greater)",
                         "example": 100
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "The current status of the pending task",
+                        "example": "pending"
                     }
                 },
                 "required": [
                     "abspath",
                     "id",
-                    "priority"
+                    "priority",
+                    "status"
                 ]
             },
             "PendingTasks": {
@@ -1079,6 +1085,30 @@
                 "required": [
                     "level",
                     "uuid"
+                ]
+            },
+            "SettingsReadAndWrite": {
+                "type": "object",
+                "properties": {
+                    "settings": {
+                        "type": "object",
+                        "description": "The current settings",
+                        "example": {
+                            "ui_port": 8888,
+                            "debugging": false,
+                            "library_path": "/library",
+                            "enable_library_scanner": false,
+                            "schedule_full_scan_minutes": 1440,
+                            "follow_symlinks": true,
+                            "run_full_scan_on_start": false,
+                            "enable_inotify": false,
+                            "number_of_workers": 1,
+                            "cache_path": "/tmp/unmanic"
+                        }
+                    }
+                },
+                "required": [
+                    "settings"
                 ]
             },
             "VersionReadSuccess": {
@@ -2682,6 +2712,131 @@
                 "responses": {
                     "200": {
                         "description": "Success: Reloaded the current session.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/read": {
+            "get": {
+                "description": "Returns the application settings.",
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns the application settings.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SettingsReadAndWrite"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/write": {
+            "post": {
+                "description": "Save a given dictionary of settings.",
+                "requestBody": {
+                    "description": "Requested a dictionary of settings to save.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SettingsReadAndWrite"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success: Saved a given dictionary of settings.",
                         "content": {
                             "application/json": {
                                 "schema": {

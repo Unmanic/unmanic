@@ -64,7 +64,7 @@ class ApiHistoryHandler(BaseApiHandler):
 
     def initialize(self, **kwargs):
         self.name = 'history_api'
-        self.config = config.CONFIG()
+        self.config = config.Config()
         self.params = kwargs.get("params")
 
     def set_default_headers(self):
@@ -84,7 +84,7 @@ class ApiHistoryHandler(BaseApiHandler):
         # Return a list of historical tasks to the pending task list.
         #   (on success will continue to return the current list of historical tasks)
         if request_dict.get("customActionName") == "add-to-pending":
-            errors = completed_tasks.add_historic_tasks_to_pending_tasks_list(request_dict.get('id'), self.config)
+            errors = completed_tasks.add_historic_tasks_to_pending_tasks_list(request_dict.get('id'))
             if errors:
                 self.write(json.dumps({"success": False}))
                 return

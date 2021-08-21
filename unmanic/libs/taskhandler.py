@@ -34,8 +34,7 @@ import queue
 import threading
 import time
 
-from unmanic.libs import common, ffmpeg, task
-from unmanic.libs.unffmpeg import Info, containers
+from unmanic.libs import common, task
 from unmanic.libs.unmodels.tasks import Tasks
 
 
@@ -138,9 +137,7 @@ class TaskHandler(threading.Thread):
         # Create a new task
         new_task = task.Task()
 
-        source_data = common.fetch_file_data_by_path(pathname)
-
-        if not new_task.create_task_by_absolute_path(abspath, self.settings, source_data):
+        if not new_task.create_task_by_absolute_path(abspath):
             # If file exists in task queue already this will return false.
             # Do not carry on.
             return False

@@ -50,7 +50,7 @@ class APIRequestRouter(tornado.routing.Router):
 
     def __init__(self, app, **kwargs):
         self.app = app
-        self.config = config.CONFIG()
+        self.config = config.Config()
 
     def find_handler(self, request, **kwargs):
         api_version = request.path.split('/')[2]  # Set API version

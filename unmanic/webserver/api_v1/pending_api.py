@@ -71,7 +71,7 @@ class ApiPendingHandler(BaseApiHandler):
 
     def initialize(self, **kwargs):
         self.name = 'pending_api'
-        self.config = config.CONFIG()
+        self.config = config.Config()
 
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
@@ -186,16 +186,16 @@ class ApiPendingHandler(BaseApiHandler):
             self.write(json.dumps({"success": False}))
             return
 
-        # Create a new task
-        new_task = task.Task()
-
-        # Run a probe on the file for current data
-        source_data = common.fetch_file_data_by_path(abspath)
-
-        if not new_task.create_task_by_absolute_path(abspath, self.config, source_data):
-            # If file exists in task queue already this will return false.
-            # Do not carry on.
-            self.write(json.dumps({"success": False}))
-            return
-
-        self.write(json.dumps({"success": True}))
+        self.write(json.dumps({"success": False}))
+        return
+        # TODO: Clean up FFmpeg code. Add this feature to v2 API without it
+        # # Create a new task
+        # new_task = task.Task()
+        # # Run a probe on the file for current data
+        # source_data = common.fetch_file_data_by_path(abspath)
+        # if not new_task.create_task_by_absolute_path(abspath, self.config, source_data):
+        #     # If file exists in task queue already this will return false.
+        #     # Do not carry on.
+        #     self.write(json.dumps({"success": False}))
+        #     return
+        # self.write(json.dumps({"success": True}))

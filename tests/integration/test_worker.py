@@ -37,10 +37,10 @@ import tempfile
 
 import pytest
 
-from unmanic.libs.unmodels import Settings, Tasks, TaskSettings, TaskProbe, TaskProbeStreams, Plugins, PluginFlow, Installation
+from unmanic.libs.unmodels import Settings, Tasks, TaskProbe, TaskProbeStreams, Plugins, PluginFlow, Installation
 
 try:
-    from unmanic.libs import unlogger, foreman, task, taskhandler
+    from unmanic.libs import unlogger, foreman, task, taskhandler, workers
 except ImportError:
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_dir)
@@ -96,7 +96,7 @@ class TestClass(object):
 
         # import config
         from unmanic import config
-        self.settings = config.CONFIG(config_path=config_path, db_connection=self.db_connection)
+        self.settings = config.Config(config_path=config_path)
         self.settings.set_config_item('debugging', True, save_settings=False)
 
         # Create our test queues
@@ -112,18 +112,11 @@ class TestClass(object):
         self.test_task = task.Task()
 
         # Fill test_task with data
-        from unmanic.libs import common
-        source_data = common.fetch_file_data_by_path(pathname)
-        self.test_task.create_task_by_absolute_path(os.path.abspath(pathname), self.settings, source_data)
+        self.test_task.create_task_by_absolute_path(os.path.abspath(pathname), self.settings)
 
         # Get container extension
-        if self.settings.get_keep_original_container():
-            split_file_name = os.path.splitext(os.path.basename(pathname))
-            container_extension = split_file_name[1].lstrip('.')
-        else:
-            from unmanic.libs.unffmpeg import containers
-            container = containers.grab_module(self.settings.get_out_container())
-            container_extension = container.container_extension()
+        split_file_name = os.path.splitext(os.path.basename(pathname))
+        container_extension = split_file_name[1].lstrip('.')
 
         destination_data = task.prepare_file_destination_data(os.path.abspath(pathname), container_extension)
         self.test_task.set_destination_data(destination_data)
@@ -143,56 +136,6 @@ class TestClass(object):
         file_probe_data = completed_test_task_dump['file_probe_data']
         assert 'basename' in file_probe_data['source']
 
-    def completed_test_task_data_has_source_probe(self):
-        completed_test_task_dump = self.completed_test_task.task_dump()
-        file_probe_data = completed_test_task_dump['file_probe_data']
-        # The task dump has the TaskProbe object
-        assert 'source' in completed_test_task_dump
-        # ... and a file_probe_data dict containing the source probe
-        assert 'streams' in file_probe_data['source']
-
     def completed_test_task_data_has_destination_file_path(self):
         completed_test_task_dump = self.completed_test_task.task_dump()
         assert 'abspath' in completed_test_task_dump['destination']
-
-    def completed_test_task_data_has_application_settings(self):
-        task_settings = self.completed_test_task.read_task_settings_from_db()
-        # Check why the task_settings is returning NoneType
-        assert 'video_codecs' in task_settings['source']
-
-    @pytest.mark.integrationtest
-    def test_worker_tread_for_conversion_success(self):
-        worker_id = 'test'
-        worker_thread = foreman.WorkerThread(worker_id, "Foreman-{}".format(worker_id), self.settings, self.data_queues,
-                                            self.task_queue, self.complete_queue)
-        # Test 2 of the small files
-        count = 0
-        for video_file in os.listdir(os.path.join(self.tests_videos_dir, 'small')):
-            # Create test task
-            self.setup_test_task(os.path.join(self.tests_videos_dir, 'small', video_file))
-            worker_thread.set_current_task(self.test_task)
-            worker_thread.process_task_queue_item()
-            # Ensure the completed task was added to the completed queue
-            assert not self.complete_queue.empty()
-            # Retrieve this task and add it to the global completed_test_task variable
-            self.completed_test_task = self.complete_queue.get_nowait()
-            # Ensure task was successfully processed
-            self.completed_test_task_is_success()
-            # Ensure task data has source abspath
-            self.completed_test_task_data_has_source_abspath()
-            # Ensure task data has source basename
-            self.completed_test_task_data_has_source_basename()
-            # Ensure task data has source video_codecs list
-            # Ensure task data has source video file probe data
-            self.completed_test_task_data_has_source_probe()
-            # Ensure task data has destination file path
-            self.completed_test_task_data_has_destination_file_path()
-            # TODO: Ensure the current settings are stored with the task data
-            #self.completed_test_task_data_has_application_settings()
-            count += 1
-            if count >= 2:
-                break
-
-    @pytest.mark.integrationtest
-    def test_worker_tread_for_conversion_success(self):
-        pass

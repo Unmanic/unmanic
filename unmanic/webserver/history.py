@@ -49,7 +49,7 @@ class HistoryUIRequestHandler(tornado.web.RequestHandler):
 
     def initialize(self, data_queues):
         self.name = 'history'
-        self.config = config.CONFIG()
+        self.config = config.Config()
         self.session = session.Session()
 
         # TODO: Fetch data queues from uiserver.py

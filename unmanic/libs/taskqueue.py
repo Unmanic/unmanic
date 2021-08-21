@@ -30,13 +30,9 @@
 
 """
 
-from unmanic.libs import ffmpeg, task
+from unmanic.libs import task
 from unmanic.libs import common
 from unmanic.libs.unmodels.tasks import Tasks
-from unmanic.libs.unmodels.taskprobe import TaskProbe
-
-import collections
-import os
 
 """
 
@@ -92,7 +88,7 @@ def build_tasks_query_full_task_list(status, sort_by='id', sort_order='asc', lim
     :param limit:
     :return:
     """
-    query = Tasks.select(Tasks, TaskProbe).where((Tasks.status == status)).join(TaskProbe)
+    query = Tasks.select(Tasks).where((Tasks.status == status))
 
     # Set the sort order
     if sort_order == 'asc':
@@ -108,6 +104,25 @@ def build_tasks_query_full_task_list(status, sort_by='id', sort_order='asc', lim
     return query.dicts()
 
 
+def fetch_next_task_filtered(status, sort_by='id', sort_order='asc'):
+    """
+    Returns the next task in the task list for a given status
+
+    :param sort_order:
+    :param sort_by:
+    :param status:
+    :return:
+    """
+    # Fetch the task item first (to ensure it exists)
+    task_item = build_tasks_query(status, sort_by, sort_order)
+    if not task_item:
+        return False
+    # Set the task object by the abspath and return it
+    next_task = task.Task()
+    next_task.read_and_set_task_by_absolute_path(task_item.abspath)
+    return next_task
+
+
 class TaskQueue(object):
     """
     TaskQueue
@@ -116,14 +131,12 @@ class TaskQueue(object):
     This job item is passed through stages by the Foreman and PostProcessor
 
     Attributes:
-        settings (object): The application settings read from config.py
         data_queues (list): A list of Queue objects. Contains the logger
 
     """
 
-    def __init__(self, settings, data_queues):
+    def __init__(self, data_queues):
         self.name = 'TaskQueue'
-        self.settings = settings
         self.data_queues = data_queues
         self.logger = data_queues["logging"].get_logger(self.name)
 
@@ -134,26 +147,6 @@ class TaskQueue(object):
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
-
-    def fetch_next_task_filtered(self, status, sort_by='id', sort_order='asc'):
-        """
-        Returns the next task in the task list for a given status
-
-        # TODO: Make method function
-
-        :param sort_order:
-        :param sort_by:
-        :param status:
-        :return:
-        """
-        # Fetch the task item first (to ensure it exists)
-        task_item = build_tasks_query(status, sort_by, sort_order)
-        if not task_item:
-            return False
-        # Set the task object by the abspath and return it
-        next_task = task.Task()
-        next_task.read_and_set_task_by_absolute_path(task_item.abspath)
-        return next_task
 
     """
     Last task based on status pending, in_progress or processed
@@ -210,12 +203,12 @@ class TaskQueue(object):
         :return:
         """
         # Fetch Task item matching the filters specified
-        task_item = self.fetch_next_task_filtered('pending', self.sort_by, self.sort_order)
+        task_item = fetch_next_task_filtered('pending', self.sort_by, self.sort_order)
         return task_item
 
     def get_next_processed_tasks(self):
         # Fetch Task item matching the filters specified
-        task_item = self.fetch_next_task_filtered('processed', self.sort_by, self.sort_order)
+        task_item = fetch_next_task_filtered('processed', self.sort_by, self.sort_order)
         return task_item
 
     """

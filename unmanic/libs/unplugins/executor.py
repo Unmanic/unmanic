@@ -54,7 +54,6 @@ class PluginExecutor(object):
             "postprocessor.file_move",
             "postprocessor.task_result",
         ]
-        self.default_plugin_runner_name = "unmanic_default_stage"
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         self.logger = unmanic_logging.get_logger(__class__.__name__)
 
@@ -139,10 +138,6 @@ class PluginExecutor(object):
             self._log("Exception encountered while importing module '{}'".format(plugin_id), message2=str(e),
                       level="exception")
             return None
-
-    @staticmethod
-    def default_runner(data):
-        return data
 
     @staticmethod
     def get_plugin_type_meta(plugin_type):
@@ -247,20 +242,6 @@ class PluginExecutor(object):
         # Filter out only plugins that have runners of this type
         plugin_data = self.build_plugin_data_from_plugin_list_filtered_by_plugin_type(enabled_plugins, plugin_type)
 
-        plugin_data.append(
-            {
-                "plugin_id":     self.default_plugin_runner_name,
-                "name":          "Default Unmanic Process",
-                "author":        "N/A",
-                "version":       "N/A",
-                "icon":          "",
-                "description":   "The default unmanic process as configured by the Unmanic settings",
-                "plugin_module": None,
-                "plugin_path":   None,
-                "runner":        self.default_runner,
-            }
-        )
-
         # Return runners
         return plugin_data
 
@@ -348,10 +329,6 @@ class PluginExecutor(object):
         return description
 
     def test_plugin_runner(self, plugin_id, plugin_type, test_data=None):
-        # Dont run a test on the default plugin runner
-        if plugin_id == self.default_plugin_runner_name:
-            return []
-
         try:
             # Get the path for this plugin
             plugin_path = self.__get_plugin_directory(plugin_id)
@@ -370,10 +347,6 @@ class PluginExecutor(object):
         return errors
 
     def test_plugin_settings(self, plugin_id):
-        # Don't run a test on the default plugin runner
-        if plugin_id == self.default_plugin_runner_name:
-            return []
-
         errors = []
 
         # Get the called runner function for the given plugin type

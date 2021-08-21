@@ -305,7 +305,7 @@ class CompletedTasksSchema(TableRecordsSuccessSchema):
         required=True,
         description="Results",
         many=True,
-        validate=validate.Length(min=1),
+        validate=validate.Length(min=0),
     )
 
 
@@ -338,6 +338,11 @@ class PendingTasksTableResultsSchema(BaseSchema):
         required=True,
         description="The current priority (higher is greater)",
         example=100,
+    )
+    status = fields.Str(
+        required=True,
+        description="The current status of the pending task",
+        example="pending",
     )
 
 
@@ -767,6 +772,30 @@ class SessionStateSuccessSchema(BaseSchema):
         required=True,
         description="Installation uuid",
         example="b429fcc7-9ce1-bcb3-2b8a-b094747f226e",
+    )
+
+
+# SETTINGS
+# ========
+
+class SettingsReadAndWriteSchema(BaseSchema):
+    """Schema to request the current settings"""
+
+    settings = fields.Dict(
+        required=True,
+        description="The current settings",
+        example={
+            "ui_port":                    8888,
+            "debugging":                  False,
+            "library_path":               "/library",
+            "enable_library_scanner":     False,
+            "schedule_full_scan_minutes": 1440,
+            "follow_symlinks":            True,
+            "run_full_scan_on_start":     False,
+            "enable_inotify":             False,
+            "number_of_workers":          1,
+            "cache_path":                 "/tmp/unmanic"
+        },
     )
 
 

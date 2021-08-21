@@ -57,7 +57,7 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
 
     def __init__(self, *args, **kwargs):
         self.name = 'UnmanicWebsocketHandler'
-        self.config = config.CONFIG()
+        self.config = config.Config()
         self.server_id = str(uuid.uuid4())
         udq = UnmanicDataQueues()
         urt = UnmanicRunningTreads()

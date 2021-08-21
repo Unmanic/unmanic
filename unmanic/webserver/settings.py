@@ -47,7 +47,7 @@ class SettingsUIRequestHandler(tornado.web.RequestHandler):
 
     def initialize(self, data_queues):
         self.name = 'settings'
-        self.config = config.CONFIG()
+        self.config = config.Config()
         self.session = session.Session()
 
         self.step = 'general'
@@ -76,16 +76,6 @@ class SettingsUIRequestHandler(tornado.web.RequestHandler):
                 if value:
                     self.config.set_config_item(config_item, value[0])
             self.redirect(self.request.uri)
-
-    def current_ffmpeg_command(self):
-        from unmanic.webserver.helpers import ffmpegmediator
-        example_ffmpeg_args = ffmpegmediator.generate_example_ffmpeg_args(self.config)
-
-        # Create command with infile, outfile and the arguments
-        example_command = ['ffmpeg'] + example_ffmpeg_args
-
-        # Return the full example command
-        return "{}".format(' '.join(example_command))
 
     def handle_ajax_post(self):
         query = self.get_argument('ajax')

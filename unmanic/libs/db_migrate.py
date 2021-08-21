@@ -103,8 +103,16 @@ class Migrations(object):
                 all_models.append(imported_model)
 
         # Start by creating all models
-        self.__log("Initialising database")
-        self.database.create_tables(all_models)
+        self.__log("Initialising database tables")
+        try:
+            with self.database.transaction():
+                for model in all_models:
+                    self.router.migrator.create_table(model)
+                self.router.migrator.run()
+        except Exception:
+            self.database.rollback()
+            self.__log("Initialising tables failed", level='exception')
+            raise
 
         # Migrations will only be used for removing obsolete columns
         self.__run_all_migrations()
@@ -117,14 +125,12 @@ class Migrations(object):
             # https://stackoverflow.com/questions/22573558/peewee-determining-meta-data-about-model-at-run-time
             fields = model._meta.fields
             # loop over the fields and ensure each on exists in the table
-            missing_fields = {}
             field_keys = [f for f in fields]
             for fk in field_keys:
                 field = fields.get(fk)
                 if isinstance(field, Field):
                     if not any(f for f in self.database.get_columns(model._meta.name) if f.name == field.name):
                         # Field does not exist in DB table
-                        missing_fields[field.name] = field
                         self.__log("Adding missing column")
                         try:
                             with self.database.transaction():

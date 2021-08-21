@@ -288,10 +288,10 @@ class Worker(threading.Thread):
             # Fetch file out details
             # This creates a temp file labeled "WORKING" that will be moved to the cache_path on completion
             tmp_file_out = os.path.splitext(task_cache_path)
-            file_out = current_file_out = "{}-{}-{}{}".format(tmp_file_out[0], "WORKING", runner_count, tmp_file_out[1])
+            file_out = "{}-{}-{}{}".format(tmp_file_out[0], "WORKING", runner_count, tmp_file_out[1])
 
-            # Create initial args for the runner functions
-            initial_data = {
+            # Generate/Reset the data for the runner functions
+            data = {
                 "exec_command":            [],
                 "command_progress_parser": default_progress_parser,
                 "file_in":                 file_in,
@@ -308,13 +308,7 @@ class Worker(threading.Thread):
                 # Run plugin and fetch return data
                 plugin_runner = plugin_module.get("runner")
                 try:
-                    data = initial_data.copy()
                     plugin_runner(data)
-
-                    # Temp condition to enable the default stage
-                    # TODO: Deprecate this once Unmanic Settings are removed
-                    if plugin_module.get('plugin_id') == 'unmanic_default_stage':
-                        data['exec_command'] = ['ffmpeg-default']
                 except Exception as e:
                     self._log("Exception while carrying out plugin runner on worker process '{}'".format(
                         plugin_module.get('plugin_id')), message2=str(e), level="exception")
@@ -332,12 +326,8 @@ class Worker(threading.Thread):
                 if data.get("exec_command"):
                     self.worker_log += ["\n\nRUNNER: \n{} [Pass #{}]".format(plugin_module.get('name'), runner_pass_count)]
 
-                    # Temp function to handle old FFmpeg conversions if the runner ID is 'unmanic_default_stage'
-                    # TODO: Deprecate this once Unmanic Settings are removed
-                    if plugin_module.get('plugin_id') == 'unmanic_default_stage':
-                        success = self.__default_ffmpeg_runner(data)
-                    else:
-                        success = self.__exec_command_subprocess(data)
+                    # Exec command as subprocess
+                    success = self.__exec_command_subprocess(data)
 
                     # Run command. Check if command exited successfully.
                     if success:
@@ -366,6 +356,9 @@ class Worker(threading.Thread):
                     continue
                 break
 
+            # Set the current file out to the most recently completed cache file
+            current_file_out = data.get('file_out')
+
             self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = True
             self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'complete'
 
@@ -378,6 +371,14 @@ class Worker(threading.Thread):
             # If jobs carried out on this task were all successful, we will get here
             self._log("Successfully converted file '{}'".format(original_abspath))
             try:
+                # Set the new file out as the extension may have changed
+                split_file_name = os.path.splitext(current_file_out)
+                file_extension = split_file_name[1].lstrip('.')
+                cache_directory = os.path.dirname(os.path.abspath(current_file_out))
+                self.current_task.set_cache_path(cache_directory, file_extension)
+                # Read the updated cache path
+                task_cache_path = self.current_task.get_cache_path()
+
                 # Move file to original cache path
                 self._log("Moving final cache file from '{}' to '{}'".format(current_file_out, task_cache_path))
                 current_file_out = os.path.abspath(current_file_out)
@@ -404,6 +405,33 @@ class Worker(threading.Thread):
         # Log the failure and return False
         self._log("Failed to convert file '{}'".format(original_abspath), level='warning')
         return False
+
+    def __log_proc_terminated(self, proc):
+        self._log("Process {} terminated with exit code {}".format(proc, proc.returncode))
+
+    def __terminate_proc_tree(self, proc: psutil.Process):
+        """
+        Terminate the process tree (including grandchildren).
+        Processes that fail to stop with SIGTERM will be sent a SIGKILL.
+
+        :param proc:
+        :return:
+        """
+
+        children = proc.children(recursive=True)
+        children.append(proc)
+        for p in children:
+            try:
+                p.terminate()
+            except psutil.NoSuchProcess:
+                pass
+        gone, alive = psutil.wait_procs(children, timeout=3, callback=self.__log_proc_terminated)
+        for p in alive:
+            try:
+                p.kill()
+            except psutil.NoSuchProcess:
+                pass
+        psutil.wait_procs(alive, timeout=3, callback=self.__log_proc_terminated)
 
     def __exec_command_subprocess(self, data):
         """
@@ -481,6 +509,11 @@ class Worker(threading.Thread):
 
             # Get the final output and the exit status
             communicate = self.worker_subprocess['proc'].communicate()[0]
+
+            # If the process is still running, kill it
+            if proc.is_running():
+                self.__terminate_proc_tree(proc)
+
             if self.worker_subprocess['proc'].returncode == 0:
                 return True
             else:
@@ -491,80 +524,3 @@ class Worker(threading.Thread):
 
         except Exception as e:
             self._log("Error while executing the command {}.".format(data.get("file_in")), message2=str(e), level="error")
-
-    def __default_ffmpeg_runner(self, data):
-        """
-        Temporary default runner for compatibility with Unmanic's built-in file conversion settings.
-        This will be removed once plugins are carrying out all conversion tasks and the Unmanic settings have been refactored.
-
-        :return:
-        """
-        from unmanic.libs import ffmpeg
-        ffmpeg_settings = {
-            'audio_codec':                          self.current_task.settings.audio_codec,
-            'audio_codec_cloning':                  self.current_task.settings.audio_codec_cloning,
-            'audio_stereo_stream_bitrate':          self.current_task.settings.audio_stereo_stream_bitrate,
-            'audio_stream_encoder':                 self.current_task.settings.audio_stream_encoder,
-            'cache_path':                           self.current_task.settings.cache_path,
-            'debugging':                            self.current_task.settings.debugging,
-            'enable_audio_encoding':                self.current_task.settings.enable_audio_encoding,
-            'enable_audio_stream_stereo_cloning':   self.current_task.settings.enable_audio_stream_stereo_cloning,
-            'enable_audio_stream_transcoding':      self.current_task.settings.enable_audio_stream_transcoding,
-            'enable_video_encoding':                self.current_task.settings.enable_video_encoding,
-            'out_container':                        self.current_task.settings.out_container,
-            'remove_subtitle_streams':              self.current_task.settings.remove_subtitle_streams,
-            'video_codec':                          self.current_task.settings.video_codec,
-            'video_stream_encoder':                 self.current_task.settings.video_stream_encoder,
-            'overwrite_additional_ffmpeg_options':  self.current_task.settings.overwrite_additional_ffmpeg_options,
-            'additional_ffmpeg_options':            self.current_task.settings.additional_ffmpeg_options,
-            'enable_hardware_accelerated_decoding': self.current_task.settings.enable_hardware_accelerated_decoding,
-        }
-
-        file_in = data.get("file_in")
-        file_out = data.get("file_out")
-
-        # Setup FFmpeg handler
-        ffmpeg_handle = ffmpeg.FFMPEGHandle(ffmpeg_settings)
-
-        # Fetch initial file probe
-        file_probe = ffmpeg_handle.file_probe(file_in)
-
-        # Create args from
-        ffmpeg_args = ffmpeg_handle.generate_ffmpeg_args(file_probe, file_in, file_out)
-
-        # Create output path if not exists
-        common.ensure_dir(file_out)
-
-        # Append start of command to worker subprocess stdout
-        self.worker_log += [
-            '\n\n',
-            'COMMAND:\n',
-            'ffmpeg ' + ' '.join(ffmpeg_args),
-            '\n\n',
-            'LOG:\n',
-        ]
-
-        # Convert file
-        success = False
-        try:
-            # Reset to defaults
-            ffmpeg_handle.set_info_defaults()
-            # Fetch source file info
-            ffmpeg_handle.set_file_in(file_in)
-            # Read video information for the input file
-            file_probe = ffmpeg_handle.file_in['file_probe']
-            if not file_probe:
-                return False
-            if ffmpeg_args:
-                success = ffmpeg_handle.convert_file_and_fetch_progress(file_in, ffmpeg_args)
-
-            self.worker_log += ffmpeg_handle.ffmpeg_cmd_stdout
-
-        except ffmpeg.FFMPEGHandleConversionError as e:
-            # Fetch ffmpeg stdout and append it to the current task object (to be saved during post process)
-            self.worker_log += ffmpeg_handle.ffmpeg_cmd_stdout
-            self._log("Error while executing the FFMPEG command {}. "
-                      "Download FFMPEG command dump from history for more information.".format(file_in),
-                      message2=str(e), level="error")
-
-        return success

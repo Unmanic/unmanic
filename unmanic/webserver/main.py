@@ -52,7 +52,7 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
 
     def initialize(self, data_queues, foreman):
         self.name = 'main'
-        self.config = config.CONFIG()
+        self.config = config.Config()
         self.session = session.Session()
 
         # TODO: Fetch data queues from uiserver.py
@@ -73,7 +73,7 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
     def handle_ajax_call(self, query):
         self.set_header("Content-Type", "application/json")
         if query == 'login':
-            self.session.register_unmanic(self.session.get_installation_uuid(), force=True)
+            self.session.register_unmanic(force=True)
             self.redirect("/dashboard/")
 
     def get_pending_tasks(self):
@@ -91,7 +91,7 @@ class DashboardWebSocket(tornado.websocket.WebSocketHandler):
 
     def __init__(self, *args, **kwargs):
         self.name = 'dashws'
-        self.config = config.CONFIG()
+        self.config = config.Config()
         self.server_id = str(uuid.uuid4())
         self.data_queues = kwargs.pop('data_queues')
         self.foreman = kwargs.pop('foreman')

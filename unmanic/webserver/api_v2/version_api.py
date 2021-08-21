@@ -57,7 +57,7 @@ class ApiVersionHandler(BaseApiHandler):
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
-        self.config = config.CONFIG()
+        self.config = config.Config()
 
     def get_unmanic_version(self):
         """

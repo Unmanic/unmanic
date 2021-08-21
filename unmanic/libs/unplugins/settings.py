@@ -33,6 +33,7 @@ import json
 import os
 import sys
 
+from unmanic import config
 from unmanic.libs.singleton import SingletonType
 
 
@@ -58,8 +59,21 @@ class PluginSettings(object, metaclass=SingletonType):
     settings_configured = None
 
     def __get_plugin_settings_file(self):
+        settings = config.Config()
+        userdata_path = settings.get_userdata_path()
         plugin_directory = os.path.dirname(os.path.abspath(sys.modules[self.__class__.__module__].__file__))
-        return os.path.join(plugin_directory, 'settings.json')
+        plugin_id = os.path.basename(plugin_directory)
+        if not os.path.exists(os.path.join(userdata_path, plugin_id)):
+            os.makedirs(os.path.join(userdata_path, plugin_id))
+            # Temp code to migrate settings to userdata
+            # TODO: Remove after initial release
+            if os.path.exists(os.path.join(plugin_directory, 'settings.json')):
+                import shutil
+                shutil.copyfile(
+                    os.path.join(plugin_directory, 'settings.json'),
+                    os.path.join(userdata_path, plugin_id, 'settings.json')
+                )
+        return os.path.join(userdata_path, plugin_id, 'settings.json')
 
     def __export_configured_settings(self):
         """

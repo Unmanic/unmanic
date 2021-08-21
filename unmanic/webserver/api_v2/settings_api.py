@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.session_api.py
+    unmanic.settings_api.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     10 Mar 2021, (7:14 PM)
+    Date:                     20 Aug 2021, (2:30 PM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -31,49 +31,49 @@
 """
 
 import tornado.log
-from unmanic.libs import session
+
+from unmanic import config
 from unmanic.libs.uiserver import UnmanicDataQueues
-from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
-from unmanic.webserver.api_v2.schema.schemas import SessionStateSuccessSchema
+from unmanic.webserver.api_v2.base_api_handler import BaseApiError, BaseApiHandler
+from unmanic.webserver.api_v2.schema.schemas import SettingsReadAndWriteSchema
 
 
-class ApiSessionHandler(BaseApiHandler):
-    session = None
+class ApiSettingsHandler(BaseApiHandler):
     config = None
     params = None
     unmanic_data_queues = None
 
     routes = [
         {
-            "path_pattern":      r"/session/state",
+            "path_pattern":      r"/settings/read",
             "supported_methods": ["GET"],
-            "call_method":       "get_session_state",
+            "call_method":       "get_all_settings",
         },
         {
-            "path_pattern":      r"/session/reload",
-            "supported_methods": ["PUT"],
-            "call_method":       "session_reload",
+            "path_pattern":      r"/settings/write",
+            "supported_methods": ["POST"],
+            "call_method":       "write_settings",
         },
     ]
 
     def initialize(self, **kwargs):
-        self.session = session.Session()
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
+        self.config = config.Config()
 
-    def get_session_state(self):
+    def get_all_settings(self):
         """
-        Session - state
+        Settings - read
         ---
-        description: Returns the application session state.
+        description: Returns the application settings.
         responses:
             200:
-                description: 'Sample response: Returns the application session state.'
+                description: 'Sample response: Returns the application settings.'
                 content:
                     application/json:
                         schema:
-                            SessionStateSuccessSchema
+                            SettingsReadAndWriteSchema
             400:
                 description: Bad request; Check `messages` for any validation errors
                 content:
@@ -100,24 +100,15 @@ class ApiSessionHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            if not self.session.created:
-                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Session has not yet been created.")
-                self.write_error()
-                return
-            else:
-                response = self.build_response(
-                    SessionStateSuccessSchema(),
-                    {
-                        "level":       self.session.level,
-                        "picture_uri": self.session.picture_uri,
-                        "name":        self.session.name,
-                        "email":       self.session.email,
-                        "created":     self.session.created,
-                        "uuid":        self.session.uuid,
-                    }
-                )
-                self.write_success(response)
-                return
+            settings = self.config.get_config_as_dict()
+            response = self.build_response(
+                SettingsReadAndWriteSchema(),
+                {
+                    "settings": settings,
+                }
+            )
+            self.write_success(response)
+            return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
             return
@@ -125,14 +116,21 @@ class ApiSessionHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def session_reload(self):
+    def write_settings(self):
         """
-        Session - reload
+        Settings - save a dictionary of settings
         ---
-        description: Reload the current session.
+        description: Save a given dictionary of settings.
+        requestBody:
+            description: Requested a dictionary of settings to save.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        SettingsReadAndWriteSchema
         responses:
             200:
-                description: 'Success: Reloaded the current session.'
+                description: 'Success: Saved a given dictionary of settings.'
                 content:
                     application/json:
                         schema:
@@ -163,13 +161,14 @@ class ApiSessionHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            if not self.session.register_unmanic(force=True):
-                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to reload session")
-                self.write_error()
-                return
-            else:
-                self.write_success()
-                return
+            json_request = self.read_json_request(SettingsReadAndWriteSchema())
+
+            # Save settings - writing to file.
+            # Throws exception if settings fail to save
+            self.config.set_bulk_config_items(json_request.get('settings', {}))
+
+            self.write_success()
+            return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
             return

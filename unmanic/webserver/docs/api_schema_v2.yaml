@@ -72,7 +72,7 @@ components:
           description: Results
           items:
             $ref: '#/components/schemas/CompletedTasksTableResults'
-          minItems: 1
+          minItems: 0
           type: array
         successCount:
           description: Total count of times with a success status in the results list
@@ -214,10 +214,15 @@ components:
           description: The current priority (higher is greater)
           example: 100
           type: integer
+        status:
+          description: The current status of the pending task
+          example: pending
+          type: string
       required:
       - abspath
       - id
       - priority
+      - status
       type: object
     PluginFlowDataResults:
       properties:
@@ -805,6 +810,25 @@ components:
       required:
       - level
       - uuid
+      type: object
+    SettingsReadAndWrite:
+      properties:
+        settings:
+          description: The current settings
+          example:
+            cache_path: /tmp/unmanic
+            debugging: false
+            enable_inotify: false
+            enable_library_scanner: false
+            follow_symlinks: true
+            library_path: /library
+            number_of_workers: 1
+            run_full_scan_on_start: false
+            schedule_full_scan_minutes: 1440
+            ui_port: 8888
+          type: object
+      required:
+      - settings
       type: object
     VersionReadSuccess:
       properties:
@@ -1779,6 +1803,81 @@ paths:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
           description: 'Success: Reloaded the current session.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /settings/read:
+    get:
+      description: Returns the application settings.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsReadAndWrite'
+          description: 'Sample response: Returns the application settings.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /settings/write:
+    post:
+      description: Save a given dictionary of settings.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsReadAndWrite'
+        description: Requested a dictionary of settings to save.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: 'Success: Saved a given dictionary of settings.'
         '400':
           content:
             application/json:

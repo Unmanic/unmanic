@@ -137,6 +137,7 @@ def prepare_filtered_pending_tasks(params):
             'id':       pending_task['id'],
             'abspath':  pending_task['abspath'],
             'priority': pending_task['priority'],
+            'status':   pending_task['status'],
         }
         return_data["results"].append(item)
 

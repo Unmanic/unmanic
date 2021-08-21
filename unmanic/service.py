@@ -31,17 +31,13 @@
 """
 import argparse
 import os
-import json
 import time
-import threading
 import queue
-import schedule
 import signal
 
 from unmanic import config, metadata
-from unmanic.libs import unlogger, common, eventmonitor, ffmpeg, history, unmodels
+from unmanic.libs import libraryscanner, unlogger, common, eventmonitor
 from unmanic.libs.db_migrate import Migrations
-from unmanic.libs.filetest import FileTest
 from unmanic.libs.taskqueue import TaskQueue
 from unmanic.libs.postprocessor import PostProcessor
 from unmanic.libs.taskhandler import TaskHandler
@@ -53,174 +49,8 @@ unmanic_logging = unlogger.UnmanicLogger.__call__()
 main_logger = unmanic_logging.get_logger()
 
 
-class LibraryScanner(threading.Thread):
-    def __init__(self, data_queues, settings):
-        super(LibraryScanner, self).__init__(name='LibraryScanner')
-        self.interval = 0
-        self.firstrun = True
-        self.settings = settings
-        self.data_queues = data_queues
-        self.logger = data_queues["logging"].get_logger(self.name)
-        self.scheduledtasks = data_queues["scheduledtasks"]
-        self.library_scanner_triggers = data_queues["library_scanner_triggers"]
-        self.abort_flag = threading.Event()
-        self.abort_flag.clear()
-        self.ffmpeg = None
-
-    def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
-
-    def init_ffmpeg_handle_settings(self):
-        return {
-            'audio_codec':                          self.settings.get_config_item('audio_codec'),
-            'audio_stream_encoder':                 self.settings.get_audio_stream_encoder(),
-            'audio_codec_cloning':                  self.settings.get_audio_codec_cloning(),
-            'audio_stereo_stream_bitrate':          self.settings.get_audio_stereo_stream_bitrate(),
-            'cache_path':                           self.settings.get_cache_path(),
-            'debugging':                            self.settings.get_debugging(),
-            'enable_audio_encoding':                self.settings.get_enable_audio_encoding(),
-            'enable_audio_stream_stereo_cloning':   self.settings.get_enable_audio_stream_stereo_cloning(),
-            'enable_audio_stream_transcoding':      self.settings.get_enable_audio_stream_transcoding(),
-            'enable_video_encoding':                self.settings.get_enable_video_encoding(),
-            'out_container':                        self.settings.get_out_container(),
-            'remove_subtitle_streams':              self.settings.get_remove_subtitle_streams(),
-            'video_codec':                          self.settings.get_video_codec(),
-            'video_stream_encoder':                 self.settings.get_video_stream_encoder(),
-            'overwrite_additional_ffmpeg_options':  self.settings.get_overwrite_additional_ffmpeg_options(),
-            'additional_ffmpeg_options':            self.settings.get_additional_ffmpeg_options(),
-            'enable_hardware_accelerated_decoding': self.settings.get_enable_hardware_accelerated_decoding(),
-        }
-
-    def stop(self):
-        self.abort_flag.set()
-
-    def abort_is_set(self):
-        # Check if the abort flag is set
-        if self.abort_flag.is_set():
-            # Return True straight away if it is
-            return True
-
-        # Sleep for a fraction of a second to prevent CPU pinning
-        time.sleep(.1)
-
-        # Return False
-        return False
-
-    def run(self):
-        # If we have a config set to run a schedule, then start the process.
-        # Otherwise close this thread now.
-        self._log("Starting LibraryScanner Monitor loop")
-        while not self.abort_is_set():
-            # Main loop to configure the scheduler
-            if int(self.settings.get_schedule_full_scan_minutes()) != self.interval:
-                self.interval = int(self.settings.get_schedule_full_scan_minutes())
-            if self.interval and self.interval != 0:
-                self._log("Setting LibraryScanner schedule to scan every {} mins...".format(self.interval))
-                # Configure schedule
-                schedule.every(self.interval).minutes.do(self.scheduled_job)
-                # Register application
-                self.register_unmanic()
-
-                # First run the task
-                if self.settings.get_run_full_scan_on_start() and self.firstrun:
-                    self._log("Running LibraryScanner on start")
-                    self.scheduled_job()
-                self.firstrun = False
-
-                # Then loop and wait for the schedule
-                while not self.abort_is_set():
-
-                    # Check if a manual library scan was triggered
-                    try:
-                        if not self.library_scanner_triggers.empty():
-                            trigger = self.library_scanner_triggers.get_nowait()
-                            if trigger == "library_scan":
-                                self.scheduled_job()
-                                break
-                    except queue.Empty:
-                        continue
-                    except Exception as e:
-                        self._log("Exception in retrieving library scanner trigger {}:".format(self.name), message2=str(e),
-                                  level="exception")
-
-                    # Check if scheduled task is due
-                    schedule.run_pending()
-                    # Delay for 1 second before checking again.
-                    time.sleep(1)
-                    # If the settings have changed, then break this loop and clear
-                    # the scheduled job resetting to the new interval
-                    if int(self.settings.get_schedule_full_scan_minutes()) != self.interval:
-                        self._log("Resetting LibraryScanner schedule")
-                        break
-                schedule.clear()
-
-        self._log("Leaving LibraryScanner Monitor loop...")
-
-    def scheduled_job(self):
-        from unmanic.libs.plugins import PluginsHandler
-        plugin_handler = PluginsHandler()
-        incompatible_plugins = plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages'))
-        if incompatible_plugins:
-            self._log("Skipping library scanner due incompatible plugins.", level='warning')
-            for incompatible_plugin in incompatible_plugins:
-                self._log("Found incompatible plugin '{}'".format(incompatible_plugin.get('plugin_id')), level='warning')
-            return
-        if not plugin_handler.within_enabled_plugin_limits(self.data_queues.get('frontend_messages')):
-            return
-        self._log("Running full library scan")
-        self.scan_library_path(self.settings.get_library_path())
-
-    def add_path_to_queue(self, pathname):
-        self.scheduledtasks.put(pathname)
-
-    def scan_library_path(self, search_folder):
-        if not os.path.exists(search_folder):
-            self._log("Path does not exist - '{}'".format(search_folder), level="warning")
-            return
-        if self.settings.get_debugging():
-            self._log("Scanning directory - '{}'".format(search_folder), level="debug")
-        for root, subFolders, files in os.walk(search_folder, followlinks=True):
-            if self.abort_flag.is_set():
-                break
-            if self.settings.get_debugging():
-                self._log(json.dumps(files, indent=2), level="debug")
-            # Add all files in this path that match our container filter
-            for file_path in files:
-                if self.abort_flag.is_set():
-                    break
-
-                # Get full path to file
-                pathname = os.path.join(root, file_path)
-
-                # Test file to be added to task list. Add it if required
-                try:
-                    file_test = FileTest(self.settings, pathname)
-                    result, issues = file_test.should_file_be_added_to_task_list()
-                    # Log any error messages
-                    for issue in issues:
-                        if type(issue) is dict:
-                            self._log(issue.get('message'))
-                        else:
-                            self._log(issue)
-                    # If file needs to be added, then add it
-                    if result:
-                        self.add_path_to_queue(pathname)
-                except UnicodeEncodeError:
-                    self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
-                except Exception as e:
-                    self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e),
-                              level="exception")
-
-    def register_unmanic(self):
-        from unmanic.libs import session
-        s = session.Session()
-        s.register_unmanic(s.get_installation_uuid())
-
-
-def init_db():
+def init_db(config_path):
     # Set paths
-    config_path = common.get_config_dir()
     app_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Set database connection settings
@@ -267,9 +97,9 @@ class Service:
         })
         return handler
 
-    def start_post_processor(self, data_queues, settings, task_queue):
+    def start_post_processor(self, data_queues, task_queue):
         main_logger.info("Starting PostProcessor")
-        postprocessor = PostProcessor(data_queues, settings, task_queue)
+        postprocessor = PostProcessor(data_queues, task_queue)
         postprocessor.daemon = True
         postprocessor.start()
         self.threads.append({
@@ -289,21 +119,21 @@ class Service:
         })
         return foreman
 
-    def start_library_scanner_manager(self, data_queues, settings):
-        main_logger.info("Starting LibraryScanner")
-        scheduler = LibraryScanner(data_queues, settings)
-        scheduler.daemon = True
-        scheduler.start()
+    def start_library_scanner_manager(self, data_queues):
+        main_logger.info("Starting LibraryScannerManager")
+        library_scanner_manager = libraryscanner.LibraryScannerManager(data_queues)
+        library_scanner_manager.daemon = True
+        library_scanner_manager.start()
         self.threads.append({
-            'name':   'LibraryScanner',
-            'thread': scheduler
+            'name':   'LibraryScannerManager',
+            'thread': library_scanner_manager
         })
-        return scheduler
+        return library_scanner_manager
 
     def start_inotify_watch_manager(self, data_queues, settings):
         if eventmonitor.event_monitor_module:
             main_logger.info("Starting EventMonitorManager")
-            event_monitor_manager = eventmonitor.EventMonitorManager(data_queues, settings)
+            event_monitor_manager = eventmonitor.EventMonitorManager(data_queues)
             event_monitor_manager.daemon = True
             event_monitor_manager.start()
             self.threads.append({
@@ -325,7 +155,8 @@ class Service:
         })
         return uiserver
 
-    def initial_register_unmanic(self, settings):
+    @staticmethod
+    def initial_register_unmanic():
         from unmanic.libs import session
         s = session.Session()
         s.register_unmanic(s.get_installation_uuid())
@@ -352,13 +183,13 @@ class Service:
         main_logger.info("Starting all threads")
 
         # Register installation
-        self.initial_register_unmanic(settings)
+        self.initial_register_unmanic()
 
         # Setup job queue
-        task_queue = TaskQueue(settings, data_queues)
+        task_queue = TaskQueue(data_queues)
 
         # Setup post-processor thread
-        self.start_post_processor(data_queues, settings, task_queue)
+        self.start_post_processor(data_queues, task_queue)
 
         # Start the foreman thread
         foreman = self.start_foreman(data_queues, settings, task_queue)
@@ -367,7 +198,7 @@ class Service:
         self.start_handler(data_queues, settings, task_queue)
 
         # Start scheduled thread
-        self.start_library_scanner_manager(data_queues, settings)
+        self.start_library_scanner_manager(data_queues)
 
         # Start inotify watch manager
         self.start_inotify_watch_manager(data_queues, settings)
@@ -386,17 +217,12 @@ class Service:
             main_logger.info("Thread {} has successfully stopped".format(thread['name']))
         self.threads = []
 
-    def init_config(self):
-        # Init DB
-        if not self.db_connection:
-            self.db_connection = init_db()
-
-        # Read settings
-        return config.CONFIG(db_connection=self.db_connection)
-
     def run(self):
         # Init the configuration
-        settings = self.init_config()
+        settings = config.Config()
+
+        # Init the database
+        self.db_connection = init_db(settings.get_config_path())
 
         # Start all threads
         self.start_threads(settings)
@@ -425,11 +251,21 @@ def main():
     parser.add_argument('--dev',
                         action='store_true',
                         help='Enable developer mode')
+    parser.add_argument('--port', nargs='?',
+                        help='Specify the port to run the webserver on')
+    parser.add_argument('--unmanic_path', nargs='?',
+                        help='Specify the unmanic configuration path instead of ~/.unmanic')
     args = parser.parse_args()
+
+    # Configure application from args
+    settings = config.Config(
+        port=args.port,
+        unmanic_path=args.unmanic_path
+    )
 
     if args.manage_plugins:
         # Init the DB connection
-        db_connection = init_db()
+        db_connection = init_db(settings.get_config_path())
 
         # Run the plugin manager CLI
         plugin_cli = PluginsCLI()

@@ -183,23 +183,24 @@ class Session(object, metaclass=SingletonType):
         r = requests.post(u, json=data)
         return r.json()
 
-    def register_unmanic(self, uuid, force=False):
+    def register_unmanic(self, force=False):
         """
         Register Unmanic with site.
         This sends information about the system that Unmanic is running on.
         It also sends a unique ID.
 
-        Based on the return information, this will set the session level
+        Based on the return information, this will set the session level.
 
-        Return success status
+        Return success status.
 
+        :param force:
         :return:
         """
         # First check if the current session is still valid
         if not force and self.__check_session_valid():
             return True
 
-        settings = config.CONFIG()
+        settings = config.Config()
         try:
             # Build post data
             from unmanic.libs.system import System
@@ -209,7 +210,7 @@ class Session(object, metaclass=SingletonType):
             if platform_info:
                 platform_info = " * ".join(platform_info)
             post_data = {
-                "uuid":           uuid,
+                "uuid":           self.get_installation_uuid(),
                 "version":        settings.read_version(),
                 "python_version": system_info.get("python", ''),
                 "system":         {

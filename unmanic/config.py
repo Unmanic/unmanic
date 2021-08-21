@@ -340,6 +340,14 @@ class Config(object, metaclass=SingletonType):
         """
         return self.schedule_full_scan_minutes
 
+    def get_follow_symlinks(self):
+        """
+        Get setting - follow_symlinks
+
+        :return:
+        """
+        return self.follow_symlinks
+
     def get_plugins_path(self):
         """
         Get setting - config_path

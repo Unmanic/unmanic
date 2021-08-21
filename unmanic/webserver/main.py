@@ -57,7 +57,7 @@ class MainUIRequestHandler(tornado.web.RequestHandler):
 
         # TODO: Fetch data queues from uiserver.py
         self.data_queues = data_queues
-        #self.foreman = foreman
+        # self.foreman = foreman
         self.components = []
 
     def get(self, path):

@@ -182,7 +182,9 @@ class System(object, metaclass=SingletonType):
 
 
 if __name__ == "__main__":
-    import json, sys, os
+    import json
+    import sys
+    import os
 
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     print(project_dir)

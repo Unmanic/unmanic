@@ -66,54 +66,7 @@ class TestClass(object):
         unmanic_logging = unlogger.UnmanicLogger.__call__(False)
         unmanic_logging.get_logger()
 
-    @pytest.mark.skip
-    def test_logging_singleton(self):
-        logger1 = unlogger.UnmanicLogger.__call__().get_logger()
-        logger2 = unlogger.UnmanicLogger.__call__().get_logger()
-
-        # Ensure singleton works:
-        if logger1 == logger2:
-            print("### Instances of UnmanicLogger are the same object")
-
-        # Create a child logger
-        logger_blah = unlogger.UnmanicLogger.__call__().get_logger("blah")
-
-        # Test one (everything works on console, no logging to files)
-        print("### Info logging - everything works on console, no logging to files")
-        logger1.info("Default - test1 - info")
-        logger1.debug("Default - test1 - debug")
-        logger1.warning("Default - test1 - warning")
-        logger1.critical("Default - test1 - critical")
-        logger1.exception("Default - test1 - exception: %s", "Test Exception String")
-
-        logger_blah.info("BLAH - test1 - info")
-        logger_blah.debug("BLAH - test1 - debug")
-        logger_blah.warning("BLAH - test1 - warning")
-        logger_blah.critical("BLAH - test1 - critical")
-        logger_blah.exception("BLAH - test1 - exception: %s", "Test Exception String")
-
-        # Fake our settings...
-        settings = SettingsObject()
-        settings.set_config_item('log_path', "../", save_settings=False)
-        settings.set_config_item('debugging', True, save_settings=False)
-        logger_config = unlogger.UnmanicLogger.__call__()
-        logger_config.setup_logger(settings)
-
-        # Test two (everything CRITICAL and EXCEPTION level only on console and unmanic.log)
-        print("### Critical logging or greater only. Able to log to ./unmanic.log")
-        logger1.info("Default - test2 - info")
-        logger1.debug("Default - test2 - debug")
-        logger1.warning("Default - test2 - warning")
-        logger1.critical("Default - test2 - critical")
-        logger1.exception("Default - test2 - exception: %s", "Test Exception String")
-
-        logger_blah.info("BLAH - test2 - info")
-        logger_blah.debug("BLAH - test2 - debug")
-        logger_blah.warning("BLAH - test2 - warning")
-        logger_blah.critical("BLAH - test2 - critical")
-        logger_blah.exception("BLAH - test2 - exception: %s", "Test Exception String")
-
-    @pytest.mark.skip
+    @pytest.mark.unit
     def test_logging_special_characters(self):
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         main_logger = unmanic_logging.get_logger()

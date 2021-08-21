@@ -71,6 +71,7 @@ class UnmanicDirectoryInfo(ConfigParser):
         with open(self.path, 'w') as configfile:
             self.write(configfile)
 
+
 if __name__ == '__main__':
     directory_info = UnmanicDirectoryInfo('/tmp/unmanic')
     directory_info.get('normalise_aac', 'key')

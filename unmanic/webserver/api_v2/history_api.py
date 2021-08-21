@@ -70,7 +70,7 @@ class ApiHistoryHandler(BaseApiHandler):
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
-        self.config = config.CONFIG()
+        self.config = config.Config()
 
     def get_completed_tasks(self):
         """
@@ -257,7 +257,7 @@ class ApiHistoryHandler(BaseApiHandler):
         try:
             json_request = self.read_json_request(RequestTableUpdateByIdList())
 
-            errors = completed_tasks.add_historic_tasks_to_pending_tasks_list(json_request.get('id_list', []), self.config)
+            errors = completed_tasks.add_historic_tasks_to_pending_tasks_list(json_request.get('id_list', []))
             if errors:
                 failed_ids = ''
                 for task_id in errors:

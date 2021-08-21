@@ -156,26 +156,6 @@ class System(object, metaclass=SingletonType):
             }
         return self.devices
 
-    def __get_ffmpeg_info(self):
-        """
-        Return a dictionary of ffmpeg information
-
-        TODO:
-            Parse codecs
-
-        :return:
-        """
-        from unmanic.libs import unffmpeg
-        ffmpeg_info = unffmpeg.Info()
-        if not self.ffmpeg:
-            self.ffmpeg = {
-                "versions":                ffmpeg_info.versions(),
-                "hw_acceleration_methods": ffmpeg_info.get_available_ffmpeg_hw_acceleration_methods(),
-                "decoders":                ffmpeg_info.get_available_ffmpeg_decoders(),
-                "encoders":                ffmpeg_info.get_available_ffmpeg_encoders(),
-            }
-        return self.ffmpeg
-
     def __get_platform_info(self):
         """
         Return a dictionary of device information
@@ -195,7 +175,6 @@ class System(object, metaclass=SingletonType):
         """
         info = {
             "devices":  self.__get_devices_info(),
-            "ffmpeg":   self.__get_ffmpeg_info(),
             "platform": self.__get_platform_info(),
             "python":   self.__get_python_info(),
         }

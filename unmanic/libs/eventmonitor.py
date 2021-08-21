@@ -33,6 +33,7 @@ import os
 import threading
 import time
 
+from unmanic import config
 from unmanic.libs.plugins import PluginsHandler
 
 try:
@@ -56,10 +57,9 @@ from unmanic.libs.filetest import FileTest
 
 
 class EventHandler(FileSystemEventHandler):
-    def __init__(self, data_queues, settings):
+    def __init__(self, data_queues):
         self.name = "EventProcessor"
-        self.settings = settings
-        self.inotifytasks = data_queues["inotifytasks"]
+        self.data_queues = data_queues
         self.logger = None
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
@@ -72,7 +72,7 @@ class EventHandler(FileSystemEventHandler):
         getattr(self.logger, level)(message)
 
     def __add_path_to_queue(self, pathname):
-        self.inotifytasks.put(pathname)
+        self.data_queues.get('inotifytasks').put(pathname)
 
     def __handle_event(self, event):
         # Ensure event was not for a directory
@@ -85,7 +85,7 @@ class EventHandler(FileSystemEventHandler):
 
         # Test file to be added to task list. Add it if required
         try:
-            file_test = FileTest(self.settings, pathname)
+            file_test = FileTest(pathname)
             result, issues = file_test.should_file_be_added_to_task_list()
             # Log any error messages
             for issue in issues:
@@ -132,14 +132,12 @@ class EventMonitorManager(threading.Thread):
 
     """
 
-    def __init__(self, data_queues, settings):
+    def __init__(self, data_queues):
         super(EventMonitorManager, self).__init__(name='EventMonitorManager')
         self.name = "EventMonitorManager"
-        self.settings = settings
         self.data_queues = data_queues
-
-        self.logger = data_queues["logging"].get_logger(self.name)
-        self.inotifytasks = data_queues["inotifytasks"]
+        self.settings = config.Config()
+        self.logger = None
 
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
@@ -147,6 +145,9 @@ class EventMonitorManager(threading.Thread):
         self.event_observer_thread = None
 
     def _log(self, message, message2='', level="info"):
+        if not self.logger:
+            unmanic_logging = unlogger.UnmanicLogger.__call__()
+            self.logger = unmanic_logging.get_logger(self.name)
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
@@ -201,7 +202,7 @@ class EventMonitorManager(threading.Thread):
                 time.sleep(.1)
                 return
             self._log("EventMonitorManager spawning EventProcessor thread...")
-            event_handler = EventHandler(self.data_queues, self.settings)
+            event_handler = EventHandler(self.data_queues)
 
             self.event_observer_thread = Observer()
             self.event_observer_thread.schedule(event_handler, self.settings.get_library_path(), recursive=True)

@@ -60,7 +60,7 @@ class PluginsHandler(object, metaclass=SingletonType):
     default_repo = 'https://unmanic.app/api/v1/unmanic-plugin-repo/uuid'
 
     def __init__(self, *args, **kwargs):
-        self.settings = config.CONFIG()
+        self.settings = config.Config()
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         self.logger = unmanic_logging.get_logger(__class__.__name__)
 
@@ -295,7 +295,7 @@ class PluginsHandler(object, metaclass=SingletonType):
         try:
             repo_data = session.api_post(1, 'unmanic-plugin/install', post_data)
             if not repo_data.get('success'):
-                session.register_unmanic(session.get_installation_uuid())
+                session.register_unmanic()
         except Exception as e:
             self._log("Exception while logging plugin install.", str(e), level="debug")
             return False
@@ -451,7 +451,7 @@ class PluginsHandler(object, metaclass=SingletonType):
 
         # Refresh session
         s = Session()
-        s.register_unmanic(s.get_installation_uuid())
+        s.register_unmanic()
 
         # Enable the matching entries in the table
         Plugins.update(enabled=True).where(Plugins.id.in_(plugin_table_ids)).execute()
@@ -592,7 +592,7 @@ class PluginsHandler(object, metaclass=SingletonType):
         """
         # Refresh session
         s = Session()
-        s.register_unmanic(s.get_installation_uuid())
+        s.register_unmanic()
 
         # First fetch all enabled plugins
         order = [
@@ -627,7 +627,7 @@ class PluginsHandler(object, metaclass=SingletonType):
         """
         # Fetch level from session
         s = Session()
-        s.register_unmanic(s.get_installation_uuid())
+        s.register_unmanic()
         if s.level > 1:
             return True
 

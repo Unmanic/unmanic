@@ -44,20 +44,6 @@ def get_home_dir():
     return home_dir
 
 
-def get_config_dir():
-    config_dir = os.environ.get('CONFIG_PATH')
-    if config_dir is None:
-        config_dir = os.path.join(get_home_dir(), '.unmanic', 'config')
-    return config_dir
-
-
-def get_ui_port():
-    ui_port = os.environ.get('UI_PORT')
-    if ui_port is None:
-        ui_port = 8888
-    return ui_port
-
-
 def format_message(message, message2=''):
     message = str(message)
     if message2:
@@ -190,7 +176,8 @@ def json_dump_to_file(json_data, out_file, check=True, rollback_on_fail=True):
     }
 
     # If check param is flagged and there already exists a out file, create a temporary backup
-    if check and os.path.exists(out_file):
+
+    if rollback_on_fail and os.path.exists(out_file):
         temp_dir = tempfile.gettempdir()
         temp_path = os.path.join(temp_dir, 'json_dump_to_file_backup-{}'.format(time.time()))
         try:
@@ -207,23 +194,28 @@ def json_dump_to_file(json_data, out_file, check=True, rollback_on_fail=True):
         result['success'] = True
     except Exception as e:
         result['success'] = False
-        result['errors'].append("Exception in writing history to file: {}".format(str(e)))
+        result['errors'].append("Exception in writing to file: {}".format(str(e)))
 
     # If check param is flagged, ensure json data exists in the output file
     if check:
         try:
             with open(out_file) as infile:
                 data = json.load(infile)
-            result['success'] = True
         except Exception as e:
             result['success'] = False
             result['errors'].append("JSON file invalid")
 
-        # If data save was unsuccessful and the rollback_on_fail param is flagged
-        # and there is a temp file set, roll back to old file
-        if not result['success'] and result['temp_path'] and rollback_on_fail:
+    # If data save was unsuccessful and the rollback_on_fail param is flagged
+    #   and there is a temp file set, roll back to old file
+    if not result.get('success') and result.get('temp_path') and rollback_on_fail:
+        try:
             os.remove(out_file)
-            shutil.copy2(result['temp_path'], out_file)
+            shutil.copy2(result.get('temp_path'), out_file)
+            os.remove(result.get('temp_path'))
+        except Exception as e:
+            result['success'] = False
+            result['errors'].append("Exception while restoring original file file: {}".format(str(e)))
+
     return result
 
 
@@ -240,36 +232,3 @@ def extract_video_codecs_from_file_properties(file_properties: dict):
         if stream['codec_type'] == 'video':
             codecs.append(stream['codec_name'])
     return codecs
-
-
-def fetch_file_data_by_path(pathname):
-    """
-    Returns a dictionary of file data for a given path.
-
-    Will throw an exception if pathname is not a valid file
-
-    :param pathname:
-    :return:
-    """
-    # Set source dict
-    file_data = {
-        'abspath':  os.path.abspath(pathname),
-        'basename': os.path.basename(pathname),
-        'dirname':  os.path.dirname(os.path.abspath(pathname))
-    }
-
-    # Probe file
-    from unmanic.libs.unffmpeg import Info
-    probe_info = Info().file_probe(file_data['abspath'])
-
-    # Extract only the video codec list
-    video_codecs_list = extract_video_codecs_from_file_properties(probe_info)
-
-    # Make comma separated string from the list of video codecs used in this file
-    file_data['video_codecs'] = ','.join(video_codecs_list)
-
-    # Merge file probe with file_data
-    file_data.update(probe_info)
-
-    # return the file data
-    return file_data

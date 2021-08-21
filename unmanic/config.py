@@ -355,3 +355,11 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.plugins_path
+
+    def get_userdata_path(self):
+        """
+        Get setting - userdata_path
+
+        :return:
+        """
+        return self.userdata_path

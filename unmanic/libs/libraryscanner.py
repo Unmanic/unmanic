@@ -158,7 +158,9 @@ class LibraryScannerManager(threading.Thread):
             return
         if self.settings.get_debugging():
             self._log("Scanning directory - '{}'".format(search_folder), level="debug")
-        for root, subFolders, files in os.walk(search_folder, followlinks=True):
+
+        follow_symlinks = self.settings.get_follow_symlinks()
+        for root, subFolders, files in os.walk(search_folder, followlinks=follow_symlinks):
             if self.abort_flag.is_set():
                 break
             if self.settings.get_debugging():

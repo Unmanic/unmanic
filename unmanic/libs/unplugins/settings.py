@@ -59,21 +59,18 @@ class PluginSettings(object, metaclass=SingletonType):
     settings_configured = None
 
     def __get_plugin_settings_file(self):
-        settings = config.Config()
-        userdata_path = settings.get_userdata_path()
-        plugin_directory = os.path.dirname(os.path.abspath(sys.modules[self.__class__.__module__].__file__))
-        plugin_id = os.path.basename(plugin_directory)
-        if not os.path.exists(os.path.join(userdata_path, plugin_id)):
-            os.makedirs(os.path.join(userdata_path, plugin_id))
-            # Temp code to migrate settings to userdata
-            # TODO: Remove after initial release
+        plugin_directory = self.get_plugin_directory()
+        profile_directory = self.get_profile_directory()
+        # Temp code to migrate settings to userdata
+        # TODO: Remove after initial release
+        if not os.path.exists(os.path.join(profile_directory, 'settings.json')):
             if os.path.exists(os.path.join(plugin_directory, 'settings.json')):
                 import shutil
-                shutil.copyfile(
+                shutil.move(
                     os.path.join(plugin_directory, 'settings.json'),
-                    os.path.join(userdata_path, plugin_id, 'settings.json')
+                    os.path.join(profile_directory, 'settings.json')
                 )
-        return os.path.join(userdata_path, plugin_id, 'settings.json')
+        return os.path.join(profile_directory, 'settings.json')
 
     def __export_configured_settings(self):
         """
@@ -109,6 +106,32 @@ class PluginSettings(object, metaclass=SingletonType):
         for key in self.settings:
             if key in plugin_settings:
                 self.settings_configured[key] = plugin_settings.get(key)
+
+    def get_plugin_directory(self):
+        """
+        Return the absolute path to the Plugin's directory.
+        This is where the Plugin is currently installed.
+
+        :return:
+        """
+        return os.path.dirname(os.path.abspath(sys.modules[self.__class__.__module__].__file__))
+
+    def get_profile_directory(self):
+        """
+        Return the absolute path to the Plugin's profile directory.
+        This is where where Plugin settings are saved and where all mutable data for the
+        Plugin should be stored.
+
+        :return:
+        """
+        settings = config.Config()
+        userdata_path = settings.get_userdata_path()
+        plugin_directory = self.get_plugin_directory()
+        plugin_id = os.path.basename(plugin_directory)
+        profile_directory = os.path.join(userdata_path, plugin_id)
+        if not os.path.exists(profile_directory):
+            os.makedirs(profile_directory)
+        return profile_directory
 
     def get_setting(self, key=None):
         """

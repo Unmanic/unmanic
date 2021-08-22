@@ -66,7 +66,7 @@ class TestClass(object):
         unmanic_logging = unlogger.UnmanicLogger.__call__(False)
         unmanic_logging.get_logger()
 
-    @pytest.mark.unit
+    @pytest.mark.unittest
     def test_logging_special_characters(self):
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         main_logger = unmanic_logging.get_logger()

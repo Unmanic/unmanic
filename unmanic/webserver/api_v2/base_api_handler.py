@@ -215,7 +215,7 @@ class BaseApiHandler(RequestHandler):
 
         :return:
         """
-        request_api_endpoint = re.sub('^/api/v\d', '', self.request.uri)
+        request_api_endpoint = re.sub('^/(unmanic/)*api/v\d', '', self.request.uri)
         matched_route_with_unsupported_method = False
         for route in self.routes:
             # Get supported methods

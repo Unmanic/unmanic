@@ -29,6 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import re
 
 import tornado.web
 import tornado.log
@@ -45,6 +46,7 @@ class BaseApiHandler(RequestHandler):
         self.write('404 Not Found')
 
     def action_route(self):
+        request_api_endpoint = re.sub('^/unmanic', '', self.request.uri)
         for route in self.routes:
             # Check if the rout supports the supported http methods
             supported_methods = route.get("supported_methods")
@@ -53,7 +55,7 @@ class BaseApiHandler(RequestHandler):
                 continue
 
             # If the route does not have any params an it matches the current request URI, then route to that method.
-            if list(filter(None, self.request.uri.split('/'))) == list(filter(None, route.get("path_pattern").split('/'))):
+            if list(filter(None, request_api_endpoint.split('/'))) == list(filter(None, route.get("path_pattern").split('/'))):
                 tornado.log.app_log.debug("Routing API to {}.{}()".format(self.__class__.__name__, route.get("call_method")),
                                           exc_info=True)
                 getattr(self, route.get("call_method"))()

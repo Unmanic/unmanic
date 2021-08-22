@@ -73,7 +73,6 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
     def run(self):
         setuptools.command.build_py.build_py.run(self)
         self.run_command('write-build-version')
-        self.run_command('build-web')
         self.run_command('build-frontend')
 
 
@@ -97,42 +96,13 @@ class WriteVersionCommand(Command):
             json.dump(data, f)
 
 
-class BuildWebUICommand(setuptools.command.build_py.build_py):
-    """WebUI build command."""
-
-    def run(self):
-        setuptools.command.build_py.build_py.run(self)
-        # Start by clearing out anything if this was pulled from a dirty tree
-        shutil.rmtree(os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'node_modules')),
-                      ignore_errors=True)
-        # Clean our build env
-        subprocess.run(
-            ["npm", "--prefix", os.path.join('.', 'build', 'lib', src_dir, 'webserver'), "run", "distclean"],
-            check=True
-        )
-        # Install all modules
-        subprocess.run(
-            ["npm", "--prefix", os.path.join('.', 'build', 'lib', src_dir, 'webserver'), "install"],
-            check=True
-        )
-        # Build the WebUI
-        subprocess.run(
-            ["npm", "--prefix", os.path.join('.', 'build', 'lib', src_dir, 'webserver'), "run", "build"],
-            check=True
-        )
-        # Remove the node_modules from the package (we will not distribute these)
-        shutil.rmtree(os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'node_modules')),
-                      ignore_errors=True)
-
-
-# This replaces BuildWebUICommand
 class BuildFrontendCommand(setuptools.command.build_py.build_py):
     """Frontend build command."""
 
     def run(self):
         setuptools.command.build_py.build_py.run(self)
         # Start by clearing out anything if this was pulled from a dirty tree
-        shutil.rmtree(os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'templates', 'spa')),
+        shutil.rmtree(os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'public')),
                       ignore_errors=True)
         # Install all modules
         subprocess.run(
@@ -147,7 +117,7 @@ class BuildFrontendCommand(setuptools.command.build_py.build_py):
         # Move built dist to templates directory
         shutil.move(
             os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'frontend', 'dist', 'spa'),
-            os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'templates', 'spa'))
+            os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'public'))
         # Remove the frontend source from the package (we will not distribute these)
         shutil.rmtree(os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'frontend')),
                       ignore_errors=True)
@@ -190,7 +160,6 @@ class FullVersionCommand(Command):
 cmd_class = {
     'build_py':            BuildPyCommand,
     'write-build-version': WriteVersionCommand,
-    'build-web':           BuildWebUICommand,
     'build-frontend':      BuildFrontendCommand,
     'clean':               CleanCommand,
     'fullversion':         FullVersionCommand,

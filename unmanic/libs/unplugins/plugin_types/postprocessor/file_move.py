@@ -77,7 +77,7 @@ class FileMove(PluginType):
         'file_out':           '/library/TEST_FILE.mkv',
         'remove_source_file': True,
         'source_data':        {
-            'abspath':          '/tmp/TEST_FILE.mp4',
+            'abspath':          '/library/TEST_FILE.mkv',
             'basename':         'TEST_FILE.mp4',
             'bit_rate':         '2753870',
             'duration':         '81.951667',

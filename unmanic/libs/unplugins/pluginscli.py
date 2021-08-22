@@ -332,7 +332,7 @@ class PluginsCLI(object):
         selection = inquirer.prompt([remove_plugin_inquirer])
 
         # If the 'Return' option was given, just return to previous menu
-        if selection.get('cli_action') == "Return":
+        if not selection or selection.get('cli_action') == "Return":
             return
 
         # Remove the selected Plugin by ID
@@ -439,6 +439,6 @@ class PluginsCLI(object):
         print()
         while True:
             selection = inquirer.prompt(menus.get('main'))
-            if selection.get('cli_action') == "Exit":
+            if not selection or selection.get('cli_action') == "Exit":
                 break
             self.main(selection.get('cli_action'))

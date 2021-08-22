@@ -213,7 +213,6 @@ class PostProcessor(threading.Thread):
                 'task_processing_success':     self.current_task.task.success,
                 'file_move_processes_success': file_move_processes_success,
                 'destination_files':           destination_files,
-
             }
 
             # Run plugin and fetch return data

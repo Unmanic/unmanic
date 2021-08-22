@@ -234,6 +234,9 @@ class PluginsCLI(object):
             "tags":          "",
             "description":   "",
             "icon":          "",
+            "priorities": {
+                selected_plugin_runner: 0
+            },
             "compatibility": [PluginsHandler.version]
         }
         if not os.path.exists(info_file):

@@ -48,17 +48,14 @@ from unmanic import config
 from unmanic.libs import common
 from unmanic.libs.singleton import SingletonType
 
-templates_dir = os.path.abspath(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'webserver', 'templates'))
-
+public_directory = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "webserver", "public"))
 tornado_settings = {
-    'template_loader': Loader(templates_dir),
-    'static_path':     os.path.join(os.path.dirname(__file__), "..", "webserver", "assets"),
-    'static_css':      os.path.join(os.path.dirname(__file__), "..", "webserver", "templates", "spa", "css"),
-    'static_fonts':    os.path.join(os.path.dirname(__file__), "..", "webserver", "templates", "spa", "fonts"),
-    'static_icons':    os.path.join(os.path.dirname(__file__), "..", "webserver", "templates", "spa", "icons"),
-    'static_img':      os.path.join(os.path.dirname(__file__), "..", "webserver", "templates", "spa", "img"),
-    'static_js':       os.path.join(os.path.dirname(__file__), "..", "webserver", "templates", "spa", "js"),
+    'template_loader': Loader(public_directory),
+    'static_css':      os.path.join(public_directory, "css"),
+    'static_fonts':    os.path.join(public_directory, "fonts"),
+    'static_icons':    os.path.join(public_directory, "icons"),
+    'static_img':      os.path.join(public_directory, "img"),
+    'static_js':       os.path.join(public_directory, "js"),
     'debug':           True,
     'autoreload':      False,
 }
@@ -276,65 +273,47 @@ class UIServer(threading.Thread):
 
     def make_web_app(self):
         from unmanic.webserver.api_request_router import APIRequestRouter
-        from unmanic.webserver.history import HistoryUIRequestHandler
-        from unmanic.webserver.main import MainUIRequestHandler, DashboardWebSocket
-        from unmanic.webserver.settings import SettingsUIRequestHandler
-        from unmanic.webserver.helpers.element_filebrowser import ElementFileBrowserUIRequestHandler
+        from unmanic.webserver.main import MainUIRequestHandler
         from unmanic.webserver.websocket import UnmanicWebsocketHandler
 
         # Start with web application routes
         app = Application([
-            (r"/assets/(.*)", StaticFileHandler, dict(
-                path=tornado_settings['static_path']
-            )),
-            (r"/dashws", DashboardWebSocket, dict(
-                data_queues=self.data_queues,
-                foreman=self.foreman,
-            )),
-            (r"/history/(.*)", HistoryUIRequestHandler, dict(
-                data_queues=self.data_queues,
-            )),
-            (r"/settings/(.*)", SettingsUIRequestHandler, dict(
-                data_queues=self.data_queues,
-            )),
-            (r"/filebrowser/(.*)", ElementFileBrowserUIRequestHandler, dict(
-                data_queues=self.data_queues,
-            )),
-
-            (r"/websocket", UnmanicWebsocketHandler),
-            (r"/css/(.*)", StaticFileHandler, dict(
-                path=tornado_settings['static_css']
-            )),
-            (r"/fonts/(.*)", StaticFileHandler, dict(
-                path=tornado_settings['static_fonts']
-            )),
-            (r"/icons/(.*)", StaticFileHandler, dict(
-                path=tornado_settings['static_icons']
-            )),
-            (r"/img/(.*)", StaticFileHandler, dict(
-                path=tornado_settings['static_img']
-            )),
-            (r"/js/(.*)", StaticFileHandler, dict(
-                path=tornado_settings['static_js']
-            )),
-            (r"/unmanic-dashboard/(.*)", MainUIRequestHandler, dict(
-                data_queues=self.data_queues,
-                foreman=self.foreman,
-            )),
-            (r"/trigger/(.*)", MainUIRequestHandler, dict(
-                data_queues=self.data_queues,
-                foreman=self.foreman,
-            )),
+            (r"/unmanic/websocket", UnmanicWebsocketHandler),
             (r"/(.*)", RedirectHandler, dict(
-                url="/unmanic-dashboard/"
+                url="/unmanic/ui/dashboard/"
             )),
         ], **tornado_settings)
 
         # Add API routes
-        app.add_handlers(r'.*', [(
-            PathMatches(r"/api/.*"),
-            APIRequestRouter(app)
-        ), ])
+        app.add_handlers(r'.*', [
+            (
+                PathMatches(r"/unmanic/api/.*"),
+                APIRequestRouter(app)
+            ),
+        ])
+
+        # Add frontend routes
+        app.add_handlers(r'.*', [
+            (r"/unmanic/css/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_css']
+            )),
+            (r"/unmanic/fonts/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_fonts']
+            )),
+            (r"/unmanic/icons/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_icons']
+            )),
+            (r"/unmanic/img/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_img']
+            )),
+            (r"/unmanic/js/(.*)", StaticFileHandler, dict(
+                path=tornado_settings['static_js']
+            )),
+            (
+                PathMatches(r"/unmanic/ui/(.*)"),
+                MainUIRequestHandler,
+            ),
+        ])
 
         if self.developer:
             self._log("API Docs - Updating...", level="debug")

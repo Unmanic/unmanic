@@ -390,6 +390,28 @@ class PluginsHandler(object, metaclass=SingletonType):
             plugin_data[Plugins.enabled] = False
             Plugins.insert(plugin_data).execute()
 
+            # On first install, set the priority for each runner
+            plugin_priorities = plugin.get('priorities')
+            if plugin_priorities:
+                # Fetch the plugin info back from the DB
+                plugin_info = Plugins.select().where(Plugins.plugin_id == plugin.get("plugin_id")).first()
+                # Fetch all plugin types in this plugin
+                plugin_executor = PluginExecutor()
+                plugin_types_in_plugin = plugin_executor.get_all_plugin_types_in_plugin(plugin.get("plugin_id"))
+                # Loop over the plugin types in this plugin
+                for plugin_type in plugin_types_in_plugin:
+                    # get the plugin runner function name for this runner
+                    plugin_type_meta = plugin_executor.get_plugin_type_meta(plugin_type)
+                    runner_string = plugin_type_meta.plugin_runner()
+                    if plugin_priorities.get(runner_string) and int(plugin_priorities.get(runner_string, 0)) > 0:
+                        # If the runner has a priority set and that value is greater than 0 (default that wont set anything),
+                        # Save the priority
+                        PluginsHandler.set_plugin_flow_position_for_single_plugin(
+                            plugin_info,
+                            plugin_type,
+                            plugin_priorities.get(runner_string)
+                        )
+
         return True
 
     def get_total_plugin_list_count(self):
@@ -546,6 +568,13 @@ class PluginsHandler(object, metaclass=SingletonType):
         return True
 
     def set_plugin_flow(self, plugin_type, flow):
+        """
+        Update the plugin flow for all plugins in a given plugin type
+
+        :param plugin_type:
+        :param flow:
+        :return:
+        """
         # Delete all current flow data for this plugin type
         delete_query = PluginFlow.delete().where(PluginFlow.plugin_type == plugin_type)
         delete_query.execute()
@@ -561,19 +590,35 @@ class PluginsHandler(object, metaclass=SingletonType):
                 continue
 
             # Save the plugin flow
-            flow_dict = {
-                'plugin_id':   plugin_info.id,
-                'plugin_name': plugin_info.plugin_id,
-                'plugin_type': plugin_type,
-                'position':    priority,
-            }
-            plugin_flow = PluginFlow.create(**flow_dict)
+            plugin_flow = self.set_plugin_flow_position_for_single_plugin(plugin_info, plugin_type, priority)
             priority += 1
 
             if not plugin_flow:
                 success = False
 
         return success
+
+    @staticmethod
+    def set_plugin_flow_position_for_single_plugin(plugin_info: Plugins, plugin_type: str, priority: int):
+        """
+        Update the plugin flow for a single plugin and type with the provided priority.
+
+        :param plugin_info:
+        :param plugin_type:
+        :param priority:
+        :return:
+        """
+        pass
+        # Save the plugin flow
+        flow_dict = {
+            'plugin_id':   plugin_info.id,
+            'plugin_name': plugin_info.plugin_id,
+            'plugin_type': plugin_type,
+            'position':    priority,
+        }
+        plugin_flow = PluginFlow.create(**flow_dict)
+
+        return plugin_flow
 
     def get_plugin_modules_by_type(self, plugin_type):
         """

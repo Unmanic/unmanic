@@ -136,3 +136,51 @@ def add_historic_tasks_to_pending_tasks_list(historic_task_ids):
 
         continue
     return errors
+
+
+def read_command_log_for_task(task_id):
+    data = {
+        'command_log':       '',
+        'command_log_lines': [],
+    }
+    task_handler = history.History()
+    task_data = task_handler.get_historic_task_data_dictionary(task_id=task_id)
+    if not task_data:
+        return data
+
+    for command_log in task_data.get('completedtaskscommandlogs_set', []):
+        data['command_log'] += command_log['dump']
+        data['command_log_lines'] += format_ffmpeg_log_text(command_log['dump'].split("\n"))
+
+    return data
+
+
+def format_ffmpeg_log_text(log_lines):
+    return_list = []
+    pre_text = False
+    headers = ['RUNNER:', 'COMMAND:', 'LOG:']
+    for i, line in enumerate(log_lines):
+        line_text = line
+
+        # Add PRE to lines
+        if line_text and pre_text and line_text.rstrip() not in headers:
+            line_text = '<pre>{}</pre>'.format(line_text)
+
+        # Add bold to headers
+        line_text = line_text if line_text.rstrip() not in headers else '<b>{}</b>'.format(line_text)
+
+        # Replace leading whitespace
+        stripped = line.lstrip()
+        line_text = "&nbsp;" * (len(line) - len(stripped)) + line_text
+
+        # If log section is COMMAND:
+        if 'RUNNER:' in line_text:
+            # prepend a horizontal rule
+            return_list.append("<hr>")
+            pre_text = False
+        elif 'COMMAND:' in line_text:
+            pre_text = True
+        elif 'LOG:' in line_text:
+            pre_text = False
+        return_list.append(line_text)
+    return return_list

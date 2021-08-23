@@ -309,6 +309,40 @@ class CompletedTasksSchema(TableRecordsSuccessSchema):
     )
 
 
+class CompletedTasksLogRequestSchema(BaseSchema):
+    """Schema for requesting a task log"""
+
+    task_id = fields.Int(
+        required=True,
+        description="The ID of the task",
+        example=1,
+    )
+
+
+class CompletedTasksLogSchema(BaseSchema):
+    """Schema for returning a list of completed task results"""
+
+    command_log = fields.Str(
+        required=True,
+        description="Long string...",
+        example='Long string...',
+    )
+    command_log_lines = fields.List(
+        cls_or_instance=fields.Str,
+        required=True,
+        description="The long string broken up into an array of lines",
+        example=[
+            "",
+            "<b>RUNNER: </b>",
+            "Video Encoder H264 - libx264 [Pass #1]",
+            "",
+            "<b>COMMAND:</b>",
+            "",
+            "...",
+        ],
+    )
+
+
 # PENDING
 # =======
 

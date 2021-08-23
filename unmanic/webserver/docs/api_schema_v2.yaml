@@ -87,6 +87,38 @@ components:
       - results
       - successCount
       type: object
+    CompletedTasksLog:
+      properties:
+        command_log:
+          description: Long string...
+          example: Long string...
+          type: string
+        command_log_lines:
+          description: The long string broken up into an array of lines
+          example:
+          - ''
+          - '<b>RUNNER: </b>'
+          - 'Video Encoder H264 - libx264 [Pass #1]'
+          - ''
+          - <b>COMMAND:</b>
+          - ''
+          - '...'
+          items:
+            type: string
+          type: array
+      required:
+      - command_log
+      - command_log_lines
+      type: object
+    CompletedTasksLogRequest:
+      properties:
+        task_id:
+          description: The ID of the task
+          example: 1
+          type: integer
+      required:
+      - task_id
+      type: object
     CompletedTasksTableResults:
       properties:
         id:
@@ -1023,6 +1055,47 @@ paths:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
           description: 'Success: Requested list of items to reprocess.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /history/task/log:
+    post:
+      description: Request the details of a completed task.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletedTasksLogRequest'
+        description: Requested the details of a completed task.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletedTasksLog'
+          description: 'Success: The details of a requested completed task.'
         '400':
           content:
             application/json:

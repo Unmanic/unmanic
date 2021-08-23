@@ -260,7 +260,7 @@ class PluginExecutor(object):
 
         if not hasattr(plugin_module, 'Settings'):
             # This plugin does not have a settings class
-            return {}
+            return {}, {}
 
         settings = plugin_module.Settings()
 

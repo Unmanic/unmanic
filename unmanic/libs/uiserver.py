@@ -330,7 +330,7 @@ class UIServer(threading.Thread):
             tornado_api_doc(
                 app,
                 config_path=os.path.join(os.path.dirname(__file__), "..", "webserver", "docs", "api_schema_v2.json"),
-                url_prefix="/swagger",
+                url_prefix="/unmanic/swagger",
                 title="Unmanic application API"
             )
 

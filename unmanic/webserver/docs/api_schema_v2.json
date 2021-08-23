@@ -332,6 +332,49 @@
                     "success"
                 ]
             },
+            "CompletedTasksLogRequest": {
+                "type": "object",
+                "properties": {
+                    "task_id": {
+                        "type": "integer",
+                        "description": "The ID of the task",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "task_id"
+                ]
+            },
+            "CompletedTasksLog": {
+                "type": "object",
+                "properties": {
+                    "command_log": {
+                        "type": "string",
+                        "description": "Long string...",
+                        "example": "Long string..."
+                    },
+                    "command_log_lines": {
+                        "type": "array",
+                        "description": "The long string broken up into an array of lines",
+                        "example": [
+                            "",
+                            "<b>RUNNER: </b>",
+                            "Video Encoder H264 - libx264 [Pass #1]",
+                            "",
+                            "<b>COMMAND:</b>",
+                            "",
+                            "..."
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "command_log",
+                    "command_log_lines"
+                ]
+            },
             "RequestPendingTableData": {
                 "type": "object",
                 "properties": {
@@ -1424,6 +1467,74 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/history/task/log": {
+            "post": {
+                "description": "Request the details of a completed task.",
+                "requestBody": {
+                    "description": "Requested the details of a completed task.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CompletedTasksLogRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success: The details of a requested completed task.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CompletedTasksLog"
                                 }
                             }
                         }

@@ -64,56 +64,6 @@ class History(object):
         else:
             print("Unmanic.{} - ERROR!!! Failed to find logger".format(self.name))
 
-    def read_history_log(self):
-        """
-        Note: Depreciated
-        TODO: Remove this function
-
-        :return:
-        """
-        self._log("read_history_log function is depreciated", level="warning")
-        self._log("Reading history from file:", level="debug")
-        data = []
-        if not os.path.exists(self.settings.get_config_path()):
-            os.makedirs(self.settings.get_config_path())
-        history_file = os.path.join(self.settings.get_config_path(), 'history.json')
-        if os.path.exists(history_file):
-            try:
-                with open(history_file) as infile:
-                    data = json.load(infile)
-            except JSONDecodeError:
-                self._log("ValueError in reading history from file:", level="exception")
-            except Exception as e:
-                self._log("Exception in reading history from file:", message2=str(e), level="exception")
-
-        return sorted(data, key=lambda i: i['time_complete'])
-
-    def read_completed_job_data(self, job_id):
-        """
-        Note: Depreciated
-        TODO: Remove this function
-
-        :return:
-        """
-        self._log("read_completed_job_data function is depreciated", level="warning")
-        self._log("Reading completed job data from file:", level="debug")
-        data = []
-        # Create completed job details path in not exists
-        completed_job_details_dir = os.path.join(self.settings.get_config_path(), 'completed_job_details')
-        if not os.path.exists(completed_job_details_dir):
-            os.makedirs(completed_job_details_dir)
-        # Set path of conversion details file
-        job_details_file = os.path.join(completed_job_details_dir, '{}.json'.format(job_id))
-        if os.path.exists(job_details_file):
-            try:
-                with open(job_details_file) as infile:
-                    data = json.load(infile)
-            except JSONDecodeError:
-                self._log("ValueError in reading completed job data from file:", level="exception")
-            except Exception as e:
-                self._log("Exception in reading completed job data from file:", message2=str(e), level="exception")
-        return data
-
     def get_historic_task_list(self, limit=None):
         """
         Read all historic tasks entries

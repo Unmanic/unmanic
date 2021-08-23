@@ -13,3 +13,6 @@ watchdog>=2.1.1
 
 # Required for CLI only
 inquirer>=2.7.0
+
+# Required for hosting the API docs
+swagger-ui-py

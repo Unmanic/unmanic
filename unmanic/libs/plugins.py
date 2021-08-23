@@ -235,10 +235,6 @@ class PluginsHandler(object, metaclass=SingletonType):
                             'update_available': True,
                         }
 
-                # If no icon is provide, set a default
-                plugin_icon = "/assets/img/plugin-icon-default.svg"
-                if plugin["icon"]:
-                    plugin_icon = plugin.get('icon')
                 return_list.append(
                     {
                         'plugin_id':     plugin.get('id'),
@@ -246,7 +242,7 @@ class PluginsHandler(object, metaclass=SingletonType):
                         'author':        plugin.get('author'),
                         'description':   plugin.get('description'),
                         'version':       plugin.get('version'),
-                        'icon':          plugin_icon,
+                        'icon':          plugin.get('icon', ''),
                         'tags':          plugin.get('tags'),
                         'status':        plugin_status,
                         'package_url':   plugin_package_url,
@@ -688,7 +684,7 @@ class PluginsHandler(object, metaclass=SingletonType):
                 )
 
         # Ensure enabled plugins are within limits
-        if len(enabled_plugins) > 2:
+        if len(enabled_plugins) > 5:
             add_frontend_message()
             return False
         return True

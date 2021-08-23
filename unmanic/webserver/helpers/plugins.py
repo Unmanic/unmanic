@@ -250,9 +250,12 @@ def get_plugin_settings(plugin_id):
                     # No options are given. Revert back to text input
                     form_input['input_type'] = 'text'
                 else:
-                    form_input['slider_options'] = slider_options
-                    if not slider_options.get('suffix'):
-                        form_input['slider_options']['suffix'] = ''
+                    form_input['slider_options'] = {
+                        'min':    slider_options.get('min', '0'),
+                        'max':    slider_options.get('max', '1'),
+                        'step':   slider_options.get('step', '1'),
+                        'suffix': slider_options.get('suffix', ''),
+                    }
 
             settings.append(form_input)
     return settings

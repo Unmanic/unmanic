@@ -117,8 +117,8 @@ class PluginExecutor(object):
         # Get main module file
         plugin_module_path = os.path.join(path, 'plugin.py')
 
-        # Add plugin directory to sys path prior to loading the module so any included modules may be imported
-        self.__include_plugin_directory(path)
+        # Ensure the Unmanic plugins directory to sys path prior to loading it
+        self.__include_plugin_directory(self.plugins_directory)
 
         # Add site-packages directory to sys path prior to loading the module
         self.__include_plugin_site_packages(path)

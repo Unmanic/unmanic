@@ -9,4 +9,3 @@ setuptools>=39.0.1
 apispec
 apispec_webframeworks
 pyyaml
-swagger-ui-py

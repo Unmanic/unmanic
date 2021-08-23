@@ -2022,4 +2022,4 @@ security:
 - BasicAuth: []
 servers:
 - description: Local environment
-  url: http://localhost:8888/api/v2/
+  url: http://localhost:8888/unmanic/api/v2/

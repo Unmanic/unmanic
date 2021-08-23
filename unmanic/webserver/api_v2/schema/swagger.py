@@ -83,7 +83,7 @@ def generate_swagger_file():
         info=dict(description="Documentation for the Unmanic application API"),
         plugins=[UnmanicSpecPlugin(), MarshmallowPlugin()],
         servers=[
-            {"url": "http://localhost:8888/api/v{}/".format(API_VERSION), "description": "Local environment", },
+            {"url": "http://localhost:8888/unmanic/api/v{}/".format(API_VERSION), "description": "Local environment", },
         ],
         **security_settings
     )

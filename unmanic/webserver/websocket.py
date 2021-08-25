@@ -50,6 +50,7 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
     name = None
     config = None
     sending_frontend_message = False
+    sending_system_logs = False
     sending_worker_info = False
     sending_pending_tasks_info = False
     sending_completed_tasks_info = False
@@ -124,6 +125,32 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
         :rtype:
         """
         self.sending_frontend_message = False
+
+    def start_system_logs(self, params=None):
+        """
+        WS Command - start_system_logs
+        Start sending system logs from the application to the frontend.
+
+        :param params:
+        :type params:
+        :return:
+        :rtype:
+        """
+        if not self.sending_system_logs:
+            self.sending_system_logs = True
+            tornado.ioloop.IOLoop.current().spawn_callback(self.async_system_logs)
+
+    def stop_system_logs(self, params=None):
+        """
+        WS Command - stop_system_logs
+        Stop sending system logs from the application to the frontend.
+
+        :param params:
+        :type params:
+        :return:
+        :rtype:
+        """
+        self.sending_system_logs = False
 
     def start_workers_info(self, params=None):
         """
@@ -239,6 +266,26 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
 
             # Sleep for X seconds
             await gen.sleep(5)
+
+    async def async_system_logs(self):
+        while self.sending_system_logs:
+            system_logs = self.config.read_system_logs(lines=35)
+
+            # Send message to client
+            await self.send(
+                {
+                    'success':   True,
+                    'server_id': self.server_id,
+                    'type':      'system_logs',
+                    'data':      {
+                        "logs_path":   self.config.get_log_path(),
+                        'system_logs': system_logs,
+                    },
+                }
+            )
+
+            # Sleep for X seconds
+            await gen.sleep(1)
 
     async def async_workers_info(self):
         while self.sending_worker_info:

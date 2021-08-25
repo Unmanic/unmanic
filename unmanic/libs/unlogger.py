@@ -100,6 +100,16 @@ class UnmanicLogger(object, metaclass=SingletonType):
         # Remove handler
         self._logger.removeHandler(self.file_handler)
 
+    def enable_debugging(self):
+        logger = self.get_logger(__class__.__name__)
+        logger.info('Debug logging enabled')
+        self._logger.setLevel(logging.DEBUG)
+
+    def disable_debugging(self):
+        logger = self.get_logger(__class__.__name__)
+        logger.info('Debug logging disabled')
+        self._logger.setLevel(logging.INFO)
+
     def setup_logger(self, settings):
         logger = self.get_logger(__class__.__name__)
         logger.info("Initialising file logger. All further logs should output to the 'unmanic.log' file")
@@ -108,9 +118,9 @@ class UnmanicLogger(object, metaclass=SingletonType):
         if not self.file_handler:
             self.setup_file_handler()
         if self._settings.get_debugging():
-            self._logger.setLevel(logging.DEBUG)
+            self.enable_debugging()
         else:
-            self._logger.setLevel(logging.INFO)
+            self.disable_debugging()
 
     def get_logger(self, name=None):
         if name:

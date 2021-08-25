@@ -36,6 +36,7 @@ from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
 from unmanic.webserver.api_v2.schema.schemas import DocumentContentSuccessSchema
+from unmanic.webserver.helpers import documents
 
 
 class ApiDocsHandler(BaseApiHandler):
@@ -49,6 +50,11 @@ class ApiDocsHandler(BaseApiHandler):
             "path_pattern":      r"/docs/privacypolicy",
             "supported_methods": ["GET"],
             "call_method":       "get_privacy_policy",
+        },
+        {
+            "path_pattern":      r"/docs/logs/zip",
+            "supported_methods": ["GET"],
+            "call_method":       "get_logs_as_zip",
         },
     ]
 
@@ -114,6 +120,61 @@ class ApiDocsHandler(BaseApiHandler):
                 )
                 self.write_success(response)
                 return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def get_logs_as_zip(self):
+        """
+        Docs - get log files as zip
+        ---
+        description: Returns the all log files as zip.
+        responses:
+            200:
+                description: 'Sample response: Returns the all log files as zip.'
+                content:
+                    application/octet-stream:
+                        schema:
+                            type: string
+                            format: binary
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            log_files_zip_path = documents.generate_log_files_zip()
+
+            with open(log_files_zip_path, "rb") as f:
+                for chunk in iter(lambda: f.read(8192), b''):
+                    self.write(chunk)
+
+            self.set_header('Content-Type', 'application/octet-stream')
+            self.set_header('Content-Disposition', 'attachment; filename=UnmanicLogs.zip')
+            return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
             return

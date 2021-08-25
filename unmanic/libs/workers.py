@@ -245,7 +245,7 @@ class Worker(threading.Thread):
 
         # Init plugins
         plugin_handler = PluginsHandler()
-        plugin_modules = plugin_handler.get_plugin_modules_by_type('worker.process_item')
+        plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('worker.process_item')
 
         # Create dictionary of runners info for the frontend
         self.worker_runners_info = {}

@@ -135,7 +135,7 @@ class PostProcessor(threading.Thread):
             # Run a postprocess file movement on the cache file for for each plugin that configures it
 
             # Fetch all 'postprocessor.file_move' plugin modules
-            plugin_modules = plugin_handler.get_plugin_modules_by_type('postprocessor.file_move')
+            plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('postprocessor.file_move')
 
             # Check if the source file needs to be remove by default (only if it does not match the destination file)
             remove_source_file = False
@@ -205,7 +205,7 @@ class PostProcessor(threading.Thread):
                       level='warning')
 
         # Fetch all 'postprocessor.task_result' plugin modules
-        plugin_modules = plugin_handler.get_plugin_modules_by_type('postprocessor.task_result')
+        plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('postprocessor.task_result')
 
         for plugin_module in plugin_modules:
             data = {

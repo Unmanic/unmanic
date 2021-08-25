@@ -172,6 +172,27 @@ class PluginsHandler(object, metaclass=SingletonType):
 
         return True
 
+    def get_settings_of_all_enabled_plugins(self):
+        all_settings = {}
+
+        # First fetch all enabled plugins
+        order = [
+            {
+                "column": 'name',
+                "dir":    'asc',
+            },
+        ]
+        enabled_plugins = self.get_plugin_list_filtered_and_sorted(order=order, enabled=True)
+
+        # Fetch settings for each plugin
+        plugin_executor = PluginExecutor()
+        for plugin in enabled_plugins:
+            plugin_settings, plugin_settings_meta = plugin_executor.get_plugin_settings(plugin.get('plugin_id'))
+            all_settings[plugin.get('plugin_id')] = plugin_settings
+
+        # Return modules
+        return all_settings
+
     def read_repo_data(self, repo_id):
         repo_cache = self.get_repo_cache_file(repo_id)
         if os.path.exists(repo_cache):
@@ -616,7 +637,7 @@ class PluginsHandler(object, metaclass=SingletonType):
 
         return plugin_flow
 
-    def get_plugin_modules_by_type(self, plugin_type):
+    def get_enabled_plugin_modules_by_type(self, plugin_type):
         """
         Return a list of enabled plugin modules when given a plugin type
 

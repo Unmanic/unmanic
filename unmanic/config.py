@@ -221,8 +221,14 @@ class Config(object, metaclass=SingletonType):
             # Do not proceed if this is any key other than the database
             return
 
-        # Assign value to class attribute
-        setattr(self, key, value)
+        # If in a special config list, execute that command
+        if hasattr(self, "set_{}".format(key)):
+            setter = getattr(self, "set_{}".format(key))
+            if callable(setter):
+                return setter(value)
+        else:
+            # Assign value directly to class attribute
+            setattr(self, key, value)
 
         # Save settings (if requested)
         if save_settings:
@@ -251,6 +257,23 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return metadata.read_version_string('long')
+
+    def read_system_logs(self, lines=None):
+        """
+        Return an array of system log lines
+
+        :param lines:
+        :return:
+        """
+        log_lines = []
+        log_file = os.path.join(self.log_path, 'unmanic.log')
+        line_count = 0
+        for line in reversed(list(open(log_file))):
+            log_lines.insert(0, line.rstrip())
+            line_count += 1
+            if line_count == lines:
+                break
+        return log_lines
 
     def get_ui_port(self):
         """
@@ -283,6 +306,21 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.debugging
+
+    def set_debugging(self, value):
+        """
+        Set setting - debugging
+
+        This requires an update to the logger object
+
+        :return:
+        """
+        unmanic_logging = unlogger.UnmanicLogger.__call__()
+        if value:
+            unmanic_logging.enable_debugging()
+        else:
+            unmanic_logging.disable_debugging()
+        self.debugging = value
 
     def get_enable_inotify(self):
         """

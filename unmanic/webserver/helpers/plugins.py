@@ -113,7 +113,7 @@ def get_all_plugin_types():
 
 def get_enabled_plugin_flows_for_plugin_type(plugin_type):
     plugin_handler = PluginsHandler()
-    plugin_modules = plugin_handler.get_plugin_modules_by_type(plugin_type)
+    plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type(plugin_type)
 
     # Only return the data that we need
     return_plugin_flow = []

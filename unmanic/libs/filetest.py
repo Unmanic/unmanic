@@ -101,7 +101,7 @@ class FileTest(object):
 
         # Init plugins
         plugin_handler = PluginsHandler()
-        plugin_modules = plugin_handler.get_plugin_modules_by_type('library_management.file_test')
+        plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('library_management.file_test')
 
         # TODO: Remove this
         if self.file_in_unmanic_ignore_lockfile():

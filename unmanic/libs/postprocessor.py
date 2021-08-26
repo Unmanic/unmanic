@@ -204,7 +204,7 @@ class PostProcessor(threading.Thread):
                             time.sleep(1)
                         shutil.copyfile(file_in, file_out)
                         after_md5_hash = hashlib.md5()
-                        with open(data.get('file_in'),"rb") as f:
+                        with open(data.get('file_out'),"rb") as f:
                             for byte_block in iter(lambda: f.read(4096),b""):
                                 after_md5_hash.update(byte_block)
                         after_checksum = after_md5_hash.hexdigest()

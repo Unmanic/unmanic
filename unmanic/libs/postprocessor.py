@@ -192,14 +192,22 @@ class PostProcessor(threading.Thread):
                     # Copy the file
                     self._log("Copying file {} --> {}".format(data.get('file_in'), data.get('file_out')))
                     try:
-                        before_checksum = hashlib.md5(open(data.get('file_in'), 'rb').read()).hexdigest()
+                        before_md5_hash = hashlib.md5()
+                        with open(data.get('file_in'),"rb") as f:
+                            for byte_block in iter(lambda: f.read(4096),b""):
+                                before_md5_hash.update(byte_block)
+                        before_checksum = before_md5_hash.hexdigest()
                         file_in = os.path.abspath(data.get('file_in'))
                         file_out = os.path.abspath((data.get('file_out')))
                         if not os.path.exists(file_in):
                             self._log("Error - file_in path does not exist! '{}'".format(file_in), level="error")
                             time.sleep(1)
                         shutil.copyfile(file_in, file_out)
-                        after_checksum = hashlib.md5(open(data.get('file_out'), 'rb').read()).hexdigest()
+                        after_md5_hash = hashlib.md5()
+                        with open(data.get('file_in'),"rb") as f:
+                            for byte_block in iter(lambda: f.read(4096),b""):
+                                after_md5_hash.update(byte_block)
+                        after_checksum = after_md5_hash.hexdigest()
                         # Compare the checksums on the copied file to ensure it is still correct
                         if before_checksum != after_checksum:
                             # Something went wrong during that file copy

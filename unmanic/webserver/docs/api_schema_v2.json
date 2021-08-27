@@ -928,6 +928,18 @@
                     "plugin_id"
                 ]
             },
+            "RequestPluginsFlowByPluginType": {
+                "type": "object",
+                "properties": {
+                    "plugin_type": {
+                        "type": "string",
+                        "example": "library_management.file_test"
+                    }
+                },
+                "required": [
+                    "plugin_type"
+                ]
+            },
             "PluginTypesResults": {
                 "type": "object",
                 "properties": {
@@ -947,18 +959,6 @@
                 },
                 "required": [
                     "results"
-                ]
-            },
-            "RequestPluginsFlowByPluginType": {
-                "type": "object",
-                "properties": {
-                    "plugin_type": {
-                        "type": "string",
-                        "example": "library_management.file_test"
-                    }
-                },
-                "required": [
-                    "plugin_type"
                 ]
             },
             "PluginFlowDataResults": {
@@ -1089,6 +1089,22 @@
                 },
                 "required": [
                     "repos"
+                ]
+            },
+            "PluginsDataPanelTypesData": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "minItems": 0,
+                        "description": "Results",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PluginFlowDataResults"
+                        }
+                    }
+                },
+                "required": [
+                    "results"
                 ]
             },
             "SessionStateSuccess": {
@@ -2443,16 +2459,27 @@
                 }
             }
         },
-        "/plugins/types": {
-            "get": {
-                "description": "Returns a list of all plugin types.",
+        "/plugins/flow": {
+            "post": {
+                "description": "Returns the plugin flow for a requested plugin type.",
+                "requestBody": {
+                    "description": "Requests the plugin flow of a given plugin type.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestPluginsFlowByPluginType"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
-                        "description": "Sample response: Returns a list of all plugin types..",
+                        "description": "Sample response: Returns the plugin flow for a requested plugin type.",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PluginTypesResults"
+                                    "$ref": "#/components/schemas/PluginsInstallableResults"
                                 }
                             }
                         }
@@ -2500,27 +2527,16 @@
                 }
             }
         },
-        "/plugins/flow": {
-            "post": {
-                "description": "Returns the plugin flow for a requested plugin type.",
-                "requestBody": {
-                    "description": "Requests the plugin flow of a given plugin type.",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/RequestPluginsFlowByPluginType"
-                            }
-                        }
-                    }
-                },
+        "/plugins/flow/types": {
+            "get": {
+                "description": "Returns a list of all plugin types that have flows.",
                 "responses": {
                     "200": {
-                        "description": "Sample response: Returns the plugin flow for a requested plugin type.",
+                        "description": "Sample response: Returns a list of all plugin types that have flows.",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PluginsInstallableResults"
+                                    "$ref": "#/components/schemas/PluginTypesResults"
                                 }
                             }
                         }
@@ -2771,6 +2787,63 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/panels/enabled": {
+            "get": {
+                "description": "Returns a list of installed plugins.",
+                "responses": {
+                    "200": {
+                        "description": "Success: Returns a list of installed plugins.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PluginsDataPanelTypesData"
                                 }
                             }
                         }

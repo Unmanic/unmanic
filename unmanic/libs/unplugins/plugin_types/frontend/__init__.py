@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.main.py
+    unmanic.__init__.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     06 Dec 2018, (7:21 AM)
+    Date:                     25 Aug 2021, (4:04 PM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -29,30 +29,32 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-import tornado.web
-import tornado.websocket
 
-from unmanic.libs import session
+from __future__ import absolute_import
 
+import os
+from importlib import import_module
+from pathlib import Path
+import sys
+import inspect
+import pkgutil
 
-class MainUIRequestHandler(tornado.web.RequestHandler):
-    name = None
-    config = None
-    session = None
-    data_queues = None
-    foreman = None
-    components = None
+from ..plugin_type_base import PluginType
 
-    def initialize(self):
-        self.name = 'main'
-        self.session = session.Session()
+"""
+Import all submodules for this package
 
-    def get(self, path):
-        self.set_header("Content-Type", "text/html")
-        self.render("index.html")
+"""
+for (_, name, _) in pkgutil.iter_modules([os.path.join(Path(__file__).parent)]):
 
-    def handle_ajax_call(self, query):
-        self.set_header("Content-Type", "application/json")
-        if query == 'login':
-            self.session.register_unmanic(force=True)
-            self.redirect("/unmanic/ui/dashboard/")
+    imported_module = import_module('.' + name, package=__name__)
+
+    for i in dir(imported_module):
+        attribute = getattr(imported_module, i)
+
+        if inspect.isclass(attribute) and issubclass(attribute, PluginType) and attribute.__name__ != 'PluginType':
+            setattr(sys.modules[__name__], name, attribute)
+
+__author__ = 'Josh.5 (jsunnex@gmail.com)'
+
+__all__ = ()

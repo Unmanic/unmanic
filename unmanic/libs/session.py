@@ -54,6 +54,11 @@ class Session(object, metaclass=SingletonType):
     level = 0
 
     """
+    non supporter plugin count
+    """
+    plugin_count = 5
+
+    """
     picture_uri - The user avatar
     """
     picture_uri = ''
@@ -81,6 +86,7 @@ class Session(object, metaclass=SingletonType):
     def __init__(self, *args, **kwargs):
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         self.logger = unmanic_logging.get_logger(__class__.__name__)
+        self.timeout = 5
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -167,7 +173,7 @@ class Session(object, metaclass=SingletonType):
         :return:
         """
         u = self.set_full_api_url(api_version, api_path)
-        r = requests.get(u)
+        r = requests.get(u, timeout=self.timeout)
         return r.json()
 
     def api_post(self, api_version, api_path, data):
@@ -180,7 +186,7 @@ class Session(object, metaclass=SingletonType):
         :return:
         """
         u = self.set_full_api_url(api_version, api_path)
-        r = requests.post(u, json=data)
+        r = requests.post(u, json=data, timeout=self.timeout)
         return r.json()
 
     def register_unmanic(self, force=False):

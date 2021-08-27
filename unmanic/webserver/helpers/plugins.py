@@ -101,14 +101,20 @@ def prepare_filtered_plugins(params):
     return return_data
 
 
-def get_all_plugin_types():
+def get_plugin_types_with_flows():
     """
     Returns a list of all available plugin types
 
     :return:
     """
+    return_plugin_types = []
     plugin_ex = PluginExecutor()
-    return plugin_ex.get_all_plugin_types()
+    types_list = plugin_ex.get_all_plugin_types()
+    # Filter out the types without flows
+    for plugin_type in types_list:
+        if plugin_type.get('has_flow'):
+            return_plugin_types.append(plugin_type.get('id'))
+    return return_plugin_types
 
 
 def get_enabled_plugin_flows_for_plugin_type(plugin_type):
@@ -130,6 +136,16 @@ def get_enabled_plugin_flows_for_plugin_type(plugin_type):
         )
 
     return return_plugin_flow
+
+
+def get_enabled_plugin_data_panels():
+    """
+    Returns a list of all enabled plugin data panels
+
+    :return:
+    """
+    plugin_handler = PluginsHandler()
+    return plugin_handler.get_enabled_plugin_modules_by_type('frontend.panel')
 
 
 def save_enabled_plugin_flows_for_plugin_type(plugin_type, plugin_flow):

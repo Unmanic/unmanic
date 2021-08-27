@@ -665,7 +665,7 @@ class PluginsHandler(object, metaclass=SingletonType):
         ]
         enabled_plugins = self.get_plugin_list_filtered_and_sorted(order=order, enabled=True, plugin_type=plugin_type)
         # Validate enabled plugins
-        if not (s.level > 1) and (len(enabled_plugins) > 2):
+        if not (s.level > 1) and (len(enabled_plugins) > s.plugin_count):
             enabled_plugins = []
 
         # Fetch all plugin modules from the given list of enabled plugins
@@ -705,7 +705,8 @@ class PluginsHandler(object, metaclass=SingletonType):
                 )
 
         # Ensure enabled plugins are within limits
-        if len(enabled_plugins) > 5:
+        # Function was returned above if the user was logged in and able to use infinite
+        if len(enabled_plugins) > s.plugin_count:
             add_frontend_message()
             return False
         return True

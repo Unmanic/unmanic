@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.process_item.py
+    unmanic.panel.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     05 Mar 2021, (8:05 PM)
+    Date:                     26 Aug 2021, (4:24 PM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -33,54 +33,46 @@
 from ..plugin_type_base import PluginType
 
 
-class ProcessItem(PluginType):
-    name = "Worker - Processing file"
-    runner = "on_worker_process"
+class DataPanel(PluginType):
+    name = "Frontend - Data Panel"
+    runner = "render_frontend_panel"
     runner_docstring = """
-    Runner function - enables additional configured processing jobs during the worker stages of a task.
+    Runner function - display a custom data panel in the frontend.
 
     The 'data' object argument includes:
-        exec_command            - A command that Unmanic should execute. Can be empty.
-        command_progress_parser - A function that Unmanic can use to parse the STDOUT of the command to collect progress stats. Can be empty.
-        file_in                 - The source file to be processed by the command.
-        file_out                - The destination that the command should output (may be the same as the file_in if necessary).
-        original_file_path      - The absolute path to the original file.
-        repeat                  - Boolean, should this runner be executed again once completed with the same variables.
+        content_type                    - The content type to be set when writing back to the browser.
+        content                         - The content to print to the browser.
+        path                            - The path received after the '/unmanic/panel' path.
+        arguments                       - A dictionary of GET arguments received.
 
     :param data:
     :return:
     """
     data_schema = {
-        "exec_command":            {
-            "required": True,
-            "type":     list,
-        },
-        "command_progress_parser": {
-            "required": True,
-            "type":     'callable',
-        },
-        "file_in":                 {
+        "content_type": {
             "required": True,
             "type":     str,
         },
-        "file_out":                {
+        "content":      {
             "required": True,
             "type":     str,
         },
-        "original_file_path":      {
+        "path":         {
             "required": False,
             "type":     str,
         },
-        "repeat":                  {
+        "arguments":    {
             "required": False,
-            "type":     bool,
+            "type":     dict,
         },
     }
     test_data = {
-        'exec_command':            [],
-        'command_progress_parser': exec,
-        'file_in':                 '/library/TEST_FILE.mkv',
-        'file_out':                '/tmp/unmanic/unmanic_file_conversion-1616571944.7296784/TEST_FILE-1616571944.7296877-WORKING-1.mp4',
-        'original_file_path':      '/library/TEST_FILE.mkv',
-        'repeat':                  False,
+        'content_type': 'text/html',
+        'content':      "<!doctype html>"
+                        "<html>"
+                        "<head></head>"
+                        "<body></body>"
+                        "</html>",
+        'path':         "/ui/ajax",
+        'arguments':    {'param': [b'true'], 'foo': [b'ba']},
     }

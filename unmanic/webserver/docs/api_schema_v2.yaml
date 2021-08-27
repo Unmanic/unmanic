@@ -429,6 +429,17 @@ components:
       required:
       - results
       type: object
+    PluginsDataPanelTypesData:
+      properties:
+        results:
+          description: Results
+          items:
+            $ref: '#/components/schemas/PluginFlowDataResults'
+          minItems: 0
+          type: array
+      required:
+      - results
+      type: object
     PluginsInfoResults:
       properties:
         plugin_id:
@@ -1640,16 +1651,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
-  /plugins/types:
-    get:
-      description: Returns a list of all plugin types.
+  /plugins/flow:
+    post:
+      description: Returns the plugin flow for a requested plugin type.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestPluginsFlowByPluginType'
+        description: Requests the plugin flow of a given plugin type.
+        required: true
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PluginTypesResults'
-          description: 'Sample response: Returns a list of all plugin types..'
+                $ref: '#/components/schemas/PluginsInstallableResults'
+          description: 'Sample response: Returns the plugin flow for a requested plugin
+            type.'
         '400':
           content:
             application/json:
@@ -1674,24 +1693,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
-  /plugins/flow:
-    post:
-      description: Returns the plugin flow for a requested plugin type.
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RequestPluginsFlowByPluginType'
-        description: Requests the plugin flow of a given plugin type.
-        required: true
+  /plugins/flow/types:
+    get:
+      description: Returns a list of all plugin types that have flows.
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PluginsInstallableResults'
-          description: 'Sample response: Returns the plugin flow for a requested plugin
-            type.'
+                $ref: '#/components/schemas/PluginTypesResults'
+          description: 'Sample response: Returns a list of all plugin types that have
+            flows.'
         '400':
           content:
             application/json:
@@ -1843,6 +1855,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
           description: 'Success: Reload plugin repositories remote data.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/panels/enabled:
+    get:
+      description: Returns a list of installed plugins.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginsDataPanelTypesData'
+          description: 'Success: Returns a list of installed plugins.'
         '400':
           content:
             application/json:

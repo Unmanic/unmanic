@@ -44,6 +44,17 @@ def pause_worker_by_id(worker_id: int):
     return foreman.pause_worker_thread(worker_id)
 
 
+def pause_all_workers():
+    """
+    Pause all workers
+
+    :return:
+    """
+    urt = UnmanicRunningTreads()
+    foreman = urt.get_unmanic_running_thread('foreman')
+    return foreman.pause_all_worker_threads()
+
+
 def resume_worker_by_id(worker_id: int):
     """
     Resume a worker given that worker's ID
@@ -54,3 +65,14 @@ def resume_worker_by_id(worker_id: int):
     urt = UnmanicRunningTreads()
     foreman = urt.get_unmanic_running_thread('foreman')
     return foreman.resume_worker_thread(worker_id)
+
+
+def resume_all_workers():
+    """
+    Resume all workers
+
+    :return:
+    """
+    urt = UnmanicRunningTreads()
+    foreman = urt.get_unmanic_running_thread('foreman')
+    return foreman.resume_all_worker_threads()

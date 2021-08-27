@@ -471,6 +471,7 @@ class Worker(threading.Thread):
         # Convert file
         success = False
         try:
+            proc_pause_time = 0
             proc_start_time = time.time()
             # Execute command
             sub_proc = subprocess.Popen(exec_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -498,7 +499,7 @@ class Worker(threading.Thread):
                 try:
                     progress_dict = command_progress_parser(line_text)
                     self.worker_subprocess_percent = progress_dict.get('percent', '0')
-                    self.worker_subprocess_elapsed = str(time.time() - proc_start_time)
+                    self.worker_subprocess_elapsed = str(time.time() - proc_start_time - proc_pause_time)
                 except Exception as e:
                     # Only need to show any sort of exception if we have debugging enabled.
                     # So we should log it as a debug rather than an exception.
@@ -510,13 +511,17 @@ class Worker(threading.Thread):
                     self._log("Pausing PID {}".format(sub_proc.pid), level='debug')
                     proc.suspend()
                     self.paused = True
+                    start_pause = time.time()
                     while not self.redundant_flag.is_set():
                         time.sleep(1)
                         if not self.paused_flag.is_set():
                             self._log("Resuming PID {}".format(sub_proc.pid), level='debug')
                             proc.resume()
                             self.paused = False
-                            # TODO: elapsed time is used for calculating etc. We should also suspend that somehow here.
+                            # Elapsed time is used for calculating etc.
+                            # We account for this by counting the time we are paused also.
+                            # This is then subtracted from the elapsed time in the calculation above.
+                            proc_pause_time = int(proc_pause_time + time.time() - start_pause)
                             break
                         continue
 

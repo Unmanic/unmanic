@@ -162,13 +162,19 @@ class Foreman(threading.Thread):
 
     def pause_all_worker_threads(self):
         """Pause all threads"""
+        result = True
         for thread in self.worker_threads:
-            self.pause_worker_thread(thread)
+            if not self.pause_worker_thread(thread):
+                result = False
+        return result
 
     def resume_all_worker_threads(self):
         """Resume all threads"""
+        result = True
         for thread in self.worker_threads:
-            self.resume_worker_thread(thread)
+            if not self.resume_worker_thread(thread):
+                result = False
+        return result
 
     def start_worker_thread(self, worker_id):
         thread = Worker(worker_id, "Worker-{}".format(worker_id), self.workers_pending_task_queue, self.complete_queue)

@@ -49,9 +49,19 @@ class ApiWorkersHandler(BaseApiHandler):
             "call_method":       "pause_worker",
         },
         {
+            "path_pattern":      r"/workers/worker/pause/all",
+            "supported_methods": ["PUT"],
+            "call_method":       "pause_all_workers",
+        },
+        {
             "path_pattern":      r"/workers/worker/resume",
             "supported_methods": ["PUT"],
             "call_method":       "resume_worker",
+        },
+        {
+            "path_pattern":      r"/workers/worker/resume/all",
+            "supported_methods": ["PUT"],
+            "call_method":       "resume_all_workers",
         },
     ]
 
@@ -121,6 +131,58 @@ class ApiWorkersHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
+    def pause_all_workers(self):
+        """
+        Workers - Pause all workers
+        ---
+        description: Pause all workers.
+        responses:
+            200:
+                description: 'Sample response: Pause all workers.'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            if not workers.pause_all_workers():
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to pause all workers")
+                self.write_error()
+                return
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
     def resume_worker(self):
         """
         Workers - Resume worker by ID
@@ -170,6 +232,58 @@ class ApiWorkersHandler(BaseApiHandler):
 
             if not workers.resume_worker_by_id(json_request.get('worker_id')):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to resume worker")
+                self.write_error()
+                return
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def resume_all_workers(self):
+        """
+        Workers - Resume all workers
+        ---
+        description: Resumes all workers.
+        responses:
+            200:
+                description: 'Sample response: Resumes all workers.'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            if not workers.resume_all_workers():
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to resume all workers")
                 self.write_error()
                 return
 

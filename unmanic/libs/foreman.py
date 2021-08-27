@@ -191,10 +191,12 @@ class Foreman(threading.Thread):
         :return:
         :rtype:
         """
+        self._log("Asked to pause Worker ID '{}'".format(worker_id), level='debug')
         if worker_id not in self.worker_threads:
+            self._log("Asked to pause Worker ID '{}', but this was not found.".format(worker_id), level='warning')
             return False
 
-        self.worker_threads[worker_id].paused = True
+        self.worker_threads[worker_id].paused_flag.set()
         return True
 
     def resume_worker_thread(self, worker_id):
@@ -206,10 +208,12 @@ class Foreman(threading.Thread):
         :return:
         :rtype:
         """
+        self._log("Asked to resume Worker ID '{}'".format(worker_id), level='debug')
         if worker_id not in self.worker_threads:
+            self._log("Asked to resume Worker ID '{}', but this was not found.".format(worker_id), level='warning')
             return False
 
-        self.worker_threads[worker_id].paused = False
+        self.worker_threads[worker_id].paused_flag.clear()
         return True
 
     def mark_worker_thread_as_redundant(self, worker_id):

@@ -57,14 +57,15 @@ class WorkerCommandError(Exception):
 class Worker(threading.Thread):
     idle = True
     paused = False
+
     current_task = None
-
-    worker_subprocess = {}
     worker_log = None
-    percent = None
-
     start_time = None
     finish_time = None
+    worker_subprocess = None
+    worker_subprocess_pid = None
+    worker_subprocess_percent = None
+    worker_subprocess_elapsed = None
 
     worker_runners_info = {}
 
@@ -78,6 +79,10 @@ class Worker(threading.Thread):
         # Create 'redundancy' flag. When this is set, the worker should die
         self.redundant_flag = threading.Event()
         self.redundant_flag.clear()
+
+        # Create 'paused' flag. When this is set, the worker should be paused
+        self.paused_flag = threading.Event()
+        self.paused_flag.clear()
 
         # Create logger for this worker
         unmanic_logging = unlogger.UnmanicLogger.__call__()
@@ -93,11 +98,12 @@ class Worker(threading.Thread):
             time.sleep(.2)  # Add delay for preventing loop maxing compute resources
 
             # If the Foreman has paused this worker, then dont do anything
-            if self.paused:
+            if self.paused_flag.is_set():
+                self.paused = True
                 # If the worker is paused, wait for 5 seconds before continuing the loop
                 time.sleep(5)
-                # TODO: Pause subprocesses
                 continue
+            self.paused = False
 
             # Set the worker as Idle - This will announce to the Foreman that its ready for a task
             self.idle = True
@@ -142,8 +148,8 @@ class Worker(threading.Thread):
             'runners_info':    {},
             'subprocess':      {
                 'pid':     self.ident,
-                'percent': str(self.worker_subprocess.get('percent', 0)),
-                'elapsed': str(self.worker_subprocess.get('elapsed', 0)),
+                'percent': str(self.worker_subprocess_percent),
+                'elapsed': str(self.worker_subprocess_elapsed),
             },
         }
         if self.current_task:
@@ -324,7 +330,7 @@ class Worker(threading.Thread):
 
                 # Only run the conversion process if "exec_command" is not empty
                 if data.get("exec_command"):
-                    self.worker_log += ["\n\nRUNNER: \n{} [Pass #{}]".format(plugin_module.get('name'), runner_pass_count)]
+                    self.worker_log.append("\n\nRUNNER: \n{} [Pass #{}]".format(plugin_module.get('name'), runner_pass_count))
 
                     # Exec command as subprocess
                     success = self.__exec_command_subprocess(data)
@@ -467,29 +473,32 @@ class Worker(threading.Thread):
         try:
             proc_start_time = time.time()
             # Execute command
-            self.worker_subprocess['proc'] = subprocess.Popen(exec_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                                              universal_newlines=True, errors='replace')
-            # Record PID
-            self.worker_subprocess['pid'] = self.worker_subprocess['proc'].pid
+            sub_proc = subprocess.Popen(exec_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                        universal_newlines=True, errors='replace')
             # Fetch process using psutil for control (sending SIGSTOP on windows will not work)
-            proc = psutil.Process(pid=self.worker_subprocess['pid'])
+            proc = psutil.Process(pid=sub_proc.pid)
+
+            # Record PID and PROC
+            self.worker_subprocess = sub_proc
+            self.worker_subprocess_pid = sub_proc.pid
 
             # Poll process for new output until finished
             while not self.redundant_flag.is_set():
-                line_text = self.worker_subprocess['proc'].stdout.readline()
+                line_text = sub_proc.stdout.readline()
 
                 # Fetch command stdout and append it to the current task object (to be saved during post process)
                 self.worker_log.append(line_text)
 
                 # Check if the command has completed. If it has, exit the loop
-                if line_text == '' and self.worker_subprocess['proc'].poll() is not None:
+                if line_text == '' and sub_proc.poll() is not None:
+                    self._log("Subprocess task completed!", level='debug')
                     break
 
                 # Parse the progress
                 try:
                     progress_dict = command_progress_parser(line_text)
-                    self.worker_subprocess['percent'] = progress_dict.get('percent')
-                    self.worker_subprocess['elapsed'] = str(time.time() - proc_start_time)
+                    self.worker_subprocess_percent = progress_dict.get('percent', '0')
+                    self.worker_subprocess_elapsed = str(time.time() - proc_start_time)
                 except Exception as e:
                     # Only need to show any sort of exception if we have debugging enabled.
                     # So we should log it as a debug rather than an exception.
@@ -497,24 +506,29 @@ class Worker(threading.Thread):
 
                 # Stop the process if the worker is paused
                 # Then resume it when the worker is resumed
-                if self.paused:
+                if self.paused_flag.is_set():
+                    self._log("Pausing PID {}".format(sub_proc.pid), level='debug')
                     proc.suspend()
+                    self.paused = True
                     while not self.redundant_flag.is_set():
                         time.sleep(1)
-                        if not self.paused:
+                        if not self.paused_flag.is_set():
+                            self._log("Resuming PID {}".format(sub_proc.pid), level='debug')
                             proc.resume()
+                            self.paused = False
                             # TODO: elapsed time is used for calculating etc. We should also suspend that somehow here.
                             break
                         continue
 
             # Get the final output and the exit status
-            communicate = self.worker_subprocess['proc'].communicate()[0]
+            communicate = sub_proc.communicate()[0]
 
             # If the process is still running, kill it
             if proc.is_running():
+                self._log("Process was found still running.", level='warning')
                 self.__terminate_proc_tree(proc)
 
-            if self.worker_subprocess['proc'].returncode == 0:
+            if sub_proc.returncode == 0:
                 return True
             else:
                 self._log("Command run against '{}' exited with non-zero status. "

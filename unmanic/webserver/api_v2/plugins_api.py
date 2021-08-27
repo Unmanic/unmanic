@@ -35,7 +35,7 @@ from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
 from unmanic.webserver.api_v2.schema.schemas import PluginFlowResultsSchema, PluginReposListResultsSchema, \
-    PluginTypesResultsSchema, PluginsDataSchema, PluginsInfoResultsSchema, \
+    PluginTypesResultsSchema, PluginsDataPanelTypesDataSchema, PluginsDataSchema, PluginsInfoResultsSchema, \
     PluginsInstallableResultsSchema, RequestPluginsByIdSchema, RequestPluginsFlowByPluginTypeSchema, \
     RequestPluginsInfoSchema, RequestPluginsSettingsSaveSchema, RequestPluginsTableDataSchema, \
     RequestSavingPluginsFlowByPluginTypeSchema, RequestTableUpdateByIdList, RequestUpdatePluginReposListSchema
@@ -95,14 +95,14 @@ class ApiPluginsHandler(BaseApiHandler):
             "call_method":       "install_plugin_by_id",
         },
         {
-            "path_pattern":      r"/plugins/types",
-            "supported_methods": ["GET"],
-            "call_method":       "get_plugin_types",
-        },
-        {
             "path_pattern":      r"/plugins/flow",
             "supported_methods": ["POST"],
             "call_method":       "get_enabled_plugins_flow_by_type",
+        },
+        {
+            "path_pattern":      r"/plugins/flow/types",
+            "supported_methods": ["GET"],
+            "call_method":       "get_plugin_types_with_flows",
         },
         {
             "path_pattern":      r"/plugins/flow/save",
@@ -123,6 +123,11 @@ class ApiPluginsHandler(BaseApiHandler):
             "path_pattern":      r"/plugins/repos/reload",
             "supported_methods": ["PUT"],
             "call_method":       "reload_repo_data",
+        },
+        {
+            "path_pattern":      r"/plugins/panels/enabled",
+            "supported_methods": ["GET"],
+            "call_method":       "get_enabled_panel_plugins_list",
         },
     ]
 
@@ -704,14 +709,14 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_plugin_types(self):
+    def get_plugin_types_with_flows(self):
         """
-        Plugins - Get a list of all plugin types
+        Plugins - Get a list of all plugin types that have flows
         ---
-        description: Returns a list of all plugin types.
+        description: Returns a list of all plugin types that have flows.
         responses:
             200:
-                description: 'Sample response: Returns a list of all plugin types..'
+                description: 'Sample response: Returns a list of all plugin types that have flows.'
                 content:
                     application/json:
                         schema:
@@ -742,7 +747,7 @@ class ApiPluginsHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            results = plugins.get_all_plugin_types()
+            results = plugins.get_plugin_types_with_flows()
             response = self.build_response(
                 PluginTypesResultsSchema(),
                 {
@@ -1043,6 +1048,75 @@ class ApiPluginsHandler(BaseApiHandler):
                 return
 
             self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def get_enabled_panel_plugins_list(self):
+        """
+        Plugins - Read all enabled "data panel" type plugins
+        ---
+        description: Returns a list of installed plugins.
+        responses:
+            200:
+                description: 'Success: Returns a list of installed plugins.'
+                content:
+                    application/json:
+                        schema:
+                            PluginsDataPanelTypesDataSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            data_panel_plugins = plugins.get_enabled_plugin_data_panels()
+
+            # Only return the data that we need
+            plugin_list = []
+            for data_panel_plugin in data_panel_plugins:
+                plugin_list.append(
+                    {
+                        "plugin_id":   data_panel_plugin.get("plugin_id"),
+                        "name":        data_panel_plugin.get("name", ""),
+                        "author":      data_panel_plugin.get("author", ""),
+                        "description": data_panel_plugin.get("description", ""),
+                        "version":     data_panel_plugin.get("version", ""),
+                        "icon":        data_panel_plugin.get("icon", ""),
+                    }
+                )
+
+            response = self.build_response(
+                PluginsDataPanelTypesDataSchema(),
+                {
+                    "results": plugin_list
+                }
+            )
+            self.write_success(response)
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

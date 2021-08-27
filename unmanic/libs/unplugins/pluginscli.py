@@ -33,6 +33,7 @@ import json
 import logging
 import os
 import re
+import subprocess
 
 import inquirer
 
@@ -111,6 +112,14 @@ def print_table(table_data, col_list=None, sep='\uFFFA', max_col_width=9):
         row = [i[:max_col_width].split(sep, 1) for i in item]
         print(format_str.format(*[i[0] for i in row]))
         item = [i[1] if len(i) > 1 else '' for i in row]
+
+
+def install_npm_modules(plugin_path):
+    package_file = os.path.join(plugin_path, 'package.json')
+    if not os.path.exists(package_file):
+        return
+    subprocess.call(['npm', 'install'], cwd=plugin_path)
+    subprocess.call(['npm', 'run', 'build'], cwd=plugin_path)
 
 
 def install_plugin_requirements(plugin_path):
@@ -239,7 +248,7 @@ class PluginsCLI(object):
             "tags":          "",
             "description":   "",
             "icon":          "",
-            "priorities": {
+            "priorities":    {
                 selected_plugin_runner: 0
             },
             "compatibility": [PluginsHandler.version]
@@ -302,6 +311,7 @@ class PluginsCLI(object):
                 return
 
             install_plugin_requirements(plugin_path)
+            install_npm_modules(plugin_path)
         print()
         print()
 

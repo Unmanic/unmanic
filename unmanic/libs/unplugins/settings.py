@@ -142,7 +142,12 @@ class PluginSettings(object, metaclass=SingletonType):
         :return:
         """
         # First import settings
-        self.__import_configured_settings()
+        try:
+            self.__import_configured_settings()
+        except json.decoder.JSONDecodeError:
+            # If the import fails, then it will resort to defaults.
+            # That is fine. Better than breaking the rest of the process
+            pass
 
         if key is None:
             return self.settings_configured
@@ -160,7 +165,12 @@ class PluginSettings(object, metaclass=SingletonType):
         :return:
         """
         # First import settings
-        self.__import_configured_settings()
+        try:
+            self.__import_configured_settings()
+        except json.decoder.JSONDecodeError:
+            # If the import fails, then it will resort to defaults.
+            # That is fine. Better than breaking the rest of the process
+            pass
 
         # Ensure plugin has this setting
         if key not in self.settings:

@@ -49,10 +49,26 @@ class PluginExecutor(object):
         # List plugin types in order that they are run
         # Listing them in order helps for the frontend
         self.plugin_types = [
-            "library_management.file_test",
-            "worker.process_item",
-            "postprocessor.file_move",
-            "postprocessor.task_result",
+            {
+                'id':       'frontend.panel',
+                'has_flow': False,
+            },
+            {
+                'id':       'library_management.file_test',
+                'has_flow': True,
+            },
+            {
+                'id':       'worker.process_item',
+                'has_flow': True,
+            },
+            {
+                'id':       'postprocessor.file_move',
+                'has_flow': True,
+            },
+            {
+                'id':       'postprocessor.task_result',
+                'has_flow': True,
+            },
         ]
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         self.logger = unmanic_logging.get_logger(__class__.__name__)
@@ -157,13 +173,13 @@ class PluginExecutor(object):
 
         for plugin_type in self.get_all_plugin_types():
             # Get the called runner function for the given plugin type
-            plugin_type_meta = self.get_plugin_type_meta(plugin_type)
+            plugin_type_meta = self.get_plugin_type_meta(plugin_type.get('id'))
             plugin_runner = plugin_type_meta.plugin_runner()
 
             # Check if this module contains the given plugin type runner function
             if hasattr(plugin_module, plugin_runner):
                 # If it does, add it to the plugin_modules list
-                return_plugin_types.append(plugin_type)
+                return_plugin_types.append(plugin_type.get('id'))
 
         return return_plugin_types
 
@@ -262,9 +278,13 @@ class PluginExecutor(object):
             # This plugin does not have a settings class
             return {}, {}
 
-        settings = plugin_module.Settings()
+        try:
+            settings = plugin_module.Settings()
 
-        plugin_settings = settings.get_setting()
+            plugin_settings = settings.get_setting()
+        except Exception as e:
+            self._log(str(e), level='exception')
+            return {}, {}
 
         return plugin_settings, settings.form_settings
 
@@ -284,15 +304,19 @@ class PluginExecutor(object):
         # Load this plugin module
         plugin_module = self.__load_plugin_module(plugin_id, plugin_path)
 
-        plugin_settings = plugin_module.Settings()
+        try:
+            plugin_settings = plugin_module.Settings()
 
-        save_result = True
-        for key in settings:
-            value = settings.get(key)
-            if not plugin_settings.set_setting(key, value):
-                save_result = False
+            save_result = True
+            for key in settings:
+                value = settings.get(key)
+                if not plugin_settings.set_setting(key, value):
+                    save_result = False
 
-        return save_result
+            return save_result
+        except Exception as e:
+            self._log(str(e), level='exception')
+            return False
 
     def get_plugin_changelog(self, plugin_id):
         """

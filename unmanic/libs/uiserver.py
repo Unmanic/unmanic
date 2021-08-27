@@ -272,11 +272,8 @@ class UIServer(threading.Thread):
         self._log("Leaving UIServer loop...")
 
     def make_web_app(self):
-        from unmanic.webserver.api_request_router import APIRequestRouter
-        from unmanic.webserver.main import MainUIRequestHandler
-        from unmanic.webserver.websocket import UnmanicWebsocketHandler
-
         # Start with web application routes
+        from unmanic.webserver.websocket import UnmanicWebsocketHandler
         app = Application([
             (r"/unmanic/websocket", UnmanicWebsocketHandler),
             (r"/(.*)", RedirectHandler, dict(
@@ -285,6 +282,7 @@ class UIServer(threading.Thread):
         ], **tornado_settings)
 
         # Add API routes
+        from unmanic.webserver.api_request_router import APIRequestRouter
         app.add_handlers(r'.*', [
             (
                 PathMatches(r"/unmanic/api/.*"),
@@ -293,6 +291,7 @@ class UIServer(threading.Thread):
         ])
 
         # Add frontend routes
+        from unmanic.webserver.main import MainUIRequestHandler
         app.add_handlers(r'.*', [
             (r"/unmanic/css/(.*)", StaticFileHandler, dict(
                 path=tornado_settings['static_css']
@@ -315,6 +314,19 @@ class UIServer(threading.Thread):
             ),
         ])
 
+        # Add widgets routes
+        from unmanic.webserver.plugins import DataPanelRequestHandler
+        from unmanic.webserver.plugins import PluginStaticFileHandler
+        app.add_handlers(r'.*', [
+            (
+                PathMatches(r"/unmanic/panel/[^/]+(/(?!static/|assets$).*)?$"),
+                DataPanelRequestHandler
+            ),
+            (r"/unmanic/panel/.*/static/(.*)", PluginStaticFileHandler, dict(
+                path=tornado_settings['static_img']
+            )),
+        ])
+
         if self.developer:
             self._log("API Docs - Updating...", level="debug")
             try:
@@ -326,7 +338,6 @@ class UIServer(threading.Thread):
                     self._log("API Docs - Updated successfully", level="debug")
             except Exception as e:
                 self._log("Failed to reload API schema", message2=str(e), level="error")
-
 
             # Start the Swagger UI. Automatically generated swagger.json can also
             # be served using a separate Swagger-service.

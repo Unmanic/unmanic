@@ -771,6 +771,18 @@ class PluginReposListResultsSchema(BaseSchema):
     )
 
 
+class PluginsDataPanelTypesDataSchema(BaseSchema):
+    """Schema for returning a list of data panel plugins results"""
+
+    results = fields.Nested(
+        PluginFlowDataResultsSchema,
+        required=True,
+        description="Results",
+        many=True,
+        validate=validate.Length(min=0),
+    )
+
+
 # SESSION
 # =======
 

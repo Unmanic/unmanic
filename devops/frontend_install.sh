@@ -29,10 +29,20 @@
 #
 ###################################################################################################
 
-SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd );
-PROJECT_BASE=$(realpath ${SCRIPT_PATH}/..);
+project_root="$(readlink -e $(dirname $(readlink -e ${BASH_SOURCE[0]}))/../)"
 
-CMD="cd ${PROJECT_BASE}/unmanic/webserver/ && npm install"
+# Build backage
+pushd "${project_root}/unmanic/webserver/frontend" &> /dev/null
+npm install
+npm run build 
+popd &> /dev/null
 
-echo "${CMD}"
-bash -c "${CMD}"
+# Copy dist package backage
+pushd "${project_root}/unmanic/webserver" &> /dev/null
+if [ ! -d "${project_root}/unmanic/webserver/frontend/dist/spa" ]; then
+    echo "Cannot find built dist package for the frontend. Something must have gone wrong. Exit"
+    exit 1
+fi
+rm -rf "${project_root}/unmanic/webserver/public"
+mv -v "${project_root}/unmanic/webserver/frontend/dist/spa" "${project_root}/unmanic/webserver/public"
+popd &> /dev/null

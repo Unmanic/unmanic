@@ -51,7 +51,7 @@ class ApiSessionHandler(BaseApiHandler):
         },
         {
             "path_pattern":      r"/session/reload",
-            "supported_methods": ["PUT"],
+            "supported_methods": ["POST"],
             "call_method":       "session_reload",
         },
     ]

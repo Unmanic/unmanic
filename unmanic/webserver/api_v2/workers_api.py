@@ -45,22 +45,22 @@ class ApiWorkersHandler(BaseApiHandler):
     routes = [
         {
             "path_pattern":      r"/workers/worker/pause",
-            "supported_methods": ["PUT"],
+            "supported_methods": ["POST"],
             "call_method":       "pause_worker",
         },
         {
             "path_pattern":      r"/workers/worker/pause/all",
-            "supported_methods": ["PUT"],
+            "supported_methods": ["POST"],
             "call_method":       "pause_all_workers",
         },
         {
             "path_pattern":      r"/workers/worker/resume",
-            "supported_methods": ["PUT"],
+            "supported_methods": ["POST"],
             "call_method":       "resume_worker",
         },
         {
             "path_pattern":      r"/workers/worker/resume/all",
-            "supported_methods": ["PUT"],
+            "supported_methods": ["POST"],
             "call_method":       "resume_all_workers",
         },
     ]

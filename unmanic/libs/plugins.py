@@ -334,7 +334,10 @@ class PluginsHandler(object, metaclass=SingletonType):
                 if success:
                     try:
                         plugin_directory = self.get_plugin_path(plugin.get("plugin_id"))
-                        return self.write_plugin_data_to_db(plugin, plugin_directory)
+                        result = self.write_plugin_data_to_db(plugin, plugin_directory)
+                        if result:
+                            self._log("Installed plugin '{}'".format(plugin_id), level="info")
+                        return result
                     except Exception as e:
                         self._log("Exception while saving plugin info for '{}' to DB.".format(plugin), str(e),
                                   level="exception")

@@ -341,7 +341,8 @@ class Worker(threading.Thread):
                         self._log("Successfully ran worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'),
                                                                                              data.get("file_in")))
                         # Set the file in as the file out for the next loop
-                        file_in = data.get("file_out")
+                        if os.path.exists(data.get('file_out')):
+                            file_in = data.get("file_out")
                     else:
                         # If file conversion was successful
                         self._log(
@@ -363,7 +364,9 @@ class Worker(threading.Thread):
                 break
 
             # Set the current file out to the most recently completed cache file
-            current_file_out = data.get('file_out')
+            # If the file out does not exist, it is likely never used by the plugin.
+            if os.path.exists(data.get('file_out')):
+                current_file_out = data.get('file_out')
 
             self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = True
             self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'complete'

@@ -149,6 +149,7 @@ class PluginsCLI(object):
                 datefmt='%Y-%m-%dT%H:%M:%S'
             )
         )
+        unmanic_logging.enable_debugging()
         self.logger = unmanic_logging.get_logger(__class__.__name__)
 
     def _log(self, message, message2='', level="info"):

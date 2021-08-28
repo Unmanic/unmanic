@@ -91,7 +91,7 @@ class ApiPluginsHandler(BaseApiHandler):
         },
         {
             "path_pattern":      r"/plugins/install",
-            "supported_methods": ["PUT"],
+            "supported_methods": ["POST"],
             "call_method":       "install_plugin_by_id",
         },
         {
@@ -121,7 +121,7 @@ class ApiPluginsHandler(BaseApiHandler):
         },
         {
             "path_pattern":      r"/plugins/repos/reload",
-            "supported_methods": ["PUT"],
+            "supported_methods": ["POST"],
             "call_method":       "reload_repo_data",
         },
         {

@@ -1620,7 +1620,7 @@ paths:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
   /plugins/install:
-    put:
+    post:
       description: Installs a plugin by its Plugin ID.
       requestBody:
         content:
@@ -1855,7 +1855,7 @@ paths:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
   /plugins/repos/reload:
-    put:
+    post:
       description: Reload plugin repositories remote data.
       responses:
         '200':
@@ -1957,7 +1957,7 @@ paths:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
   /session/reload:
-    put:
+    post:
       description: Reload the current session.
       responses:
         '200':
@@ -2134,7 +2134,7 @@ paths:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
   /workers/worker/pause:
-    put:
+    post:
       description: Pauses a worker by its ID.
       requestBody:
         content:
@@ -2175,7 +2175,7 @@ paths:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
   /workers/worker/pause/all:
-    put:
+    post:
       description: Pause all workers.
       responses:
         '200':
@@ -2209,7 +2209,7 @@ paths:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
   /workers/worker/resume:
-    put:
+    post:
       description: Resumes a worker by its ID.
       requestBody:
         content:
@@ -2250,7 +2250,7 @@ paths:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
   /workers/worker/resume/all:
-    put:
+    post:
       description: Resumes all workers.
       responses:
         '200':

@@ -97,9 +97,9 @@ class FrontendPushMessages(Queue, metaclass=SingletonType):
                 raise Exception("Frontend message item incorrectly formatted. Missing key: '{}'".format(key))
 
         # Ensure the given type is valid
-        if item.get('type') not in ['error', 'warning', 'success', 'info']:
+        if item.get('type') not in ['error', 'warning', 'success', 'info', 'status']:
             raise Exception(
-                "Frontend message item's code must be either 'error', 'warning', 'success', or 'info'. Received '{}'".format(
+                "Frontend message item's code must be in ['error', 'warning', 'success', 'info', 'status']. Received '{}'".format(
                     item.get('type')
                 )
             )
@@ -116,18 +116,52 @@ class FrontendPushMessages(Queue, metaclass=SingletonType):
             self.add_to_queue(item)
 
     def remove_item(self, item_id):
-        items = self.get_all_items()
+        # Get all items out of queue
+        current_items = self.get_all_items()
+        # Create list of items that will be queued again
         requeue_items = []
-        for item in items:
-            if item.get('id') != item_id:
-                requeue_items.append(item)
-        self.all_items.remove(item_id)
+        for current_item in current_items:
+            if current_item.get('id') != item_id:
+                requeue_items.append(current_item)
+        # Remove the requested item ID from the all_items set
+        lock = threading.RLock()
+        lock.acquire()
+        if item_id in self.all_items:
+            self.all_items.remove(item_id)
+        lock.release()
+        # Add all requeue_items items back into the queue
         self.requeue_items(requeue_items)
 
     def read_all_items(self):
-        items = self.get_all_items()
-        self.requeue_items(items)
-        return items
+        # Get all items out of queue
+        current_items = self.get_all_items()
+        # Add all requeue_items items back into the queue
+        self.requeue_items(current_items)
+        # Return items list
+        return current_items
+
+    def update(self, item):
+        # Ensure received item is valid
+        self.__validate_item(item)
+        # If it is not already in message list, add it to the list and the queue
+        if item.get('id') not in self.all_items:
+            self.all_items.add(item.get('id'))
+            self.add_to_queue(item)
+        else:
+            # Get all items out of queue
+            current_items = self.get_all_items()
+            # Create list of items that will be queued again
+            # This will not include the item requested for update
+            lock = threading.RLock()
+            lock.acquire()
+            requeue_items = []
+            for current_item in current_items:
+                if current_item.get('id') != item.get('id'):
+                    requeue_items.append(current_item)
+                    continue
+                requeue_items.append(item)
+            # Add all requeue_items items back into the queue
+            self.requeue_items(requeue_items)
 
 
 class UnmanicDataQueues(object, metaclass=SingletonType):

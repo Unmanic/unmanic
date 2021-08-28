@@ -24,17 +24,17 @@ Unmanic - Library Optimiser
 [![GitHub license](https://img.shields.io/github/license/unmanic/unmanic?color=009dc7&style=flat-square)]()
 ---
 
-Unmanic is a simple tool for optimising your video library to a single, uniform format. 
+Unmanic is a simple tool for optimising your file library to a single, uniform format. 
 
 Unmanic provides you with the following main functions:
 
- - A scheduler built in to scan your whole library for files that do not conform to your configured video presets. Videos found with incorrect formats are then queued for conversion.
+ - A scheduler built in to scan your whole library for files that do not conform to your configured presets. Files found with incorrect formats are then queued for conversion.
 
- - A folder watchdog. When a video file is modified or a new file is added in your library, Unmanic is able to check that video against your configured video presets. Like the first function, if this video is not formatted correctly it is added to a queue for conversion.
+ - A folder watchdog. When a file is modified or a new file is added in your library, Unmanic is able to check that file against your configured presets. Like the first function, if this file is not formatted correctly it is added to a queue for conversion.
 
- - A handler to manage multiple file conversion tasks at a time using ffmpeg
+ - A handler to manage multiple file tasks at a time.
 
- - A Web UI to easily configure your preferred video presets and monitor the progress of your library conversion.
+ - A Web UI to easily configure your preferred file presets and monitor the progress of your library conversion.
 
 Simply point Unmanic at your library and let it manage it.
 
@@ -54,7 +54,6 @@ Simply point Unmanic at your library and let it manage it.
 ## Dependencies
 
  - Python 3.x ([Install](https://www.python.org/downloads/))
- - FFMPEG ([Install](https://www.ffmpeg.org/))
  - To install requirements run 'python3 -m pip install -r requirements.txt' from the project root
 
 ## Screen-shots

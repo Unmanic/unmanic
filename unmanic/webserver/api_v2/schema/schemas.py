@@ -844,6 +844,15 @@ class SettingsReadAndWriteSchema(BaseSchema):
         },
     )
 
+class SettingsSystemConfigSchema(BaseSchema):
+    """Schema to display the current system configuration"""
+
+    configuration = fields.Dict(
+        required=True,
+        description="The current system configuration",
+        example={},
+    )
+
 
 # VERSION
 # =======

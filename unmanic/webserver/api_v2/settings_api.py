@@ -35,7 +35,7 @@ import tornado.log
 from unmanic import config
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiError, BaseApiHandler
-from unmanic.webserver.api_v2.schema.schemas import SettingsReadAndWriteSchema
+from unmanic.webserver.api_v2.schema.schemas import SettingsReadAndWriteSchema, SettingsSystemConfigSchema
 
 
 class ApiSettingsHandler(BaseApiHandler):
@@ -53,6 +53,11 @@ class ApiSettingsHandler(BaseApiHandler):
             "path_pattern":      r"/settings/write",
             "supported_methods": ["POST"],
             "call_method":       "write_settings",
+        },
+        {
+            "path_pattern":      r"/settings/configuration",
+            "supported_methods": ["GET"],
+            "call_method":       "get_system_configuration",
         },
     ]
 
@@ -168,6 +173,62 @@ class ApiSettingsHandler(BaseApiHandler):
             self.config.set_bulk_config_items(json_request.get('settings', {}))
 
             self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def get_system_configuration(self):
+        """
+        Settings - read the system configuration
+        ---
+        description: Returns the system configuration.
+        responses:
+            200:
+                description: 'Sample response: Returns the system configuration.'
+                content:
+                    application/json:
+                        schema:
+                            SettingsSystemConfigSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            from unmanic.libs.system import System
+            system = System()
+            system_info = system.info()
+            response = self.build_response(
+                SettingsSystemConfigSchema(),
+                {
+                    "configuration": system_info,
+                }
+            )
+            self.write_success(response)
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

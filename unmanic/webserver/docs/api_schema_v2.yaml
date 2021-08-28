@@ -873,6 +873,15 @@ components:
       required:
       - settings
       type: object
+    SettingsSystemConfig:
+      properties:
+        configuration:
+          description: The current system configuration
+          example: {}
+          type: object
+      required:
+      - configuration
+      type: object
     VersionReadSuccess:
       properties:
         version:
@@ -2032,6 +2041,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
           description: 'Success: Saved a given dictionary of settings.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /settings/configuration:
+    get:
+      description: Returns the system configuration.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsSystemConfig'
+          description: 'Sample response: Returns the system configuration.'
         '400':
           content:
             application/json:

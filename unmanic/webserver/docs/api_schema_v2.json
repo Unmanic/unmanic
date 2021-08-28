@@ -2405,7 +2405,7 @@
             }
         },
         "/plugins/install": {
-            "put": {
+            "post": {
                 "description": "Installs a plugin by its Plugin ID.",
                 "requestBody": {
                     "description": "Requested a plugin be installed by its Plugin ID.",
@@ -2791,7 +2791,7 @@
             }
         },
         "/plugins/repos/reload": {
-            "put": {
+            "post": {
                 "description": "Reload plugin repositories remote data.",
                 "responses": {
                     "200": {
@@ -2962,7 +2962,7 @@
             }
         },
         "/session/reload": {
-            "put": {
+            "post": {
                 "description": "Reload the current session.",
                 "responses": {
                     "200": {
@@ -3258,7 +3258,7 @@
             }
         },
         "/workers/worker/pause": {
-            "put": {
+            "post": {
                 "description": "Pauses a worker by its ID.",
                 "requestBody": {
                     "description": "Requested a worker be paused by its ID.",
@@ -3326,7 +3326,7 @@
             }
         },
         "/workers/worker/pause/all": {
-            "put": {
+            "post": {
                 "description": "Pause all workers.",
                 "responses": {
                     "200": {
@@ -3383,7 +3383,7 @@
             }
         },
         "/workers/worker/resume": {
-            "put": {
+            "post": {
                 "description": "Resumes a worker by its ID.",
                 "requestBody": {
                     "description": "Requested a worker be resumed by its ID.",
@@ -3451,7 +3451,7 @@
             }
         },
         "/workers/worker/resume/all": {
-            "put": {
+            "post": {
                 "description": "Resumes all workers.",
                 "responses": {
                     "200": {

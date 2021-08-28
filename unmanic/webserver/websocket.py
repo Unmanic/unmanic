@@ -265,7 +265,7 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
             )
 
             # Sleep for X seconds
-            await gen.sleep(5)
+            await gen.sleep(.2)
 
     async def async_system_logs(self):
         while self.sending_system_logs:

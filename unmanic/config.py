@@ -225,7 +225,7 @@ class Config(object, metaclass=SingletonType):
         if hasattr(self, "set_{}".format(key)):
             setter = getattr(self, "set_{}".format(key))
             if callable(setter):
-                return setter(value)
+                setter(value)
         else:
             # Assign value directly to class attribute
             setattr(self, key, value)

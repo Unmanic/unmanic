@@ -293,8 +293,8 @@ class Worker(threading.Thread):
 
             # Fetch file out details
             # This creates a temp file labeled "WORKING" that will be moved to the cache_path on completion
-            tmp_file_out = os.path.splitext(task_cache_path)
-            file_out = "{}-{}-{}{}".format(tmp_file_out[0], "WORKING", runner_count, tmp_file_out[1])
+            split_file_out = os.path.splitext(task_cache_path)
+            file_out = "{}-{}-{}{}".format(split_file_out[0], "WORKING", runner_count, split_file_out[1])
 
             # Generate/Reset the data for the runner functions
             data = {

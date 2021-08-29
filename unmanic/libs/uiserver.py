@@ -373,14 +373,14 @@ class UIServer(threading.Thread):
             except Exception as e:
                 self._log("Failed to reload API schema", message2=str(e), level="error")
 
-            # Start the Swagger UI. Automatically generated swagger.json can also
-            # be served using a separate Swagger-service.
-            from swagger_ui import tornado_api_doc
-            tornado_api_doc(
-                app,
-                config_path=os.path.join(os.path.dirname(__file__), "..", "webserver", "docs", "api_schema_v2.json"),
-                url_prefix="/unmanic/swagger",
-                title="Unmanic application API"
-            )
+        # Start the Swagger UI. Automatically generated swagger.json can also
+        # be served using a separate Swagger-service.
+        from swagger_ui import tornado_api_doc
+        tornado_api_doc(
+            app,
+            config_path=os.path.join(os.path.dirname(__file__), "..", "webserver", "docs", "api_schema_v2.json"),
+            url_prefix="/unmanic/swagger",
+            title="Unmanic application API"
+        )
 
         return app

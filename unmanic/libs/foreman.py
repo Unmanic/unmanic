@@ -223,6 +223,23 @@ class Foreman(threading.Thread):
         self.worker_threads[worker_id].paused_flag.clear()
         return True
 
+    def terminate_worker_thread(self, worker_id):
+        """
+        Terminate a single worker thread
+
+        :param worker_id:
+        :type worker_id:
+        :return:
+        :rtype:
+        """
+        self._log("Asked to terminate Worker ID '{}'".format(worker_id), level='debug')
+        if worker_id not in self.worker_threads:
+            self._log("Asked to terminate Worker ID '{}', but this was not found.".format(worker_id), level='warning')
+            return False
+
+        self.mark_worker_thread_as_redundant(worker_id)
+        return True
+
     def mark_worker_thread_as_redundant(self, worker_id):
         self.worker_threads[worker_id].redundant_flag.set()
         self.remove_list.append(worker_id)

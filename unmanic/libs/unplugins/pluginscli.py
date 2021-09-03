@@ -297,6 +297,7 @@ class PluginsCLI(object):
 
         # Build choice selection list from installed plugins
         for plugin in plugin_results:
+            print("Reloading Plugin - '{}'".format(plugin.get('plugin_id')))
             plugin_path = os.path.join(self.plugins_directory, plugin.get('plugin_id'))
             # Read plugin info.json
             info_file = os.path.join(plugin_path, 'info.json')
@@ -313,7 +314,7 @@ class PluginsCLI(object):
 
             install_plugin_requirements(plugin_path)
             install_npm_modules(plugin_path)
-        print()
+            print()
         print()
 
     @staticmethod

@@ -80,7 +80,7 @@ class ProcessItem(PluginType):
         'exec_command':            [],
         'command_progress_parser': exec,
         'file_in':                 '/library/TEST_FILE.mkv',
-        'file_out':                '/tmp/unmanic/unmanic_file_conversion-1616571944.7296784/TEST_FILE-1616571944.7296877-WORKING-1.mp4',
+        'file_out':                '/tmp/unmanic/unmanic_file_conversion-1616571944.7296784/TEST_FILE-1616571944.7296877-WORKING-1.mkv',
         'original_file_path':      '/library/TEST_FILE.mkv',
         'repeat':                  False,
     }

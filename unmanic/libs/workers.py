@@ -335,6 +335,18 @@ class Worker(threading.Thread):
                     # Exec command as subprocess
                     success = self.__exec_command_subprocess(data)
 
+                    if self.redundant_flag.is_set():
+                        # This worker has been marked as redundant. It is being terminated.
+                        self._log("Worker has been terminated before a command was completed", level="warning")
+                        # Mark runner as failed
+                        self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = False
+                        # Set overall success status to failed
+                        overall_success = False
+                        # Append long entry to say the worker was terminated
+                        self.worker_log.append("\n\nWORKER TERMINATED!")
+                        # Don't continue
+                        break
+
                     # Run command. Check if command exited successfully.
                     if success:
                         # If file conversion was successful
@@ -529,7 +541,8 @@ class Worker(threading.Thread):
                         continue
 
             # Get the final output and the exit status
-            communicate = sub_proc.communicate()[0]
+            if not self.redundant_flag.is_set():
+                communicate = sub_proc.communicate()[0]
 
             # If the process is still running, kill it
             if proc.is_running():

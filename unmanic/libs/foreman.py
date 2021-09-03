@@ -185,7 +185,8 @@ class Foreman(threading.Thread):
     def check_for_idle_workers(self):
         for thread in self.worker_threads:
             if self.worker_threads[thread].idle and self.worker_threads[thread].isAlive():
-                return True
+                if not self.worker_threads[thread].paused:
+                    return True
         return False
 
     def pause_worker_thread(self, worker_id):

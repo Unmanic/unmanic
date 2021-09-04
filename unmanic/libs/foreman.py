@@ -189,6 +189,32 @@ class Foreman(threading.Thread):
                     return True
         return False
 
+    def postprocessor_queue_full(self):
+        """
+        Check if Post-processor queue is greater than the number of workers enabled.pluginEnabledLimits
+        If it is, return True. Else False.
+
+        :return:
+        """
+        frontend_messages = self.data_queues.get('frontend_messages')
+        limit = self.get_worker_count()
+        if len(self.task_queue.list_processed_tasks()) > limit:
+            self._log("Postprocessor queue is over {}. Halting feeding workers until it drops.".format(limit), level='warning')
+            frontend_messages.update(
+                {
+                    'id':      'pendingTaskHaltedPostProcessorQueueFull',
+                    'type':    'status',
+                    'code':    'pendingTaskHaltedPostProcessorQueueFull',
+                    'message': '',
+                    'timeout': 0
+                }
+            )
+            return True
+
+        # Remove the status notification
+        frontend_messages.remove_item('pendingTaskHaltedPostProcessorQueueFull')
+        return False
+
     def pause_worker_thread(self, worker_id):
         """
         Pauses a single worker thread
@@ -286,6 +312,11 @@ class Foreman(threading.Thread):
 
                     # Check if we are able to start up a worker for another encoding job
                     if self.workers_pending_task_queue.full():
+                        continue
+
+                    # Check if postprocessor task queue is full
+                    if self.postprocessor_queue_full():
+                        time.sleep(3)
                         continue
 
                     next_item_to_process = self.task_queue.get_next_pending_tasks()

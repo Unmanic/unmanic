@@ -252,7 +252,7 @@ class ApiPendingHandler(BaseApiHandler):
         try:
             json_request = self.read_json_request(RequestPendingTasksReorderSchema())
 
-            if not pending_tasks.reorder_pending_tasks(json_request.get('id_list', []), json_request.get('direction', 'top')):
+            if not pending_tasks.reorder_pending_tasks(json_request.get('id_list', []), json_request.get('position', 'top')):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to save new order")
                 self.write_error()
                 return

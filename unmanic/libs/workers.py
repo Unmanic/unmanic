@@ -391,11 +391,21 @@ class Worker(threading.Thread):
         if overall_success:
             # If jobs carried out on this task were all successful, we will get here
             self._log("Successfully converted file '{}'".format(original_abspath))
+
+            # Check that the current file out is not the original source file
+            if os.path.abspath(current_file_out) == os.path.abspath(original_abspath):
+                # The current file out is not a cache file, the file must have never been modified.
+                # This can happen if all Plugins failed to run, or a Plugin specifically reset the out
+                #   file to the original source in order to preserve it.
+                # In this circumstance, we want to do nothing. Just log it for debugging and let the process continue
+                self._log("Final cache file is the same path as the original source.", level='debug')
+
+            # Attempt to move the final output file to the final cache file path for the postprocessor
             try:
                 # Set the new file out as the extension may have changed
                 split_file_name = os.path.splitext(current_file_out)
                 file_extension = split_file_name[1].lstrip('.')
-                cache_directory = os.path.dirname(os.path.abspath(current_file_out))
+                cache_directory = os.path.dirname(os.path.abspath(task_cache_path))
                 self.current_task.set_cache_path(cache_directory, file_extension)
                 # Read the updated cache path
                 task_cache_path = self.current_task.get_cache_path()
@@ -407,7 +417,7 @@ class Worker(threading.Thread):
                 # There is a really odd intermittent bug with the shutil module that is causing it to
                 #   sometimes report that the file does not exist.
                 # This section adds a small pause and logs the error if that is the case.
-                # I have not yet figured out a soltion as this is difficult to reproduce.
+                # I have not yet figured out a solution as this is difficult to reproduce.
                 if not os.path.exists(current_file_out):
                     self._log("Error - current_file_out path does not exist! '{}'".format(file_in), level="error")
                     time.sleep(1)

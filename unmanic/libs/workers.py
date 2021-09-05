@@ -352,8 +352,20 @@ class Worker(threading.Thread):
                         # If file conversion was successful
                         self._log("Successfully ran worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'),
                                                                                              data.get("file_in")))
-                        # Set the file in as the file out for the next loop
+                        # Ensure the 'file_out' that was specified by the plugin to be created was actually created.
                         if os.path.exists(data.get('file_out')):
+                            # The outfile exists...
+                            # In order to clean up as we go and avoid unnecessary RAM/disk use in the cache directory,
+                            #   we want to removed the 'file_in' file.
+                            # We want to ensure that we do not accidentally remove any original files here.
+                            # To avoid this, run x2 tests.
+                            # First, check current 'file_in' is not the original file.
+                            if os.path.abspath(file_in) != os.path.abspath(original_abspath):
+                                # Second, check that the 'file_in' is in cache directory.
+                                if "unmanic_file_conversion" in os.path.abspath(file_in):
+                                    # Remove this file
+                                    os.remove(os.path.abspath(file_in))
+                            # Set the new 'file_in' as the previous runner's 'file_out' for the next loop
                             file_in = data.get("file_out")
                     else:
                         # If file conversion was successful

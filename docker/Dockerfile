@@ -42,10 +42,20 @@ RUN \
             echo "**** Install Intel Media Drivers  ****" \
                 && apt-get update \
                 && apt-get install -y \
-                    i965-va-driver \
-                    intel-opencl-icd \
-                    intel-level-zero-gpu level-zero \
-                    intel-media-va-driver-non-free libmfx1 \
+                    i965-va-driver=2.4.0-0ubuntu1 \
+                    libva-drm2=2.11.0+i593~u20.04 \
+                    libva-x11-2=2.11.0+i593~u20.04 \
+                    libva-wayland2=2.11.0+i593~u20.04 \
+                    libva2=2.11.0+i593~u20.04 \
+                    libigdgmm11=21.2.1+i593~u20.04 \
+                    intel-media-va-driver-non-free=21.2.2+i593~u20.04 \
+                    libigc1=1.0.7862+i593~u20.04 \
+                    intel-igc-cm=1.0.40+i593~u20.04 \
+                    libigdfcl1=1.0.7862+i593~u20.04 \
+                    intel-level-zero-gpu=1.1.20389+i593~u20.04 \
+                    intel-opencl-icd=21.29.20389+i593~u20.04 \
+                    level-zero=1.4.1+i593~u20.04 \
+                    libmfx1=21.2.2+i593~u20.04 \
             && \
             echo "**** Install MESA Media Drivers for AMD VAAPI ****" \
                 && apt-get install -y \
@@ -68,6 +78,7 @@ RUN \
 
 
 # Install ffmpeg
+ARG JELLYFIN_FFMPEG_VERSION="4.3.2-1"
 RUN \
     echo "**** Install FFmpeg for $(uname -m) ****" \
         && sleep 2 \
@@ -84,9 +95,13 @@ RUN \
             echo "**** Install jellyfin-ffmpeg and linked 3rd party libs ****" \
                 && apt-get update \
                 && apt-get install --no-install-recommends --no-install-suggests -y \
-                    jellyfin-ffmpeg \
                     openssl \
                     locales \
+                &&  curl -ksL \
+                    -o /tmp/jellyfin-ffmpeg_${JELLYFIN_FFMPEG_VERSION}-focal_amd64.deb \
+                    "https://repo.jellyfin.org/releases/server/ubuntu/versions/jellyfin-ffmpeg/${JELLYFIN_FFMPEG_VERSION}/jellyfin-ffmpeg_${JELLYFIN_FFMPEG_VERSION}-focal_amd64.deb" \
+                && apt-get install -y \
+                    /tmp/jellyfin-ffmpeg_${JELLYFIN_FFMPEG_VERSION}-focal_amd64.deb \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
             && \

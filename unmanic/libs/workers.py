@@ -287,6 +287,11 @@ class Worker(threading.Thread):
             # Increment the runners count (first runner will be set as #1)
             runner_count += 1
 
+            if not overall_success:
+                # If one of the Plugins fails, don't continue.
+                # The Plugins could be co-dependant and the final file will not go anywhere if 'overall_success' is False
+                break
+
             # Mark the status of the worker for the frontend
             self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'in_progress'
             self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = False
@@ -321,7 +326,14 @@ class Worker(threading.Thread):
                         plugin_module.get('plugin_id')), message2=str(e), level="exception")
                     # Skip this plugin module's loop
                     self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'complete'
-                    continue
+                    self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = False
+                    # Set overall success status to failed
+                    overall_success = False
+                    # Append long entry to say the worker was terminated
+                    self.worker_log.append("\n\nPLUGIN FAILED!")
+                    self.worker_log.append("Failed to execute Plugin '{}'".format(plugin_module.get('name')))
+                    self.worker_log.append("Check Unmanic logs for more information")
+                    break
 
                 # Log the in and out files returned by the plugin runner for debugging
                 self._log("Worker process '{}' (in)".format(plugin_module.get('plugin_id')), data.get("file_in"),

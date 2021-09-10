@@ -38,6 +38,7 @@ import signal
 from unmanic import config, metadata
 from unmanic.libs import libraryscanner, unlogger, common, eventmonitor
 from unmanic.libs.db_migrate import Migrations
+from unmanic.libs.scheduler import ScheduledTasksManager
 from unmanic.libs.taskqueue import TaskQueue
 from unmanic.libs.postprocessor import PostProcessor
 from unmanic.libs.taskhandler import TaskHandler
@@ -155,6 +156,17 @@ class Service:
         })
         return uiserver
 
+    def start_scheduled_tasks_manager(self):
+        main_logger.info("Starting ScheduledTasksManager")
+        scheduled_tasks_manager = ScheduledTasksManager()
+        scheduled_tasks_manager.daemon = True
+        scheduled_tasks_manager.start()
+        self.threads.append({
+            'name':   'ScheduledTasksManager',
+            'thread': scheduled_tasks_manager
+        })
+        return scheduled_tasks_manager
+
     @staticmethod
     def initial_register_unmanic():
         from unmanic.libs import session
@@ -205,6 +217,9 @@ class Service:
 
         # Start new thread to run the web UI
         self.start_ui_server(data_queues, foreman)
+
+        # Start new thread to run the scheduled tasks manager
+        self.start_scheduled_tasks_manager()
 
     def stop_threads(self):
         main_logger.info("Stopping all threads")

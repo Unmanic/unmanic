@@ -142,10 +142,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             "uuid":     uuid,
             "repo_url": repo_path
         }
-        repo_data = session.api_post(1, 'unmanic-plugin-repo/uuid/{}'.format(uuid), post_data)
-        self._log("Repo info {}.".format(repo_path), repo_data, level="info")
-
-        return repo_data
+        return session.api_post(1, 'unmanic-plugin-repo/uuid/{}'.format(uuid), post_data)
 
     def update_plugin_repos(self):
         """

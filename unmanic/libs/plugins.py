@@ -201,9 +201,9 @@ class PluginsHandler(object, metaclass=SingletonType):
     def get_plugin_info(self, plugin_id):
         plugin_info = {}
         plugin_directory = os.path.join(self.settings.get_plugins_path(), plugin_id)
-        if os.path.exists(plugin_directory):
+        info_file = os.path.join(plugin_directory, 'info.json')
+        if os.path.exists(info_file):
             # Read plugin info.json
-            info_file = os.path.join(plugin_directory, 'info.json')
             with open(info_file) as json_file:
                 plugin_info = json.load(json_file)
         return plugin_info
@@ -558,6 +558,12 @@ class PluginsHandler(object, metaclass=SingletonType):
             plugin_directory = self.get_plugin_path(record.get('plugin_id'))
             self._log("Removing plugin files from disk '{}'".format(plugin_directory), level='debug')
             try:
+                # Delete the info file first to prevent any other process trying to read the plugin.
+                # Without the info file, the plugin is effectivly uninstalled
+                info_file = os.path.join(plugin_directory, 'info.json')
+                if os.path.exists(info_file):
+                    os.remove(info_file)
+                # Cleanup the rest of the plugin directory
                 shutil.rmtree(plugin_directory)
             except Exception as e:
                 self._log("Exception while removing directory {}:".format(plugin_directory), message2=str(e),
@@ -739,8 +745,13 @@ class PluginsHandler(object, metaclass=SingletonType):
         # If all enabled plugins are compatible, then return true
         incompatible_list = []
         for record in enabled_plugins:
-            # Ensure plugin is compatible
-            plugin_info = self.get_plugin_info(record.get('plugin_id'))
+            try:
+                # Ensure plugin is compatible
+                plugin_info = self.get_plugin_info(record.get('plugin_id'))
+            except Exception as e:
+                plugin_info = None
+                self._log("Exception while fetching plugin info for {}:".format(record.get('plugin_id')), message2=str(e),
+                          level="exception")
             if plugin_info:
                 # Plugins will require a 'compatibility' entry in their info.json file.
                 #   This must list the plugin handler versions that it is compatible with

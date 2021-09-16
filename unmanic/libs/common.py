@@ -31,6 +31,7 @@
 """
 
 import datetime
+import hashlib
 import os
 import random
 import string
@@ -232,3 +233,20 @@ def extract_video_codecs_from_file_properties(file_properties: dict):
         if stream['codec_type'] == 'video':
             codecs.append(stream['codec_name'])
     return codecs
+
+
+def get_file_checksum(path):
+    """
+    Read a checksum of a file.
+
+    Rather than opening the whole file in memory, open it in chunks.
+    This is slightly slower, but allows working on systems with limited memory.
+
+    :param path:
+    :return:
+    """
+    file_hash = hashlib.md5()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b''):
+            file_hash.update(chunk)
+    return file_hash.hexdigest()

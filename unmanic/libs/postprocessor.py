@@ -29,7 +29,6 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-import hashlib
 import os
 import shutil
 import threading
@@ -236,32 +235,15 @@ class PostProcessor(threading.Thread):
             self._log("Removing task cache directory '{}'".format(task_cache_directory))
             os.rmdir(task_cache_directory)
 
-    @staticmethod
-    def __get_file_checksum(path):
-        """
-        Read a checksum of a file.
-
-        Rather than opening the whole file in memory, open it in chunks.
-        This is slightly slower, but allows working on systems with limited memory.
-
-        :param path:
-        :return:
-        """
-        file_hash = hashlib.md5()
-        with open(path, "rb") as f:
-            for chunk in iter(lambda: f.read(8192), b''):
-                file_hash.update(chunk)
-        return file_hash.hexdigest()
-
     def __copy_file(self, file_in, file_out, destination_files, plugin_id):
         self._log("Copying file {} --> {}".format(file_in, file_out))
         try:
-            before_checksum = self.__get_file_checksum(file_in)
+            before_checksum = common.get_file_checksum(file_in)
             if not os.path.exists(file_in):
                 self._log("Error - file_in path does not exist! '{}'".format(file_in), level="error")
                 time.sleep(1)
             shutil.copyfile(file_in, file_out)
-            after_checksum = self.__get_file_checksum(file_out)
+            after_checksum = common.get_file_checksum(file_out)
             # Compare the checksums on the copied file to ensure it is still correct
             if before_checksum != after_checksum:
                 # Something went wrong during that file copy

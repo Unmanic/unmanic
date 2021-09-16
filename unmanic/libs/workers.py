@@ -449,6 +449,10 @@ class Worker(threading.Thread):
                     self._log("Error - current_file_out path does not exist! '{}'".format(file_in), level="error")
                     time.sleep(1)
 
+                # Ensure the cache directory exists
+                if not os.path.exists(cache_directory):
+                    os.makedirs(cache_directory)
+
                 # Create final cache file for post-processing
                 before_sum = common.get_file_checksum(current_file_out)
                 # Check that the current file out is not the original source file

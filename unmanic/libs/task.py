@@ -97,10 +97,6 @@ class Task(object):
             out_folder = "unmanic_file_conversion-{}".format(time.time())
             cache_directory = os.path.join(self.settings.get_cache_path(), out_folder)
 
-        # Ensure the cache path exists
-        if not os.path.exists(cache_directory):
-            os.makedirs(cache_directory)
-
         # Set cache path class attribute
         self.task.cache_path = os.path.join(cache_directory, out_file)
 

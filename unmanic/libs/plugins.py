@@ -336,12 +336,12 @@ class PluginsHandler(object, metaclass=SingletonType):
                             self._log("Installed plugin '{}'".format(plugin_id), level="info")
 
                         # Ensure the plugin module is reloaded (if it was previously loaded)
-                        PluginExecutor.reload_plugin_module(plugin.get('plugin_id'))
+                        plugin_executor = PluginExecutor()
+                        plugin_executor.reload_plugin_module(plugin.get('plugin_id'))
 
                         return result
                     except Exception as e:
-                        self._log("Exception while saving plugin info for '{}' to DB.".format(plugin), str(e),
-                                  level="exception")
+                        self._log("Exception while installing plugin '{}'.".format(plugin), str(e), level="exception")
 
         return False
 

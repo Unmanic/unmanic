@@ -130,6 +130,10 @@ class PluginExecutor(object):
         # Set the module name
         module_name = '{}.plugin'.format(plugin_id)
 
+        # Don't re-import the module if it is already loaded
+        if module_name in sys.modules:
+            return sys.modules[module_name]
+
         # Get main module file
         plugin_module_path = os.path.join(path, 'plugin.py')
 
@@ -154,6 +158,37 @@ class PluginExecutor(object):
             self._log("Exception encountered while importing module '{}'".format(plugin_id), message2=str(e),
                       level="exception")
             return None
+
+    @staticmethod
+    def reload_plugin_module(plugin_id):
+        """
+        Reload a plugin module
+
+        :param plugin_id:
+        :return:
+        """
+        # Set the module name
+        module_name = '{}.plugin'.format(plugin_id)
+
+        if module_name in sys.modules:
+            importlib.reload(sys.modules[module_name])
+
+    @staticmethod
+    def unload_plugin_module(plugin_id):
+        """
+        Remove plugin module from sys.modules
+
+        This does not really clean up memory. Things are still getting really messy behind the scenes.
+        This just makes it remove the module so that it will need to be re-imported above.
+
+        :param plugin_id:
+        :return:
+        """
+        # Set the module name
+        module_name = '{}.plugin'.format(plugin_id)
+
+        if module_name in sys.modules:
+            del sys.modules[module_name]
 
     @staticmethod
     def get_plugin_type_meta(plugin_type):

@@ -334,6 +334,10 @@ class PluginsHandler(object, metaclass=SingletonType):
                         result = self.write_plugin_data_to_db(plugin, plugin_directory)
                         if result:
                             self._log("Installed plugin '{}'".format(plugin_id), level="info")
+
+                        # Ensure the plugin module is reloaded (if it was previously loaded)
+                        PluginExecutor.reload_plugin_module(plugin.get('plugin_id'))
+
                         return result
                     except Exception as e:
                         self._log("Exception while saving plugin info for '{}' to DB.".format(plugin), str(e),
@@ -568,6 +572,9 @@ class PluginsHandler(object, metaclass=SingletonType):
             except Exception as e:
                 self._log("Exception while removing directory {}:".format(plugin_directory), message2=str(e),
                           level="exception")
+
+            # Unload plugin modules
+            PluginExecutor.unload_plugin_module(record.get('plugin_id'))
 
         # Delete by ID in DB
         if not Plugins.delete().where(Plugins.id.in_(plugin_table_ids)).execute():

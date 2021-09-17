@@ -144,6 +144,10 @@ class PluginExecutor(object):
         self.__include_plugin_site_packages(path)
 
         try:
+            # First import the module namespace
+            # Without this we are unable to reload the plugin in reload_plugin_module()
+            importlib.import_module(plugin_id)
+
             # Import the module for this plugin
             module_spec = importlib.util.spec_from_file_location(module_name, plugin_module_path)
             plugin_import = importlib.util.module_from_spec(module_spec)
@@ -159,8 +163,7 @@ class PluginExecutor(object):
                       level="exception")
             return None
 
-    @staticmethod
-    def reload_plugin_module(plugin_id):
+    def reload_plugin_module(self, plugin_id):
         """
         Reload a plugin module
 
@@ -171,7 +174,22 @@ class PluginExecutor(object):
         module_name = '{}.plugin'.format(plugin_id)
 
         if module_name in sys.modules:
-            importlib.reload(sys.modules[module_name])
+            # Get all submodules
+            module_names = [module_name]
+            for m in sys.modules:
+                if plugin_id in m and m not in [plugin_id, module_name]:
+                    # Add to removal list
+                    module_names.append(m)
+            # Reload all imported modules or remove them if that fails
+            for mn in module_names:
+                try:
+                    importlib.reload(sys.modules[mn])
+                except ImportError:
+                    # The module's parent was probably not imported.
+                    # Delete it from sys.modules and carry on.
+                    # This will force it to be reloaded again
+                    self._log("Exception encountered while trying to reload module '{}'".format(module_name), level="exception")
+                    del sys.modules[module_name]
 
     @staticmethod
     def unload_plugin_module(plugin_id):

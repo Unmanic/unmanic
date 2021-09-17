@@ -138,7 +138,7 @@ class Foreman(threading.Thread):
         thread_keys = [t for t in self.worker_threads]
         for thread in thread_keys:
             if thread in self.worker_threads:
-                if not self.worker_threads[thread].isAlive():
+                if not self.worker_threads[thread].is_alive():
                     del self.worker_threads[thread]
 
         # Check that we have enough workers running. Spawn new ones as required.
@@ -184,7 +184,7 @@ class Foreman(threading.Thread):
 
     def check_for_idle_workers(self):
         for thread in self.worker_threads:
-            if self.worker_threads[thread].idle and self.worker_threads[thread].isAlive():
+            if self.worker_threads[thread].idle and self.worker_threads[thread].is_alive():
                 if not self.worker_threads[thread].paused:
                     return True
         return False

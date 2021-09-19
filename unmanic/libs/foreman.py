@@ -302,7 +302,6 @@ class Foreman(threading.Thread):
                     continue
 
                 if not self.abort_flag.is_set() and not self.task_queue.task_list_pending_is_empty():
-                    time.sleep(.2)
 
                     # Check if there are any free workers
                     if not self.check_for_idle_workers():

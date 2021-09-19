@@ -160,13 +160,8 @@ class PostProcessor(threading.Thread):
                 # Always set file out to destination data absolute path
                 data["file_out"] = destination_data.get('abspath')
 
-                # Run plugin and fetch return data
-                plugin_runner = plugin_module.get("runner")
-                try:
-                    plugin_runner(data)
-                except Exception as e:
-                    self._log("Exception while carrying out plugin runner on postprocessor file movement '{}'".format(
-                        plugin_module.get('plugin_id')), message2=str(e), level="exception")
+                # Run plugin to update data
+                if not plugin_handler.exec_plugin_runner(data, plugin_module.get('plugin_id'), 'postprocessor.file_move'):
                     # Do not continue with this plugin module's loop
                     continue
 
@@ -214,13 +209,9 @@ class PostProcessor(threading.Thread):
                 'destination_files':           destination_files,
             }
 
-            # Run plugin and fetch return data
-            plugin_runner = plugin_module.get("runner")
-            try:
-                plugin_runner(data)
-            except Exception as e:
-                self._log("Exception while carrying out plugin runner on postprocessor task result '{}'".format(
-                    plugin_module.get('plugin_id')), message2=str(e), level="exception")
+            # Run plugin to update data
+            if not plugin_handler.exec_plugin_runner(data, plugin_module.get('plugin_id'), 'postprocessor.task_result'):
+                # Do not continue with this plugin module's loop
                 continue
 
         # Cleanup cache files

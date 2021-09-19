@@ -29,7 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
+import copy
 import datetime
 import hashlib
 import os
@@ -249,4 +249,5 @@ def get_file_checksum(path):
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b''):
             file_hash.update(chunk)
-    return file_hash.hexdigest()
+    return copy.copy(file_hash.hexdigest())
+

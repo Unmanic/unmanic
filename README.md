@@ -24,27 +24,39 @@ Unmanic - Library Optimiser
 [![GitHub license](https://img.shields.io/github/license/unmanic/unmanic?color=009dc7&style=flat-square)]()
 ---
 
-Unmanic is a simple tool for optimising your file library to a single, uniform format. 
+Unmanic is a simple tool for optimising your file library. You can use it to convert your files into a single, uniform format, manage file movements based on timestamps, or execute custom commands against a file based on its file size.
+
+Simply configure Unmanic pointing it at your library and let it automatically manage that library for you.
 
 Unmanic provides you with the following main functions:
 
- - A scheduler built in to scan your whole library for files that do not conform to your configured presets. Files found with incorrect formats are then queued for conversion.
+ 
 
- - A folder watchdog. When a file is modified or a new file is added in your library, Unmanic is able to check that file against your configured presets. Like the first function, if this file is not formatted correctly it is added to a queue for conversion.
+- A scheduler built in to scan your whole library for files that do not conform to your configured presets. Files found with incorrect formats are then queued for conversion.
+- A folder watchdog. When a video file is modified or a new file is added in your library, Unmanic is able to check that video against your configured video presets. Like the first function, if this video is not formatted correctly it is added to a queue for conversion.
+- A handler to manage running multiple file manipulation tasks at a time.
+- A Web UI to easily configure, manage and monitor the progress of your library optimisation.
+ 
 
- - A handler to manage multiple file tasks at a time.
+You choose how you want your library to be.
 
- - A Web UI to easily configure your preferred file presets and monitor the progress of your library conversion.
+Unmanic can be used to:
 
-Simply point Unmanic at your library and let it manage it.
+- Trans-code video or audio files into a uniform format using FFmpeg
+- Move files from one location to another after a configured period of time
+- Execute FileBot against files in your library
+- Run any custom command against files matching a certain extension or above a configured file size
+
+The Docker container is currently based `linuxserver.io` Ubuntu focal image.
 
 ### Table Of Contents
 
 [Dependencies](#dependencies)
 
 [Screen-shots](#screen-shots)
-  * [Desktop](#desktop)
-  * [Mobile](#mobile)
+  * [Dashboard](#dashboard)
+  * [File metrics](#file-metrics)
+  * [Installed plugins](#installed-plugins)
 
 [Install and Run](#install-and-run)
 
@@ -56,16 +68,16 @@ Simply point Unmanic at your library and let it manage it.
  - Python 3.x ([Install](https://www.python.org/downloads/))
  - To install requirements run 'python3 -m pip install -r requirements.txt' from the project root
 
+Unmanic can be used for running many commands. You will need to ensure that the required dependencies for those commands are installed.
+
 ## Screen-shots
 
-#### Desktop:
-
-![Screen-shot - Desktop](https://raw.githubusercontent.com/unmanic/unmanic/master/docs/images/dashboard-1.png)
-
-#### Mobile:
-
-![Screen-shot - Mobile](https://raw.githubusercontent.com/unmanic/unmanic/master/docs/images/dashboard-mobile-1.png)
-
+#### Dashboard:
+![Screen-shot - Dashboard](./docs/images/unmanic-dashboard-processing-anime.png)
+#### File metrics:
+![Screen-shot - Desktop](./docs/images/unmanic-file-size-data-panel-anime.png)
+#### Installed plugins:
+![Screen-shot - Desktop](./docs/images/unmanic-list-installed-plugins.png)
 
 ## Install and Run
 
@@ -101,8 +113,13 @@ docker run -ti --rm \
 Otherwise install the dependencies listed above and then run:
 
 ```
+# Ensure the submodules are checked out
+git submodule update --init --recursive
+
+# Build and install the project into your home directory
 python3 ./setup.py install --user
 
+# Run Unmanic
 unmanic
 ```
 

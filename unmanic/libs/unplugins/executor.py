@@ -30,6 +30,7 @@
 
 """
 import copy
+import gc
 import os
 import importlib.util
 import importlib
@@ -264,6 +265,10 @@ class PluginExecutor(object):
         # Check if this module contains the given plugin type runner
         run_successfully = False
         if hasattr(plugin_module, plugin_runner):
+
+            # Reload the plugin
+            self.reload_plugin_module(plugin_id)
+
             # If it does, get the runner function
             runner = getattr(plugin_module, plugin_runner)
 
@@ -273,6 +278,9 @@ class PluginExecutor(object):
             except Exception:
                 self._log("Exception while carrying out '{}' plugin runner '{}'".format(plugin_type, plugin_id),
                           level="exception")
+
+            del runner
+            gc.collect()
 
         return run_successfully
 

@@ -320,13 +320,8 @@ class Worker(threading.Thread):
                 runner_pass_count += 1
                 time.sleep(.2)  # Add delay for preventing loop maxing compute resources
 
-                # Run plugin and fetch return data
-                plugin_runner = plugin_module.get("runner")
-                try:
-                    plugin_runner(data)
-                except Exception as e:
-                    self._log("Exception while carrying out plugin runner on worker process '{}'".format(
-                        plugin_module.get('plugin_id')), message2=str(e), level="exception")
+                # Run plugin to update data
+                if not plugin_handler.exec_plugin_runner(data, plugin_module.get('plugin_id'), 'worker.process_item'):
                     # Skip this plugin module's loop
                     self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'complete'
                     self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = False

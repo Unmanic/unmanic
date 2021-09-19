@@ -133,6 +133,14 @@ class PluginSettings(object, metaclass=SingletonType):
             os.makedirs(profile_directory)
         return profile_directory
 
+    def get_form_settings(self):
+        """
+        Return the current form settings
+
+        :return:
+        """
+        return self.form_settings
+
     def get_setting(self, key=None):
         """
         Fetch a single configuration value, or, when passed "all" as the key argument,

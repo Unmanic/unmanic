@@ -29,6 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import copy
 import os
 import importlib.util
 import importlib
@@ -130,10 +131,6 @@ class PluginExecutor(object):
         # Set the module name
         module_name = '{}.plugin'.format(plugin_id)
 
-        # Don't re-import the module if it is already loaded
-        if module_name in sys.modules:
-            return sys.modules[module_name]
-
         # Get main module file
         plugin_module_path = os.path.join(path, 'plugin.py')
 
@@ -142,6 +139,11 @@ class PluginExecutor(object):
 
         # Add site-packages directory to sys path prior to loading the module
         self.__include_plugin_site_packages(path)
+
+        # Don't re-import the module if it is already loaded.
+        if module_name in sys.modules:
+            # self.reload_plugin_module(plugin_id)
+            return sys.modules[module_name]
 
         try:
             # First import the module namespace
@@ -172,6 +174,7 @@ class PluginExecutor(object):
         """
         # Set the module name
         module_name = '{}.plugin'.format(plugin_id)
+        self._log("Reloading module '{}'".format(module_name), level="debug")
 
         if module_name in sys.modules:
             # Get all submodules
@@ -188,7 +191,8 @@ class PluginExecutor(object):
                     # The module's parent was probably not imported.
                     # Delete it from sys.modules and carry on.
                     # This will force it to be reloaded again
-                    self._log("Exception encountered while trying to reload module '{}'".format(module_name), level="exception")
+                    self._log("Exception encountered while trying to reload module '{}'".format(module_name),
+                              level="exception")
                     del sys.modules[module_name]
 
     @staticmethod
@@ -235,6 +239,42 @@ class PluginExecutor(object):
                 return_plugin_types.append(plugin_type.get('id'))
 
         return return_plugin_types
+
+    def execute_plugin_runner(self, data, plugin_id, plugin_type):
+        """
+        Given a data, a plugin ID, and a plugin type
+        Load that plugin module and execute the runner
+        Return the modified data
+
+        :param data:
+        :param plugin_id:
+        :param plugin_type:
+        :return:
+        """
+        # Get the path for this plugin
+        plugin_path = self.__get_plugin_directory(plugin_id)
+
+        # Load this plugin module
+        plugin_module = self.__load_plugin_module(plugin_id, plugin_path)
+
+        # Get the called runner function for the given plugin type
+        plugin_type_meta = self.get_plugin_type_meta(plugin_type)
+        plugin_runner = plugin_type_meta.plugin_runner()
+
+        # Check if this module contains the given plugin type runner
+        run_successfully = False
+        if hasattr(plugin_module, plugin_runner):
+            # If it does, get the runner function
+            runner = getattr(plugin_module, plugin_runner)
+
+            try:
+                runner(data)
+                run_successfully = True
+            except Exception:
+                self._log("Exception while carrying out '{}' plugin runner '{}'".format(plugin_type, plugin_id),
+                          level="exception")
+
+        return run_successfully
 
     def build_plugin_data_from_plugin_list_filtered_by_plugin_type(self, plugins_list, plugin_type):
         """
@@ -288,7 +328,6 @@ class PluginExecutor(object):
                     "description":   plugin_description,
                     "plugin_module": plugin_module,
                     "plugin_path":   plugin_path,
-                    "runner":        getattr(plugin_module, plugin_runner),
                 }
                 plugin_modules.append(plugin_runner_data)
 
@@ -306,8 +345,6 @@ class PluginExecutor(object):
         :param plugin_type:
         :return:
         """
-        runners = []
-
         # Filter out only plugins that have runners of this type
         plugin_data = self.build_plugin_data_from_plugin_list_filtered_by_plugin_type(enabled_plugins, plugin_type)
 
@@ -332,14 +369,17 @@ class PluginExecutor(object):
             return {}, {}
 
         try:
-            settings = plugin_module.Settings()
+            # Settings plugin_settings
+            plugin_settings = plugin_module.Settings()
 
-            plugin_settings = settings.get_setting()
+            all_plugin_settings = copy.deepcopy(plugin_settings.get_setting())
+            plugin_form_settings = copy.deepcopy(plugin_settings.get_form_settings())
         except Exception as e:
             self._log(str(e), level='exception')
-            return {}, {}
+            all_plugin_settings = {}
+            plugin_form_settings = {}
 
-        return plugin_settings, settings.form_settings
+        return all_plugin_settings, plugin_form_settings
 
     def save_plugin_settings(self, plugin_id, settings):
         """
@@ -365,6 +405,11 @@ class PluginExecutor(object):
                 value = settings.get(key)
                 if not plugin_settings.set_setting(key, value):
                     save_result = False
+
+            del plugin_settings, plugin_module
+
+            if save_result:
+                self.reload_plugin_module(plugin_id)
 
             return save_result
         except Exception as e:

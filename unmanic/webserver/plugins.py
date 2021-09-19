@@ -84,10 +84,7 @@ class DataPanelRequestHandler(tornado.web.RequestHandler):
             return
 
         # Run plugin and fetch return data
-        plugin_runner = plugin_module.get("runner")
-        try:
-            plugin_runner(data)
-        except Exception:
+        if not plugins.exec_plugin_runner(data, plugin_module.get('plugin_id')):
             tornado.log.app_log.exception(
                 "Exception while carrying out plugin runner on postprocessor task result '{}'".format(
                     plugin_module.get('plugin_id')))

@@ -688,6 +688,18 @@ class PluginsHandler(object, metaclass=SingletonType):
         # Return modules
         return plugin_data
 
+    def exec_plugin_runner(self, data, plugin_id, plugin_type):
+        """
+        Execute a plugin runner
+
+        :param data:
+        :param plugin_id:
+        :param plugin_type:
+        :return:
+        """
+        plugin_executor = PluginExecutor()
+        return plugin_executor.execute_plugin_runner(data, plugin_id, plugin_type)
+
     def within_enabled_plugin_limits(self, frontend_messages=None):
         """
         Ensure enabled plugins are within limits

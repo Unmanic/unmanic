@@ -148,6 +148,11 @@ def get_enabled_plugin_data_panels():
     return plugin_handler.get_enabled_plugin_modules_by_type('frontend.panel')
 
 
+def exec_plugin_runner(data, plugin_id):
+    plugin_handler = PluginsHandler()
+    return plugin_handler.exec_plugin_runner(data, plugin_id, 'frontend.panel')
+
+
 def save_enabled_plugin_flows_for_plugin_type(plugin_type, plugin_flow):
     plugins = PluginsHandler()
     return plugins.set_plugin_flow(plugin_type, plugin_flow)

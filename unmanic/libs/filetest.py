@@ -129,24 +129,18 @@ class FileTest(object):
                     'add_file_to_pending_tasks': None,
                 }
 
-                # Run plugin and fetch return data
-                plugin_runner = plugin_module.get("runner")
-                try:
-                    plugin_runner(data)
-
-                    # Append any file issues found during previous tests
-                    file_issues = data.get('issues')
-
-                    # Set the return_value based on the plugin results
-                    # If the add_file_to_pending_tasks returned an answer (True/False) then break the loop.
-                    # No need to continue.
-                    if data.get('add_file_to_pending_tasks') is not None:
-                        return_value = data.get('add_file_to_pending_tasks')
-                        break
-                except Exception as e:
-                    self._log("Exception while carrying out plugin runner on library management file test '{}'".format(
-                        plugin_module.get('plugin_id')), message2=str(e), level="exception")
+                # Run plugin to update data
+                if not plugin_handler.exec_plugin_runner(data, plugin_module.get('plugin_id'), 'library_management.file_test'):
                     continue
-                pass
+
+                # Append any file issues found during previous tests
+                file_issues = data.get('issues')
+
+                # Set the return_value based on the plugin results
+                # If the add_file_to_pending_tasks returned an answer (True/False) then break the loop.
+                # No need to continue.
+                if data.get('add_file_to_pending_tasks') is not None:
+                    return_value = data.get('add_file_to_pending_tasks')
+                    break
 
         return return_value, file_issues

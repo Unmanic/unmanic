@@ -175,7 +175,7 @@ class PluginExecutor(object):
         """
         # Set the module name
         module_name = '{}.plugin'.format(plugin_id)
-        self._log("Reloading module '{}'".format(module_name), level="debug")
+        #self._log("Reloading module '{}'".format(module_name), level="debug")
 
         if module_name in sys.modules:
             # Get all submodules

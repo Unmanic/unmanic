@@ -400,6 +400,9 @@ class PluginsCLI(object):
             print("{1}Testing plugin: '{0}'{2}".format(plugin_result.get("name"), BColours.HEADER, BColours.ENDC))
             plugin_id = plugin_result.get("plugin_id")
 
+            # Reload the plugin
+            plugin_executor.reload_plugin_module(plugin_id)
+
             # Test Plugin runners
             print("  {0}Testing runners{1}".format(BColours.SUBHEADER, BColours.ENDC))
             plugin_types_in_plugin = plugin_executor.get_all_plugin_types_in_plugin(plugin_id)

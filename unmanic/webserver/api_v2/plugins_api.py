@@ -695,7 +695,7 @@ class ApiPluginsHandler(BaseApiHandler):
         try:
             json_request = self.read_json_request(RequestPluginsByIdSchema())
 
-            if not plugins.install_plugin_by_id(json_request.get('plugin_id')):
+            if not plugins.install_plugin_by_id(json_request.get('plugin_id'), json_request.get('repo_id')):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to install/update plugin")
                 self.write_error()
                 return

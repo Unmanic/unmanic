@@ -265,11 +265,19 @@ class PluginsHandler(object, metaclass=SingletonType):
                         'status':        plugin_status,
                         'package_url':   plugin_package_url,
                         'changelog_url': plugin_changelog_url,
+                        'repo_name':     repo_meta.get('name'),
                     }
                 )
         return return_list
 
-    def get_installable_plugins_list(self):
+    def get_installable_plugins_list(self, filter_repo_id=None):
+        """
+        Return a list of plugins that can be installed
+        Optionally filter by repo
+
+        :param filter_repo_id:
+        :return:
+        """
         return_list = []
 
         # First fetch a list of available repos
@@ -277,8 +285,13 @@ class PluginsHandler(object, metaclass=SingletonType):
         for repo in current_repos_list:
             repo_path = repo.get('path')
             repo_id = self.get_plugin_repo_id(repo_path)
+            if filter_repo_id and repo_id != int(filter_repo_id):
+                # Filtering by repo ID and this one does not match
+                continue
             repo_data = self.read_repo_data(repo_id)
             plugins_in_repo = self.get_plugins_in_repo_data(repo_data)
+            for plugin_data in plugins_in_repo:
+                plugin_data['repo_id'] = str(repo_id)
             return_list += plugins_in_repo
 
         return return_list
@@ -314,16 +327,17 @@ class PluginsHandler(object, metaclass=SingletonType):
             self._log("Exception while logging plugin install.", str(e), level="debug")
             return False
 
-    def install_plugin_by_id(self, plugin_id):
+    def install_plugin_by_id(self, plugin_id, repo_id=None):
         """
         Find the matching plugin info for the given plugin ID.
         Download the plugin if it is found and return the result.
         If it is not found, return False.
 
         :param plugin_id:
+        :param repo_id:
         :return:
         """
-        plugin_list = self.get_installable_plugins_list()
+        plugin_list = self.get_installable_plugins_list(repo_id)
         for plugin in plugin_list:
             if plugin.get('plugin_id') == plugin_id:
                 success = self.install_plugin(plugin)

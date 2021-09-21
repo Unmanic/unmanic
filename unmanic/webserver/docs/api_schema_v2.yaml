@@ -552,6 +552,14 @@ components:
           description: The plugin package download URL
           example: https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/plugin_id/changelog.md
           type: string
+        repo_name:
+          description: The name of the repository that this plugin is in
+          example: Official Repo
+          type: string
+        repo_id:
+          description: The ID of the repository that this plugin is in
+          example: '158899500680826593283708490873332175078'
+          type: string
       required:
       - author
       - description
@@ -708,7 +716,11 @@ components:
     RequestPluginsById:
       properties:
         plugin_id:
-          example: dts_to_dd
+          example: encoder_video_hevc_vaapi
+          type: string
+        repo_id:
+          description: The ID of the repository that this plugin is in
+          example: '158899500680826593283708490873332175078'
           type: string
       required:
       - plugin_id
@@ -724,7 +736,11 @@ components:
     RequestPluginsInfo:
       properties:
         plugin_id:
-          example: dts_to_dd
+          example: encoder_video_hevc_vaapi
+          type: string
+        repo_id:
+          description: The ID of the repository that this plugin is in
+          example: '158899500680826593283708490873332175078'
           type: string
         prefer_local:
           default: true
@@ -736,7 +752,7 @@ components:
     RequestPluginsSettingsSave:
       properties:
         plugin_id:
-          example: dts_to_dd
+          example: encoder_video_hevc_vaapi
           type: string
         settings:
           description: The plugin settings

@@ -438,7 +438,12 @@ class RequestPluginsByIdSchema(BaseSchema):
 
     plugin_id = fields.Str(
         required=True,
-        example="dts_to_dd",
+        example="encoder_video_hevc_vaapi",
+    )
+    repo_id = fields.Str(
+        required=False,
+        description="The ID of the repository that this plugin is in",
+        example="158899500680826593283708490873332175078",
     )
 
 
@@ -599,7 +604,7 @@ class RequestPluginsSettingsSaveSchema(BaseSchema):
 
     plugin_id = fields.Str(
         required=True,
-        example="dts_to_dd",
+        example="encoder_video_hevc_vaapi",
     )
     settings = fields.Nested(
         PluginsConfigInputItemSchema,
@@ -621,6 +626,16 @@ class PluginsMetadataInstallableResultsSchema(PluginsMetadataResultsSchema):
         required=False,
         description="The plugin package download URL",
         example="https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/plugin_id/changelog.md",
+    )
+    repo_name = fields.Str(
+        required=False,
+        description="The name of the repository that this plugin is in",
+        example="Official Repo",
+    )
+    repo_id = fields.Str(
+        required=False,
+        description="The ID of the repository that this plugin is in",
+        example="158899500680826593283708490873332175078",
     )
 
 

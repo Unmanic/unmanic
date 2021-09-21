@@ -655,7 +655,12 @@
                 "properties": {
                     "plugin_id": {
                         "type": "string",
-                        "example": "dts_to_dd"
+                        "example": "encoder_video_hevc_vaapi"
+                    },
+                    "repo_id": {
+                        "type": "string",
+                        "description": "The ID of the repository that this plugin is in",
+                        "example": "158899500680826593283708490873332175078"
                     },
                     "prefer_local": {
                         "type": "boolean",
@@ -812,7 +817,7 @@
                 "properties": {
                     "plugin_id": {
                         "type": "string",
-                        "example": "dts_to_dd"
+                        "example": "encoder_video_hevc_vaapi"
                     },
                     "settings": {
                         "description": "The plugin settings",
@@ -887,6 +892,16 @@
                         "type": "string",
                         "description": "The plugin package download URL",
                         "example": "https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/plugin_id/changelog.md"
+                    },
+                    "repo_name": {
+                        "type": "string",
+                        "description": "The name of the repository that this plugin is in",
+                        "example": "Official Repo"
+                    },
+                    "repo_id": {
+                        "type": "string",
+                        "description": "The ID of the repository that this plugin is in",
+                        "example": "158899500680826593283708490873332175078"
                     }
                 },
                 "required": [
@@ -921,7 +936,12 @@
                 "properties": {
                     "plugin_id": {
                         "type": "string",
-                        "example": "dts_to_dd"
+                        "example": "encoder_video_hevc_vaapi"
+                    },
+                    "repo_id": {
+                        "type": "string",
+                        "description": "The ID of the repository that this plugin is in",
+                        "example": "158899500680826593283708490873332175078"
                     }
                 },
                 "required": [

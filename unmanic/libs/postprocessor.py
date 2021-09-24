@@ -153,8 +153,8 @@ class PostProcessor(threading.Thread):
             for plugin_module in plugin_modules:
                 # Always set source_data to the original file's source_data
                 data["source_data"] = source_data
-                # Always set copy_file to True
-                data["copy_file"] = True
+                # Always set copy_file to False
+                data["copy_file"] = False
                 # Always set file in to cache path
                 data["file_in"] = cache_path
                 # Always set file out to destination data absolute path
@@ -171,6 +171,8 @@ class PostProcessor(threading.Thread):
                     file_out = os.path.abspath(data.get('file_out'))
                     if not self.__copy_file(file_in, file_out, destination_files, plugin_module.get('plugin_id')):
                         file_move_processes_success = False
+                else:
+                    self._log("Plugin did not request a file copy ({})".format(plugin_module.get('plugin_id')), level='debug')
 
             # Run the default post-process file movement.
             # This will always move the file back to the original location.
@@ -227,7 +229,7 @@ class PostProcessor(threading.Thread):
             os.rmdir(task_cache_directory)
 
     def __copy_file(self, file_in, file_out, destination_files, plugin_id):
-        self._log("Copying file {} --> {}".format(file_in, file_out))
+        self._log("Copy file triggered by ({}) {} --> {}".format(plugin_id, file_in, file_out))
         try:
             before_checksum = common.get_file_checksum(file_in)
             if not os.path.exists(file_in):

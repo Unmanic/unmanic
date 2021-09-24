@@ -174,23 +174,30 @@ class PostProcessor(threading.Thread):
                 else:
                     self._log("Plugin did not request a file copy ({})".format(plugin_module.get('plugin_id')), level='debug')
 
-            # Run the default post-process file movement.
-            # This will always move the file back to the original location.
-            # If that original location is the same file name, it will overwrite the original file.
-            if not self.__copy_file(cache_path, destination_data.get('abspath'), destination_files, 'DEFAULT'):
-                file_move_processes_success = False
+            # Only carry out final post-processor file moments if all others were successful
+            if file_move_processes_success:
+                # Run the default post-process file movement.
+                # This will always move the file back to the original location.
+                # If that original location is the same file name, it will overwrite the original file.
+                if destination_data.get('abspath') == source_data.get('abspath'):
+                    # Only run the final file copy to overwrite the source file if the remove_source_file flag was never set
+                    if not data.get('remove_source_file'):
+                        if not self.__copy_file(cache_path, destination_data.get('abspath'), destination_files, 'DEFAULT'):
+                            file_move_processes_success = False
+                elif not self.__copy_file(cache_path, destination_data.get('abspath'), destination_files, 'DEFAULT'):
+                    file_move_processes_success = False
 
-            # Check if the remove source flag is still True after all plugins have run. If so, we will remove the source file
-            if data.get('remove_source_file'):
-                # Only carry out a source removal if the whole postprocess was successful
-                if file_move_processes_success:
-                    self._log("Removing source: {}".format(source_data['abspath']))
-                    os.remove(source_data['abspath'])
-                else:
-                    self._log(
-                        "Keeping source file '{}'. Not all postprocessor file movement functions completed.".format(
-                            source_data['abspath']), level="warning")
+                # Check if the remove source flag is still True after all plugins have run. If so, we will remove the source file
+                if data.get('remove_source_file'):
+                    # Only carry out a source removal if the file exists and the final copy was also successful
+                    if file_move_processes_success and os.path.exists(source_data.get('abspath')):
+                        self._log("Removing source: {}".format(source_data.get('abspath')))
+                        os.remove(source_data.get('abspath'))
+                    else:
+                        self._log("Keeping source file '{}'. Not all postprocessor file movement functions completed.".format(
+                            source_data.get('abspath')), level="warning")
 
+            # Log a final error if not all file moments were successful
             if not file_move_processes_success:
                 self._log(
                     "Error while running postprocessor file movement on file '{}'. Not all postprocessor file movement functions completed.".format(

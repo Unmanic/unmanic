@@ -28,6 +28,12 @@ You are welcome to submit ideas for new features and enhancements, just include
 as many details as possible, including potential implementation options.
 
 
+### Developing
+
+See [Development Environment Guide](./DEVELOPING.md) for details on setting up a local 
+development environment.
+
+
 ### Opening Pull Requests
 
 Code contributions are very welcome. However, please understand that by opening a pull 

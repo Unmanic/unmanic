@@ -135,7 +135,7 @@ class PluginSettings(object, metaclass=SingletonType):
 
     def get_form_settings(self):
         """
-        Return the current form settings
+        Return the current form settings.
 
         :return:
         """

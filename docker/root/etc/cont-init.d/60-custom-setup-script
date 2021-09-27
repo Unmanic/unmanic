@@ -7,3 +7,14 @@ if [[ -f /config/startup.sh ]]; then
     source /config/startup.sh
 
 fi
+
+for plugin_script in /config/.unmanic/plugins/*/init.d/*.sh ; do
+
+    if [[ -e "${plugin_script}" ]]; then
+
+        echo "[60-custom-setup-script] ${plugin_script}: executing..."
+        source "${plugin_script}"
+
+    fi
+
+done

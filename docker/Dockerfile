@@ -43,19 +43,19 @@ RUN \
                 && apt-get update \
                 && apt-get install -y \
                     i965-va-driver=2.4.0-0ubuntu1 \
-                    libva-drm2=2.11.0+i593~u20.04 \
-                    libva-x11-2=2.11.0+i593~u20.04 \
-                    libva-wayland2=2.11.0+i593~u20.04 \
-                    libva2=2.11.0+i593~u20.04 \
-                    libigdgmm11=21.2.1+i593~u20.04 \
-                    intel-media-va-driver-non-free=21.2.2+i593~u20.04 \
-                    libigc1=1.0.7862+i593~u20.04 \
                     intel-igc-cm=1.0.40+i593~u20.04 \
-                    libigdfcl1=1.0.7862+i593~u20.04 \
                     intel-level-zero-gpu=1.1.20389+i593~u20.04 \
+                    intel-media-va-driver-non-free=21.3.1+i611~u20.04 \
                     intel-opencl-icd=21.29.20389+i593~u20.04 \
                     level-zero=1.4.1+i593~u20.04 \
+                    libigc1=1.0.7862+i593~u20.04 \
+                    libigdfcl1=1.0.7862+i593~u20.04 \
+                    libigdgmm11=21.2.1+i611~u20.04 \
                     libmfx1=21.2.2+i593~u20.04 \
+                    libva-drm2=2.12.0+i611~u20.04 \
+                    libva-wayland2=2.12.0+i611~u20.04 \
+                    libva-x11-2=2.12.0+i611~u20.04 \
+                    libva2=2.12.0+i611~u20.04 \
             && \
             echo "**** Install MESA Media Drivers for AMD VAAPI ****" \
                 && apt-get install -y \

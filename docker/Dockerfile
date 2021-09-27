@@ -224,6 +224,22 @@ RUN \
             /tmp/*
 
 
+# Install container startup script requirements
+RUN \
+    echo "**** Install startup script requirements ****" \
+        && apt-get update \
+        && apt-get install -y \
+            curl \
+    && \
+    echo "**** Section cleanup ****" \
+        && apt-get clean autoclean -y \
+        && apt-get autoremove -y \
+        && rm -rf \
+            /var/lib/apt/lists/* \
+            /var/tmp/* \
+            /tmp/*
+
+
 # Install pre-built Unmanic wheel
 # Must first run `python3 ./setup.py bdist_wheel` on host to build package
 COPY /dist/ /src/

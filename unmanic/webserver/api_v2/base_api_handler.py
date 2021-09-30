@@ -42,6 +42,7 @@ import tornado.web
 import tornado.log
 import tornado.routing
 from marshmallow import Schema, exceptions
+from tornado.ioloop import IOLoop
 
 from tornado.web import RequestHandler
 
@@ -268,38 +269,38 @@ class BaseApiHandler(RequestHandler):
             tornado.log.app_log.warning("No match found for API route: {}".format(self.request.uri), exc_info=True)
             self.handle_endpoint_not_found()
 
-    def delete(self, path):
+    async def delete(self, path):
         """
         Route all DELETE requests to the 'action_route()' method
 
         :param path:
         :return:
         """
-        self.action_route()
+        await IOLoop.current().run_in_executor(None, self.action_route)
 
-    def get(self, path):
+    async def get(self, path):
         """
         Route all GET requests to the 'action_route()' method
 
         :param path:
         :return:
         """
-        self.action_route()
+        await IOLoop.current().run_in_executor(None, self.action_route)
 
-    def post(self, path):
+    async def post(self, path):
         """
         Route all POST requests to the 'action_route()' method
 
         :param path:
         :return:
         """
-        self.action_route()
+        await IOLoop.current().run_in_executor(None, self.action_route)
 
-    def put(self, path):
+    async def put(self, path):
         """
         Route all PUT requests to the 'action_route()' method
 
         :param path:
         :return:
         """
-        self.action_route()
+        await IOLoop.current().run_in_executor(None, self.action_route)

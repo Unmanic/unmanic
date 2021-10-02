@@ -216,20 +216,36 @@ class BaseApiHandler(RequestHandler):
 
         :return:
         """
-        request_api_endpoint = re.sub('^/(unmanic/)*api/v\d', '', self.request.uri)
+        request_api_base = self.request.uri.split('api/v2')[0] + 'api/v2'
+        # request_api_endpoint = re.sub('^/(unmanic/)*api/v\d', '', self.request.uri)
         matched_route_with_unsupported_method = False
         for route in self.routes:
             # Get supported methods
             supported_methods = route.get("supported_methods", [])
 
-            # Check if this route matches the request endpoint and does not have any params
-            if list(filter(None, request_api_endpoint.split('/'))) == list(filter(None, route.get("path_pattern").split('/'))):
+            # Fetch the path match from this route's path pattern
+            path_pattern = request_api_base + route.get("path_pattern")
+            path_match = tornado.routing.PathMatches(path_pattern)
+            if path_match.regex.match(self.request.path):
                 # Check if this endpoint supports the request HTTP method
                 if self.request.method not in supported_methods:
                     # The request's method is not supported by this route.
                     # Mark as having found a matching route, but with an un-supported HTTP method
                     matched_route_with_unsupported_method = True
                     continue
+
+                # Check if the path matches, and get any params from a match
+                params = path_match.match(self.request)
+
+                # If we have a match and were returned some params, load that method
+                if params:
+                    tornado.log.app_log.debug(
+                        "Routing API to {}.{}(*args={}, **kwargs={})".format(self.__class__.__name__,
+                                                                             route.get("call_method"), params["path_args"],
+                                                                             params["path_kwargs"]), exc_info=True)
+
+                    getattr(self, route.get("call_method"))(*params["path_args"], **params["path_kwargs"])
+                    return
 
                 # This route matches the current request URI and does not have any params.
                 # Set this route and call the configured method.
@@ -237,28 +253,6 @@ class BaseApiHandler(RequestHandler):
                                           exc_info=True)
                 self.route = route
                 getattr(self, route.get("call_method"))()
-                return
-
-            # Fetch the path match from this route's path pattern
-            path_match = tornado.routing.PathMatches(route.get("path_pattern"))
-
-            # Check if the path matches, and get any params from a match
-            params = path_match.match(self.request)
-
-            # If we have a match and were returned some params, load that method
-            if params:
-                # Check if this endpoint supports the request HTTP method
-                if self.request.method not in supported_methods:
-                    # The request's method is not supported by this route.
-                    # Mark as having found a matching route, but with an un-supported HTTP method
-                    matched_route_with_unsupported_method = True
-                    continue
-
-                tornado.log.app_log.debug(
-                    "Routing API to {}.{}(*args={}, **kwargs={})".format(self.__class__.__name__, route.get("call_method"),
-                                                                         params["path_args"], params["path_kwargs"]),
-                    exc_info=True)
-                getattr(self, route.get("call_method"))(*params["path_args"], **params["path_kwargs"])
                 return
 
         # If we got this far, then the URI does not match any of our configured routes.

@@ -45,7 +45,7 @@ RUN \
                     i965-va-driver=2.4.0-0ubuntu1 \
                     intel-igc-cm=1.0.40+i593~u20.04 \
                     intel-level-zero-gpu=1.1.20389+i593~u20.04 \
-                    intel-media-va-driver-non-free=21.3.1+i611~u20.04 \
+                    intel-media-va-driver-non-free=21.1.2+i526~u20.04 \
                     intel-opencl-icd=21.29.20389+i593~u20.04 \
                     level-zero=1.4.1+i593~u20.04 \
                     libigc1=1.0.7862+i593~u20.04 \
@@ -78,7 +78,7 @@ RUN \
 
 
 # Install ffmpeg
-ARG JELLYFIN_FFMPEG_VERSION="4.3.2-1"
+ARG JELLYFIN_FFMPEG_VERSION="4.3.1-4"
 RUN \
     echo "**** Install FFmpeg for $(uname -m) ****" \
         && sleep 2 \

@@ -243,6 +243,18 @@ class Task(object):
             self.task.success = False
         self.save()
 
+    def modify_path(self, new_path):
+        """
+        Modifies the abspath attribute of this task
+
+        :param new_path:
+        :return:
+        """
+        if not self.task:
+            raise Exception('Unable to update abspath. Task has not been set!')
+        self.task.abspath = new_path
+        self.save()
+
     def save_command_log(self, log):
         """
         Sets the task command log

@@ -1402,7 +1402,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
           description: Internal error; Check `error` for exception
-  /pending/download/id/{id}:
+  /pending/download/file/id/{id}:
     get:
       description: Download the file of a pending task
       responses:

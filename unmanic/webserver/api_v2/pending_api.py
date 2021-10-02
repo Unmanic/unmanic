@@ -73,7 +73,7 @@ class ApiPendingHandler(BaseApiHandler):
             "call_method":       "set_pending_status_as_ready",
         },
         {
-            "path_pattern":      r"/pending/download/id/(?P<id>[0-9]+)?",
+            "path_pattern":      r"/pending/download/file/id/(?P<id>[0-9]+)?",
             "supported_methods": ["GET"],
             "call_method":       "download_pending_task_file",
         },

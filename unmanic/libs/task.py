@@ -106,6 +106,11 @@ class Task(object):
         self.task_dict = model_to_dict(self.task, backrefs=True)
         return self.task_dict
 
+    def get_task_type(self):
+        if not self.task:
+            raise Exception('Unable to fetch task type. Task has not been set!')
+        return self.task.type
+
     def get_cache_path(self):
         if not self.task:
             raise Exception('Unable to fetch cache path. Task has not been set!')
@@ -209,13 +214,14 @@ class Task(object):
 
     def set_status(self, status):
         """
-        Sets the task status to either 'pending', 'in_progress' or 'processed'
+        Sets the task status to either 'pending', 'in_progress', 'processed' or 'complete'
 
         :param status:
         :return:
         """
-        if status not in ['pending', 'in_progress', 'processed', 'complete']:
-            raise Exception('Unable to set status to "{}". Status must be either "pending", "in_progress", or "processed".')
+        allowed = ['pending', 'in_progress', 'processed', 'complete']
+        if status not in allowed:
+            raise Exception('Unable to set status to "{}". Status must be one of [{}].'.format(status, ', '.join(allowed)))
         if not self.task:
             raise Exception('Unable to set status. Task has not been set!')
         self.task.status = status

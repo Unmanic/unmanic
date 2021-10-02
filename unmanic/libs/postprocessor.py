@@ -98,12 +98,20 @@ class PostProcessor(threading.Thread):
                         self._log("Post-processing task - {}".format(self.current_task.get_source_abspath()))
                     except Exception as e:
                         self._log("Exception in fetching task absolute path", message2=str(e), level="exception")
-                    # Post process the converted file (return it to original directory etc.)
-                    self.post_process_file()
-                    # Write source and destination data to historic log
-                    self.write_history_log()
-                    # Remove file from task queue
-                    self.current_task.delete()
+                    if self.current_task.get_task_type() == 'local':
+                        # Post process the converted file (return it to original directory etc.)
+                        self.post_process_file()
+                        # Write source and destination data to historic log
+                        self.write_history_log()
+                        # Remove file from task queue
+                        self.current_task.delete()
+                    else:
+                        # Post process the remote converted file (return it to original directory etc.)
+                        self.post_process_remote_file()
+                        # Write source and destination data to historic log
+                        self.dump_history_log()
+                        # Update the task status to 'complete'
+                        self.current_task.set_status('complete')
 
         self._log("Leaving PostProcessor Monitor loop...")
 
@@ -224,6 +232,44 @@ class PostProcessor(threading.Thread):
                 continue
 
         # Cleanup cache files
+        self.__cleanup_cache_files(cache_path)
+
+    def post_process_remote_file(self):
+        """
+        Process remote files.
+        Remote files are not processed by plugins.
+
+        TODO: Should we move remote tasks to a permanent download location within the cache path? Possibly not...
+
+        :return:
+        """
+        # Read current task data
+        cache_path = self.current_task.get_cache_path()
+        source_data = self.current_task.get_source_data()
+        destination_data = self.current_task.get_destination_data()
+
+        # Remove the source
+        if os.path.exists(source_data.get('abspath')):
+            self._log("Removing remote source: {}".format(source_data.get('abspath')))
+            os.remove(source_data.get('abspath'))
+        else:
+            self._log("Remote source file '{}' does not exist!".format(source_data.get('abspath')), level="warning")
+
+        # Copy final cache file to original directory
+        self.__copy_file(cache_path, destination_data.get('abspath'), [], 'DEFAULT')
+
+        # Cleanup cache files
+        self.__cleanup_cache_files(cache_path)
+
+    def __cleanup_cache_files(self, cache_path):
+        """
+        Remove cache files and the cache directory
+        This ensure we are not simply blindly removing a whole directory.
+        It ensures were are in-fact only deleting this task's cache files.
+
+        :param cache_path:
+        :return:
+        """
         task_cache_directory = os.path.dirname(cache_path)
         if os.path.exists(task_cache_directory) and "unmanic_file_conversion" in task_cache_directory:
             for f in os.listdir(task_cache_directory):
@@ -281,3 +327,26 @@ class PostProcessor(threading.Thread):
                 'log':                 task_dump.get('log', ''),
             }
         )
+
+    def dump_history_log(self):
+        self._log("Dumping remote task history log.", level='debug')
+        task_dump = self.current_task.task_dump()
+        destination_data = self.current_task.get_destination_data()
+
+        # Dump history log as metadata in the file's path
+        tasks_data_file = os.path.join(os.path.dirname(destination_data.get('abspath')), 'data.json')
+        result = common.json_dump_to_file(
+            {
+                'task_label':          task_dump.get('task_label', ''),
+                'abspath':             task_dump.get('abspath', ''),
+                'task_success':        task_dump.get('task_success', ''),
+                'start_time':          task_dump.get('start_time', ''),
+                'finish_time':         task_dump.get('finish_time', ''),
+                'processed_by_worker': task_dump.get('processed_by_worker', ''),
+                'log':                 task_dump.get('log', ''),
+            }
+            , tasks_data_file)
+        if not result['success']:
+            for message in result['errors']:
+                self._log("Exception:", message2=str(message), level="exception")
+            raise Exception("Exception in dumping completed task data to file")

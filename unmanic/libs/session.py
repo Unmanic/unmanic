@@ -104,8 +104,8 @@ class Session(object, metaclass=SingletonType):
             return False
         # Get session expiration time
         time_now = time.time()
-        time_when_session_expires = self.created + 18000
-        # Check that the time create is less than 5 hours old
+        time_when_session_expires = self.created + 86400
+        # Check that the time create is less than 24 hours old
         if time_now < time_when_session_expires:
             return True
         self._log("Session no longer valid ", level="debug")
@@ -256,6 +256,9 @@ class Session(object, metaclass=SingletonType):
             return False
         except Exception as e:
             self._log("Exception while registering Unmanic.", str(e), level="debug")
+            if self.__check_session_valid():
+                # If the session is still valid, just return true. Perhaps the internet is down and it timed out?
+                return True
             return False
 
     def get_sign_out_url(self):

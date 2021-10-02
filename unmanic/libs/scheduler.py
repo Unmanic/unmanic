@@ -84,7 +84,7 @@ class ScheduledTasksManager(threading.Thread):
     def register_unmanic(self):
         self._log("Updating session data")
         s = Session()
-        s.register_unmanic()
+        s.register_unmanic(force=True)
 
     def plugin_repo_update(self):
         self._log("Checking for updates to plugin repos")

@@ -132,7 +132,7 @@ class ApiSessionHandler(BaseApiHandler):
         description: Reload the current session.
         responses:
             200:
-                description: 'Success: Reloaded the current session.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:

@@ -167,7 +167,7 @@ class Task(object):
         # Get task matching the abspath
         self.task = Tasks.get(abspath=abspath)
 
-    def create_task_by_absolute_path(self, abspath):
+    def create_task_by_absolute_path(self, abspath, task_type='local'):
         """
         Creates the task by it's absolute path.
         If the task already exists in the list, then this will throw an exception and return false
@@ -175,11 +175,12 @@ class Task(object):
         Calls to read_and_set_task_by_absolute_path() to read back all data out of the database.
 
         :param abspath:
+        :param task_type:
         :return:
         """
         try:
             self.task = Tasks.create(abspath=abspath, status='creating')
-            self.save_task()
+            self.save()
             self._log("Created new task with ID: {} for {}".format(self.task, abspath), level="debug")
 
             # Set the cache path to use during the transcoding
@@ -188,9 +189,18 @@ class Task(object):
             # Set the default priority to the ID of the task
             self.task.priority = self.task.id
 
-            # Now set the status to pending. Only then will it be picked up by a worker.
-            # This will also save the task.
-            self.set_status('pending')
+            # Set the task type
+            self.task.type = task_type
+
+            # Only local tasks should be progressed automatically
+            # Remote tasks need to be progressed to pending by a remote trigger
+            if task_type == 'local':
+                # Now set the status to pending. Only then will it be picked up by a worker.
+                # This will also save the task.
+                self.set_status('pending')
+            else:
+                # Save the tasks updates without settings status to pending
+                self.save()
 
             return True
         except IntegrityError as e:
@@ -238,11 +248,6 @@ class Task(object):
         self.task.log += ''.join(log)
         self.save()
 
-    def save_task(self):
-        if not self.task:
-            raise Exception('Unable to save task. Task has not been set!')
-        self.task.save()
-
     def save(self):
         """
         Save task model object
@@ -251,9 +256,14 @@ class Task(object):
         """
         if not self.task:
             raise Exception('Unable to save Task. Task has not been set!')
-        self.save_task()
+        self.task.save()
 
     def delete(self):
+        """
+        Delete a task model object
+
+        :return:
+        """
         if not self.task:
             raise Exception('Unable to save Task. Task has not been set!')
         self.task.delete_instance()
@@ -346,4 +356,15 @@ class Task(object):
         # If the direction is to send it to the bottom, then set the priority as 0
         query = Tasks.update(priority=Tasks.priority + new_priority_offset if (direction == "top") else 0).where(
             Tasks.id.in_(id_list))
+        return query.execute()
+
+    def set_tasks_status(self, id_list, status):
+        """
+        Updates the task status for a given list of tasks by ID
+
+        :param id_list:
+        :param status:
+        :return:
+        """
+        query = Tasks.update(status=status).where(Tasks.id.in_(id_list))
         return query.execute()

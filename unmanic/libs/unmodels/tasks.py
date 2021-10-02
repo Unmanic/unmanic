@@ -43,6 +43,7 @@ class Tasks(BaseModel):
     abspath = TextField(null=False, unique=True)
     cache_path = TextField(null=True, unique=True)
     priority = BigIntegerField(null=True)
+    type = TextField(null=False, default='local') # (local, remote)
     status = TextField(null=False)  # (pending, in_progress, processed)
     success = BooleanField(null=True)
     start_time = DateTimeField(null=True, default=datetime.datetime.now)

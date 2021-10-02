@@ -89,7 +89,7 @@ class ApiWorkersHandler(BaseApiHandler):
                         RequestWorkerByIdSchema
         responses:
             200:
-                description: 'Sample response: Pauses a worker by its ID.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:
@@ -143,7 +143,7 @@ class ApiWorkersHandler(BaseApiHandler):
         description: Pause all workers.
         responses:
             200:
-                description: 'Sample response: Pause all workers.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:
@@ -202,7 +202,7 @@ class ApiWorkersHandler(BaseApiHandler):
                         RequestWorkerByIdSchema
         responses:
             200:
-                description: 'Sample response: Resumes a worker by its ID.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:
@@ -256,7 +256,7 @@ class ApiWorkersHandler(BaseApiHandler):
         description: Resumes all workers.
         responses:
             200:
-                description: 'Sample response: Resumes all workers.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:
@@ -315,7 +315,7 @@ class ApiWorkersHandler(BaseApiHandler):
                         RequestWorkerByIdSchema
         responses:
             200:
-                description: 'Sample response: Terminates a worker by its ID.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:

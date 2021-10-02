@@ -373,6 +373,11 @@ class PendingTasksTableResultsSchema(BaseSchema):
         description="The current priority (higher is greater)",
         example=100,
     )
+    type = fields.Str(
+        required=True,
+        description="The type of the pending task - local or remote",
+        example="local",
+    )
     status = fields.Str(
         required=True,
         description="The current status of the pending task",

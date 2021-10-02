@@ -150,7 +150,8 @@ def clean_files_in_dir(directory):
     """This will completely wipe all contents from a directory"""
     if os.path.exists(directory):
         for root, subFolders, files in os.walk(directory):
-            if os.path.basename(root).startswith("unmanic_file_conversion"):
+            root_bn = os.path.basename(root)
+            if root_bn.startswith("unmanic_file_conversion") or root_bn.startswith("unmanic_remote_pending_library"):
                 print("Clearing cache path - {}".format(root))
                 try:
                     shutil.rmtree(root)

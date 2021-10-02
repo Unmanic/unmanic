@@ -170,7 +170,7 @@ class ApiHistoryHandler(BaseApiHandler):
                         RequestTableUpdateByIdList
         responses:
             200:
-                description: 'Success: Deleted a list of completed tasks.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:
@@ -231,7 +231,7 @@ class ApiHistoryHandler(BaseApiHandler):
                         RequestTableUpdateByIdList
         responses:
             200:
-                description: 'Success: Requested list of items to reprocess.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:

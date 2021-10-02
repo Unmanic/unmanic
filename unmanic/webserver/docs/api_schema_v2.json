@@ -1897,7 +1897,75 @@
                 }
             }
         },
-        "/pending/status/ready": {
+        "/pending/status/get": {
+            "post": {
+                "description": "Set the status of a list of pending tasks",
+                "requestBody": {
+                    "description": "Set the status of a list of pending tasks.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestTableUpdateByIdList"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns a list of tasks with their status.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PendingTasksTableResults"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pending/status/set/ready": {
             "post": {
                 "description": "Set the status of a list of created pending tasks as ready for processing",
                 "requestBody": {

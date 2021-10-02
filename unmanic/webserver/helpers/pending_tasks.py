@@ -204,3 +204,29 @@ def update_pending_tasks_status(pending_task_ids, status='pending'):
     # Fetch tasks
     task_handler = task.Task()
     return task_handler.set_tasks_status(pending_task_ids, status)
+
+
+def fetch_tasks_status(pending_task_ids):
+    """
+    Fetch the status of a number of pending remote tasks given their table IDs
+
+    :param pending_task_ids:
+    :return:
+    """
+    # Fetch tasks
+    task_handler = task.Task()
+    remote_pending_tasks = task_handler.get_task_list_filtered_and_sorted(id_list=pending_task_ids)
+
+    # Iterate over tasks and append them to the task data
+    return_data = []
+    for pending_task in remote_pending_tasks:
+        # Set params as required in template
+        item = {
+            'id':       pending_task['id'],
+            'abspath':  pending_task['abspath'],
+            'priority': pending_task['priority'],
+            'type':     pending_task['type'],
+            'status':   pending_task['status'],
+        }
+        return_data.append(item)
+    return return_data

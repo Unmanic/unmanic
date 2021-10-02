@@ -62,7 +62,12 @@ class ApiPendingHandler(BaseApiHandler):
             "call_method":       "reorder_pending_tasks",
         },
         {
-            "path_pattern":      r"/pending/status/ready",
+            "path_pattern":      r"/pending/status/get",
+            "supported_methods": ["POST"],
+            "call_method":       "get_pending_status_of_tasks",
+        },
+        {
+            "path_pattern":      r"/pending/status/set/ready",
             "supported_methods": ["POST"],
             "call_method":       "set_pending_status_as_ready",
         },
@@ -271,6 +276,74 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
+    def get_pending_status_of_tasks(self):
+        """
+        Pending - get status of tasks
+        ---
+        description: Set the status of a list of pending tasks
+        requestBody:
+            description: Set the status of a list of pending tasks.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestTableUpdateByIdList
+        responses:
+            200:
+                description: 'Sample response: Returns a list of tasks with their status.'
+                content:
+                    application/json:
+                        schema:
+                            PendingTasksTableResultsSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(RequestTableUpdateByIdList())
+
+            status_results = pending_tasks.fetch_tasks_status(json_request.get('id_list', []))
+            if not status_results:
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to fetch pending tasks status")
+                self.write_error()
+                return
+
+            response = self.build_response(
+                PendingTasksSchema(),
+                {
+                    "results": status_results,
+                }
+            )
+            self.write_success(response)
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
     def set_pending_status_as_ready(self):
         """
         Pending - set status as ready
@@ -319,7 +392,7 @@ class ApiPendingHandler(BaseApiHandler):
             json_request = self.read_json_request(RequestTableUpdateByIdList())
 
             if not pending_tasks.update_pending_tasks_status(json_request.get('id_list', []), status='pending'):
-                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to save pending tasks status")
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to update pending tasks status")
                 self.write_error()
                 return
 

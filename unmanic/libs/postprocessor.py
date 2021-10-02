@@ -261,6 +261,9 @@ class PostProcessor(threading.Thread):
         # Cleanup cache files
         self.__cleanup_cache_files(cache_path)
 
+        # Modify the task abspath - this may be different now
+        self.current_task.modify_path(destination_data.get('abspath'))
+
     def __cleanup_cache_files(self, cache_path):
         """
         Remove cache files and the cache directory

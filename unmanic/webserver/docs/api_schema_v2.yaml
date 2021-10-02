@@ -246,6 +246,10 @@ components:
           description: The current priority (higher is greater)
           example: 100
           type: integer
+        type:
+          description: The type of the pending task - local or remote
+          example: local
+          type: string
         status:
           description: The current status of the pending task
           example: pending
@@ -255,6 +259,7 @@ components:
       - id
       - priority
       - status
+      - type
       type: object
     PluginFlowDataResults:
       properties:
@@ -1084,7 +1089,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Success: Deleted a list of completed tasks.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -1125,7 +1130,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Success: Requested list of items to reprocess.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -1247,7 +1252,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Success: Deleted a list of pending tasks.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -1288,7 +1293,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Success: Reorder a list of pending tasks.'
+          description: Successful request; Returns success status
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /pending/status/ready:
+    post:
+      description: Set the status of a list of created pending tasks as ready for
+        processing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestTableUpdateByIdList'
+        description: Set the status of a list of created pending tasks as ready for
+          processing.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -1370,7 +1418,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Success: Deleted a list of completed tasks.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -1411,7 +1459,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Success: Deleted a list of completed tasks.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -1452,7 +1500,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Success: Deleted a list of completed tasks.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -1493,7 +1541,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Success: Deleted a list of completed tasks.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -1576,7 +1624,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Sample response: Saves the settings of a single plugin.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -1651,7 +1699,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Sample response: Installs a plugin by its Plugin ID.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -1811,7 +1859,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Sample response: Updates the plugin repo list.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -1879,7 +1927,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Success: Reload plugin repositories remote data.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -1981,7 +2029,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Success: Reloaded the current session.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -2056,7 +2104,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Success: Saved a given dictionary of settings.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -2091,6 +2139,51 @@ paths:
               schema:
                 $ref: '#/components/schemas/SettingsSystemConfig'
           description: 'Sample response: Returns the system configuration.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /upload/pending/file:
+    post:
+      description: Returns a list of pending tasks.
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                fileName:
+                  format: binary
+                  type: string
+              type: object
+        description: Returns a list of pending tasks.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -2165,7 +2258,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Sample response: Pauses a worker by its ID.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -2199,7 +2292,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Sample response: Pause all workers.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -2240,7 +2333,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Sample response: Resumes a worker by its ID.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -2274,7 +2367,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Sample response: Resumes all workers.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:
@@ -2315,7 +2408,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
-          description: 'Sample response: Terminates a worker by its ID.'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:

@@ -226,7 +226,7 @@ class ApiPluginsHandler(BaseApiHandler):
                         RequestTableUpdateByIdList
         responses:
             200:
-                description: 'Success: Deleted a list of completed tasks.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:
@@ -287,7 +287,7 @@ class ApiPluginsHandler(BaseApiHandler):
                         RequestTableUpdateByIdList
         responses:
             200:
-                description: 'Success: Deleted a list of completed tasks.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:
@@ -348,7 +348,7 @@ class ApiPluginsHandler(BaseApiHandler):
                         RequestTableUpdateByIdList
         responses:
             200:
-                description: 'Success: Deleted a list of completed tasks.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:
@@ -409,7 +409,7 @@ class ApiPluginsHandler(BaseApiHandler):
                         RequestTableUpdateByIdList
         responses:
             200:
-                description: 'Success: Deleted a list of completed tasks.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:
@@ -546,7 +546,7 @@ class ApiPluginsHandler(BaseApiHandler):
                         RequestPluginsSettingsSaveSchema
         responses:
             200:
-                description: 'Sample response: Saves the settings of a single plugin.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:
@@ -662,7 +662,7 @@ class ApiPluginsHandler(BaseApiHandler):
                         RequestPluginsByIdSchema
         responses:
             200:
-                description: 'Sample response: Installs a plugin by its Plugin ID.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:
@@ -902,7 +902,7 @@ class ApiPluginsHandler(BaseApiHandler):
                         RequestUpdatePluginReposListSchema
         responses:
             200:
-                description: 'Sample response: Updates the plugin repo list.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:
@@ -1011,7 +1011,7 @@ class ApiPluginsHandler(BaseApiHandler):
         description: Reload plugin repositories remote data.
         responses:
             200:
-                description: 'Success: Reload plugin repositories remote data.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:

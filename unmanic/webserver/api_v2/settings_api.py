@@ -135,7 +135,7 @@ class ApiSettingsHandler(BaseApiHandler):
                         SettingsReadAndWriteSchema
         responses:
             200:
-                description: 'Success: Saved a given dictionary of settings.'
+                description: 'Successful request; Returns success status'
                 content:
                     application/json:
                         schema:

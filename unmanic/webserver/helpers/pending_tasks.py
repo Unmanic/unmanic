@@ -29,6 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import os
 
 from unmanic.libs import task
 
@@ -137,6 +138,7 @@ def prepare_filtered_pending_tasks(params):
             'id':       pending_task['id'],
             'abspath':  pending_task['abspath'],
             'priority': pending_task['priority'],
+            'type':     pending_task['type'],
             'status':   pending_task['status'],
         }
         return_data["results"].append(item)
@@ -170,3 +172,44 @@ def reorder_pending_tasks(pending_task_ids, direction="top"):
     task_handler = task.Task()
 
     return task_handler.reorder_tasks(pending_task_ids, direction)
+
+
+def add_remote_tasks(pathname):
+    """
+    Adds an upload file path to the pending task list as a 'remote' task
+    Returns the task ID
+
+    :param pathname:
+    :return:
+    """
+    abspath = os.path.abspath(pathname)
+
+    # Create a new task
+    new_task = task.Task()
+
+    if not new_task.create_task_by_absolute_path(abspath, task_type='remote'):
+        # File was not created.
+        # Do not carry on.
+        return False
+
+    # # Check if file exists in task queue based on it's absolute path
+    # abspath = os.path.abspath(pathname)
+    # existing_task_query = Tasks.select().where((Tasks.abspath == abspath)).limit(1)
+    # if existing_task_query.count() > 0:
+    #     return False
+
+    return new_task.get_task_data()
+
+
+def update_pending_tasks_status(pending_task_ids, status='pending'):
+    """
+    Updates the status of a number pending tasks given their table IDs
+
+    :param pending_task_ids:
+    :param status:
+    :return:
+    """
+    # Fetch tasks
+    task_handler = task.Task()
+
+    return task_handler.set_tasks_status(pending_task_ids, status)

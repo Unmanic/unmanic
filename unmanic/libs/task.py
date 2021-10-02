@@ -31,6 +31,7 @@
 """
 import json
 import os
+import shutil
 import time
 from operator import attrgetter
 
@@ -332,6 +333,13 @@ class Task(object):
 
             for task_id in query:
                 try:
+                    # Remote tasks need to be cleaned up from the cache partition also
+                    if task_id.type == 'remote':
+                        remote_task_dirname = task_id.abspath
+                        if os.path.exists(task_id.abspath) and "unmanic_remote_pending_library" in remote_task_dirname:
+                            self._log("Removing remote pending library task '{}'.".format(remote_task_dirname))
+                            shutil.rmtree(os.path.dirname(remote_task_dirname))
+
                     task_id.delete_instance(recursive=True)
                 except Exception as e:
                     # Catch delete exceptions

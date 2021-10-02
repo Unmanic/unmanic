@@ -29,6 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import os.path
 
 import tornado.log
 from unmanic.libs import session
@@ -71,6 +72,12 @@ class ApiPendingHandler(BaseApiHandler):
             "supported_methods": ["POST"],
             "call_method":       "set_pending_status_as_ready",
         },
+        {
+            "path_pattern":      r"/pending/download/id/(?P<id>[0-9]+)?",
+            "supported_methods": ["GET"],
+            "call_method":       "download_pending_task_file",
+        },
+
     ]
 
     def initialize(self, **kwargs):
@@ -397,6 +404,70 @@ class ApiPendingHandler(BaseApiHandler):
                 return
 
             self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def download_pending_task_file(self, id=None):
+        """
+        Pending - set status as ready
+        ---
+        description: Download the file of a pending task
+        responses:
+            200:
+                description: 'Returns the task file.'
+                content:
+                    application/octet-stream:
+                        schema:
+                            type: string
+                            format: binary
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            status_results = pending_tasks.fetch_tasks_status([id])
+            if not status_results:
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to fetch pending tasks status")
+                self.write_error()
+                return
+
+            # Set file details
+            abspath = status_results[0].get('abspath', '')
+            basename = os.path.basename(abspath)
+
+            self.set_header('Content-Type', 'application/octet-stream')
+            self.set_header('Content-Disposition', 'attachment; filename={}'.format(basename))
+
+            with open(abspath, "rb") as f:
+                for chunk in iter(lambda: f.read(8192), b''):
+                    self.write(chunk)
+
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

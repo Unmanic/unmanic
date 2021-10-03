@@ -54,6 +54,7 @@ class LibraryScannerManager(threading.Thread):
         self.library_scanner_triggers = data_queues["library_scanner_triggers"]
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
+        self.scheduler = schedule.Scheduler()
 
     def _log(self, message, message2='', level="info"):
         if not self.logger:
@@ -90,7 +91,7 @@ class LibraryScannerManager(threading.Thread):
             if self.interval and self.interval != 0:
                 self._log("Setting LibraryScanner schedule to scan every {} mins...".format(self.interval))
                 # Configure schedule
-                schedule.every(self.interval).minutes.do(self.scheduled_job)
+                self.scheduler.every(self.interval).minutes.do(self.scheduled_job)
                 # Register application
                 self.register_unmanic()
 
@@ -124,14 +125,14 @@ class LibraryScannerManager(threading.Thread):
                         continue
 
                     # Check if scheduled task is due
-                    schedule.run_pending()
+                    self.scheduler.run_pending()
 
                     # If the settings have changed, then break this loop and clear
                     # the scheduled job resetting to the new interval
                     if int(self.settings.get_schedule_full_scan_minutes()) != self.interval:
                         self._log("Resetting LibraryScanner schedule")
                         break
-                schedule.clear()
+                self.scheduler.clear()
 
         self._log("Leaving LibraryScanner Monitor loop...")
 

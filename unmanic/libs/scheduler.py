@@ -49,6 +49,7 @@ class ScheduledTasksManager(threading.Thread):
         self.logger = None
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
+        self.scheduler = schedule.Scheduler()
 
     def _log(self, message, message2='', level="info"):
         if not self.logger:
@@ -67,18 +68,18 @@ class ScheduledTasksManager(threading.Thread):
 
         # Create scheduled tasks
         # Check the session every 60 minutes
-        schedule.every(60).minutes.do(self.register_unmanic)
+        self.scheduler.every(60).minutes.do(self.register_unmanic)
         # Run the plugin repo update every 60 minutes
-        schedule.every(60).minutes.do(self.plugin_repo_update)
+        self.scheduler.every(60).minutes.do(self.plugin_repo_update)
 
         # Loop every 2 seconds to check if a task is due to be run
         while not self.abort_flag.is_set():
             time.sleep(2)
             # Check if scheduled task is due
-            schedule.run_pending()
+            self.scheduler.run_pending()
 
         # Clear any tasks and exit
-        schedule.clear()
+        self.scheduler.clear()
         self._log("Leaving ScheduledTasks Monitor loop...")
 
     def register_unmanic(self):

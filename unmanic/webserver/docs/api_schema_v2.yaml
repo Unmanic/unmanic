@@ -890,6 +890,13 @@ components:
             run_full_scan_on_start: false
             schedule_full_scan_minutes: 1440
             ui_port: 8888
+            worker_event_schedules:
+            - repetition: weekday
+              repetitionLabel: Every Weekday
+              scheduleTask: resume
+              scheduleTaskLabel: Resume all workers
+              scheduleTime: '23:00'
+              scheduleWorkerCount: 0
           type: object
       required:
       - settings

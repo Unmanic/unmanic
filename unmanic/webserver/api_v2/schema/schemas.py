@@ -860,9 +860,20 @@ class SettingsReadAndWriteSchema(BaseSchema):
             "run_full_scan_on_start":     False,
             "enable_inotify":             False,
             "number_of_workers":          1,
+            "worker_event_schedules":     [
+                {
+                    "repetition":          "weekday",
+                    "repetitionLabel":     "Every Weekday",
+                    "scheduleTime":        "23:00",
+                    "scheduleTask":        "resume",
+                    "scheduleTaskLabel":   "Resume all workers",
+                    "scheduleWorkerCount": 0
+                }
+            ],
             "cache_path":                 "/tmp/unmanic"
         },
     )
+
 
 class SettingsSystemConfigSchema(BaseSchema):
     """Schema to display the current system configuration"""

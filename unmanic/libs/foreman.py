@@ -34,6 +34,7 @@ import json
 import threading
 import queue
 import time
+from datetime import datetime
 
 from unmanic.libs import common
 from unmanic.libs.plugins import PluginsHandler
@@ -60,6 +61,9 @@ class Foreman(threading.Thread):
             'settings_hash': ''
         }
         self.plugin_configuration_changed()
+
+        # Set the current time for schedular
+        self.last_schedule_run = datetime.today().strftime('%H:%M')
 
     def _log(self, message, message2=None, level="info"):
         message = common.format_message(message, message2)
@@ -130,6 +134,63 @@ class Foreman(threading.Thread):
             valid = False
 
         return valid
+
+    def run_task(self, time_now, task, worker_count=1):
+        self.last_schedule_run = time_now
+        if task == 'pause':
+            # Pause all workers now
+            self._log("Running scheduled event - Pause all worker threads", level='debug')
+            self.pause_all_worker_threads()
+        elif task == 'resume':
+            # Resume all workers now
+            self._log("Running scheduled event - Resume all worker threads", level='debug')
+            self.resume_all_worker_threads()
+        elif task == 'count':
+            # Set the worker count value
+            # Save the settings so this scheduled event will persist an application restart
+            self._log("Running scheduled event - Setting worker count to '{}'".format(worker_count), level='debug')
+            self.settings.set_config_item('number_of_workers', worker_count, save_settings=True)
+
+    def manage_event_schedules(self):
+        """
+        Manage all scheduled worker events
+        This function limits itself to run only once every 60 seconds
+
+        :return:
+        """
+
+        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        event_schedules = self.settings.get_worker_event_schedules()
+        day_of_week = datetime.today().today().weekday()
+        time_now = datetime.today().strftime('%H:%M')
+
+        # Only run once a minute
+        if time_now == self.last_schedule_run:
+            return
+
+        for event_schedule in event_schedules:
+            schedule_time = event_schedule.get('schedule_time')
+            # Ensure we have a schedule time
+            if not schedule_time:
+                continue
+            # Ensure the schedule time is now
+            if time_now != schedule_time:
+                continue
+
+            repetition = event_schedule.get('repetition')
+            # Ensure we have a repetition
+            if not repetition:
+                continue
+
+            # Check if it should run
+            if repetition == 'daily':
+                self.run_task(time_now, event_schedule.get('schedule_task'), event_schedule.get('schedule_worker_count'))
+            elif repetition == 'weekday' and days[day_of_week] not in ['saturday', 'sunday']:
+                self.run_task(time_now, event_schedule.get('schedule_task'), event_schedule.get('schedule_worker_count'))
+            elif repetition == 'weekend' and days[day_of_week] in ['saturday', 'sunday']:
+                self.run_task(time_now, event_schedule.get('schedule_task'), event_schedule.get('schedule_worker_count'))
+            elif repetition == days[day_of_week]:
+                self.run_task(time_now, event_schedule.get('schedule_task'), event_schedule.get('schedule_worker_count'))
 
     def init_worker_threads(self):
         # Remove any redundant idle workers from our list
@@ -300,6 +361,9 @@ class Foreman(threading.Thread):
                     # Pause all workers
                     self.pause_all_worker_threads()
                     continue
+
+                # Manage worker event schedules
+                self.manage_event_schedules()
 
                 if not self.abort_flag.is_set() and not self.task_queue.task_list_pending_is_empty():
 

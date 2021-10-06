@@ -1188,6 +1188,16 @@
                             "run_full_scan_on_start": false,
                             "enable_inotify": false,
                             "number_of_workers": 1,
+                            "worker_event_schedules": [
+                                {
+                                    "repetition": "weekday",
+                                    "repetitionLabel": "Every Weekday",
+                                    "scheduleTime": "23:00",
+                                    "scheduleTask": "resume",
+                                    "scheduleTaskLabel": "Resume all workers",
+                                    "scheduleWorkerCount": 0
+                                }
+                            ],
                             "cache_path": "/tmp/unmanic"
                         }
                     }

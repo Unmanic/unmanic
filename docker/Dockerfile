@@ -17,17 +17,17 @@ RUN \
     echo "**** Install runtime packages ****" \
         && apt-get update \
         && apt-get install -y \
-            libexpat1 \
-            libgl1-mesa-dri \
-            libglib2.0-0 \
-            libgomp1 \
-            libharfbuzz0b \
-            libv4l-0 \
-            libx11-6 \
-            libxcb1 \
-            libxext6 \
-            libxml2 \
-            vainfo \
+            libexpat1=2.2.9-1build1 \
+            libgl1-mesa-dri=21.0.3-0ubuntu0.3~20.04.2 \
+            libglib2.0-0=2.64.6-1~ubuntu20.04.4 \
+            libgomp1=10.3.0-1ubuntu1~20.04 \
+            libharfbuzz0b=2.6.4-1ubuntu4 \
+            libv4l-0=1.18.0-2build1 \
+            libx11-6=2:1.6.9-2ubuntu1.2 \
+            libxcb1=1.14-2 \
+            libxext6=2:1.3.4-0ubuntu1 \
+            libxml2=2.9.10+dfsg-5ubuntu0.20.04.1 \
+            vainfo=2.6.0+ds1-1 \
     && \
     echo "**** Install arch specific packages for $(uname -m) ****" \
         && sleep 2 \
@@ -59,7 +59,7 @@ RUN \
             && \
             echo "**** Install MESA Media Drivers for AMD VAAPI ****" \
                 && apt-get install -y \
-                    mesa-va-drivers \
+                    mesa-va-drivers=21.0.3-0ubuntu0.3~20.04.2 \
             && \
             echo "**** Remove build packages ****" \
                 && apt-get remove -y \

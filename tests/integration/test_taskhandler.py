@@ -103,7 +103,7 @@ class TestClass(object):
 
         :return:
         """
-        self.task_handler = TaskHandler(self.data_queues, self.settings, self.task_queue)
+        self.task_handler = TaskHandler(self.data_queues, self.task_queue)
         self.task_handler.daemon = True
         self.task_handler.start()
         self.task_queue.added_item = None

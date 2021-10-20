@@ -69,6 +69,7 @@ class Config(object, metaclass=SingletonType):
         self.follow_symlinks = True
         self.run_full_scan_on_start = False
         self.enable_inotify = False
+        self.clear_pending_tasks_on_restart = True
 
         # Worker settings
         self.number_of_workers = 1
@@ -338,6 +339,14 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.library_path
+
+    def get_clear_pending_tasks_on_restart(self):
+        """
+        Get setting - clear_pending_tasks_on_restart
+
+        :return:
+        """
+        return self.clear_pending_tasks_on_restart
 
     def get_log_path(self):
         """

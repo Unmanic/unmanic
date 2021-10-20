@@ -87,9 +87,9 @@ class Service:
 
         self.developer = None
 
-    def start_handler(self, data_queues, settings, task_queue):
+    def start_handler(self, data_queues, task_queue):
         main_logger.info("Starting TaskHandler")
-        handler = TaskHandler(data_queues, settings, task_queue)
+        handler = TaskHandler(data_queues, task_queue)
         handler.daemon = True
         handler.start()
         self.threads.append({
@@ -207,7 +207,7 @@ class Service:
         foreman = self.start_foreman(data_queues, settings, task_queue)
 
         # Start new thread to handle messages from service
-        self.start_handler(data_queues, settings, task_queue)
+        self.start_handler(data_queues, task_queue)
 
         # Start scheduled thread
         self.start_library_scanner_manager(data_queues)

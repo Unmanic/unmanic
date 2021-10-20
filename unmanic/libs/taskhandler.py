@@ -34,6 +34,7 @@ import queue
 import threading
 import time
 
+from unmanic import config
 from unmanic.libs import common, task
 from unmanic.libs.unmodels.tasks import Tasks
 
@@ -53,9 +54,9 @@ class TaskHandler(threading.Thread):
             -
     """
 
-    def __init__(self, data_queues, settings, task_queue):
+    def __init__(self, data_queues, task_queue):
         super(TaskHandler, self).__init__(name='TaskHandler')
-        self.settings = settings
+        self.settings = config.Config()
         self.data_queues = data_queues
         self.logger = data_queues["logging"].get_logger(self.name)
         self.task_queue = task_queue
@@ -64,7 +65,7 @@ class TaskHandler(threading.Thread):
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
         # Remove all items from the task list to start with
-        self.delete_all_tasks()
+        self.clear_tasks_on_startup()
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -110,8 +111,11 @@ class TaskHandler(threading.Thread):
             except Exception as e:
                 self._log("Exception in processing inotifytasks", str(e), level='exception')
 
-    def delete_all_tasks(self):
-        rows_deleted_count = Tasks.delete().execute()
+    def clear_tasks_on_startup(self):
+        query = Tasks.delete()
+        if not self.settings.get_clear_pending_tasks_on_restart():
+            query = query.where(Tasks.status != 'pending')
+        rows_deleted_count = query.execute()
         self._log("Deleted {} items from tasks list".format(rows_deleted_count), level='debug')
 
     def add_path_to_task_queue(self, pathname):

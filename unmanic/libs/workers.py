@@ -165,6 +165,8 @@ class Worker(threading.Thread):
             try:
                 if self.worker_log and len(self.worker_log) > 20:
                     status['worker_log_tail'] = self.worker_log[-19:]
+                else:
+                    status['worker_log_tail'] = self.worker_log
             except Exception as e:
                 self._log("Exception in fetching log tail of worker: ", message2=str(e),
                           level="exception")
@@ -195,6 +197,10 @@ class Worker(threading.Thread):
         """
         # Mark worker as not idle now that it is processing a task
         self.idle = False
+
+        # Set the progress to an empty string
+        self.worker_subprocess_percent = ''
+        self.worker_subprocess_elapsed = '0'
 
         # Log the start of the job
         self._log("Picked up job - {}".format(self.current_task.get_source_abspath()))
@@ -319,6 +325,8 @@ class Worker(threading.Thread):
             while not self.redundant_flag.is_set():
                 runner_pass_count += 1
                 time.sleep(.2)  # Add delay for preventing loop maxing compute resources
+                self.worker_log.append("\n\nRUNNER: \n{} [Pass #{}]\n\n".format(plugin_module.get('name'), runner_pass_count))
+                self.worker_log.append("\nExecuting plugin runner... Please wait")
 
                 # Run plugin to update data
                 if not plugin_handler.exec_plugin_runner(data, plugin_module.get('plugin_id'), 'worker.process_item'):
@@ -329,8 +337,8 @@ class Worker(threading.Thread):
                     overall_success = False
                     # Append long entry to say the worker was terminated
                     self.worker_log.append("\n\nPLUGIN FAILED!")
-                    self.worker_log.append("Failed to execute Plugin '{}'".format(plugin_module.get('name')))
-                    self.worker_log.append("Check Unmanic logs for more information")
+                    self.worker_log.append("\nFailed to execute Plugin '{}'".format(plugin_module.get('name')))
+                    self.worker_log.append("\nCheck Unmanic logs for more information")
                     break
 
                 # Log the in and out files returned by the plugin runner for debugging
@@ -341,7 +349,7 @@ class Worker(threading.Thread):
 
                 # Only run the conversion process if "exec_command" is not empty
                 if data.get("exec_command"):
-                    self.worker_log.append("\n\nRUNNER: \n{} [Pass #{}]".format(plugin_module.get('name'), runner_pass_count))
+                    self.worker_log.append("\nPlugin runner requested for a command to be executed by Unmanic")
 
                     # Exec command as subprocess
                     success = self.__exec_command_subprocess(data)
@@ -390,6 +398,7 @@ class Worker(threading.Thread):
                         self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = False
                         overall_success = False
                 else:
+                    self.worker_log.append("\nRunner did not request to execute a command")
                     self._log(
                         "Worker process '{}' did not request to execute a command.".format(plugin_module.get('plugin_id')),
                         level='debug')

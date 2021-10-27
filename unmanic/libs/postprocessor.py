@@ -275,14 +275,11 @@ class PostProcessor(threading.Thread):
         """
         task_cache_directory = os.path.dirname(cache_path)
         if os.path.exists(task_cache_directory) and "unmanic_file_conversion" in task_cache_directory:
-            for f in os.listdir(task_cache_directory):
-                cache_file_path = os.path.join(task_cache_directory, f)
-                self._log("Removing task cache directory file '{}'".format(cache_file_path))
-                # Remove the cache file
-                os.remove(cache_file_path)
-            # Remove the directory
             self._log("Removing task cache directory '{}'".format(task_cache_directory))
-            os.rmdir(task_cache_directory)
+            try:
+                shutil.rmtree(task_cache_directory)
+            except Exception as e:
+                self._log("Exception while clearing cache path '{}'".format(str(e)), level='error')
 
     def __copy_file(self, file_in, file_out, destination_files, plugin_id):
         self._log("Copy file triggered by ({}) {} --> {}".format(plugin_id, file_in, file_out))

@@ -76,6 +76,10 @@ class Config(object, metaclass=SingletonType):
         self.worker_event_schedules = []
         self.cache_path = os.path.join('/', 'tmp', 'unmanic')
 
+        # Link settings
+        self.installation_name = ''
+        self.remote_installations = []
+
         # Import env variables and override all previous settings.
         self.__import_settings_from_env()
 
@@ -419,3 +423,19 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.userdata_path
+
+    def get_installation_name(self):
+        """
+        Get setting - installation_name
+
+        :return:
+        """
+        return self.installation_name
+
+    def get_remote_installations(self):
+        """
+        Get setting - remote_installations
+
+        :return:
+        """
+        return self.remote_installations

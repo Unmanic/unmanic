@@ -797,6 +797,15 @@ components:
           example: desc
           type: string
       type: object
+    RequestRemoteInstallationLinkConfig:
+      properties:
+        uuid:
+          description: The uuid of the remote installation
+          example: 7cd35429-76ab-4a29-8649-8c91236b5f8b
+          type: string
+      required:
+      - uuid
+      type: object
     RequestSavingPluginsFlowByPluginType:
       properties:
         plugin_type:
@@ -811,6 +820,15 @@ components:
       required:
       - plugin_flow
       - plugin_type
+      type: object
+    RequestSettingsRemoteInstallationAddressValidation:
+      properties:
+        address:
+          description: The address of the remote installation
+          example: 192.168.1.2:8888
+          type: string
+      required:
+      - address
       type: object
     RequestTableUpdateByIdList:
       properties:
@@ -900,6 +918,31 @@ components:
           type: object
       required:
       - settings
+      type: object
+    SettingsRemoteInstallationData:
+      properties:
+        installation:
+          description: The data from the remote installation
+          example: {}
+          type: object
+      required:
+      - installation
+      type: object
+    SettingsRemoteInstallationLinkConfig:
+      properties:
+        link_config:
+          description: The configuration for the remote installation link
+          example:
+            address: 10.0.0.2:8888
+            available: true
+            enable_receiving_tasks: false
+            enable_sending_tasks: false
+            name: API schema generated
+            uuid: 7cd35429-76ab-4a29-8649-8c91236b5f8b
+            version: 0.1.3
+          type: object
+      required:
+      - link_config
       type: object
     SettingsSystemConfig:
       properties:
@@ -2257,6 +2300,129 @@ paths:
               schema:
                 $ref: '#/components/schemas/SettingsSystemConfig'
           description: 'Sample response: Returns the system configuration.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /settings/link/validate:
+    post:
+      description: Validate a remote installation address
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestSettingsRemoteInstallationAddressValidation'
+        description: The details of the remote installation to validate
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsRemoteInstallationData'
+          description: 'Sample response: Returns the remote installation data.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /settings/link/read:
+    post:
+      description: Read the configuration of a remote installation link
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestRemoteInstallationLinkConfig'
+        description: The UUID of the remote installation
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsRemoteInstallationLinkConfig'
+          description: 'Sample response: Returns the remote installation link configuration.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /settings/link/write:
+    post:
+      description: Write the configuration of a remote installation link
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsRemoteInstallationLinkConfig'
+        description: The UUID of the remote installation and its configuration
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:

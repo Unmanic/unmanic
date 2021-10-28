@@ -885,6 +885,54 @@ class SettingsSystemConfigSchema(BaseSchema):
     )
 
 
+class RequestSettingsRemoteInstallationAddressValidationSchema(BaseSchema):
+    """Schema to request validation of remote installation address"""
+
+    address = fields.Str(
+        required=True,
+        description="The address of the remote installation",
+        example="192.168.1.2:8888",
+    )
+
+
+class SettingsRemoteInstallationDataSchema(BaseSchema):
+    """Schema to display the data from the remote installation"""
+
+    installation = fields.Dict(
+        required=True,
+        description="The data from the remote installation",
+        example={},
+    )
+
+
+class RequestRemoteInstallationLinkConfigSchema(BaseSchema):
+    """Schema to request a single remote installation link configuration given its UUID"""
+
+    uuid = fields.Str(
+        required=True,
+        description="The uuid of the remote installation",
+        example="7cd35429-76ab-4a29-8649-8c91236b5f8b",
+    )
+
+
+class SettingsRemoteInstallationLinkConfigSchema(BaseSchema):
+    """Schema to display the data from the remote installation"""
+
+    link_config = fields.Dict(
+        required=True,
+        description="The configuration for the remote installation link",
+        example={
+            "address":                "10.0.0.2:8888",
+            "available":              True,
+            "enable_receiving_tasks": False,
+            "enable_sending_tasks":   False,
+            "name":                   "API schema generated",
+            "uuid":                   "7cd35429-76ab-4a29-8649-8c91236b5f8b",
+            "version":                "0.1.3"
+        },
+    )
+
+
 # VERSION
 # =======
 

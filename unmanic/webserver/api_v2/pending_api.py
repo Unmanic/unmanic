@@ -542,6 +542,7 @@ class ApiPendingHandler(BaseApiHandler):
             with open(data_file, "rb") as f:
                 for chunk in iter(lambda: f.read(8192), b''):
                     self.write(chunk)
+                    self.flush()
 
             return
         except BaseApiError as bae:

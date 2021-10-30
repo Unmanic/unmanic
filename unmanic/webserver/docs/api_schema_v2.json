@@ -439,6 +439,11 @@
                         "type": "string",
                         "description": "The current status of the pending task",
                         "example": "pending"
+                    },
+                    "checksum": {
+                        "type": "string",
+                        "description": "The uploaded file md5 checksum",
+                        "example": "5425ab3df5cdbad2e1099bb4cb963a4f"
                     }
                 },
                 "required": [
@@ -1302,6 +1307,92 @@
                 },
                 "required": [
                     "worker_id"
+                ]
+            },
+            "WorkerStatusResults": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "",
+                        "example": "W0"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "",
+                        "example": "Worker-W0"
+                    },
+                    "idle": {
+                        "type": "boolean",
+                        "description": "",
+                        "example": true
+                    },
+                    "paused": {
+                        "type": "boolean",
+                        "description": "",
+                        "example": false
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "",
+                        "example": ""
+                    },
+                    "current_file": {
+                        "type": "string",
+                        "description": "",
+                        "example": ""
+                    },
+                    "worker_log_tail": {
+                        "type": "array",
+                        "minItems": 0,
+                        "description": "The log lines produced by the worker",
+                        "example": [],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "runners_info": {
+                        "type": "object",
+                        "description": "",
+                        "example": {}
+                    },
+                    "subprocess": {
+                        "type": "object",
+                        "description": "",
+                        "example": {
+                            "pid": 140408939493120,
+                            "percent": "None",
+                            "elapsed": "None"
+                        }
+                    }
+                },
+                "required": [
+                    "current_file",
+                    "id",
+                    "idle",
+                    "name",
+                    "paused",
+                    "runners_info",
+                    "start_time",
+                    "subprocess",
+                    "worker_log_tail"
+                ]
+            },
+            "WorkerStatusSuccess": {
+                "type": "object",
+                "properties": {
+                    "workers_status": {
+                        "minItems": 0,
+                        "description": "Results",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WorkerStatusResults"
+                        }
+                    }
+                },
+                "required": [
+                    "workers_status"
                 ]
             }
         }
@@ -3774,11 +3865,11 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Successful request; Returns success status",
+                        "description": "Successful request; Returns data for the generated task",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/BaseSuccess"
+                                    "$ref": "#/components/schemas/PendingTasksTableResults"
                                 }
                             }
                         }
@@ -4154,6 +4245,63 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/workers/status": {
+            "get": {
+                "description": "Returns the status of all workers.",
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns the status of all workers.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WorkerStatusSuccess"
                                 }
                             }
                         }

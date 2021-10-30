@@ -148,7 +148,8 @@ class System(object, metaclass=SingletonType):
                 gpu_info['type'] = 'nvidia'
                 gpu_devices.append(gpu_info)
         except FileNotFoundError as e:
-            self._log("NVIDIA GPU support not available", level="debug")
+            # self._log("NVIDIA GPU support not available", level="debug")
+            pass
         if not self.devices:
             self.devices = {
                 "cpu_info": cpuinfo.get_cpu_info(),

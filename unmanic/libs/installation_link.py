@@ -156,11 +156,11 @@ class Links(object, metaclass=SingletonType):
     def remote_api_get_download(self, remote_url: str, endpoint: str, path: str):
         address = self.__format_address(remote_url)
         url = "{}{}".format(address, endpoint)
-        res = requests.get(url)
-        if res.status_code != 200:
-            return False
-        with open(path, 'wb') as f:
-            f.write(res.content)
+        with requests.get(url, stream=True) as r:
+            r.raise_for_status()
+            with open(path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
         return True
 
     def validate_remote_installation(self, address: str):
@@ -449,7 +449,7 @@ class Links(object, metaclass=SingletonType):
         :return:
         """
         data = {
-            "worker_id": [remote_task_id]
+            "id_list": [remote_task_id]
         }
         return self.remote_api_delete(address, '/unmanic/api/v2/pending/tasks', data)
 

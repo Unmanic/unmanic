@@ -670,6 +670,7 @@ class LinkedTaskManager(threading.Thread):
         initial_checksum = common.get_file_checksum(original_abspath)
 
         # Send a file to a remote installation.
+        self._log("Uploading file to remote installation '{}'".format(original_abspath), level='debug')
         info = self.links.send_file_to_remote_installation(address, original_abspath)
         if not info:
             self._log("Failed to upload the file '{}'".format(original_abspath), level='error')

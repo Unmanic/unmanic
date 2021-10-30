@@ -144,7 +144,7 @@ class Worker(threading.Thread):
             'name':            self.name,
             'idle':            self.idle,
             'paused':          self.paused,
-            'start_time':      self.start_time,
+            'start_time':      None if not self.start_time else str(self.start_time),
             'current_file':    "",
             'worker_log_tail': [],
             'runners_info':    {},

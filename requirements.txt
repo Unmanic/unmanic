@@ -6,6 +6,7 @@ peewee>=3.14.4
 peewee_migrate==1.1.6
 psutil==5.8.0
 requests>=2.25.1
+requests_toolbelt>=0.9.1
 py-cpuinfo>=7.0.0
 
 # Optional requirements

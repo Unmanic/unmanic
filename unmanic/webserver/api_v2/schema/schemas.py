@@ -383,6 +383,11 @@ class PendingTasksTableResultsSchema(BaseSchema):
         description="The current status of the pending task",
         example="pending",
     )
+    checksum = fields.Str(
+        required=False,
+        description="The uploaded file md5 checksum",
+        example="5425ab3df5cdbad2e1099bb4cb963a4f",
+    )
 
 
 class PendingTasksSchema(TableRecordsSuccessSchema):
@@ -955,4 +960,73 @@ class RequestWorkerByIdSchema(BaseSchema):
     worker_id = fields.Str(
         required=True,
         example="1",
+    )
+
+
+class WorkerStatusResultsSchema(BaseSchema):
+    """Schema for worker status results"""
+
+    id = fields.Str(
+        required=True,
+        description="",
+        example="W0",
+    )
+    name = fields.Str(
+        required=True,
+        description="",
+        example="Worker-W0",
+    )
+    idle = fields.Boolean(
+        required=True,
+        description="",
+        example=True,
+    )
+    paused = fields.Boolean(
+        required=True,
+        description="",
+        example=False,
+    )
+    start_time = fields.Str(
+        required=True,
+        description="",
+        example="",
+        allow_none=True,
+    )
+    current_file = fields.Str(
+        required=True,
+        description="",
+        example="",
+    )
+    worker_log_tail = fields.List(
+        cls_or_instance=fields.Str,
+        required=True,
+        description="The log lines produced by the worker",
+        example=[],
+        validate=validate.Length(min=0),
+    )
+    runners_info = fields.Dict(
+        required=True,
+        description="",
+        example={},
+    )
+    subprocess = fields.Dict(
+        required=True,
+        description="",
+        example={
+            "pid":     140408939493120,
+            "percent": "None",
+            "elapsed": "None"
+        },
+    )
+
+
+class WorkerStatusSuccessSchema(BaseSchema):
+    """Schema for returning the status of all workers"""
+
+    workers_status = fields.Nested(
+        WorkerStatusResultsSchema,
+        required=True,
+        description="Results",
+        many=True,
+        validate=validate.Length(min=0),
     )

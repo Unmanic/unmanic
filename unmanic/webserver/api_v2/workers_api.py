@@ -31,9 +31,9 @@
 """
 
 import tornado.log
-from unmanic.libs.uiserver import UnmanicDataQueues
+from unmanic.libs.uiserver import UnmanicDataQueues, UnmanicRunningTreads
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
-from unmanic.webserver.api_v2.schema.schemas import RequestWorkerByIdSchema
+from unmanic.webserver.api_v2.schema.schemas import RequestWorkerByIdSchema, WorkerStatusSuccessSchema
 from unmanic.webserver.helpers import workers
 
 
@@ -68,12 +68,19 @@ class ApiWorkersHandler(BaseApiHandler):
             "supported_methods": ["DELETE"],
             "call_method":       "terminate_worker",
         },
+        {
+            "path_pattern":      r"/workers/status",
+            "supported_methods": ["GET"],
+            "call_method":       "workers_status",
+        },
     ]
 
     def initialize(self, **kwargs):
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
+        urt = UnmanicRunningTreads()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
+        self.foreman = urt.get_unmanic_running_thread('foreman')
 
     def pause_worker(self):
         """
@@ -362,3 +369,57 @@ class ApiWorkersHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
+    def workers_status(self):
+        """
+        Workers - Return the status of all workers
+        ---
+        description: Returns the status of all workers.
+        responses:
+            200:
+                description: 'Sample response: Returns the status of all workers.'
+                content:
+                    application/json:
+                        schema:
+                            WorkerStatusSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            workers_status = self.foreman.get_all_worker_status()
+
+            response = self.build_response(
+                WorkerStatusSuccessSchema(),
+                {
+                    'workers_status': workers_status,
+                }
+            )
+            self.write_success(response)
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()

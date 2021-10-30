@@ -254,6 +254,10 @@ components:
           description: The current status of the pending task
           example: pending
           type: string
+        checksum:
+          description: The uploaded file md5 checksum
+          example: 5425ab3df5cdbad2e1099bb4cb963a4f
+          type: string
       required:
       - abspath
       - id
@@ -961,6 +965,73 @@ components:
           type: string
       required:
       - version
+      type: object
+    WorkerStatusResults:
+      properties:
+        id:
+          description: ''
+          example: W0
+          type: string
+        name:
+          description: ''
+          example: Worker-W0
+          type: string
+        idle:
+          description: ''
+          example: true
+          type: boolean
+        paused:
+          description: ''
+          example: false
+          type: boolean
+        start_time:
+          description: ''
+          example: ''
+          nullable: true
+          type: string
+        current_file:
+          description: ''
+          example: ''
+          type: string
+        worker_log_tail:
+          description: The log lines produced by the worker
+          example: []
+          items:
+            type: string
+          minItems: 0
+          type: array
+        runners_info:
+          description: ''
+          example: {}
+          type: object
+        subprocess:
+          description: ''
+          example:
+            elapsed: None
+            percent: None
+            pid: 140408939493120
+          type: object
+      required:
+      - current_file
+      - id
+      - idle
+      - name
+      - paused
+      - runners_info
+      - start_time
+      - subprocess
+      - worker_log_tail
+      type: object
+    WorkerStatusSuccess:
+      properties:
+        workers_status:
+          description: Results
+          items:
+            $ref: '#/components/schemas/WorkerStatusResults'
+          minItems: 0
+          type: array
+      required:
+      - workers_status
       type: object
   securitySchemes:
     BasicAuth:
@@ -2466,8 +2537,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BaseSuccess'
-          description: Successful request; Returns success status
+                $ref: '#/components/schemas/PendingTasksTableResults'
+          description: Successful request; Returns data for the generated task
         '400':
           content:
             application/json:
@@ -2693,6 +2764,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
           description: Successful request; Returns success status
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /workers/status:
+    get:
+      description: Returns the status of all workers.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerStatusSuccess'
+          description: 'Sample response: Returns the status of all workers.'
         '400':
           content:
             application/json:

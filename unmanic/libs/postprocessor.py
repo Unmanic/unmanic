@@ -333,6 +333,9 @@ class PostProcessor(threading.Thread):
         task_dump = self.current_task.task_dump()
         destination_data = self.current_task.get_destination_data()
 
+        # Generate checksum
+        checksum = common.get_file_checksum(task_dump.get('abspath'))
+
         # Dump history log as metadata in the file's path
         tasks_data_file = os.path.join(os.path.dirname(destination_data.get('abspath')), 'data.json')
         result = common.json_dump_to_file(
@@ -344,6 +347,7 @@ class PostProcessor(threading.Thread):
                 'finish_time':         task_dump.get('finish_time', ''),
                 'processed_by_worker': task_dump.get('processed_by_worker', ''),
                 'log':                 task_dump.get('log', ''),
+                'checksum':            checksum,
             }
             , tasks_data_file)
         if not result['success']:

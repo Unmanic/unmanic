@@ -47,6 +47,9 @@ for ARG in ${@}; do
         --cpus*)
             ADDITIONAL_DOCKER_PARAMS="${ADDITIONAL_DOCKER_PARAMS} --cpus='$(echo ${ARG} | awk -F'=' '{print $2}')'";
             ;;
+        --memory*)
+            ADDITIONAL_DOCKER_PARAMS="${ADDITIONAL_DOCKER_PARAMS} --memory='$(echo ${ARG} | awk -F'=' '{print $2}')'";
+            ;;
         *)
             ;;
     esac

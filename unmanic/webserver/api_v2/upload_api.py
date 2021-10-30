@@ -36,7 +36,7 @@ import tornado.log
 import tornado.web
 
 from unmanic import config
-from unmanic.libs import session
+from unmanic.libs import common, session
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
 from unmanic.webserver.api_v2.schema.schemas import PendingTasksTableResultsSchema
 from unmanic.webserver.helpers import pending_tasks
@@ -132,11 +132,11 @@ class ApiUploadHandler(BaseApiHandler):
                                 format: binary
         responses:
             200:
-                description: 'Successful request; Returns success status'
+                description: 'Successful request; Returns data for the generated task'
                 content:
                     application/json:
                         schema:
-                            BaseSuccessSchema
+                            PendingTasksTableResultsSchema
             400:
                 description: Bad request; Check `messages` for any validation errors
                 content:
@@ -177,6 +177,8 @@ class ApiUploadHandler(BaseApiHandler):
             if not task_info:
                 self.write_error()
 
+            checksum = common.get_file_checksum(task_info.get('abspath'))
+
             # Return the details of the generated task
             response = self.build_response(
                 PendingTasksTableResultsSchema(),
@@ -186,6 +188,7 @@ class ApiUploadHandler(BaseApiHandler):
                     "priority": task_info.get('priority'),
                     "type":     task_info.get('type'),
                     "status":   task_info.get('status'),
+                    "checksum": checksum
                 }
             )
             self.write_success(response)

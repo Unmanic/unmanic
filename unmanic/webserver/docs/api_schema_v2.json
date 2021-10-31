@@ -508,6 +508,19 @@
                     "position"
                 ]
             },
+            "TaskDownloadLink": {
+                "type": "object",
+                "properties": {
+                    "link_id": {
+                        "type": "string",
+                        "description": "The ID used to download the file /unmanic/downloads/{link_id}",
+                        "example": "2960645c-a4e2-4b05-8866-7bd469ee9ef8"
+                    }
+                },
+                "required": [
+                    "link_id"
+                ]
+            },
             "RequestPluginsTableData": {
                 "type": "object",
                 "properties": {
@@ -2196,15 +2209,14 @@
         },
         "/pending/download/file/id/{task_id}": {
             "get": {
-                "description": "Download the file of a pending task",
+                "description": "Request a link for downloading a task file",
                 "responses": {
                     "200": {
-                        "description": "Returns the task file.",
+                        "description": "Successful request; Returns download link ID",
                         "content": {
-                            "application/octet-stream": {
+                            "application/json": {
                                 "schema": {
-                                    "type": "string",
-                                    "format": "binary"
+                                    "$ref": "#/components/schemas/TaskDownloadLink"
                                 }
                             }
                         }
@@ -2254,15 +2266,14 @@
         },
         "/pending/download/data/id/{task_id}": {
             "get": {
-                "description": "Returns the completed tasks data",
+                "description": "Request a link for downloading a task data",
                 "responses": {
                     "200": {
-                        "description": "Returns the task file.",
+                        "description": "Successful request; Returns download link ID",
                         "content": {
-                            "application/octet-stream": {
+                            "application/json": {
                                 "schema": {
-                                    "type": "string",
-                                    "format": "binary"
+                                    "$ref": "#/components/schemas/TaskDownloadLink"
                                 }
                             }
                         }

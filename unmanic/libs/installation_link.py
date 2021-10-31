@@ -159,8 +159,9 @@ class Links(object, metaclass=SingletonType):
         with requests.get(url, stream=True) as r:
             r.raise_for_status()
             with open(path, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
+                for chunk in r.iter_content(chunk_size=None):
+                    if chunk:
+                        f.write(chunk)
         return True
 
     def validate_remote_installation(self, address: str):
@@ -499,21 +500,45 @@ class Links(object, metaclass=SingletonType):
         return self.remote_api_delete(address, '/unmanic/api/v2/workers/worker/terminate', data)
 
     def fetch_remote_task_data(self, address: str, remote_task_id: int, path: str):
+        """
+        Fetch the completed remote task data
+
+        :param address:
+        :param remote_task_id:
+        :param path:
+        :return:
+        """
         task_data = {}
-        res = self.remote_api_get_download(address, '/unmanic/api/v2/pending/download/data/id/{}'.format(remote_task_id), path)
-        if res and os.path.exists(path):
-            with open(path) as f:
-                task_data = json.load(f)
+        # Request API generate a DL link
+        link_info = self.remote_api_get(address, '/unmanic/api/v2/pending/download/data/id/{}'.format(remote_task_id))
+        if link_info.get('link_id'):
+            # Download the data file
+            res = self.remote_api_get_download(address, '/unmanic/downloads/{}'.format(link_info.get('link_id')), path)
+            if res and os.path.exists(path):
+                with open(path) as f:
+                    task_data = json.load(f)
         return task_data
 
     def fetch_remote_task_completed_file(self, address: str, remote_task_id: int, path: str):
-        res = self.remote_api_get_download(address, '/unmanic/api/v2/pending/download/file/id/{}'.format(remote_task_id), path)
-        if res and os.path.exists(path):
-            return True
+        """
+        Fetch the completed remote task file
+
+        :param address:
+        :param remote_task_id:
+        :param path:
+        :return:
+        """
+        # Request API generate a DL link
+        link_info = self.remote_api_get(address, '/unmanic/api/v2/pending/download/file/id/{}'.format(remote_task_id))
+        if link_info.get('link_id'):
+            # Download the file
+            res = self.remote_api_get_download(address, '/unmanic/downloads/{}'.format(link_info.get('link_id')), path)
+            if res and os.path.exists(path):
+                return True
         return False
 
 
-class LinkedTaskManager(threading.Thread):
+class RemoteTaskManager(threading.Thread):
     paused = False
 
     current_task = None
@@ -527,7 +552,7 @@ class LinkedTaskManager(threading.Thread):
     worker_runners_info = {}
 
     def __init__(self, thread_id, name, assigned_worker_info, pending_queue, complete_queue):
-        super(LinkedTaskManager, self).__init__(name=name)
+        super(RemoteTaskManager, self).__init__(name=name)
         self.thread_id = thread_id
         self.name = name
         self.assigned_worker_info = assigned_worker_info
@@ -553,7 +578,7 @@ class LinkedTaskManager(threading.Thread):
         getattr(self.logger, level)(message)
 
     def run(self):
-        self._log("Starting link manager {} - {}".format(self.thread_id, self.assigned_worker_info.get('address')))
+        self._log("Starting remote task manager {} - {}".format(self.thread_id, self.assigned_worker_info.get('address')))
         # A manager should only run for a single task and connection to a single worker.
         # If either of these become unavailable, then the manager should exit
 
@@ -578,12 +603,12 @@ class LinkedTaskManager(threading.Thread):
             self.__process_task_queue_item()
 
         except queue.Empty:
-            self._log("Link manager started by the pending queue was empty", level="warning")
+            self._log("Remote task manager started by the pending queue was empty", level="warning")
         except Exception as e:
             self._log("Exception in processing job with {}:".format(self.name), message2=str(e),
                       level="exception")
 
-        self._log("Stopping link manager {} - {}".format(self.thread_id, self.assigned_worker_info.get('address')))
+        self._log("Stopping remote task manager {} - {}".format(self.thread_id, self.assigned_worker_info.get('address')))
 
     def __set_current_task(self, current_task):
         """Sets the given task to the worker class"""
@@ -764,8 +789,9 @@ class LinkedTaskManager(threading.Thread):
 
         # Fetch remote task file
         if data.get('task_success'):
-            self._log("Task successful, proceeding to download the completed file '{}'".format(data.get('task_label')),
-                      level='debug')
+            self._log(
+                "Remote task was successful, proceeding to download the completed file '{}'".format(data.get('task_label')),
+                level='debug')
             # Set the new file out as the extension may have changed
             split_file_name = os.path.splitext(data.get('abspath'))
             file_extension = split_file_name[1].lstrip('.')
@@ -784,7 +810,7 @@ class LinkedTaskManager(threading.Thread):
             # Match checksum from task result data with downloaded file
             downloaded_checksum = common.get_file_checksum(task_cache_path)
             if downloaded_checksum != data.get('checksum'):
-                self._log("The downloaded file did not return a correct checksum '{}'".format(task_cache_path),
+                self._log("The downloaded file did not produce a correct checksum '{}'".format(task_cache_path),
                           level='error')
                 # Send request to terminate the remote worker then return
                 self.links.remove_task_from_remote_installation(address, remote_task_id)

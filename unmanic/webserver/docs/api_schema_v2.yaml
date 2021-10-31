@@ -957,6 +957,15 @@ components:
       required:
       - configuration
       type: object
+    TaskDownloadLink:
+      properties:
+        link_id:
+          description: The ID used to download the file /unmanic/downloads/{link_id}
+          example: 2960645c-a4e2-4b05-8866-7bd469ee9ef8
+          type: string
+      required:
+      - link_id
+      type: object
     VersionReadSuccess:
       properties:
         version:
@@ -1525,15 +1534,14 @@ paths:
           description: Internal error; Check `error` for exception
   /pending/download/file/id/{task_id}:
     get:
-      description: Download the file of a pending task
+      description: Request a link for downloading a task file
       responses:
         '200':
           content:
-            application/octet-stream:
+            application/json:
               schema:
-                format: binary
-                type: string
-          description: Returns the task file.
+                $ref: '#/components/schemas/TaskDownloadLink'
+          description: Successful request; Returns download link ID
         '400':
           content:
             application/json:
@@ -1560,15 +1568,14 @@ paths:
           description: Internal error; Check `error` for exception
   /pending/download/data/id/{task_id}:
     get:
-      description: Returns the completed tasks data
+      description: Request a link for downloading a task data
       responses:
         '200':
           content:
-            application/octet-stream:
+            application/json:
               schema:
-                format: binary
-                type: string
-          description: Returns the task file.
+                $ref: '#/components/schemas/TaskDownloadLink'
+          description: Successful request; Returns download link ID
         '400':
           content:
             application/json:

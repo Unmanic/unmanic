@@ -413,6 +413,16 @@ class RequestPendingTasksReorderSchema(RequestTableUpdateByIdList):
     )
 
 
+class TaskDownloadLinkSchema(BaseSchema):
+    """Schema for returning a download link ID"""
+
+    link_id = fields.Str(
+        required=True,
+        description="The ID used to download the file /unmanic/downloads/{link_id}",
+        example="2960645c-a4e2-4b05-8866-7bd469ee9ef8",
+    )
+
+
 # PLUGINS
 # =======
 

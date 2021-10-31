@@ -36,7 +36,8 @@ from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
 from unmanic.webserver.api_v2.schema.schemas import RequestPendingTasksReorderSchema, PendingTasksSchema, \
-    RequestPendingTableDataSchema, RequestTableUpdateByIdList
+    RequestPendingTableDataSchema, RequestTableUpdateByIdList, TaskDownloadLinkSchema
+from unmanic.webserver.downloads import DownloadsLinks
 from unmanic.webserver.helpers import pending_tasks
 
 
@@ -75,12 +76,12 @@ class ApiPendingHandler(BaseApiHandler):
         {
             "path_pattern":      r"/pending/download/file/id/(?P<task_id>[0-9]+)?",
             "supported_methods": ["GET"],
-            "call_method":       "download_pending_task_file",
+            "call_method":       "gen_download_link_pending_task_file",
         },
         {
             "path_pattern":      r"/pending/download/data/id/(?P<task_id>[0-9]+)?",
             "supported_methods": ["GET"],
-            "call_method":       "download_pending_task_data",
+            "call_method":       "gen_download_link_pending_task_data",
         },
 
     ]
@@ -417,19 +418,18 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def download_pending_task_file(self, task_id=None):
+    def gen_download_link_pending_task_file(self, task_id=None):
         """
-        Pending - download a pending task file
+        Pending - request a link for downloading a task file
         ---
-        description: Download the file of a pending task
+        description: Request a link for downloading a task file
         responses:
             200:
-                description: 'Returns the task file.'
+                description: 'Successful request; Returns download link ID'
                 content:
-                    application/octet-stream:
+                    application/json:
                         schema:
-                            type: string
-                            format: binary
+                            TaskDownloadLinkSchema
             400:
                 description: Bad request; Check `messages` for any validation errors
                 content:
@@ -466,13 +466,21 @@ class ApiPendingHandler(BaseApiHandler):
             abspath = status_results[0].get('abspath', '')
             basename = os.path.basename(abspath)
 
-            self.set_header('Content-Type', 'application/octet-stream')
-            self.set_header('Content-Disposition', 'attachment; filename={}'.format(basename))
+            # Generate download link
+            link_data = {
+                'abspath':  abspath,
+                'basename': basename,
+            }
+            download_links = DownloadsLinks()
+            link_id = download_links.generate_download_link(link_data)
 
-            with open(abspath, "rb") as f:
-                for chunk in iter(lambda: f.read(8192), b''):
-                    self.write(chunk)
-
+            response = self.build_response(
+                TaskDownloadLinkSchema(),
+                {
+                    "link_id": link_id,
+                }
+            )
+            self.write_success(response)
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
@@ -481,19 +489,18 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def download_pending_task_data(self, task_id=None):
+    def gen_download_link_pending_task_data(self, task_id=None):
         """
-        Pending - download completed remote task data
+        Pending - request a link for downloading a task data
         ---
-        description: Returns the completed tasks data
+        description: Request a link for downloading a task data
         responses:
             200:
-                description: 'Returns the task file.'
+                description: 'Successful request; Returns download link ID'
                 content:
-                    application/octet-stream:
+                    application/json:
                         schema:
-                            type: string
-                            format: binary
+                            TaskDownloadLinkSchema
             400:
                 description: Bad request; Check `messages` for any validation errors
                 content:
@@ -536,14 +543,21 @@ class ApiPendingHandler(BaseApiHandler):
             basename = 'data.json'
             data_file = os.path.join(os.path.dirname(abspath), basename)
 
-            self.set_header('Content-Type', 'application/octet-stream')
-            self.set_header('Content-Disposition', 'attachment; filename={}'.format(basename))
+            # Generate download link
+            link_data = {
+                'abspath':  data_file,
+                'basename': basename,
+            }
+            download_links = DownloadsLinks()
+            link_id = download_links.generate_download_link(link_data)
 
-            with open(data_file, "rb") as f:
-                for chunk in iter(lambda: f.read(8192), b''):
-                    self.write(chunk)
-                    self.flush()
-
+            response = self.build_response(
+                TaskDownloadLinkSchema(),
+                {
+                    "link_id": link_id,
+                }
+            )
+            self.write_success(response)
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

@@ -47,6 +47,7 @@ from tornado.web import Application, StaticFileHandler, RedirectHandler
 from unmanic import config
 from unmanic.libs import common
 from unmanic.libs.singleton import SingletonType
+from unmanic.webserver.downloads import DownloadsHandler
 
 public_directory = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "webserver", "public"))
 tornado_settings = {
@@ -310,6 +311,7 @@ class UIServer(threading.Thread):
         from unmanic.webserver.websocket import UnmanicWebsocketHandler
         app = Application([
             (r"/unmanic/websocket", UnmanicWebsocketHandler),
+            (r"/unmanic/downloads/(.*)", DownloadsHandler),
             (r"/(.*)", RedirectHandler, dict(
                 url="/unmanic/ui/dashboard/"
             )),

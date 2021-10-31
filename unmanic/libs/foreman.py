@@ -37,7 +37,7 @@ import time
 from datetime import datetime
 
 from unmanic.libs import common, installation_link
-from unmanic.libs.installation_link import LinkedTaskManager
+from unmanic.libs.installation_link import RemoteTaskManager
 from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.workers import Worker
 
@@ -248,7 +248,7 @@ class Foreman(threading.Thread):
             return
 
         # Startup a thread
-        thread = LinkedTaskManager(assigned_worker_id, "RemoteWorker-{}".format(assigned_worker_id), assigned_worker_info,
+        thread = RemoteTaskManager(assigned_worker_id, "RemoteTaskManager-{}".format(assigned_worker_id), assigned_worker_info,
                                    self.remote_workers_pending_task_queue, self.complete_queue)
         thread.daemon = True
         thread.start()

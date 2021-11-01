@@ -56,9 +56,13 @@ class Links(object, metaclass=SingletonType):
         getattr(self.logger, level)(message)
 
     def __format_address(self, address: str):
+        # Strip all whitespace
         address = address.strip()
+        # Add http if it does not exist
         if not address.lower().startswith('http'):
             address = "http://{}".format(address)
+        # Strip any trailing slashes
+        address = address.rstrip('/')
         return address
 
     def __merge_config_dicts(self, config_dict, compare_dict):

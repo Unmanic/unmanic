@@ -334,7 +334,9 @@ class PostProcessor(threading.Thread):
         destination_data = self.current_task.get_destination_data()
 
         # Generate checksum
-        checksum = common.get_file_checksum(task_dump.get('abspath'))
+        checksum = 'UNKNOWN'
+        if os.path.exists(task_dump.get('abspath')):
+            checksum = common.get_file_checksum(task_dump.get('abspath'))
 
         # Dump history log as metadata in the file's path
         tasks_data_file = os.path.join(os.path.dirname(destination_data.get('abspath')), 'data.json')

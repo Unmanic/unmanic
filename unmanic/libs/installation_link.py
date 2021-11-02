@@ -100,18 +100,19 @@ class Links(object, metaclass=SingletonType):
             return {}
         return res.json()
 
-    def remote_api_post(self, remote_url: str, endpoint: str, data: dict):
+    def remote_api_post(self, remote_url: str, endpoint: str, data: dict, timeout=2):
         """
         POST to remote installation API
 
         :param remote_url:
         :param endpoint:
         :param data:
+        :param timeout:
         :return:
         """
         address = self.__format_address(remote_url)
         url = "{}{}".format(address, endpoint)
-        res = requests.post(url, json=data, timeout=2)
+        res = requests.post(url, json=data, timeout=timeout)
         if res.status_code == 200:
             return res.json()
         return {}
@@ -141,18 +142,19 @@ class Links(object, metaclass=SingletonType):
             return res.json()
         return {}
 
-    def remote_api_delete(self, remote_url: str, endpoint: str, data: dict):
+    def remote_api_delete(self, remote_url: str, endpoint: str, data: dict, timeout=2):
         """
         DELETE to remote installation API
 
         :param remote_url:
         :param endpoint:
         :param data:
+        :param timeout:
         :return:
         """
         address = self.__format_address(remote_url)
         url = "{}{}".format(address, endpoint)
-        res = requests.delete(url, json=data, timeout=2)
+        res = requests.delete(url, json=data, timeout=timeout)
         if res.status_code == 200:
             return res.json()
         return {}
@@ -389,7 +391,7 @@ class Links(object, metaclass=SingletonType):
             return True
         return False
 
-    def check_remote_installation_for_available_workers(self):
+    def check_remote_installation_for_available_workers(self, preload=False):
         """
         Return a list of installations with workers available for a remote task.
         This list is filtered by:
@@ -400,7 +402,7 @@ class Links(object, metaclass=SingletonType):
 
         :return:
         """
-        available_workers = []
+        available_workers = {}
         for local_config in self.settings.get_remote_installations():
 
             # Only installations that are available
@@ -418,20 +420,34 @@ class Links(object, metaclass=SingletonType):
             try:
 
                 # Only installations that have not pending tasks
+                max_pending_tasks = 0
+                if preload:
+                    max_pending_tasks = 1
                 results = self.remote_api_post(local_config.get('address'), '/unmanic/api/v2/pending/tasks', {
                     "start":  0,
                     "length": 1
                 })
-                if int(results.get('recordsTotal', 0)) > 0:
+                if int(results.get('recordsFiltered', 0)) > max_pending_tasks:
                     continue
 
                 # Only installations that have at least one idle worker that is not paused
                 results = self.remote_api_get(local_config.get('address'), '/unmanic/api/v2/workers/status')
                 for worker in results.get('workers_status', []):
                     if worker.get('idle') and not worker.get('paused'):
-                        worker['address'] = local_config.get('address')
-                        worker['uuid'] = local_config.get('uuid')
-                        available_workers.append(worker)
+                        if not available_workers.get(local_config.get('uuid')):
+                            available_workers[local_config.get('uuid')] = {
+                                "address": local_config.get('address'),
+                                "workers": []
+                            }
+                        available_workers[local_config.get('uuid')]['workers'].append(worker)
+                    elif not worker.get('idle') and not worker.get('paused'):
+                        # And an empty entry if all workers are busy and not paused.
+                        # This allows us to know that a remote is available for loading the pending task queue
+                        if not available_workers.get(local_config.get('uuid')):
+                            available_workers[local_config.get('uuid')] = {
+                                "address": local_config.get('address'),
+                                "workers": []
+                            }
             except Exception as e:
                 self._log("Failed to contact remote installation '{}'".format(local_config.get('address')), level='warning')
                 continue
@@ -453,12 +469,22 @@ class Links(object, metaclass=SingletonType):
 
         :return:
         """
-        data = {
-            "id_list": [remote_task_id]
-        }
-        return self.remote_api_delete(address, '/unmanic/api/v2/pending/tasks', data)
+        try:
+            data = {
+                "id_list": [remote_task_id]
+            }
+            return self.remote_api_delete(address, '/unmanic/api/v2/pending/tasks', data, timeout=15)
+        except requests.exceptions.Timeout:
+            self._log("Request to remove remote task timed out", level='warning')
+            return None
+        except requests.exceptions.RequestException as e:
+            self._log("Request to remove remote task failed", message2=str(e), level='warning')
+            return None
+        except Exception as e:
+            self._log("Failed to remove remote pending task", message2=str(e), level='error')
+        return {}
 
-    def get_remote_pending_task_status(self, address: str, remote_task_id: int):
+    def get_remote_pending_task_state(self, address: str, remote_task_id: int):
         """
         Get the remote pending task status
 
@@ -467,7 +493,7 @@ class Links(object, metaclass=SingletonType):
         data = {
             "id_list": [remote_task_id]
         }
-        return self.remote_api_post(address, '/unmanic/api/v2/pending/status/get', data)
+        return self.remote_api_post(address, '/unmanic/api/v2/pending/status/get', data, timeout=7)
 
     def start_the_remote_task_by_id(self, address: str, remote_task_id: int):
         """
@@ -475,10 +501,29 @@ class Links(object, metaclass=SingletonType):
 
         :return:
         """
-        data = {
-            "id_list": [remote_task_id]
-        }
-        return self.remote_api_post(address, '/unmanic/api/v2/pending/status/set/ready', data)
+        try:
+            data = {
+                "id_list": [remote_task_id]
+            }
+            return self.remote_api_post(address, '/unmanic/api/v2/pending/status/set/ready', data, timeout=7)
+        except requests.exceptions.Timeout:
+            self._log("Request to start remote task timed out", level='warning')
+            return None
+        except requests.exceptions.RequestException as e:
+            self._log("Request to start remote task failed", message2=str(e), level='warning')
+            return None
+        except Exception as e:
+            self._log("Failed to start remote pending task", message2=str(e), level='error')
+        return {}
+
+    def get_all_worker_status(self, address: str):
+        """
+        Start the remote pending task
+
+        :return:
+        """
+        results = self.remote_api_get(address, '/unmanic/api/v2/workers/status')
+        return results.get('workers_status', [])
 
     def get_single_worker_status(self, address: str, worker_id: str):
         """
@@ -582,19 +627,9 @@ class RemoteTaskManager(threading.Thread):
         getattr(self.logger, level)(message)
 
     def run(self):
-        self._log("Starting remote task manager {} - {}".format(self.thread_id, self.assigned_worker_info.get('address')))
         # A manager should only run for a single task and connection to a single worker.
         # If either of these become unavailable, then the manager should exit
-
-        # Check that the assigned worker is still available
-        available_workers = self.links.check_remote_installation_for_available_workers()
-        for worker in available_workers:
-            remote_worker_id = "{}|{}".format(worker.get('uuid'), worker.get('id'))
-            if remote_worker_id != self.thread_id:
-                # The worker this manager was assigned is no longer available
-                self.redundant_flag.set()
-                return
-
+        self._log("Starting remote task manager {} - {}".format(self.thread_id, self.assigned_worker_info.get('address')))
         # Pull task
         try:
             # Pending task queue has an item available. Fetch it.
@@ -686,14 +721,25 @@ class RemoteTaskManager(threading.Thread):
         Sends the task file to the remote installation to process.
         Monitors progress and then fetches the results
 
+        TODO: Manage network disconnections.
+            - This manager object should be able to handle a network disconnect. However, we should terminate
+            this manager if the remote task no longer exists.
+            - Catch all API request exceptions.
+            - Remove the failed_status_count - losing contact should be ok. What matters is when contact is made that
+            the task still exists to be downloaded or status updated.
+
         :return:
         """
         # Set the absolute path to the original file
         original_abspath = self.current_task.get_source_abspath()
 
+        # Ensure file exists
+        if not os.path.exists(original_abspath):
+            self._log("File no longer exists '{}'. Was it removed?".format(original_abspath), level='warning')
+            return False
+
         # Set the remote worker address and worker ID
         address = self.assigned_worker_info.get('address')
-        worker_id = self.assigned_worker_info.get('id')
 
         # Get source file checksum
         initial_checksum = common.get_file_checksum(original_abspath)
@@ -715,39 +761,67 @@ class RemoteTaskManager(threading.Thread):
             return False
 
         # Start the remote task
-        result = self.links.start_the_remote_task_by_id(address, remote_task_id)
-        if not result.get('success'):
-            self._log("Failed to set initial remote pending task to status '{}'".format(original_abspath), level='error')
-            # Send request to terminate the remote worker then return
-            self.links.remove_task_from_remote_installation(address, remote_task_id)
-            return False
+        while not self.redundant_flag.is_set():
+            result = self.links.start_the_remote_task_by_id(address, remote_task_id)
+            if not result:
+                # Unable to reach remote installation
+                time.sleep(2)
+                continue
+            if not result.get('success'):
+                self._log("Failed to set initial remote pending task to status '{}'".format(original_abspath), level='error')
+                # Send request to terminate the remote worker then return
+                self.links.remove_task_from_remote_installation(address, remote_task_id)
+                return False
+            if result.get('success'):
+                break
 
         # Loop while redundant_flag not set (while true because of below)
-        task_complete = False
+        worker_id = None
+        task_status = ''
         last_status_fetch = 0
         failed_status_count = 0
-        while not task_complete:
+        while task_status != 'complete':
             time.sleep(1)
             if self.redundant_flag.is_set():
                 # Send request to terminate the remote worker then exit
-                self.links.terminate_remote_worker(address, worker_id)
+                if worker_id:
+                    self.links.terminate_remote_worker(address, worker_id)
                 break
 
             # Only fetch the status every 5 seconds
             time_now = time.time()
-            if last_status_fetch > (time_now - 5):
+            polling_delay = 5
+            if task_status == 'pending':
+                # If a task is pending, poll every 15 seconds to avoid spamming the api
+                polling_delay = 15
+            if last_status_fetch > (time_now - polling_delay):
                 continue
 
             # Fetch task status
-            task_status = self.links.get_remote_pending_task_status(address, remote_task_id)
-            task_complete = False
-            for ts in task_status.get('results', []):
-                if str(ts.get('id')) == str(remote_task_id) and ts.get('status') == 'complete':
+            all_task_states = self.links.get_remote_pending_task_state(address, remote_task_id)
+            task_status = ''
+            for ts in all_task_states.get('results', []):
+                if str(ts.get('id')) == str(remote_task_id):
                     # Task is complete. Exit loop but do not set redundant flag on link manager
-                    task_complete = True
+                    task_status = ts.get('status')
                     break
-            if task_complete:
+
+            # If the task status is 'complete', break the loop here
+            if task_status == 'complete':
                 break
+
+            # If the task status is not 'in_progress', loop here and wait for task to be picked up by a worker
+            if task_status != 'in_progress':
+                # Mark this as the last time run
+                last_status_fetch = time_now
+                continue
+
+            # The task has been picked up by a worker, find out which one...
+            if not worker_id:
+                workers_status = self.links.get_all_worker_status(address)
+                for worker in workers_status:
+                    if str(worker.get('current_task')) == str(remote_task_id):
+                        worker_id = worker.get('id')
 
             # Fetch worker progress
             worker_status = self.links.get_single_worker_status(address, worker_id)

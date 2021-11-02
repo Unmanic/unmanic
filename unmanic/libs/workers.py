@@ -145,6 +145,7 @@ class Worker(threading.Thread):
             'idle':            self.idle,
             'paused':          self.paused,
             'start_time':      None if not self.start_time else str(self.start_time),
+            'current_task':    None,
             'current_file':    "",
             'worker_log_tail': [],
             'runners_info':    {},
@@ -155,6 +156,13 @@ class Worker(threading.Thread):
             },
         }
         if self.current_task:
+            # Fetch the current file
+            try:
+                status['current_task'] = self.current_task.get_task_id()
+            except Exception as e:
+                self._log("Exception in fetching the current task ID for worker {}:".format(self.name), message2=str(e),
+                          level="exception")
+
             # Fetch the current file
             try:
                 status['current_file'] = self.current_task.get_source_basename()

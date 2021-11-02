@@ -986,35 +986,60 @@ components:
           example: Worker-W0
           type: string
         idle:
-          description: ''
+          description: Flag - is worker idle
           example: true
           type: boolean
         paused:
-          description: ''
+          description: Flag - is worker paused
           example: false
           type: boolean
         start_time:
-          description: ''
-          example: ''
+          description: The time when this worker started processing a task
+          example: '1635746377.0021548'
           nullable: true
           type: string
         current_file:
-          description: ''
-          example: ''
+          description: The basename of the file currently being processed
+          example: file.mp4
           type: string
+        current_task:
+          description: The Task ID
+          example: 1
+          nullable: true
+          type: integer
         worker_log_tail:
           description: The log lines produced by the worker
-          example: []
+          example:
+          - "\n\nRUNNER: \nRemux Video Files [Pass #1]\n\n"
+          - '
+
+            Executing plugin runner... Please wait'
+          - '
+
+            Runner did not request to execute a command'
+          - '
+
+
+            No Plugin requested to run commands for this file ''/tmp/unmanic/unmanic_remote_pending_library-1635746225.3336523/file.mp4'''
           items:
             type: string
           minItems: 0
           type: array
         runners_info:
-          description: ''
-          example: {}
+          description: The status of the plugin runner currently processing the file
+          example:
+            video_remuxer:
+              author: Josh.5
+              description: Remux a video file to the configured container
+              icon: https://raw.githubusercontent.com/Josh5/unmanic.plugin.video_remuxer/master/icon.png
+              name: Remux Video Files
+              plugin_id: video_remuxer
+              status: complete
+              success: true
+              version: 0.0.5
           type: object
         subprocess:
-          description: ''
+          description: The status of the process currently being executed
           example:
             elapsed: None
             percent: None
@@ -1022,6 +1047,7 @@ components:
           type: object
       required:
       - current_file
+      - current_task
       - id
       - idle
       - name

@@ -1337,42 +1337,64 @@
                     },
                     "idle": {
                         "type": "boolean",
-                        "description": "",
+                        "description": "Flag - is worker idle",
                         "example": true
                     },
                     "paused": {
                         "type": "boolean",
-                        "description": "",
+                        "description": "Flag - is worker paused",
                         "example": false
                     },
                     "start_time": {
                         "type": "string",
                         "nullable": true,
-                        "description": "",
-                        "example": ""
+                        "description": "The time when this worker started processing a task",
+                        "example": "1635746377.0021548"
                     },
                     "current_file": {
                         "type": "string",
-                        "description": "",
-                        "example": ""
+                        "description": "The basename of the file currently being processed",
+                        "example": "file.mp4"
+                    },
+                    "current_task": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "The Task ID",
+                        "example": 1
                     },
                     "worker_log_tail": {
                         "type": "array",
                         "minItems": 0,
                         "description": "The log lines produced by the worker",
-                        "example": [],
+                        "example": [
+                            "\n\nRUNNER: \nRemux Video Files [Pass #1]\n\n",
+                            "\nExecuting plugin runner... Please wait",
+                            "\nRunner did not request to execute a command",
+                            "\n\nNo Plugin requested to run commands for this file '/tmp/unmanic/unmanic_remote_pending_library-1635746225.3336523/file.mp4'"
+                        ],
                         "items": {
                             "type": "string"
                         }
                     },
                     "runners_info": {
                         "type": "object",
-                        "description": "",
-                        "example": {}
+                        "description": "The status of the plugin runner currently processing the file",
+                        "example": {
+                            "video_remuxer": {
+                                "plugin_id": "video_remuxer",
+                                "status": "complete",
+                                "name": "Remux Video Files",
+                                "author": "Josh.5",
+                                "version": "0.0.5",
+                                "icon": "https://raw.githubusercontent.com/Josh5/unmanic.plugin.video_remuxer/master/icon.png",
+                                "description": "Remux a video file to the configured container",
+                                "success": true
+                            }
+                        }
                     },
                     "subprocess": {
                         "type": "object",
-                        "description": "",
+                        "description": "The status of the process currently being executed",
                         "example": {
                             "pid": 140408939493120,
                             "percent": "None",
@@ -1382,6 +1404,7 @@
                 },
                 "required": [
                     "current_file",
+                    "current_task",
                     "id",
                     "idle",
                     "name",

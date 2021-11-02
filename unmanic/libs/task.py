@@ -107,6 +107,11 @@ class Task(object):
         self.task_dict = model_to_dict(self.task, backrefs=True)
         return self.task_dict
 
+    def get_task_id(self):
+        if not self.task:
+            raise Exception('Unable to fetch task type. Task has not been set!')
+        return self.task.id
+
     def get_task_type(self):
         if not self.task:
             raise Exception('Unable to fetch task type. Task has not been set!')

@@ -37,7 +37,6 @@ import time
 from datetime import datetime
 
 from unmanic.libs import common, installation_link
-from unmanic.libs.installation_link import RemoteTaskManager
 from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.workers import Worker
 
@@ -125,6 +124,8 @@ class Foreman(threading.Thread):
         if plugin_handler.get_incompatible_enabled_plugins(frontend_messages):
             valid = False
         if not plugin_handler.within_enabled_plugin_limits(frontend_messages):
+            valid = False
+        if not self.links.within_enabled_link_limits(frontend_messages):
             valid = False
 
         # Check if plugin configuration has been modified. If it has, stop the workers.
@@ -248,8 +249,10 @@ class Foreman(threading.Thread):
             return
 
         # Startup a thread
-        thread = RemoteTaskManager(assigned_installation_id, "RemoteTaskManager-{}".format(assigned_installation_id),
-                                   assigned_installation_info, self.remote_workers_pending_task_queue, self.complete_queue)
+        thread = installation_link.RemoteTaskManager(assigned_installation_id,
+                                                     "RemoteTaskManager-{}".format(assigned_installation_id),
+                                                     assigned_installation_info, self.remote_workers_pending_task_queue,
+                                                     self.complete_queue)
         thread.daemon = True
         thread.start()
         self.remote_task_manager_threads[assigned_installation_id] = thread
@@ -341,7 +344,7 @@ class Foreman(threading.Thread):
 
     def postprocessor_queue_full(self):
         """
-        Check if Post-processor queue is greater than the number of workers enabled.pluginEnabledLimits
+        Check if Post-processor queue is greater than the number of workers enabled.
         If it is, return True. Else False.
 
         :return:

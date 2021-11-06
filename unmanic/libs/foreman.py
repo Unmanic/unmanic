@@ -273,12 +273,10 @@ class Foreman(threading.Thread):
     def update_remote_worker_availability_status(self):
         """
         Updates the list of available remote managers that can be started
-        # TODO: make the enable_preloading_remote_task_queue configurable
 
         :return:
         """
-        enable_remote_task_preloading = True
-        available_workers = self.links.check_remote_installation_for_available_workers(preload=enable_remote_task_preloading)
+        available_workers = self.links.check_remote_installation_for_available_workers()
         for installation_uuid in available_workers:
             remote_address = available_workers[installation_uuid].get('address', '')
             workers_in_installation = available_workers[installation_uuid].get('workers', [])
@@ -294,7 +292,8 @@ class Foreman(threading.Thread):
                     'uuid':    installation_uuid,
                     'address': remote_address,
                 }
-            if enable_remote_task_preloading:
+            # Check if this installation is configured for preloading
+            if available_workers[installation_uuid].get('enable_task_preloading'):
                 # Add an extra manager so that we can preload the remote pending task queue with one file and save
                 #   network transfer time
                 remote_manager_id = "{}|M{}".format(installation_uuid, (worker_number + 1))

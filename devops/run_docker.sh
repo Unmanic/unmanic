@@ -77,6 +77,7 @@ CMD="docker run -ti --rm --name=unmanic \
     -v ${PROJECT_BASE}/dev_environment/config:/config \
     -v ${PROJECT_BASE}/dev_environment/library:/library \
     -v ${PROJECT_BASE}/dev_environment/cache:/tmp/unmanic \
+    -v /run/user/:/run/user/ \
     -e PUID=${PUID} \
     -e PGID=${PGID} \
     -e DEBUGGING=${DEBUGGING} \

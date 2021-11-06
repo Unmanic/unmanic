@@ -78,6 +78,7 @@ class Links(object, metaclass=SingletonType):
             "address":                config_dict.get('address', '???'),
             "enable_receiving_tasks": config_dict.get('enable_receiving_tasks', False),
             "enable_sending_tasks":   config_dict.get('enable_sending_tasks', False),
+            "enable_task_preloading": config_dict.get('enable_task_preloading', True),
             "name":                   config_dict.get('name', '???'),
             "version":                config_dict.get('version', '???'),
             "uuid":                   config_dict.get('uuid', '???'),
@@ -391,7 +392,7 @@ class Links(object, metaclass=SingletonType):
             return True
         return False
 
-    def check_remote_installation_for_available_workers(self, preload=False):
+    def check_remote_installation_for_available_workers(self):
         """
         Return a list of installations with workers available for a remote task.
         This list is filtered by:
@@ -421,7 +422,7 @@ class Links(object, metaclass=SingletonType):
 
                 # Only installations that have not pending tasks
                 max_pending_tasks = 0
-                if preload:
+                if local_config.get('enable_task_preloading'):
                     max_pending_tasks = 1
                 results = self.remote_api_post(local_config.get('address'), '/unmanic/api/v2/pending/tasks', {
                     "start":  0,

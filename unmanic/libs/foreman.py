@@ -449,7 +449,7 @@ class Foreman(threading.Thread):
         time_now = time.time()
         if self.link_heartbeat_last_run > (time_now - 10):
             return
-        self._log("Running remote link manager heartbeat", level='debug')
+        # self._log("Running remote link manager heartbeat", level='debug')
         # Clear out dead threads
         self.remove_stopped_remote_task_manager_threads()
         # Check for updates to the worker availability status of linked remote installations
@@ -490,7 +490,7 @@ class Foreman(threading.Thread):
 
                 if not self.abort_flag.is_set() and not self.task_queue.task_list_pending_is_empty():
 
-                    # Check the status of all link manager threads (close dead ones - start new ones if a task is waiting)
+                    # Check the status of all link manager threads (close dead ones)
                     self.link_manager_tread_heartbeat()
 
                     # Check if we are able to start up a worker for another encoding job

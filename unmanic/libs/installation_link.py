@@ -438,8 +438,9 @@ class Links(object, metaclass=SingletonType):
                     if worker.get('idle') and not worker.get('paused'):
                         if not available_workers.get(local_config.get('uuid')):
                             available_workers[local_config.get('uuid')] = {
-                                "address": local_config.get('address'),
-                                "workers": []
+                                "address":                local_config.get('address'),
+                                "enable_task_preloading": local_config.get('enable_task_preloading'),
+                                "workers":                []
                             }
                         available_workers[local_config.get('uuid')]['workers'].append(worker)
                     elif not worker.get('idle') and not worker.get('paused'):
@@ -447,8 +448,9 @@ class Links(object, metaclass=SingletonType):
                         # This allows us to know that a remote is available for loading the pending task queue
                         if not available_workers.get(local_config.get('uuid')):
                             available_workers[local_config.get('uuid')] = {
-                                "address": local_config.get('address'),
-                                "workers": []
+                                "address":                local_config.get('address'),
+                                "enable_task_preloading": local_config.get('enable_task_preloading'),
+                                "workers":                []
                             }
             except Exception as e:
                 self._log("Failed to contact remote installation '{}'".format(local_config.get('address')), level='warning')

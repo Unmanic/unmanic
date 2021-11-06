@@ -40,6 +40,7 @@ from requests_toolbelt import MultipartEncoder
 
 from unmanic import config
 from unmanic.libs import common, session, unlogger
+from unmanic.libs.session import Session
 from unmanic.libs.singleton import SingletonType
 
 
@@ -455,6 +456,42 @@ class Links(object, metaclass=SingletonType):
 
         return available_workers
 
+    def within_enabled_link_limits(self, frontend_messages=None):
+        """
+        Ensure enabled plugins are within limits
+
+        :param frontend_messages:
+        :return:
+        """
+        # Fetch level from session
+        s = Session()
+        s.register_unmanic()
+        if s.level > 1:
+            return True
+
+        # Fetch all linked remote installations
+        remote_installations = self.settings.get_remote_installations()
+
+        def add_frontend_message():
+            # If the frontend messages queue was included in request, append a message
+            if frontend_messages:
+                frontend_messages.put(
+                    {
+                        'id':      'linkedInstallationLimits',
+                        'type':    'error',
+                        'code':    'linkedInstallationLimits',
+                        'message': '',
+                        'timeout': 0
+                    }
+                )
+
+        # Ensure remote installations are within limits
+        # Function was returned above if the user was logged in and able to use infinite
+        if len(remote_installations) > s.link_count:
+            add_frontend_message()
+            return False
+        return True
+
     def send_file_to_remote_installation(self, address: str, path: str):
         """
         Send a file to a remote installation.
@@ -462,7 +499,13 @@ class Links(object, metaclass=SingletonType):
 
         :return:
         """
-        return self.remote_api_post_file(address, '/unmanic/api/v2/upload/pending/file', path)
+        try:
+            return self.remote_api_post_file(address, '/unmanic/api/v2/upload/pending/file', path)
+        except requests.exceptions.RequestException as e:
+            self._log("Request to upload to remote installation failed", message2=str(e), level='warning')
+        except Exception as e:
+            self._log("Failed to upload to remote installation", message2=str(e), level='error')
+        return {}
 
     def remove_task_from_remote_installation(self, address: str, remote_task_id: int):
         """
@@ -491,10 +534,18 @@ class Links(object, metaclass=SingletonType):
 
         :return:
         """
-        data = {
-            "id_list": [remote_task_id]
-        }
-        return self.remote_api_post(address, '/unmanic/api/v2/pending/status/get', data, timeout=7)
+        try:
+            data = {
+                "id_list": [remote_task_id]
+            }
+            return self.remote_api_post(address, '/unmanic/api/v2/pending/status/get', data, timeout=7)
+        except requests.exceptions.Timeout:
+            self._log("Request to get status of remote task timed out", level='warning')
+        except requests.exceptions.RequestException as e:
+            self._log("Request to get status of remote task failed", message2=str(e), level='warning')
+        except Exception as e:
+            self._log("Failed to get status of remote pending task", message2=str(e), level='error')
+        return None
 
     def start_the_remote_task_by_id(self, address: str, remote_task_id: int):
         """
@@ -523,8 +574,16 @@ class Links(object, metaclass=SingletonType):
 
         :return:
         """
-        results = self.remote_api_get(address, '/unmanic/api/v2/workers/status')
-        return results.get('workers_status', [])
+        try:
+            results = self.remote_api_get(address, '/unmanic/api/v2/workers/status')
+            return results.get('workers_status', [])
+        except requests.exceptions.Timeout:
+            self._log("Request to get worker status timed out", level='warning')
+        except requests.exceptions.RequestException as e:
+            self._log("Request to get worker status failed", message2=str(e), level='warning')
+        except Exception as e:
+            self._log("Failed to get worker status", message2=str(e), level='error')
+        return []
 
     def get_single_worker_status(self, address: str, worker_id: str):
         """
@@ -532,8 +591,8 @@ class Links(object, metaclass=SingletonType):
 
         :return:
         """
-        results = self.remote_api_get(address, '/unmanic/api/v2/workers/status')
-        for worker in results.get('workers_status', []):
+        workers_status = self.get_all_worker_status(address)
+        for worker in workers_status:
             if worker.get('id') == worker_id:
                 return worker
         return {}
@@ -544,10 +603,18 @@ class Links(object, metaclass=SingletonType):
 
         :return:
         """
-        data = {
-            "worker_id": [worker_id]
-        }
-        return self.remote_api_delete(address, '/unmanic/api/v2/workers/worker/terminate', data)
+        try:
+            data = {
+                "worker_id": [worker_id]
+            }
+            return self.remote_api_delete(address, '/unmanic/api/v2/workers/worker/terminate', data)
+        except requests.exceptions.Timeout:
+            self._log("Request to terminate remote worker timed out", level='warning')
+        except requests.exceptions.RequestException as e:
+            self._log("Request to terminate remote worker failed", message2=str(e), level='warning')
+        except Exception as e:
+            self._log("Failed to terminate remote worker", message2=str(e), level='error')
+        return {}
 
     def fetch_remote_task_data(self, address: str, remote_task_id: int, path: str):
         """
@@ -559,14 +626,21 @@ class Links(object, metaclass=SingletonType):
         :return:
         """
         task_data = {}
-        # Request API generate a DL link
-        link_info = self.remote_api_get(address, '/unmanic/api/v2/pending/download/data/id/{}'.format(remote_task_id))
-        if link_info.get('link_id'):
-            # Download the data file
-            res = self.remote_api_get_download(address, '/unmanic/downloads/{}'.format(link_info.get('link_id')), path)
-            if res and os.path.exists(path):
-                with open(path) as f:
-                    task_data = json.load(f)
+        try:
+            # Request API generate a DL link
+            link_info = self.remote_api_get(address, '/unmanic/api/v2/pending/download/data/id/{}'.format(remote_task_id))
+            if link_info.get('link_id'):
+                # Download the data file
+                res = self.remote_api_get_download(address, '/unmanic/downloads/{}'.format(link_info.get('link_id')), path)
+                if res and os.path.exists(path):
+                    with open(path) as f:
+                        task_data = json.load(f)
+        except requests.exceptions.Timeout:
+            self._log("Request to fetch remote task data timed out", level='warning')
+        except requests.exceptions.RequestException as e:
+            self._log("Request to fetch remote task data failed", message2=str(e), level='warning')
+        except Exception as e:
+            self._log("Failed to fetch remote task data", message2=str(e), level='error')
         return task_data
 
     def fetch_remote_task_completed_file(self, address: str, remote_task_id: int, path: str):
@@ -578,13 +652,20 @@ class Links(object, metaclass=SingletonType):
         :param path:
         :return:
         """
-        # Request API generate a DL link
-        link_info = self.remote_api_get(address, '/unmanic/api/v2/pending/download/file/id/{}'.format(remote_task_id))
-        if link_info.get('link_id'):
-            # Download the file
-            res = self.remote_api_get_download(address, '/unmanic/downloads/{}'.format(link_info.get('link_id')), path)
-            if res and os.path.exists(path):
-                return True
+        try:
+            # Request API generate a DL link
+            link_info = self.remote_api_get(address, '/unmanic/api/v2/pending/download/file/id/{}'.format(remote_task_id))
+            if link_info.get('link_id'):
+                # Download the file
+                res = self.remote_api_get_download(address, '/unmanic/downloads/{}'.format(link_info.get('link_id')), path)
+                if res and os.path.exists(path):
+                    return True
+        except requests.exceptions.Timeout:
+            self._log("Request to fetch remote task completed file timed out", level='warning')
+        except requests.exceptions.RequestException as e:
+            self._log("Request to fetch remote task completed file failed", message2=str(e), level='warning')
+        except Exception as e:
+            self._log("Failed to fetch remote task completed file", message2=str(e), level='error')
         return False
 
 
@@ -780,7 +861,7 @@ class RemoteTaskManager(threading.Thread):
         worker_id = None
         task_status = ''
         last_status_fetch = 0
-        failed_status_count = 0
+        polling_delay = 5
         while task_status != 'complete':
             time.sleep(1)
             if self.redundant_flag.is_set():
@@ -791,35 +872,47 @@ class RemoteTaskManager(threading.Thread):
 
             # Only fetch the status every 5 seconds
             time_now = time.time()
-            polling_delay = 5
-            if task_status == 'pending':
-                # If a task is pending, poll every 15 seconds to avoid spamming the api
-                polling_delay = 15
             if last_status_fetch > (time_now - polling_delay):
                 continue
 
             # Fetch task status
             all_task_states = self.links.get_remote_pending_task_state(address, remote_task_id)
             task_status = ''
-            for ts in all_task_states.get('results', []):
-                if str(ts.get('id')) == str(remote_task_id):
-                    # Task is complete. Exit loop but do not set redundant flag on link manager
-                    task_status = ts.get('status')
-                    break
+            polling_delay = 5
+            if all_task_states:
+                for ts in all_task_states.get('results', []):
+                    if str(ts.get('id')) == str(remote_task_id):
+                        # Task is complete. Exit loop but do not set redundant flag on link manager
+                        task_status = ts.get('status')
+                        break
 
-            # If the task status is 'complete', break the loop here
+            # If the task status is 'complete', break the loop here and move onto the result retrieval
+            # If all_task_states returned no results (we are unable to connect to the remote installation)
+            # If all_task_states did return results but our task_status was found, the remote installation has removed our task
+            # If the task status is not 'in_progress', loop here and wait for task to be picked up by a worker
             if task_status == 'complete':
                 break
-
-            # If the task status is not 'in_progress', loop here and wait for task to be picked up by a worker
-            if task_status != 'in_progress':
+            elif not all_task_states:
+                polling_delay = 30
+                continue
+            elif all_task_states.get('results') and task_status == '':
+                self._log("Task has been removed by remote installation '{}'".format(original_abspath), level='error')
+                return False
+            elif task_status != 'in_progress':
                 # Mark this as the last time run
                 last_status_fetch = time_now
+                polling_delay = 15
                 continue
 
-            # The task has been picked up by a worker, find out which one...
+            # Check if we know the task's worker ID already
             if not worker_id:
+                # The task has been picked up by a worker, find out which one...
                 workers_status = self.links.get_all_worker_status(address)
+                if not workers_status:
+                    # The request failed for some reason... Perhaps we lost contact with the remote installation
+                    # Mark this as the last time run
+                    last_status_fetch = time_now
+                    continue
                 for worker in workers_status:
                     if str(worker.get('current_task')) == str(remote_task_id):
                         worker_id = worker.get('id')
@@ -827,12 +920,9 @@ class RemoteTaskManager(threading.Thread):
             # Fetch worker progress
             worker_status = self.links.get_single_worker_status(address, worker_id)
             if not worker_status:
-                failed_status_count += 1
-                # If this count gets above 20, kill the task - we have lost contact
-                if failed_status_count > 20:
-                    self.redundant_flag.set()
-                    # Dont wait for the next loop to terminate the process - cant reach it anyway!
-                    break
+                # Mark this as the last time run
+                last_status_fetch = time_now
+                continue
 
             # Update status
             self.paused = worker_status.get('paused')

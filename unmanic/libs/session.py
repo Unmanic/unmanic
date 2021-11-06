@@ -56,7 +56,12 @@ class Session(object, metaclass=SingletonType):
     """
     non supporter plugin count
     """
-    plugin_count = 5
+    plugin_count = 10
+
+    """
+    non supporter linked installations count
+    """
+    link_count = 1
 
     """
     picture_uri - The user avatar

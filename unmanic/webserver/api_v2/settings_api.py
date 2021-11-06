@@ -380,11 +380,13 @@ class ApiSettingsHandler(BaseApiHandler):
                 {
                     "link_config": {
                         "address":                data.get('address'),
+                        "available":              data.get('available', False),
                         "name":                   data.get('name'),
                         "version":                data.get('version'),
+                        "last_updated":           data.get('last_updated', 1),
                         "enable_receiving_tasks": data.get('enable_receiving_tasks'),
                         "enable_sending_tasks":   data.get('enable_sending_tasks'),
-                        "last_updated":           data.get('last_updated', 1),
+                        "enable_task_preloading": data.get('enable_task_preloading'),
                     },
                 }
             )

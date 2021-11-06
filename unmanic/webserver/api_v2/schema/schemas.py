@@ -939,11 +939,12 @@ class SettingsRemoteInstallationLinkConfigSchema(BaseSchema):
         example={
             "address":                "10.0.0.2:8888",
             "available":              True,
+            "name":                   "API schema generated",
+            "version":                "0.1.3",
+            "last_updated":           1636166593.013826,
             "enable_receiving_tasks": False,
             "enable_sending_tasks":   False,
-            "name":                   "API schema generated",
-            "uuid":                   "7cd35429-76ab-4a29-8649-8c91236b5f8b",
-            "version":                "0.1.3"
+            "enable_task_preloading": True,
         },
     )
 

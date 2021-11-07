@@ -500,9 +500,11 @@ class Foreman(threading.Thread):
 
                     # Check if there are any free workers
                     if self.check_for_idle_workers():
-                        local = True
+                        process_local = True
+                        get_local_pending_tasks_only = False
                     elif self.check_for_idle_remote_workers():
-                        local = False
+                        process_local = False
+                        get_local_pending_tasks_only = True
                     else:
                         # All workers are currently busy
                         time.sleep(1)
@@ -513,13 +515,13 @@ class Foreman(threading.Thread):
                         time.sleep(3)
                         continue
 
-                    next_item_to_process = self.task_queue.get_next_pending_tasks()
+                    next_item_to_process = self.task_queue.get_next_pending_tasks(get_local_pending_tasks_only)
                     if next_item_to_process:
                         try:
                             self._log("Processing item - {}".format(next_item_to_process.get_source_abspath()))
                         except Exception as e:
                             self._log("Exception in fetching task absolute path", message2=str(e), level="exception")
-                        self.hand_task_to_workers(next_item_to_process, local=local)
+                        self.hand_task_to_workers(next_item_to_process, local=process_local)
         except Exception as e:
             self.stop()
             raise Exception(e)

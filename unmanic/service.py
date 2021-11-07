@@ -190,7 +190,7 @@ class Service:
 
         # Clear cache directory
         main_logger.info("Clearing previous cache")
-        common.clean_files_in_dir(settings.get_cache_path())
+        common.clean_files_in_cache_dir(settings.get_cache_path())
 
         main_logger.info("Starting all threads")
 

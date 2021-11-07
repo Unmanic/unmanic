@@ -88,7 +88,7 @@ class ApiUploadHandler(BaseApiHandler):
         # Set the output path to the cache directory
         out_folder = "unmanic_remote_pending_library-{}".format(time.time())
         if not self.cache_directory:
-            self.cache_directory = os.path.join(self.config.get_cache_path(), out_folder)
+            self.cache_directory = os.path.join(self.config.get_cache_path(), 'remote_library', out_folder)
             if not os.path.exists(self.cache_directory):
                 os.makedirs(self.cache_directory)
 

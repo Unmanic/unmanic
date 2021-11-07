@@ -312,7 +312,7 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
                 'length':       '10',
                 'search_value': '',
                 'order':        {
-                    "column": 'finish_time',
+                    "column": 'priority',
                     "dir":    'desc',
                 }
             }

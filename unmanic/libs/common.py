@@ -146,17 +146,23 @@ def touch(fname, mode=0o666, dir_fd=None, **kwargs):
                  dir_fd=None if os.supports_fd else dir_fd, **kwargs)
 
 
-def clean_files_in_dir(directory):
+def clean_files_in_cache_dir(cache_directory):
     """This will completely wipe all contents from a directory"""
-    if os.path.exists(directory):
-        for root, subFolders, files in os.walk(directory):
+    if os.path.exists(cache_directory):
+        for root, subFolders, files in os.walk(cache_directory):
             root_bn = os.path.basename(root)
-            if root_bn.startswith("unmanic_file_conversion") or root_bn.startswith("unmanic_remote_pending_library"):
+            if root_bn.startswith("unmanic_file_conversion"):
                 print("Clearing cache path - {}".format(root))
                 try:
                     shutil.rmtree(root)
                 except Exception as e:
                     print("Exception while clearing cache path - {}".format(str(e)))
+            elif root_bn.startswith("remote_library") and "unmanic_remote_pending_library-" in root:
+                print("Clearing remote library cache path - {}".format(root))
+                try:
+                    shutil.rmtree(root)
+                except Exception as e:
+                    print("Exception while clearing remote library cache path - {}".format(str(e)))
 
 
 def random_string(string_length=5):

@@ -14,10 +14,10 @@
 #          to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 #          copies of the Software, and to permit persons to whom the Software is
 #          furnished to do so, subject to the following conditions:
-# 
+#
 #          The above copyright notice and this permission notice shall be included in all
 #          copies or substantial portions of the Software.
-# 
+#
 #          THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 #          EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 #          MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -34,6 +34,7 @@ PROJECT_BASE=$(realpath ${SCRIPT_PATH}/..);
 PUID=$(id -u);
 PGID=$(id -g);
 DEBUGGING=false;
+CACHE_PATH="${PROJECT_BASE}/dev_environment/cache/";
 
 ADDITIONAL_DOCKER_PARAMS=""
 for ARG in ${@}; do
@@ -49,6 +50,9 @@ for ARG in ${@}; do
             ;;
         --memory*)
             ADDITIONAL_DOCKER_PARAMS="${ADDITIONAL_DOCKER_PARAMS} --memory='$(echo ${ARG} | awk -F'=' '{print $2}')'";
+            ;;
+        --cache*)
+            CACHE_PATH="$(echo ${ARG} | awk -F'=' '{print $2}')"
             ;;
         *)
             ;;
@@ -73,10 +77,11 @@ fi
 CMD="docker run -ti --rm --name=unmanic \
     -e TZ=Pacific/Auckland \
     -p 8888:8888 \
-    -v ${PROJECT_BASE}/:/app \
-    -v ${PROJECT_BASE}/dev_environment/config:/config \
-    -v ${PROJECT_BASE}/dev_environment/library:/library \
-    -v ${PROJECT_BASE}/dev_environment/cache:/tmp/unmanic \
+    -v ${PROJECT_BASE}/:/app/ \
+    -v ${PROJECT_BASE}/dev_environment/config/:/config/ \
+    -v ${PROJECT_BASE}/dev_environment/library/:/library/ \
+    -v ${CACHE_PATH}/:/tmp/unmanic/ \
+    -v ${CACHE_PATH}/remote_library/:/tmp/unmanic/remote_library/ \
     -v /run/user/:/run/user/ \
     -e PUID=${PUID} \
     -e PGID=${PGID} \

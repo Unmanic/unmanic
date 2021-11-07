@@ -42,9 +42,6 @@ from unmanic.libs.singleton import SingletonType
 class DownloadsLinks(object, metaclass=SingletonType):
     _download_links = {}
 
-    def __init__(self):
-        self.all_items = set()
-
     def __remove_expired(self):
         """
         Find and remove expired links

@@ -58,21 +58,30 @@ def build_tasks_count_query(status):
     return query.count()
 
 
-def build_tasks_query(status, sort_by='id', sort_order='asc'):
+def build_tasks_query(status, sort_by='id', sort_order='asc', local_only=False):
     """
     Return the first task item in the task list filtered by status
     and sorted by the self.sort_by and self.sort_order variables.
 
+    :param status:
     :param sort_order:
     :param sort_by:
-    :param status:
+    :param local_only:
     :return:
     """
     # pick query based on sort params
+    query = Tasks.select().where((Tasks.status == status))
+
+    # Limit to one result
+    if local_only:
+        query = query.where((Tasks.type == 'local'))
+
+    # Limit to one result
+    query = query.limit(1)
     if sort_order == 'asc':
-        query = Tasks.select().where((Tasks.status == status)).limit(1).order_by(sort_by.asc())
+        query = query.order_by(sort_by.asc())
     else:
-        query = Tasks.select().where((Tasks.status == status)).limit(1).order_by(sort_by.desc())
+        query = query.order_by(sort_by.desc())
     return query.first()
 
 
@@ -104,17 +113,18 @@ def build_tasks_query_full_task_list(status, sort_by='id', sort_order='asc', lim
     return query.dicts()
 
 
-def fetch_next_task_filtered(status, sort_by='id', sort_order='asc'):
+def fetch_next_task_filtered(status, sort_by='id', sort_order='asc', local_only=False):
     """
     Returns the next task in the task list for a given status
 
+    :param status:
     :param sort_order:
     :param sort_by:
-    :param status:
+    :param local_only:
     :return:
     """
     # Fetch the task item first (to ensure it exists)
-    task_item = build_tasks_query(status, sort_by, sort_order)
+    task_item = build_tasks_query(status, sort_by, sort_order, local_only)
     if not task_item:
         return False
     # Set the task object by the abspath and return it
@@ -195,15 +205,16 @@ class TaskQueue(object):
     Get first task in task list based on status pending, in_progress or processed
     """
 
-    def get_next_pending_tasks(self):
+    def get_next_pending_tasks(self, local_only=False):
         """
         Fetch the next pending task.
         Set that task status as 'in_progress' and then return it.
 
+        :param local_only:
         :return:
         """
         # Fetch Task item matching the filters specified
-        task_item = fetch_next_task_filtered('pending', self.sort_by, self.sort_order)
+        task_item = fetch_next_task_filtered('pending', self.sort_by, self.sort_order, local_only)
         return task_item
 
     def get_next_processed_tasks(self):

@@ -45,6 +45,7 @@ from unmanic.libs.singleton import SingletonType
 
 
 class Links(object, metaclass=SingletonType):
+    _network_transfer_lock = {}
 
     def __init__(self, *args, **kwargs):
         self.settings = config.Config()
@@ -86,6 +87,30 @@ class Links(object, metaclass=SingletonType):
             "available":              config_dict.get('available', False),
             "last_updated":           config_dict.get('last_updated', time.time()),
         }
+
+    def acquire_network_transfer_lock(self, url):
+        time_now = time.time()
+        lock = threading.RLock()
+        with lock:
+            if self._network_transfer_lock.get('expires', 0) < time_now:
+                # Create new upload lock that will expire in 2 minutes
+                self._network_transfer_lock['expires'] = (time.time() + 120)
+                self._network_transfer_lock['url'] = url
+                # Return success
+                return True
+        # Failed to acquire network transfer lock
+        return False
+
+    def release_network_transfer_lock(self, url):
+        lock = threading.RLock()
+        with lock:
+            if self._network_transfer_lock.get('url') == url:
+                # Expire the lock
+                self._network_transfer_lock = {}
+                # Return success
+                return True
+        # Failed to release network transfer lock - perhaps the url is incorrect
+        return False
 
     def remote_api_get(self, remote_url: str, endpoint: str):
         """
@@ -828,12 +853,21 @@ class RemoteTaskManager(threading.Thread):
         # Get source file checksum
         initial_checksum = common.get_file_checksum(original_abspath)
 
-        # Send a file to a remote installation.
-        self._log("Uploading file to remote installation '{}'".format(original_abspath), level='debug')
-        info = self.links.send_file_to_remote_installation(address, original_abspath)
-        if not info:
-            self._log("Failed to upload the file '{}'".format(original_abspath), level='error')
-            return False
+        # Loop until we are able to upload the file to the remote installation
+        while not self.redundant_flag.is_set():
+            # Check for network transfer lock
+            if not self.links.acquire_network_transfer_lock(address):
+                time.sleep(1)
+                continue
+
+            # Send a file to a remote installation.
+            self._log("Uploading file to remote installation '{}'".format(original_abspath), level='debug')
+            info = self.links.send_file_to_remote_installation(address, original_abspath)
+            self.links.release_network_transfer_lock(address)
+            if not info:
+                self._log("Failed to upload the file '{}'".format(original_abspath), level='error')
+                return False
+            break
 
         remote_task_id = info.get('id')
 
@@ -970,13 +1004,21 @@ class RemoteTaskManager(threading.Thread):
             # Read the updated cache path
             task_cache_path = self.current_task.get_cache_path()
 
-            # Download the file
-            success = self.links.fetch_remote_task_completed_file(address, remote_task_id, task_cache_path)
-            if not success:
-                self._log("Failed to download file '{}'".format(os.path.basename(data.get('abspath'))), level='error')
-                # Send request to terminate the remote worker then return
-                self.links.remove_task_from_remote_installation(address, remote_task_id)
-                return False
+            # Loop until we are able to upload the file to the remote installation
+            while not self.redundant_flag.is_set():
+                # Check for network transfer lock
+                if not self.links.acquire_network_transfer_lock(address):
+                    time.sleep(1)
+                    continue
+                # Download the file
+                success = self.links.fetch_remote_task_completed_file(address, remote_task_id, task_cache_path)
+                self.links.release_network_transfer_lock(address)
+                if not success:
+                    self._log("Failed to download file '{}'".format(os.path.basename(data.get('abspath'))), level='error')
+                    # Send request to terminate the remote worker then return
+                    self.links.remove_task_from_remote_installation(address, remote_task_id)
+                    return False
+                break
 
             # Match checksum from task result data with downloaded file
             downloaded_checksum = common.get_file_checksum(task_cache_path)

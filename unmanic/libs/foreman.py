@@ -351,7 +351,7 @@ class Foreman(threading.Thread):
         """
         frontend_messages = self.data_queues.get('frontend_messages')
         limit = self.get_worker_count()
-        if len(self.task_queue.list_processed_tasks()) > limit:
+        if len(self.task_queue.list_processed_tasks()) > (int(limit) + 1):
             self._log("Postprocessor queue is over {}. Halting feeding workers until it drops.".format(limit), level='warning')
             frontend_messages.update(
                 {

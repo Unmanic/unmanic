@@ -56,6 +56,9 @@ class LibraryScannerManager(threading.Thread):
         self.abort_flag.clear()
         self.scheduler = schedule.Scheduler()
 
+        self.results_manager_threads = {}
+        self.files_to_test = queue.Queue()
+
     def _log(self, message, message2='', level="info"):
         if not self.logger:
             unmanic_logging = unlogger.UnmanicLogger.__call__()
@@ -65,16 +68,16 @@ class LibraryScannerManager(threading.Thread):
 
     def stop(self):
         self.abort_flag.set()
+        # Stop all child threads
+        self.stop_all_results_manager_threads()
 
     def abort_is_set(self):
         # Check if the abort flag is set
         if self.abort_flag.is_set():
             # Return True straight away if it is
             return True
-
         # Sleep for a fraction of a second to prevent CPU pinning
         time.sleep(.1)
-
         # Return False
         return False
 
@@ -153,6 +156,17 @@ class LibraryScannerManager(threading.Thread):
     def add_path_to_queue(self, pathname):
         self.scheduledtasks.put(pathname)
 
+    def start_results_manager_thread(self, thread_id, frontend_messages):
+        thread = LibraryScanThread("LibraryScanThread-{}".format(thread_id), self.files_to_test,
+                                   self.scheduledtasks, frontend_messages)
+        thread.daemon = True
+        thread.start()
+        self.results_manager_threads[thread_id] = thread
+
+    def stop_all_results_manager_threads(self):
+        for thread_id in self.results_manager_threads:
+            self.results_manager_threads[thread_id].abort_flag.set()
+
     def scan_library_path(self, search_folder):
         if not os.path.exists(search_folder):
             self._log("Path does not exist - '{}'".format(search_folder), level="warning")
@@ -163,10 +177,13 @@ class LibraryScannerManager(threading.Thread):
         # Push status notification to frontend
         frontend_messages = self.data_queues.get('frontend_messages')
 
+        # Start X number of LibraryScanThread threads (2)
+        for results_manager_id in range(2):
+            self.start_results_manager_thread(results_manager_id, frontend_messages)
+
         start_time = time.time()
 
         follow_symlinks = self.settings.get_follow_symlinks()
-        file_test = FileTest()
         for root, subFolders, files in os.walk(search_folder, followlinks=follow_symlinks):
             if self.abort_flag.is_set():
                 break
@@ -177,36 +194,22 @@ class LibraryScannerManager(threading.Thread):
                 if self.abort_flag.is_set():
                     break
 
-                # Get full path to file
-                pathname = os.path.join(root, file_path)
+                # Place file's full path in queue to be tested
+                self.files_to_test.put(os.path.join(root, file_path))
 
-                frontend_messages.update(
-                    {
-                        'id':      'libraryScanProgress',
-                        'type':    'status',
-                        'code':    'libraryScanProgress',
-                        'message': pathname,
-                        'timeout': 0
-                    }
-                )
+        # Loop while waiting for all treads to finish
+        while not self.abort_is_set():
+            # Check if all files have been tested
+            if self.files_to_test.empty():
+                # There are not more files to test. Mark manager threads as completed
+                self.stop_all_results_manager_threads()
+                break
 
-                # Test file to be added to task list. Add it if required
-                try:
-                    result, issues = file_test.should_file_be_added_to_task_list(pathname)
-                    # Log any error messages
-                    for issue in issues:
-                        if type(issue) is dict:
-                            self._log(issue.get('message'))
-                        else:
-                            self._log(issue)
-                    # If file needs to be added, then add it
-                    if result:
-                        self.add_path_to_queue(pathname)
-                except UnicodeEncodeError:
-                    self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
-                except Exception as e:
-                    self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e),
-                              level="exception")
+        # Wait for threads to finish and
+        for thread_id in self.results_manager_threads:
+            self.results_manager_threads[thread_id].abort_flag.set()
+            self.results_manager_threads[thread_id].join(2)
+        self.results_manager_threads = {}
 
         self._log("Library scan completed in {} seconds".format((time.time() - start_time)), level="warning")
 
@@ -217,3 +220,73 @@ class LibraryScannerManager(threading.Thread):
         from unmanic.libs import session
         s = session.Session()
         s.register_unmanic()
+
+
+class LibraryScanThread(threading.Thread):
+    def __init__(self, name, files_to_test, scheduledtasks, frontend_messages):
+        super(LibraryScanThread, self).__init__(name=name)
+        self.settings = config.Config()
+        self.logger = None
+        self.files_to_test = files_to_test
+        self.scheduledtasks = scheduledtasks
+        self.frontend_messages = frontend_messages
+        self.abort_flag = threading.Event()
+        self.abort_flag.clear()
+
+    def _log(self, message, message2='', level="info"):
+        if not self.logger:
+            unmanic_logging = unlogger.UnmanicLogger.__call__()
+            self.logger = unmanic_logging.get_logger(self.name)
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
+
+    def stop(self):
+        self.abort_flag.set()
+
+    def run(self):
+        # If we have a config set to run a schedule, then start the process.
+        # Otherwise close this thread now.
+        self._log("Starting {}".format(self.name))
+        file_test = FileTest()
+        while not self.abort_flag.is_set():
+            try:
+                # Pending task queue has an item available. Fetch it.
+                next_file = self.files_to_test.get_nowait()
+
+                self.frontend_messages.update(
+                    {
+                        'id':      'libraryScanProgress',
+                        'type':    'status',
+                        'code':    'libraryScanProgress',
+                        'message': next_file,
+                        'timeout': 0
+                    }
+                )
+
+                # Test file to be added to task list. Add it if required
+                try:
+                    result, issues = file_test.should_file_be_added_to_task_list(next_file)
+                    # Log any error messages
+                    for issue in issues:
+                        if type(issue) is dict:
+                            self._log(issue.get('message'))
+                        else:
+                            self._log(issue)
+                    # If file needs to be added, then add it
+                    if result:
+                        self.add_path_to_queue(next_file)
+                except UnicodeEncodeError:
+                    self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
+                except Exception as e:
+                    self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e),
+                              level="exception")
+            except queue.Empty:
+                time.sleep(.1)
+                continue
+            except Exception as e:
+                self._log("Exception in checking library scan results with {}:".format(self.name), message2=str(e),
+                          level="exception")
+        self._log("Exiting {}".format(self.name))
+
+    def add_path_to_queue(self, pathname):
+        self.scheduledtasks.put(pathname)

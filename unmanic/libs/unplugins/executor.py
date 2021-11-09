@@ -280,7 +280,7 @@ class PluginExecutor(object):
                           level="exception")
 
             del runner
-            gc.collect()
+            #gc.collect()
 
         return run_successfully
 

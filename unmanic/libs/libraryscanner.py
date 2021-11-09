@@ -163,7 +163,10 @@ class LibraryScannerManager(threading.Thread):
         # Push status notification to frontend
         frontend_messages = self.data_queues.get('frontend_messages')
 
+        start_time = time.time()
+
         follow_symlinks = self.settings.get_follow_symlinks()
+        file_test = FileTest()
         for root, subFolders, files in os.walk(search_folder, followlinks=follow_symlinks):
             if self.abort_flag.is_set():
                 break
@@ -189,8 +192,7 @@ class LibraryScannerManager(threading.Thread):
 
                 # Test file to be added to task list. Add it if required
                 try:
-                    file_test = FileTest(pathname)
-                    result, issues = file_test.should_file_be_added_to_task_list()
+                    result, issues = file_test.should_file_be_added_to_task_list(pathname)
                     # Log any error messages
                     for issue in issues:
                         if type(issue) is dict:
@@ -205,6 +207,8 @@ class LibraryScannerManager(threading.Thread):
                 except Exception as e:
                     self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e),
                               level="exception")
+
+        self._log("Library scan completed in {} seconds".format((time.time() - start_time)), level="warning")
 
         # Remove frontend status message
         frontend_messages.remove_item('libraryScanProgress')

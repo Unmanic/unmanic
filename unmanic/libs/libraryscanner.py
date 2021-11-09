@@ -29,7 +29,9 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import gc
 import json
+import multiprocessing
 import os
 import queue
 import threading
@@ -56,8 +58,9 @@ class LibraryScannerManager(threading.Thread):
         self.abort_flag.clear()
         self.scheduler = schedule.Scheduler()
 
-        self.results_manager_threads = {}
-        self.files_to_test = queue.Queue()
+        self.results_managers = {}
+        self.files_to_test = multiprocessing.Queue()
+        self.files_to_process = multiprocessing.Queue()
 
     def _log(self, message, message2='', level="info"):
         if not self.logger:
@@ -68,8 +71,8 @@ class LibraryScannerManager(threading.Thread):
 
     def stop(self):
         self.abort_flag.set()
-        # Stop all child threads
-        self.stop_all_results_manager_threads()
+        # Terminate all child threads
+        self.terminate_all_results_managers()
 
     def abort_is_set(self):
         # Check if the abort flag is set
@@ -156,16 +159,31 @@ class LibraryScannerManager(threading.Thread):
     def add_path_to_queue(self, pathname):
         self.scheduledtasks.put(pathname)
 
-    def start_results_manager_thread(self, thread_id, frontend_messages):
-        thread = LibraryScanThread("LibraryScanThread-{}".format(thread_id), self.files_to_test,
-                                   self.scheduledtasks, frontend_messages)
-        thread.daemon = True
-        thread.start()
-        self.results_manager_threads[thread_id] = thread
+    def start_results_manager_thread(self, manager_id, status_updates):
+        manager = LibraryScanProcess("LibraryScanProcess-{}".format(manager_id), self.files_to_test,
+                                     self.files_to_process, status_updates)
+        manager.daemon = True
+        manager.start()
+        self.results_managers[manager_id] = manager
 
-    def stop_all_results_manager_threads(self):
-        for thread_id in self.results_manager_threads:
-            self.results_manager_threads[thread_id].abort_flag.set()
+    def stop_all_results_managers(self):
+        for manager_id in self.results_managers:
+            self.results_managers[manager_id].abort_flag.set()
+
+    def terminate_all_results_managers(self):
+        for manager_id in self.results_managers:
+            proc = self.results_managers[manager_id]
+            proc.abort_flag.set()
+            proc.join(timeout=0)
+            if proc.is_alive():
+                self._log("Terminating LibraryScanProcess-{}".format(manager_id))
+                self.results_managers[manager_id].terminate()
+                self.results_managers[manager_id].join(1)
+            if proc.is_alive():
+                self._log("Killing LibraryScanProcess-{}".format(manager_id))
+                self.results_managers[manager_id].kill()
+                self.results_managers[manager_id].join(1)
+            # self.results_managers[manager_id].close()
 
     def scan_library_path(self, search_folder):
         if not os.path.exists(search_folder):
@@ -177,11 +195,22 @@ class LibraryScannerManager(threading.Thread):
         # Push status notification to frontend
         frontend_messages = self.data_queues.get('frontend_messages')
 
-        # Start X number of LibraryScanThread threads (2)
-        for results_manager_id in range(2):
-            self.start_results_manager_thread(results_manager_id, frontend_messages)
+        # Start X number of LibraryScanProcess threads (3)
+        status_updates = multiprocessing.Queue()
+        for results_manager_id in range(3):
+            self.start_results_manager_thread(results_manager_id, status_updates)
 
         start_time = time.time()
+
+        frontend_messages.update(
+            {
+                'id':      'libraryScanProgress',
+                'type':    'status',
+                'code':    'libraryScanProgress',
+                'message': "Scanning directory - '{}'".format(search_folder),
+                'timeout': 0
+            }
+        )
 
         follow_symlinks = self.settings.get_follow_symlinks()
         for root, subFolders, files in os.walk(search_folder, followlinks=follow_symlinks):
@@ -197,21 +226,43 @@ class LibraryScannerManager(threading.Thread):
                 # Place file's full path in queue to be tested
                 self.files_to_test.put(os.path.join(root, file_path))
 
+                # Update status messages while fetching file list
+                if not status_updates.empty():
+                    frontend_messages.update(status_updates.get())
+
         # Loop while waiting for all treads to finish
-        while not self.abort_is_set():
+        double_check = 0
+        while not self.abort_flag.is_set():
             # Check if all files have been tested
-            if self.files_to_test.empty():
-                # There are not more files to test. Mark manager threads as completed
-                self.stop_all_results_manager_threads()
-                break
+            if self.files_to_test.empty() and self.files_to_process.empty() and status_updates.empty():
+                double_check += 1
+                if double_check > 3:
+                    # There are not more files to test. Mark manager threads as completed
+                    self.stop_all_results_managers()
+                    break
+                time.sleep(.2)
+                continue
+
+            # Fetch frontend messages from queue
+            if not status_updates.empty():
+                frontend_messages.update(status_updates.get())
+                continue
+            elif not self.files_to_process.empty():
+                self.add_path_to_queue(self.files_to_process.get())
+                continue
+            else:
+                time.sleep(.1)
 
         # Wait for threads to finish and
-        for thread_id in self.results_manager_threads:
-            self.results_manager_threads[thread_id].abort_flag.set()
-            self.results_manager_threads[thread_id].join(2)
-        self.results_manager_threads = {}
+        for manager_id in self.results_managers:
+            self.results_managers[manager_id].abort_flag.set()
+            self.results_managers[manager_id].join(2)
+        self.results_managers = {}
 
         self._log("Library scan completed in {} seconds".format((time.time() - start_time)), level="warning")
+
+        # Run a manual garbage collection
+        gc.collect()
 
         # Remove frontend status message
         frontend_messages.remove_item('libraryScanProgress')
@@ -222,15 +273,15 @@ class LibraryScannerManager(threading.Thread):
         s.register_unmanic()
 
 
-class LibraryScanThread(threading.Thread):
-    def __init__(self, name, files_to_test, scheduledtasks, frontend_messages):
-        super(LibraryScanThread, self).__init__(name=name)
+class LibraryScanProcess(multiprocessing.Process):
+    def __init__(self, name, files_to_test, files_to_process, status_updates):
+        super(LibraryScanProcess, self).__init__(name=name)
         self.settings = config.Config()
         self.logger = None
         self.files_to_test = files_to_test
-        self.scheduledtasks = scheduledtasks
-        self.frontend_messages = frontend_messages
-        self.abort_flag = threading.Event()
+        self.files_to_process = files_to_process
+        self.status_updates = status_updates
+        self.abort_flag = multiprocessing.Event()
         self.abort_flag.clear()
 
     def _log(self, message, message2='', level="info"):
@@ -253,7 +304,7 @@ class LibraryScanThread(threading.Thread):
                 # Pending task queue has an item available. Fetch it.
                 next_file = self.files_to_test.get_nowait()
 
-                self.frontend_messages.update(
+                self.status_updates.put(
                     {
                         'id':      'libraryScanProgress',
                         'type':    'status',
@@ -289,4 +340,4 @@ class LibraryScanThread(threading.Thread):
         self._log("Exiting {}".format(self.name))
 
     def add_path_to_queue(self, pathname):
-        self.scheduledtasks.put(pathname)
+        self.files_to_process.put(pathname)

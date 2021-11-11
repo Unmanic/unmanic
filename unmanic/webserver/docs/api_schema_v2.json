@@ -1290,8 +1290,14 @@
                             "last_updated": 1636166593.013826,
                             "enable_receiving_tasks": false,
                             "enable_sending_tasks": false,
-                            "enable_task_preloading": true
+                            "enable_task_preloading": true,
+                            "enable_distributed_worker_count": false
                         }
+                    },
+                    "distributed_worker_count_target": {
+                        "type": "integer",
+                        "description": "The target count of workers to be distributed across any configured linked installations",
+                        "example": 4
                     }
                 },
                 "required": [

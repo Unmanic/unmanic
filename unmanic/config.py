@@ -79,6 +79,7 @@ class Config(object, metaclass=SingletonType):
         # Link settings
         self.installation_name = ''
         self.remote_installations = []
+        self.distributed_worker_count_target = 0
 
         # Import env variables and override all previous settings.
         self.__import_settings_from_env()
@@ -438,4 +439,16 @@ class Config(object, metaclass=SingletonType):
 
         :return:
         """
-        return self.remote_installations
+        remote_installations = []
+        for ri in self.remote_installations:
+            ri['distributed_worker_count_target'] = self.distributed_worker_count_target
+            remote_installations.append(ri)
+        return remote_installations
+
+    def get_distributed_worker_count_target(self):
+        """
+        Get setting - distributed_worker_count_target
+
+        :return:
+        """
+        return self.distributed_worker_count_target

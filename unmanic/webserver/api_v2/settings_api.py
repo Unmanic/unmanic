@@ -378,16 +378,18 @@ class ApiSettingsHandler(BaseApiHandler):
             response = self.build_response(
                 SettingsRemoteInstallationLinkConfigSchema(),
                 {
-                    "link_config": {
-                        "address":                data.get('address'),
-                        "available":              data.get('available', False),
-                        "name":                   data.get('name'),
-                        "version":                data.get('version'),
-                        "last_updated":           data.get('last_updated', 1),
-                        "enable_receiving_tasks": data.get('enable_receiving_tasks'),
-                        "enable_sending_tasks":   data.get('enable_sending_tasks'),
-                        "enable_task_preloading": data.get('enable_task_preloading'),
+                    "link_config":                     {
+                        "address":                         data.get('address'),
+                        "available":                       data.get('available', False),
+                        "name":                            data.get('name'),
+                        "version":                         data.get('version'),
+                        "last_updated":                    data.get('last_updated', 1),
+                        "enable_receiving_tasks":          data.get('enable_receiving_tasks'),
+                        "enable_sending_tasks":            data.get('enable_sending_tasks'),
+                        "enable_task_preloading":          data.get('enable_task_preloading'),
+                        "enable_distributed_worker_count": data.get('enable_distributed_worker_count', False),
                     },
+                    "distributed_worker_count_target": data.get('distributed_worker_count_target', 0),
                 }
             )
             self.write_success(response)
@@ -448,7 +450,8 @@ class ApiSettingsHandler(BaseApiHandler):
 
             # Update a single remote installation config by matching the UUID
             links = Links()
-            links.update_single_remote_installation_link_config(json_request.get('link_config'))
+            links.update_single_remote_installation_link_config(json_request.get('link_config'),
+                                                                json_request.get('distributed_worker_count_target', 0))
 
             self.write_success()
             return

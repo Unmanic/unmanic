@@ -39,7 +39,7 @@ import requests
 from requests_toolbelt import MultipartEncoder
 
 from unmanic import config
-from unmanic.libs import common, session, unlogger
+from unmanic.libs import common, session, task, unlogger
 from unmanic.libs.session import Session
 from unmanic.libs.singleton import SingletonType
 
@@ -77,15 +77,17 @@ class Links(object, metaclass=SingletonType):
 
     def __generate_default_config(self, config_dict: dict):
         return {
-            "address":                config_dict.get('address', '???'),
-            "enable_receiving_tasks": config_dict.get('enable_receiving_tasks', False),
-            "enable_sending_tasks":   config_dict.get('enable_sending_tasks', False),
-            "enable_task_preloading": config_dict.get('enable_task_preloading', True),
-            "name":                   config_dict.get('name', '???'),
-            "version":                config_dict.get('version', '???'),
-            "uuid":                   config_dict.get('uuid', '???'),
-            "available":              config_dict.get('available', False),
-            "last_updated":           config_dict.get('last_updated', time.time()),
+            "address":                         config_dict.get('address', '???'),
+            "enable_receiving_tasks":          config_dict.get('enable_receiving_tasks', False),
+            "enable_sending_tasks":            config_dict.get('enable_sending_tasks', False),
+            "enable_task_preloading":          config_dict.get('enable_task_preloading', True),
+            "enable_distributed_worker_count": config_dict.get('enable_distributed_worker_count', False),
+            "name":                            config_dict.get('name', '???'),
+            "version":                         config_dict.get('version', '???'),
+            "uuid":                            config_dict.get('uuid', '???'),
+            "available":                       config_dict.get('available', False),
+            "task_count":                      config_dict.get('task_count', 0),
+            "last_updated":                    config_dict.get('last_updated', time.time()),
         }
 
     def acquire_network_transfer_lock(self, url):
@@ -235,6 +237,17 @@ class Links(object, metaclass=SingletonType):
             return {}
         session_data = res.json()
 
+        # Fetch task count data
+        data = {
+            "start":  0,
+            "length": 1
+        }
+        url = "{}/unmanic/api/v2/pending/tasks".format(address)
+        res = requests.post(url, json=data, timeout=2)
+        if res.status_code != 200:
+            return {}
+        tasks_data = res.json()
+
         return {
             'system_configuration': system_configuration_data.get('configuration'),
             'settings':             settings_data.get('settings'),
@@ -246,6 +259,7 @@ class Links(object, metaclass=SingletonType):
                 "email":       session_data.get('email'),
                 "uuid":        session_data.get('uuid'),
             },
+            'task_count':           int(tasks_data.get('recordsTotal', 0))
         }
 
     def update_all_remote_installation_links(self):
@@ -257,6 +271,7 @@ class Links(object, metaclass=SingletonType):
         save_settings = False
         installation_id_list = []
         remote_installations = []
+        distributed_worker_count_target = self.settings.get_distributed_worker_count_target()
         for local_config in self.settings.get_remote_installations():
             # Ensure address is not added twice by comparing installation IDs
             if local_config.get('uuid') in installation_id_list and local_config.get('uuid', '???') != '???':
@@ -288,6 +303,9 @@ class Links(object, metaclass=SingletonType):
                 # Mark the installation as available
                 updated_config["available"] = True
 
+                # Append the current task count
+                updated_config["task_count"] = installation_data.get('task_count', 0)
+
                 merge_dict = {
                     "name":    installation_data.get('settings', {}).get('installation_name'),
                     "version": installation_data.get('version'),
@@ -300,16 +318,19 @@ class Links(object, metaclass=SingletonType):
 
                 # If the remote configuration is newer than this one, use those values
                 # The remote installation will do the same and this will synchronise
-                if local_config.get('last_updated', 1) < remote_config.get('last_updated', 1):
+                remote_link_config = remote_config.get('link_config')
+                if local_config.get('last_updated', 1) < remote_link_config.get('last_updated', 1):
                     # Note that the configuration options are reversed when reading from the remote installation config
-                    updated_config["enable_receiving_tasks"] = remote_config.get('enable_sending_tasks')
-                    updated_config["enable_sending_tasks"] = remote_config.get('enable_receiving_tasks')
+                    updated_config["enable_receiving_tasks"] = remote_link_config.get('enable_sending_tasks')
+                    updated_config["enable_sending_tasks"] = remote_link_config.get('enable_receiving_tasks')
+                    # Update the distributed_worker_count_target
+                    distributed_worker_count_target = remote_config.get('distributed_worker_count_target', 0)
                     # Also sync the last_updated flag
-                    updated_config['last_updated'] = remote_config.get('last_updated')
+                    updated_config['last_updated'] = remote_link_config.get('last_updated')
 
                 # If the remote config is unable to contact this installation (or it does not have a corresponding config yet)
                 #   then also push the configuration
-                if not remote_config.get('available'):
+                if not remote_link_config.get('available'):
                     self.push_remote_installation_link_config(updated_config)
 
             # Only save to file if the settings have been updated
@@ -321,7 +342,11 @@ class Links(object, metaclass=SingletonType):
             installation_id_list.append(updated_config.get('uuid', '???'))
 
         # Update installation data. Only save the config to disk if it was modified
-        self.settings.set_config_item('remote_installations', remote_installations, save_settings=save_settings)
+        settings_dict = {
+            'remote_installations':            remote_installations,
+            'distributed_worker_count_target': distributed_worker_count_target
+        }
+        self.settings.set_bulk_config_items(settings_dict, save_settings=save_settings)
 
         return remote_installations
 
@@ -338,16 +363,22 @@ class Links(object, metaclass=SingletonType):
         # Ensure we have settings data from the remote installation
         raise Exception("Unable to read installation link configuration.")
 
-    def update_single_remote_installation_link_config(self, configuration: dict):
+    def update_single_remote_installation_link_config(self, configuration: dict, distributed_worker_count_target=0):
         """
         Returns the configuration of the remote installation
 
         :param configuration:
+        :param distributed_worker_count_target:
         :return:
         """
         uuid = configuration.get('uuid')
         if not uuid:
             raise Exception("Updating a single installation link configuration requires a UUID.")
+
+        current_distributed_worker_count_target = self.settings.get_distributed_worker_count_target()
+        force_update_flag = False
+        if int(current_distributed_worker_count_target) != int(distributed_worker_count_target):
+            force_update_flag = True
 
         config_exists = False
         remote_installations = []
@@ -359,6 +390,11 @@ class Links(object, metaclass=SingletonType):
                 config_exists = True
                 self.__merge_config_dicts(updated_config, configuration)
 
+            # If this link is configured for distributed worker count, and that count was change,
+            #   force the last update flag to be updated so this change is disseminated
+            if force_update_flag and configuration.get('enable_distributed_worker_count'):
+                updated_config['last_updated'] = time.time()
+
             remote_installations.append(updated_config)
 
         # If the config does not yet exist, the add it now
@@ -366,7 +402,11 @@ class Links(object, metaclass=SingletonType):
             remote_installations.append(self.__generate_default_config(configuration))
 
         # Update installation data and save the config to disk
-        self.settings.set_config_item('remote_installations', remote_installations, save_settings=True)
+        settings_dict = {
+            'remote_installations':            remote_installations,
+            'distributed_worker_count_target': distributed_worker_count_target
+        }
+        self.settings.set_bulk_config_items(settings_dict, save_settings=True)
 
     def fetch_remote_installation_link_config_for_this(self, address: str):
         """
@@ -382,8 +422,7 @@ class Links(object, metaclass=SingletonType):
         }
         res = requests.post(url, json=data, timeout=2)
         if res.status_code == 200:
-            data = res.json()
-            return data.get('link_config')
+            return res.json()
         return {}
 
     def push_remote_installation_link_config(self, configuration: dict):
@@ -408,11 +447,21 @@ class Links(object, metaclass=SingletonType):
         updated_config["enable_receiving_tasks"] = configuration.get('enable_sending_tasks')
         updated_config["enable_sending_tasks"] = configuration.get('enable_receiving_tasks')
 
+        # Current task count
+        task_handler = task.Task()
+        updated_config["task_count"] = int(task_handler.get_total_task_list_count())
+
+        # Fetch local config for distributed_worker_count_target
+        distributed_worker_count_target = self.settings.get_distributed_worker_count_target()
+
         # Remove some of the other fields. These will need to be adjusted on the remote instance manually
         del updated_config['address']
         del updated_config['available']
 
-        data = {'link_config': updated_config}
+        data = {
+            'link_config':                     updated_config,
+            'distributed_worker_count_target': distributed_worker_count_target
+        }
         res = requests.post(url, json=data, timeout=2)
         if res.status_code == 200:
             return True

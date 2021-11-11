@@ -615,7 +615,7 @@ class Worker(threading.Thread):
 
             # If the process is still running, kill it
             if proc.is_running():
-                self._log("Process was found still running.", level='warning')
+                self._log("Found worker subprocess is still running. Killing it.", level='warning')
                 self.__terminate_proc_tree(proc)
 
             if sub_proc.returncode == 0:

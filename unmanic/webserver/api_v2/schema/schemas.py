@@ -937,15 +937,21 @@ class SettingsRemoteInstallationLinkConfigSchema(BaseSchema):
         required=True,
         description="The configuration for the remote installation link",
         example={
-            "address":                "10.0.0.2:8888",
-            "available":              True,
-            "name":                   "API schema generated",
-            "version":                "0.1.3",
-            "last_updated":           1636166593.013826,
-            "enable_receiving_tasks": False,
-            "enable_sending_tasks":   False,
-            "enable_task_preloading": True,
+            "address":                         "10.0.0.2:8888",
+            "available":                       True,
+            "name":                            "API schema generated",
+            "version":                         "0.1.3",
+            "last_updated":                    1636166593.013826,
+            "enable_receiving_tasks":          False,
+            "enable_sending_tasks":            False,
+            "enable_task_preloading":          True,
+            "enable_distributed_worker_count": False,
         },
+    )
+    distributed_worker_count_target = fields.Int(
+        required=False,
+        description="The target count of workers to be distributed across any configured linked installations",
+        example=4,
     )
 
 

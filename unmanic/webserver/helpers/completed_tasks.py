@@ -158,7 +158,7 @@ def read_command_log_for_task(task_id):
 def format_ffmpeg_log_text(log_lines):
     return_list = []
     pre_text = False
-    headers = ['RUNNER:', 'COMMAND:', 'LOG:', 'WORKER TERMINATED!', 'PLUGIN FAILED!']
+    headers = ['RUNNER:', 'COMMAND:', 'LOG:', 'WORKER TERMINATED!', 'PLUGIN FAILED!', 'REMOTE LINK MANAGER TERMINATED!']
     for i, line in enumerate(log_lines):
         line_text = line
 
@@ -170,7 +170,7 @@ def format_ffmpeg_log_text(log_lines):
         if line_text.rstrip() not in headers:
             line_text = line_text
         else:
-            if line_text.rstrip() in ['WORKER TERMINATED!', 'PLUGIN FAILED!']:
+            if line_text.rstrip() in ['WORKER TERMINATED!', 'PLUGIN FAILED!', 'REMOTE LINK MANAGER TERMINATED!']:
                 line_text = '<b><span class="terminated">{}</span></b>'.format(line_text)
             else:
                 line_text = '<b>{}</b>'.format(line_text)

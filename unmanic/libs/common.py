@@ -151,15 +151,15 @@ def clean_files_in_cache_dir(cache_directory):
     if os.path.exists(cache_directory):
         for root, subFolders, files in os.walk(cache_directory):
             root_bn = os.path.basename(root)
-            if root_bn.startswith("unmanic_file_conversion"):
-                print("Clearing cache path - {}".format(root))
+            if root_bn.startswith("unmanic_file_conversion-"):
                 try:
+                    print("Clearing cache path - {}".format(root))
                     shutil.rmtree(root)
                 except Exception as e:
                     print("Exception while clearing cache path - {}".format(str(e)))
-            elif root_bn.startswith("remote_library") and "unmanic_remote_pending_library-" in root:
-                print("Clearing remote library cache path - {}".format(root))
+            elif root_bn.startswith("unmanic_remote_pending_library-"):
                 try:
+                    print("Clearing remote library cache path - {}".format(root))
                     shutil.rmtree(root)
                 except Exception as e:
                     print("Exception while clearing remote library cache path - {}".format(str(e)))
@@ -257,4 +257,3 @@ def get_file_checksum(path):
         for chunk in iter(lambda: f.read(8192), b''):
             file_hash.update(chunk)
     return copy.copy(file_hash.hexdigest())
-

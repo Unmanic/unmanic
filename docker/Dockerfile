@@ -230,6 +230,7 @@ RUN \
         && apt-get update \
         && apt-get install -y \
             curl \
+            sqlite3 \
     && \
     echo "**** Section cleanup ****" \
         && apt-get clean autoclean -y \

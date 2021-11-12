@@ -318,7 +318,7 @@ class Links(object, metaclass=SingletonType):
 
                 # If the remote configuration is newer than this one, use those values
                 # The remote installation will do the same and this will synchronise
-                remote_link_config = remote_config.get('link_config')
+                remote_link_config = remote_config.get('link_config', {})
                 if local_config.get('last_updated', 1) < remote_link_config.get('last_updated', 1):
                     # Note that the configuration options are reversed when reading from the remote installation config
                     updated_config["enable_receiving_tasks"] = remote_link_config.get('enable_sending_tasks')

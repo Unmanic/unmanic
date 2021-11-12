@@ -350,8 +350,12 @@ class Foreman(threading.Thread):
         :return:
         """
         frontend_messages = self.data_queues.get('frontend_messages')
-        limit = self.get_worker_count()
-        if len(self.task_queue.list_processed_tasks()) > (int(limit) + 1):
+        # Use the configured worker count + 1 as the post-processor queue limit
+        limit = (int(self.get_worker_count()) + 1)
+        # Include a count of all available and busy remote workers for the postprocessor queue limit
+        limit += len(self.available_remote_managers)
+        limit += len(self.remote_task_manager_threads)
+        if len(self.task_queue.list_processed_tasks()) > limit:
             self._log("Postprocessor queue is over {}. Halting feeding workers until it drops.".format(limit), level='warning')
             frontend_messages.update(
                 {

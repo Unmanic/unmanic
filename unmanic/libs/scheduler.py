@@ -118,14 +118,10 @@ class ScheduledTasksManager(threading.Thread):
         # if target_count > 1:
         #     target_count -= 1
 
-        self._log("target_count: {}".format(target_count), level='warning')
-
         linked_configs = []
         for local_config in settings.get_remote_installations():
             if local_config.get('enable_distributed_worker_count'):
                 linked_configs.append(local_config)
-
-        self._log("linked_configs: ", message2=linked_configs, level='warning')
 
         # If no remote links are configured, then return here
         if not linked_configs:
@@ -139,18 +135,12 @@ class ScheduledTasksManager(threading.Thread):
         for linked_config in linked_configs:
             total_tasks += int(linked_config.get('task_count', 0))
 
-        self._log("total_tasks: {}".format(total_tasks), level='warning')
-
         # From the counts fetched from all linked_configs, balance out the target count (including this installation)
         allocated_worker_count = 0
         for linked_config in linked_configs:
             if linked_config.get('task_count', 0) == 0:
                 continue
-
-            self._log("task_count: {}".format(linked_config.get('task_count', 999)), level='warning')
             allocated_worker_count += round((int(linked_config.get('task_count', 0)) / total_tasks) * target_count)
-
-        self._log("allocated_worker_count: {}".format(allocated_worker_count), level='warning')
 
         # Calculate worker count for local
         target_workers_for_this_installation = 0

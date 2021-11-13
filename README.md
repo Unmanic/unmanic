@@ -81,51 +81,22 @@ Unmanic can be used for running many commands. You will need to ensure that the 
 
 ## Install and Run
 
-It is recommended to run this application with Docker. 
+For up-to-date installation instructions, follow the [Unmanic documentation](https://docs.unmanic.app/docs/)
 
-```
-PUID=$(id -u)
-PGID=$(id -g)
+To run from source:
 
-# CONFIG_DIR - Where you settings are saved
-CONFIG_DIR=/config
-
-# TZ - Your time zone
-TZ=Pacific/Auckland
-
-# LIBRARY_DIR - The location/locations of your library
-LIBRARY_DIR=/library
-
-# CACHE_DIR - A tmpfs or and folder for temporary conversion files
-CACHE_DIR=/tmp/unmanic
-
-docker run -ti --rm \
-    -e PUID=${PUID} \
-    -e PGID=${PGID} \
-    -e TZ=${TZ} \
-    -p 8888:8888 \
-    -v ${CONFIG_DIR}:/config \
-    -v ${LIBRARY_DIR}:/library \
-    -v ${CACHE_DIR}:/tmp/unmanic \
-    josh5/unmanic:latest
-```
-
-Otherwise install the dependencies listed above and then run:
-
-```
-# Ensure the submodules are checked out
-git submodule update --init --recursive
-
-# Build and install the project into your home directory
-python3 ./setup.py install --user
-
-# Run Unmanic
-unmanic
-```
-
-For docker-compose templates, take a look at the templates in the [/docker/](/docker/) directory.
-
-For information on configuration such as enabling hardware acceleration, see the [Configuration Docs](docs/configuration/README.md).
+1) Install the Python dependencies listed above hen run:
+2) Run:
+    ```
+    # Ensure the submodules are checked out
+    git submodule update --init --recursive
+    
+    # Build and install the project into your home directory
+    python3 ./setup.py install --user
+    
+    # Run Unmanic
+    unmanic
+    ```
 
 ## License and Contribution
 

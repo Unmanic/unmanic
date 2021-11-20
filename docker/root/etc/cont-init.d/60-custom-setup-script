@@ -4,6 +4,7 @@
 if [[ -f /config/startup.sh ]]; then
 
     echo "**** (custom-setup-script) Calling custom user setup script ****";
+    sed -i 's/\r$//' /config/startup.sh
     source /config/startup.sh
 
 fi
@@ -13,6 +14,7 @@ for plugin_script in /config/.unmanic/plugins/*/init.d/*.sh ; do
     if [[ -e "${plugin_script}" ]]; then
 
         echo "[60-custom-setup-script] ${plugin_script}: executing..."
+        sed -i 's/\r$//' "${plugin_script}"
         source "${plugin_script}"
 
     fi

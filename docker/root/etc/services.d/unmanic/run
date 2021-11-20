@@ -17,7 +17,7 @@ if [[ "${DEBUGGING}" == 'true' ]]; then
 fi
 
 # Add fix for locked DB on container start
-rm /config/.unmanic/config/unmanic.db-*
+rm -f /config/.unmanic/config/unmanic.db-*
 sqlite3 /config/.unmanic/config/unmanic.db "SELECT count(*) FROM sqlite_master;"
 
 chmod +x /usr/bin/unmanic

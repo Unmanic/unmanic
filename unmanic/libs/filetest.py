@@ -30,6 +30,9 @@
 
 """
 import os
+import queue
+import threading
+import time
 
 from unmanic import config
 from unmanic.libs import history, common, unlogger
@@ -153,3 +156,65 @@ class FileTest(object):
                     break
 
         return return_value, file_issues
+
+
+class FileTesterThread(threading.Thread):
+    def __init__(self, name, files_to_test, files_to_process, status_updates):
+        super(FileTesterThread, self).__init__(name=name)
+        self.settings = config.Config()
+        self.logger = None
+        self.files_to_test = files_to_test
+        self.files_to_process = files_to_process
+        self.status_updates = status_updates
+        self.abort_flag = threading.Event()
+        self.abort_flag.clear()
+
+    def _log(self, message, message2='', level="info"):
+        if not self.logger:
+            unmanic_logging = unlogger.UnmanicLogger.__call__()
+            self.logger = unmanic_logging.get_logger(self.name)
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
+
+    def stop(self):
+        self.abort_flag.set()
+
+    def run(self):
+        # If we have a config set to run a schedule, then start the process.
+        # Otherwise close this thread now.
+        self._log("Starting {}".format(self.name))
+        file_test = FileTest()
+        while not self.abort_flag.is_set():
+            try:
+                # Pending task queue has an item available. Fetch it.
+                next_file = self.files_to_test.get_nowait()
+
+                self.status_updates.put(next_file)
+
+                # Test file to be added to task list. Add it if required
+                try:
+                    result, issues = file_test.should_file_be_added_to_task_list(next_file)
+                    # Log any error messages
+                    for issue in issues:
+                        if type(issue) is dict:
+                            self._log(issue.get('message'))
+                        else:
+                            self._log(issue)
+                    # If file needs to be added, then add it
+                    if result:
+                        self.add_path_to_queue(next_file)
+                except UnicodeEncodeError:
+                    self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
+                except Exception as e:
+                    self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e),
+                              level="exception")
+            except queue.Empty:
+                time.sleep(.1)
+                continue
+            except Exception as e:
+                self._log("Exception in checking library scan results with {}:".format(self.name), message2=str(e),
+                          level="exception")
+        self._log("Exiting {}".format(self.name))
+
+    def add_path_to_queue(self, pathname):
+        self.files_to_process.put(pathname)

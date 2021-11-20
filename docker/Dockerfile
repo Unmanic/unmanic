@@ -8,6 +8,17 @@ ENV \
     NVIDIA_DRIVER_CAPABILITIES="compute,video,utility" \
     NVIDIA_VISIBLE_DEVICES="all"
 
+# The EXPOSE instruction informs Docker that the container listens on the specified network ports at runtime. 
+# The EXPOSE instruction does not actually publish the port. It functions as a type of documentation between 
+# the person who builds the image and the person who runs the container, about which ports are intended to be published
+EXPOSE 8888/tcp
+
+# Docker HEALTHCHECK. Simply makes sure the application responds. It might be good to replace this with a custom script
+# at some point to test for more specific criteria. By default, healthchecks are run every 30s, with a 30s timeout, and
+# 3 retries before the container is marked as unhealthy. The defaults can be changed using the instructions here:
+# https://docs.docker.com/engine/reference/builder/#healthcheck
+
+HEALTHCHECK CMD curl --fail http://localhost:8888/unmanic/api/v2/version/read || exit 1 
 
 # Install the runtime dependencies
 # TODO: Remove intel-opencl-icd and replace with suggested build by Jellyfin

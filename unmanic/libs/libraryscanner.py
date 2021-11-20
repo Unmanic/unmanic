@@ -180,10 +180,11 @@ class LibraryScannerManager(threading.Thread):
         # Push status notification to frontend
         frontend_messages = self.data_queues.get('frontend_messages')
 
-        # Start X number of FileTesterProFileTesterThreadcess threads
+        # Start X number of FileTesterThread threads
+        concurrent_file_testers = self.settings.get_concurrent_file_testers()
         status_updates = queue.Queue()
         self.file_test_managers = {}
-        for results_manager_id in range(4):
+        for results_manager_id in range(int(concurrent_file_testers)):
             self.start_results_manager_thread(results_manager_id, status_updates)
 
         start_time = time.time()

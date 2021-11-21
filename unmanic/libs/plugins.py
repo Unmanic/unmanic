@@ -512,8 +512,11 @@ class PluginsHandler(object, metaclass=SingletonType):
         records_by_id = self.get_plugin_list_filtered_and_sorted(id_list=plugin_table_ids)
 
         # Ensure they are now enabled
+        plugin_executor = PluginExecutor()
         for record in records_by_id:
             if record.get('enabled'):
+                # Reload the plugin module
+                plugin_executor.reload_plugin_module(record.get('plugin_id'))
                 continue
             self._log("Failed to enable plugin '{}'".format(record.get('plugin_id')), level='debug')
             return False

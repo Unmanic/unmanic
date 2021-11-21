@@ -143,7 +143,6 @@ class PluginExecutor(object):
 
         # Don't re-import the module if it is already loaded.
         if module_name in sys.modules:
-            # self.reload_plugin_module(plugin_id)
             return sys.modules[module_name]
 
         try:
@@ -265,9 +264,6 @@ class PluginExecutor(object):
         # Check if this module contains the given plugin type runner
         run_successfully = False
         if hasattr(plugin_module, plugin_runner):
-
-            # Reload the plugin
-            self.reload_plugin_module(plugin_id)
 
             # If it does, get the runner function
             runner = getattr(plugin_module, plugin_runner)

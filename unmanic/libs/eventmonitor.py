@@ -30,6 +30,7 @@
 
 """
 import os
+import queue
 import threading
 import time
 
@@ -57,9 +58,27 @@ from unmanic.libs.filetest import FileTest
 
 
 class EventHandler(FileSystemEventHandler):
-    def __init__(self, data_queues):
+    """
+    Handle any library file modification events
+
+    This watchdog library is not strictly inline with inotify...
+    It does not watch MOVED_TO, CREATED, DELETE, MODIFIED, CLOSE_WRITE like the previous library did.
+    Instead the outputs for a Unix FS are as follows:
+        - Read = []                                             : No events are triggered for reading a file
+        - Modify = ["modified", "closed"]                       :
+        - Move (atomic) = ["created", "modified"]               :
+        - Move (non-atomic) = ["created", "modified", "closed"] : Lots of 'modified' events as the file was "copied"
+        - Copy = ["created", "modified", "closed"]              : ^ ditto
+        - Create = ["created", "modified", "closed"]            : ^ ditto
+        - Delete = ["deleted", "modified"]                      :
+        - Hardlink = ["created", "modified"]                    :
+
+    From this, the only event we really need to monitor is the "created" and "closed" events.
+    """
+
+    def __init__(self, files_to_test):
         self.name = "EventProcessor"
-        self.data_queues = data_queues
+        self.files_to_test = files_to_test
         self.logger = None
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
@@ -71,55 +90,15 @@ class EventHandler(FileSystemEventHandler):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
-    def __add_path_to_queue(self, pathname):
-        self.data_queues.get('inotifytasks').put(pathname)
-
-    def __handle_event(self, event):
-        # Ensure event was not for a directory
-        if event.is_directory:
-            self._log("Detected even is for a directory. Ignoring...")
-            return
-
-        # Get full path to file
-        pathname = event.src_path
-
-        # Test file to be added to task list. Add it if required
-        try:
-            file_test = FileTest(pathname)
-            result, issues = file_test.should_file_be_added_to_task_list()
-            # Log any error messages
-            for issue in issues:
-                if type(issue) is dict:
-                    self._log(issue.get('message'))
-                else:
-                    self._log(issue)
-            # If file needs to be added, then add it
-            if result:
-                self.__add_path_to_queue(pathname)
-        except UnicodeEncodeError:
-            self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
-        except Exception as e:
-            self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e), level="exception")
-
-    def on_moved(self, event):
-        self._log("MOVED_TO event detected:", event.src_path)
-        self.__handle_event(event)
-
-    def on_created(self, event):
-        # self._log("CREATED event detected:", event.src_path)
-        pass
-
-    def on_deleted(self, event):
-        # self._log("DELETE event detected:", event.src_path)
-        pass
-
-    def on_modified(self, event):
-        # self._log("MODIFIED event detected:", event.src_path)
-        pass
-
-    def on_closed(self, event):
-        self._log("CLOSE_WRITE event detected:", event.src_path)
-        self.__handle_event(event)
+    def on_any_event(self, event):
+        self._log("######### event ...", event.event_type, level="debug")
+        if event.event_type in ["created", "closed"]:
+            # Ensure event was not for a directory
+            if event.is_directory:
+                self._log("Detected event is for a directory. Ignoring...", level="debug")
+            else:
+                self._log("Detected '{}' event on file path '{}'".format(event.event_type, event.src_path))
+                self.files_to_test.put(event.src_path)
 
 
 class EventMonitorManager(threading.Thread):
@@ -138,6 +117,9 @@ class EventMonitorManager(threading.Thread):
         self.data_queues = data_queues
         self.settings = config.Config()
         self.logger = None
+
+        # Create an event queue
+        self.files_to_test = queue.Queue()
 
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
@@ -163,6 +145,10 @@ class EventMonitorManager(threading.Thread):
             # Ensure all enabled plugins are compatible before starting the event monitor
             if not self.all_plugins_are_compatible():
                 time.sleep(2)
+                continue
+
+            if not self.files_to_test.empty():
+                self.manage_event_queue(self.files_to_test.get())
                 continue
 
             # Check settings to ensure the event monitor should be enabled...
@@ -202,7 +188,7 @@ class EventMonitorManager(threading.Thread):
                 time.sleep(.1)
                 return
             self._log("EventMonitorManager spawning EventProcessor thread...")
-            event_handler = EventHandler(self.data_queues)
+            event_handler = EventHandler(self.files_to_test)
 
             self.event_observer_thread = Observer()
             self.event_observer_thread.schedule(event_handler, self.settings.get_library_path(), recursive=True)
@@ -230,3 +216,40 @@ class EventMonitorManager(threading.Thread):
             self._log("Given signal to stop the EventProcessor thread, but it is not running...")
 
         self.event_observer_thread = None
+
+    def manage_event_queue(self, pathname):
+        """
+        Manage all monitored events
+
+        Unlike the library scanner, all events are processed sequentially one at a time.
+        This avoids a file being added twice on 2 events.
+
+        :param pathname:
+        :return:
+        """
+        # Test file to be added to task list. Add it if required
+        try:
+            file_test = FileTest()
+            result, issues = file_test.should_file_be_added_to_task_list(pathname)
+            # Log any error messages
+            for issue in issues:
+                if type(issue) is dict:
+                    self._log(issue.get('message'))
+                else:
+                    self._log(issue)
+            # If file needs to be added, then add it
+            if result:
+                self.__add_path_to_queue(pathname)
+        except UnicodeEncodeError:
+            self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
+        except Exception as e:
+            self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e), level="exception")
+
+    def __add_path_to_queue(self, pathname):
+        """
+        Add a given path to the pending task queue
+
+        :param pathname:
+        :return:
+        """
+        self.data_queues.get('inotifytasks').put(pathname)

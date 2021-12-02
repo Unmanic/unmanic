@@ -67,6 +67,7 @@ class Config(object, metaclass=SingletonType):
         self.enable_library_scanner = False
         self.schedule_full_scan_minutes = 1440
         self.follow_symlinks = True
+        self.concurrent_file_testers = 2
         self.run_full_scan_on_start = False
         self.enable_inotify = False
         self.clear_pending_tasks_on_restart = True
@@ -408,6 +409,14 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.follow_symlinks
+
+    def get_concurrent_file_testers(self):
+        """
+        Get setting - concurrent_file_testers
+
+        :return:
+        """
+        return self.concurrent_file_testers
 
     def get_plugins_path(self):
         """

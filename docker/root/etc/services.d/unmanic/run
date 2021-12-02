@@ -16,5 +16,9 @@ if [[ "${DEBUGGING}" == 'true' ]]; then
     unmanic_params="--dev ${unmanic_params}"
 fi
 
+# Add fix for locked DB on container start
+rm -f /config/.unmanic/config/unmanic.db-*
+sqlite3 /config/.unmanic/config/unmanic.db "SELECT count(*) FROM sqlite_master;"
+
 chmod +x /usr/bin/unmanic
 exec s6-setuidgid root /usr/bin/unmanic "${unmanic_params}"

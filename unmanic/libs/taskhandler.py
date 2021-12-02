@@ -114,7 +114,8 @@ class TaskHandler(threading.Thread):
     def clear_tasks_on_startup(self):
         query = Tasks.delete()
         if not self.settings.get_clear_pending_tasks_on_restart():
-            query = query.where(Tasks.status != 'pending')
+            # Exclude all pending tasks except for those that are remote tasks... They need to be removed
+            query = query.where((Tasks.status != 'pending') | (Tasks.type == 'remote'))
         rows_deleted_count = query.execute()
         self._log("Deleted {} items from tasks list".format(rows_deleted_count), level='debug')
 

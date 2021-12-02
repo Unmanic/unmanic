@@ -758,11 +758,11 @@ class RemoteTaskManager(threading.Thread):
 
     worker_runners_info = {}
 
-    def __init__(self, thread_id, name, assigned_worker_info, pending_queue, complete_queue):
+    def __init__(self, thread_id, name, installation_info, pending_queue, complete_queue):
         super(RemoteTaskManager, self).__init__(name=name)
         self.thread_id = thread_id
         self.name = name
-        self.assigned_worker_info = assigned_worker_info
+        self.installation_info = installation_info
         self.pending_queue = pending_queue
         self.complete_queue = complete_queue
 
@@ -784,10 +784,16 @@ class RemoteTaskManager(threading.Thread):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
+    def get_info(self):
+        return {
+            'name':              self.name,
+            'installation_info': self.installation_info,
+        }
+
     def run(self):
         # A manager should only run for a single task and connection to a single worker.
         # If either of these become unavailable, then the manager should exit
-        self._log("Starting remote task manager {} - {}".format(self.thread_id, self.assigned_worker_info.get('address')))
+        self._log("Starting remote task manager {} - {}".format(self.thread_id, self.installation_info.get('address')))
         # Pull task
         try:
             # Pending task queue has an item available. Fetch it.
@@ -805,7 +811,7 @@ class RemoteTaskManager(threading.Thread):
             self._log("Exception in processing job with {}:".format(self.name), message2=str(e),
                       level="exception")
 
-        self._log("Stopping remote task manager {} - {}".format(self.thread_id, self.assigned_worker_info.get('address')))
+        self._log("Stopping remote task manager {} - {}".format(self.thread_id, self.installation_info.get('address')))
 
     def __set_current_task(self, current_task):
         """Sets the given task to the worker class"""
@@ -897,12 +903,13 @@ class RemoteTaskManager(threading.Thread):
             return False
 
         # Set the remote worker address and worker ID
-        address = self.assigned_worker_info.get('address')
+        address = self.installation_info.get('address')
 
         # Get source file checksum
         initial_checksum = common.get_file_checksum(original_abspath)
 
         # Loop until we are able to upload the file to the remote installation
+        info = {}
         while not self.redundant_flag.is_set():
             # Check for network transfer lock
             if not self.links.acquire_network_transfer_lock(address):
@@ -979,6 +986,7 @@ class RemoteTaskManager(threading.Thread):
                 break
             elif not all_task_states:
                 polling_delay = 30
+                last_status_fetch = time_now
                 continue
             elif all_task_states.get('results') and task_status == '':
                 self._log("Task has been removed by remote installation '{}'".format(original_abspath), level='error')
@@ -1018,6 +1026,11 @@ class RemoteTaskManager(threading.Thread):
 
             # Mark this as the last time run
             last_status_fetch = time_now
+
+        # If the previous loop was broken because this tread needs to terminate, return False here (did not complete)
+        if self.redundant_flag.is_set():
+            self.current_task.save_command_log(["\n\nREMOTE LINK MANAGER TERMINATED!"])
+            return False
 
         self._log("Remote task completed '{}'".format(original_abspath), level='info')
 
@@ -1068,6 +1081,11 @@ class RemoteTaskManager(threading.Thread):
                     self.links.remove_task_from_remote_installation(address, remote_task_id)
                     return False
                 break
+
+            # If the previous loop was broken because this tread needs to terminate, return False here (did not complete)
+            if self.redundant_flag.is_set():
+                self.current_task.save_command_log(["\n\nREMOTE LINK MANAGER TERMINATED!"])
+                return False
 
             # Match checksum from task result data with downloaded file
             downloaded_checksum = common.get_file_checksum(task_cache_path)

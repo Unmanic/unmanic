@@ -30,22 +30,21 @@ Simply configure Unmanic pointing it at your library and let it automatically ma
 
 Unmanic provides you with the following main functions:
 
- 
-
-- A scheduler built in to scan your whole library for files that do not conform to your configured presets. Files found with incorrect formats are then queued for conversion.
-- A folder watchdog. When a video file is modified or a new file is added in your library, Unmanic is able to check that video against your configured video presets. Like the first function, if this video is not formatted correctly it is added to a queue for conversion.
+- A scheduler built in to scan your whole library for files that do not conform to your configured file presets. Files found requiring processing are then queued.
+- A file/directory monitor. When a file is modified, or a new file is added in your library, Unmanic is able to again test that against your configured file presets. Like the first function, if this file requires processing, it is added to a queue for processing.
 - A handler to manage running multiple file manipulation tasks at a time.
 - A Web UI to easily configure, manage and monitor the progress of your library optimisation.
- 
 
 You choose how you want your library to be.
 
-Unmanic can be used to:
+Some examples of how you may use Unmanic:
 
-- Trans-code video or audio files into a uniform format using FFmpeg
-- Move files from one location to another after a configured period of time
-- Execute FileBot against files in your library
-- Run any custom command against files matching a certain extension or above a configured file size
+- Trans-code video or audio files into a uniform format using FFmpeg.
+- Identify (and remove if desired) commercials in DVR recordings shortly after they have completed being recorded.
+- Move files from one location to another after a configured period of time.
+- Automatically execute FileBot rename files in your library as they are added.
+- Compress files older than a specified age.
+- Run any custom command against files matching a certain extension or above a configured file size.
 
 The Docker container is currently based `linuxserver.io` Ubuntu focal image.
 
@@ -81,51 +80,22 @@ Unmanic can be used for running many commands. You will need to ensure that the 
 
 ## Install and Run
 
-It is recommended to run this application with Docker. 
+For up-to-date installation instructions, follow the [Unmanic documentation](https://docs.unmanic.app/docs/)
 
-```
-PUID=$(id -u)
-PGID=$(id -g)
+To run from source:
 
-# CONFIG_DIR - Where you settings are saved
-CONFIG_DIR=/config
-
-# TZ - Your time zone
-TZ=Pacific/Auckland
-
-# LIBRARY_DIR - The location/locations of your library
-LIBRARY_DIR=/library
-
-# CACHE_DIR - A tmpfs or and folder for temporary conversion files
-CACHE_DIR=/tmp/unmanic
-
-docker run -ti --rm \
-    -e PUID=${PUID} \
-    -e PGID=${PGID} \
-    -e TZ=${TZ} \
-    -p 8888:8888 \
-    -v ${CONFIG_DIR}:/config \
-    -v ${LIBRARY_DIR}:/library \
-    -v ${CACHE_DIR}:/tmp/unmanic \
-    josh5/unmanic:latest
-```
-
-Otherwise install the dependencies listed above and then run:
-
-```
-# Ensure the submodules are checked out
-git submodule update --init --recursive
-
-# Build and install the project into your home directory
-python3 ./setup.py install --user
-
-# Run Unmanic
-unmanic
-```
-
-For docker-compose templates, take a look at the templates in the [/docker/](/docker/) directory.
-
-For information on configuration such as enabling hardware acceleration, see the [Configuration Docs](docs/configuration/README.md).
+1) Install the Python dependencies listed above hen run:
+2) Run:
+    ```
+    # Ensure the submodules are checked out
+    git submodule update --init --recursive
+    
+    # Build and install the project into your home directory
+    python3 ./setup.py install --user
+    
+    # Run Unmanic
+    unmanic
+    ```
 
 ## License and Contribution
 

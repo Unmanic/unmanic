@@ -273,6 +273,35 @@ class Foreman(threading.Thread):
                     del self.remote_task_manager_threads[thread]
                     continue
 
+    def terminate_unlinked_remote_task_manager_threads(self):
+        """
+        Mark a manager as redundant if the remote installation configuration has been removed
+
+        :return:
+        """
+        # Get a list of configured UUIDS
+        configured_uuids = {}
+        for configured_remote_installation in self.settings.get_remote_installations():
+            if configured_remote_installation.get('uuid'):
+                configured_uuids[configured_remote_installation.get('uuid')] = configured_remote_installation.get('address')
+        # Find and remove any redundant link managers from our list
+        term_log_msg = "Remote installation link with {} '{}' has been removed from settings. Marking tread for termination"
+        for thread in self.remote_task_manager_threads:
+            thread_info = self.remote_task_manager_threads[thread].get_info()
+            thread_assigned_uuid = thread_info.get('installation_info', {}).get('uuid')
+            thread_assigned_address = thread_info.get('installation_info', {}).get('address')
+            # Ensure the UUID is still in our config
+            if thread_assigned_uuid not in configured_uuids:
+                self.mark_remote_task_manager_thread_as_redundant(thread)
+                self._log(term_log_msg.format('UUID', thread_assigned_uuid))
+                continue
+            # Ensure the configured address has not changed
+            configured_address = configured_uuids.get(thread_assigned_uuid)
+            if thread_assigned_address not in configured_address:
+                self.mark_remote_task_manager_thread_as_redundant(thread)
+                self._log(term_log_msg.format('address', thread_assigned_address))
+                continue
+
     def update_remote_worker_availability_status(self):
         """
         Updates the list of available remote managers that can be started
@@ -454,6 +483,8 @@ class Foreman(threading.Thread):
         if self.link_heartbeat_last_run > (time_now - 10):
             return
         # self._log("Running remote link manager heartbeat", level='debug')
+        # Terminate remote manager threads for unlinked installations
+        self.terminate_unlinked_remote_task_manager_threads()
         # Clear out dead threads
         self.remove_stopped_remote_task_manager_threads()
         # Check for updates to the worker availability status of linked remote installations

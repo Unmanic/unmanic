@@ -30,6 +30,9 @@
 
 """
 import os
+import queue
+import threading
+import time
 
 from unmanic import config
 from unmanic.libs import history, common, unlogger
@@ -45,17 +48,26 @@ class FileTest(object):
 
     """
 
-    def __init__(self, path):
+    def __init__(self):
         self.settings = config.Config()
-        self.path = path
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         self.logger = unmanic_logging.get_logger(__class__.__name__)
+
+        # Init plugins
+        self.plugin_handler = PluginsHandler()
+        self.plugin_modules = self.plugin_handler.get_enabled_plugin_modules_by_type('library_management.file_test')
+
+        # List of filed tasks
+        self.failed_paths = []
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
         getattr(self.logger, level)(message)
 
-    def file_failed_in_history(self):
+    def set_file(self):
+        pass
+
+    def file_failed_in_history(self, path):
         """
         Check if file has already failed in history
 
@@ -63,26 +75,29 @@ class FileTest(object):
         """
         # Fetch historical tasks
         history_logging = history.History()
-        task_results = history_logging.get_historic_tasks_list_with_source_probe(abspath=self.path, task_success=False)
-        if not task_results:
-            # No results were found matching that pathname
-            return False
-        # That pathname was found in the results of failed historic tasks
-        return True
+        if not self.failed_paths:
+            failed_tasks = history_logging.get_historic_tasks_list_with_source_probe(task_success=False)
+            for task in failed_tasks:
+                self.failed_paths.append(task.get('abspath'))
+        if path in self.failed_paths:
+            # That pathname was found in the results of failed historic tasks
+            return True
+        # No results were found matching that pathname
+        return False
 
-    def file_in_unmanic_ignore_lockfile(self):
+    def file_in_unmanic_ignore_lockfile(self, path):
         """
         Check if folder contains a '.unmanicignore' lockfile
 
         :return:
         """
-        # Get file basename
-        basename = os.path.basename(self.path)
         # Get file parent directory
-        dirname = os.path.dirname(self.path)
+        dirname = os.path.dirname(path)
         # Check if lockfile (.unmanicignore) exists
         unmanic_ignore_file = os.path.join(dirname, '.unmanicignore')
         if os.path.exists(unmanic_ignore_file):
+            # Get file basename
+            basename = os.path.basename(path)
             # Read the file and check for any entry with this file name
             with open(unmanic_ignore_file) as f:
                 for line in f:
@@ -90,7 +105,7 @@ class FileTest(object):
                         return True
         return False
 
-    def should_file_be_added_to_task_list(self):
+    def should_file_be_added_to_task_list(self, path):
         """
         Test if this file needs to be added to the task list
 
@@ -99,38 +114,35 @@ class FileTest(object):
         return_value = None
         file_issues = []
 
-        # Init plugins
-        plugin_handler = PluginsHandler()
-        plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('library_management.file_test')
-
         # TODO: Remove this
-        if self.file_in_unmanic_ignore_lockfile():
+        if self.file_in_unmanic_ignore_lockfile(path):
             file_issues.append({
                 'id':      'unmanicignore',
-                'message': "File found in unmanic ignore file - '{}'".format(self.path),
+                'message': "File found in unmanic ignore file - '{}'".format(path),
             })
             return_value = False
 
         # Check if file has failed in history.
-        if self.file_failed_in_history():
+        if self.file_failed_in_history(path):
             file_issues.append({
                 'id':      'blacklisted',
-                'message': "File found already failed in history - '{}'".format(self.path),
+                'message': "File found already failed in history - '{}'".format(path),
             })
             return_value = False
 
         # Only run checks with plugins if other tests were not conclusive
         if return_value is None:
             # Run tests against plugins
-            for plugin_module in plugin_modules:
+            for plugin_module in self.plugin_modules:
                 data = {
-                    'path':                      self.path,
+                    'path':                      path,
                     'issues':                    file_issues.copy(),
                     'add_file_to_pending_tasks': None,
                 }
 
                 # Run plugin to update data
-                if not plugin_handler.exec_plugin_runner(data, plugin_module.get('plugin_id'), 'library_management.file_test'):
+                if not self.plugin_handler.exec_plugin_runner(data, plugin_module.get('plugin_id'),
+                                                              'library_management.file_test'):
                     continue
 
                 # Append any file issues found during previous tests
@@ -144,3 +156,65 @@ class FileTest(object):
                     break
 
         return return_value, file_issues
+
+
+class FileTesterThread(threading.Thread):
+    def __init__(self, name, files_to_test, files_to_process, status_updates):
+        super(FileTesterThread, self).__init__(name=name)
+        self.settings = config.Config()
+        self.logger = None
+        self.files_to_test = files_to_test
+        self.files_to_process = files_to_process
+        self.status_updates = status_updates
+        self.abort_flag = threading.Event()
+        self.abort_flag.clear()
+
+    def _log(self, message, message2='', level="info"):
+        if not self.logger:
+            unmanic_logging = unlogger.UnmanicLogger.__call__()
+            self.logger = unmanic_logging.get_logger(self.name)
+        message = common.format_message(message, message2)
+        getattr(self.logger, level)(message)
+
+    def stop(self):
+        self.abort_flag.set()
+
+    def run(self):
+        # If we have a config set to run a schedule, then start the process.
+        # Otherwise close this thread now.
+        self._log("Starting {}".format(self.name))
+        file_test = FileTest()
+        while not self.abort_flag.is_set():
+            try:
+                # Pending task queue has an item available. Fetch it.
+                next_file = self.files_to_test.get_nowait()
+
+                self.status_updates.put(next_file)
+
+                # Test file to be added to task list. Add it if required
+                try:
+                    result, issues = file_test.should_file_be_added_to_task_list(next_file)
+                    # Log any error messages
+                    for issue in issues:
+                        if type(issue) is dict:
+                            self._log(issue.get('message'))
+                        else:
+                            self._log(issue)
+                    # If file needs to be added, then add it
+                    if result:
+                        self.add_path_to_queue(next_file)
+                except UnicodeEncodeError:
+                    self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
+                except Exception as e:
+                    self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e),
+                              level="exception")
+            except queue.Empty:
+                time.sleep(.1)
+                continue
+            except Exception as e:
+                self._log("Exception in checking library scan results with {}:".format(self.name), message2=str(e),
+                          level="exception")
+        self._log("Exiting {}".format(self.name))
+
+    def add_path_to_queue(self, pathname):
+        self.files_to_process.put(pathname)

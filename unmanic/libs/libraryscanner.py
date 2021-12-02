@@ -29,17 +29,19 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import gc
 import json
 import os
 import queue
 import threading
 import time
 
+import psutil
 import schedule
 
 from unmanic import config
 from unmanic.libs import common, unlogger
-from unmanic.libs.filetest import FileTest
+from unmanic.libs.filetest import FileTesterThread
 
 
 class LibraryScannerManager(threading.Thread):
@@ -56,6 +58,10 @@ class LibraryScannerManager(threading.Thread):
         self.abort_flag.clear()
         self.scheduler = schedule.Scheduler()
 
+        self.file_test_managers = {}
+        self.files_to_test = queue.Queue()
+        self.files_to_process = queue.Queue()
+
     def _log(self, message, message2='', level="info"):
         if not self.logger:
             unmanic_logging = unlogger.UnmanicLogger.__call__()
@@ -65,16 +71,16 @@ class LibraryScannerManager(threading.Thread):
 
     def stop(self):
         self.abort_flag.set()
+        # Stop all child threads
+        self.stop_all_file_test_managers()
 
     def abort_is_set(self):
         # Check if the abort flag is set
         if self.abort_flag.is_set():
             # Return True straight away if it is
             return True
-
         # Sleep for a fraction of a second to prevent CPU pinning
         time.sleep(.1)
-
         # Return False
         return False
 
@@ -153,6 +159,17 @@ class LibraryScannerManager(threading.Thread):
     def add_path_to_queue(self, pathname):
         self.scheduledtasks.put(pathname)
 
+    def start_results_manager_thread(self, manager_id, status_updates):
+        manager = FileTesterThread("FileTesterThread-{}".format(manager_id), self.files_to_test,
+                                   self.files_to_process, status_updates)
+        manager.daemon = True
+        manager.start()
+        self.file_test_managers[manager_id] = manager
+
+    def stop_all_file_test_managers(self):
+        for manager_id in self.file_test_managers:
+            self.file_test_managers[manager_id].abort_flag.set()
+
     def scan_library_path(self, search_folder):
         if not os.path.exists(search_folder):
             self._log("Path does not exist - '{}'".format(search_folder), level="warning")
@@ -163,7 +180,29 @@ class LibraryScannerManager(threading.Thread):
         # Push status notification to frontend
         frontend_messages = self.data_queues.get('frontend_messages')
 
+        # Start X number of FileTesterThread threads
+        concurrent_file_testers = self.settings.get_concurrent_file_testers()
+        status_updates = queue.Queue()
+        self.file_test_managers = {}
+        for results_manager_id in range(int(concurrent_file_testers)):
+            self.start_results_manager_thread(results_manager_id, status_updates)
+
+        start_time = time.time()
+
+        frontend_messages.update(
+            {
+                'id':      'libraryScanProgress',
+                'type':    'status',
+                'code':    'libraryScanProgress',
+                'message': "Scanning directory - '{}'".format(search_folder),
+                'timeout': 0
+            }
+        )
+
         follow_symlinks = self.settings.get_follow_symlinks()
+        total_file_count = 0
+        current_file = ''
+        percent_completed_string = ''
         for root, subFolders, files in os.walk(search_folder, followlinks=follow_symlinks):
             if self.abort_flag.is_set():
                 break
@@ -174,37 +213,76 @@ class LibraryScannerManager(threading.Thread):
                 if self.abort_flag.is_set():
                     break
 
-                # Get full path to file
-                pathname = os.path.join(root, file_path)
+                # Place file's full path in queue to be tested
+                self.files_to_test.put(os.path.join(root, file_path))
+                total_file_count += 1
 
-                frontend_messages.update(
-                    {
-                        'id':      'libraryScanProgress',
-                        'type':    'status',
-                        'code':    'libraryScanProgress',
-                        'message': pathname,
-                        'timeout': 0
-                    }
-                )
+                # Update status messages while fetching file list
+                if not status_updates.empty():
+                    current_file = status_updates.get()
+                    percent_completed_string = 'Testing: {}'.format(current_file)
+                    frontend_messages.update(
+                        {
+                            'id':      'libraryScanProgress',
+                            'type':    'status',
+                            'code':    'libraryScanProgress',
+                            'message': percent_completed_string,
+                            'timeout': 0
+                        }
+                    )
 
-                # Test file to be added to task list. Add it if required
-                try:
-                    file_test = FileTest(pathname)
-                    result, issues = file_test.should_file_be_added_to_task_list()
-                    # Log any error messages
-                    for issue in issues:
-                        if type(issue) is dict:
-                            self._log(issue.get('message'))
-                        else:
-                            self._log(issue)
-                    # If file needs to be added, then add it
-                    if result:
-                        self.add_path_to_queue(pathname)
-                except UnicodeEncodeError:
-                    self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
-                except Exception as e:
-                    self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e),
-                              level="exception")
+        # Loop while waiting for all threads to finish
+        double_check = 0
+        while not self.abort_flag.is_set():
+            frontend_messages.update(
+                {
+                    'id':      'libraryScanProgress',
+                    'type':    'status',
+                    'code':    'libraryScanProgress',
+                    'message': percent_completed_string,
+                    'timeout': 0
+                }
+            )
+            # Check if all files have been tested
+            if self.files_to_test.empty() and self.files_to_process.empty() and status_updates.empty():
+                percent_completed_string = '100%'
+                double_check += 1
+                if double_check > 3:
+                    # There are not more files to test. Mark manager threads as completed
+                    self.stop_all_file_test_managers()
+                    break
+                time.sleep(.2)
+                continue
+
+            # Calculate percent of files tested
+            if not self.files_to_test.empty():
+                current_queue_size = self.files_to_test.qsize()
+                if int(total_file_count) > 0 and int(current_queue_size) > 0:
+                    percent_remaining = int((int(current_queue_size) / int(total_file_count)) * 100)
+                    percent_completed = int(100 - percent_remaining)
+                    percent_completed_string = '{}% - Testing: {}'.format(percent_completed, current_file)
+                elif current_file:
+                    percent_completed_string = '{}% - Testing: {}'.format('???', current_file)
+
+            # Fetch frontend messages from queue
+            if not status_updates.empty():
+                current_file = status_updates.get()
+                continue
+            elif not self.files_to_process.empty():
+                self.add_path_to_queue(self.files_to_process.get())
+                continue
+            else:
+                time.sleep(.1)
+
+        # Wait for threads to finish
+        for manager_id in self.file_test_managers:
+            self.file_test_managers[manager_id].abort_flag.set()
+            self.file_test_managers[manager_id].join(2)
+
+        self._log("Library scan completed in {} seconds".format((time.time() - start_time)), level="warning")
+
+        # Run a manual garbage collection
+        gc.collect()
 
         # Remove frontend status message
         frontend_messages.remove_item('libraryScanProgress')

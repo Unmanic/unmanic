@@ -19,7 +19,6 @@ RUN \
         && apt-get install -y \
             libexpat1=2.2.9-1build1 \
             libgl1-mesa-dri=21.0.3-0ubuntu0.3~20.04.5 \
-            libglib2.0-0=2.64.6-1~ubuntu20.04.4 \
             libgomp1=10.3.0-1ubuntu1~20.04 \
             libharfbuzz0b=2.6.4-1ubuntu4 \
             libv4l-0=1.18.0-2build1 \
@@ -230,6 +229,7 @@ RUN \
         && apt-get update \
         && apt-get install -y \
             curl \
+            sqlite3 \
     && \
     echo "**** Section cleanup ****" \
         && apt-get clean autoclean -y \

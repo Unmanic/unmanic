@@ -85,6 +85,12 @@ class Config(object, metaclass=SingletonType):
         # Import env variables and override all previous settings.
         self.__import_settings_from_env()
 
+        # Import Unmanic path settings from command params
+        if kwargs.get('unmanic_path'):
+            self.set_config_item('config_path', os.path.join(kwargs.get('unmanic_path'), 'config'), save_settings=False)
+            self.set_config_item('plugins_path', os.path.join(kwargs.get('unmanic_path'), 'plugins'), save_settings=False)
+            self.set_config_item('userdata_path', os.path.join(kwargs.get('unmanic_path'), 'userdata'), save_settings=False)
+
         # Finally, re-read config from file and override all previous settings.
         self.__import_settings_from_file(config_path)
 
@@ -92,11 +98,7 @@ class Config(object, metaclass=SingletonType):
         if config_path:
             self.set_config_item('config_path', config_path, save_settings=False)
 
-        if kwargs.get('unmanic_path'):
-            self.set_config_item('config_path', os.path.join(kwargs.get('unmanic_path'), 'config'), save_settings=False)
-            self.set_config_item('plugins_path', os.path.join(kwargs.get('unmanic_path'), 'plugins'), save_settings=False)
-            self.set_config_item('userdata_path', os.path.join(kwargs.get('unmanic_path'), 'userdata'), save_settings=False)
-
+        # Overwrite all other settings passed from command params
         if kwargs.get('port'):
             self.set_config_item('ui_port', kwargs.get('port'), save_settings=False)
 

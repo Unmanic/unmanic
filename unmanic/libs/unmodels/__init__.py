@@ -38,7 +38,7 @@ from .installation import Installation
 from .pluginflow import PluginFlow
 from .pluginrepos import PluginRepos
 from .plugins import Plugins
-from .settings import Settings
+from .libraries import Libraries
 from .tasks import Tasks
 
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
@@ -47,10 +47,10 @@ __all__ = (
     'CompletedTasks',
     'CompletedTasksCommandLogs',
     'Installation',
+    'Libraries',
     'PluginFlow',
     'PluginRepos',
     'Plugins',
-    'Settings',
     'Tasks',
 )
 

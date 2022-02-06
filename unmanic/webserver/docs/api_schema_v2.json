@@ -1304,6 +1304,77 @@
                     "link_config"
                 ]
             },
+            "LibraryResults": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the library",
+                        "example": "Default"
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "The library path",
+                        "example": "/library"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "path"
+                ]
+            },
+            "SettingsLibrariesList": {
+                "type": "object",
+                "properties": {
+                    "libraries": {
+                        "minItems": 1,
+                        "description": "Results",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LibraryResults"
+                        }
+                    }
+                },
+                "required": [
+                    "libraries"
+                ]
+            },
+            "RequestLibraryConfig": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "The ID of the library",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "id"
+                ]
+            },
+            "SettingsLibraryConfigReadAndWrite": {
+                "type": "object",
+                "properties": {
+                    "library_config": {
+                        "type": "object",
+                        "description": "The library configuration",
+                        "example": {
+                            "id": 1,
+                            "name": "Default",
+                            "path": "/library"
+                        }
+                    }
+                },
+                "required": [
+                    "library_config"
+                ]
+            },
             "VersionReadSuccess": {
                 "type": "object",
                 "properties": {
@@ -3826,6 +3897,199 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/SettingsRemoteInstallationLinkConfig"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful request; Returns success status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/libraries": {
+            "get": {
+                "description": "Returns a list of all libraries.",
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns a list of all libraries.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SettingsLibrariesList"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/library/read": {
+            "post": {
+                "description": "Read the configuration of one library",
+                "requestBody": {
+                    "description": "The ID of the library",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestLibraryConfig"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns the remote installation link configuration.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SettingsLibraryConfigReadAndWrite"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/library/write": {
+            "post": {
+                "description": "Write the configuration of one library",
+                "requestBody": {
+                    "description": "Requested a dictionary of settings to save.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SettingsLibraryConfigReadAndWrite"
                             }
                         }
                     }

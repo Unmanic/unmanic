@@ -955,6 +955,62 @@ class SettingsRemoteInstallationLinkConfigSchema(BaseSchema):
     )
 
 
+class LibraryResultsSchema(BaseSchema):
+    """Schema for library results"""
+
+    id = fields.Int(
+        required=True,
+        description="",
+        example=1,
+    )
+    name = fields.Str(
+        required=True,
+        description="The name of the library",
+        example="Default",
+    )
+    path = fields.Str(
+        required=True,
+        description="The library path",
+        example="/library",
+    )
+
+
+class SettingsLibrariesListSchema(BaseSchema):
+    """Schema to list all libraries"""
+
+    libraries = fields.Nested(
+        LibraryResultsSchema,
+        required=True,
+        description="Results",
+        many=True,
+        validate=validate.Length(min=1),
+    )
+
+
+class RequestLibraryConfigSchema(BaseSchema):
+    """Schema to request a single library configuration given its ID"""
+
+    id = fields.Int(
+        required=True,
+        description="The ID of the library",
+        example=1,
+    )
+
+
+class SettingsLibraryConfigReadAndWriteSchema(BaseSchema):
+    """Schema to display the data from the remote installation"""
+
+    library_config = fields.Dict(
+        required=True,
+        description="The library configuration",
+        example={
+            "id":   1,
+            "name": "Default",
+            "path": "/library",
+        },
+    )
+
+
 # VERSION
 # =======
 

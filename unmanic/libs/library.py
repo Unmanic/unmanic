@@ -147,6 +147,28 @@ class Library(object):
 
         return enabled_plugins
 
+    def set_enabled_plugins(self, plugin_list: list):
+        """
+        Update the list of enabled plugins
+
+        :param plugin_list:
+        :return:
+        """
+        # Remove all enabled plugins
+        EnabledPlugins.delete().where(EnabledPlugins.library_table_id == self.model.id).execute()
+
+        # Add new repos
+        data = []
+        for plugin_info in plugin_list:
+            plugin = Plugins.get(plugin_id=plugin_info.get('plugin_id'))
+            if plugin:
+                data.append({
+                    "library_table_id": self.model.id,
+                    "plugin_table_id":  plugin,
+                    "plugin_name":      plugin.name,
+                })
+        EnabledPlugins.insert_many(data).execute()
+
     def get_plugin_flow(self):
         """
         Get the plugin flow config for this library

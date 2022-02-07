@@ -2,24 +2,24 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
- 
+    unmanic.enabledplugins.py
+
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     22 Jun 2019, (1:47 PM)
- 
+    Date:                     07 Feb 2022, (1:25 PM)
+
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
- 
+
            Permission is hereby granted, free of charge, to any person obtaining a copy
            of this software and associated documentation files (the "Software"), to deal
            in the Software without restriction, including without limitation the rights
            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
            copies of the Software, and to permit persons to whom the Software is
            furnished to do so, subject to the following conditions:
-  
+
            The above copyright notice and this permission notice shall be included in all
            copies or substantial portions of the Software.
-  
+
            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
            EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
            MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -30,32 +30,17 @@
 
 """
 
-from __future__ import absolute_import
+from peewee import *
 
-from .completedtaskscommandlogs import CompletedTasksCommandLogs
-from .completedtasks import CompletedTasks
-from .enabledplugins import EnabledPlugins
-from .installation import Installation
-from .pluginflow import PluginFlow
-from .pluginrepos import PluginRepos
-from .plugins import Plugins
-from .libraries import Libraries
-from .tasks import Tasks
-
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'CompletedTasks',
-    'CompletedTasksCommandLogs',
-    'EnabledPlugins',
-    'Installation',
-    'Libraries',
-    'PluginFlow',
-    'PluginRepos',
-    'Plugins',
-    'Tasks',
-)
+from unmanic.libs.unmodels.lib import BaseModel
+from unmanic.libs.unmodels.libraries import Libraries
+from unmanic.libs.unmodels.plugins import Plugins
 
 
-def list_all_models():
-    return __all__
+class EnabledPlugins(BaseModel):
+    """
+    EnabledPlugins
+    """
+    library_table_id = ForeignKeyField(Libraries, backref='flow', on_delete='CASCADE', on_update='CASCADE')
+    plugin_table_id = ForeignKeyField(Plugins, backref='flow', on_delete='CASCADE', on_update='CASCADE')
+    plugin_name = TextField(null=False)

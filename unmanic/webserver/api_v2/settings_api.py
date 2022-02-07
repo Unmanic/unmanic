@@ -593,6 +593,9 @@ class ApiSettingsHandler(BaseApiHandler):
                         "enable_scanner": library_config.get_enable_scanner(),
                         "enable_inotify": library_config.get_enable_inotify(),
                     },
+                    "plugins":        {
+                        "enabled_plugins": library_config.get_enabled_plugins(),
+                    }
                 }
             )
 

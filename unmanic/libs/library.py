@@ -30,7 +30,7 @@
 
 """
 from unmanic.config import Config
-from unmanic.libs.unmodels import Libraries
+from unmanic.libs.unmodels import EnabledPlugins, Libraries, Plugins
 
 
 class Library(object):
@@ -43,12 +43,6 @@ class Library(object):
 
     def __init__(self, library_id: int):
         self.model = Libraries.get(id=library_id)
-
-        # Fetch list of enabled plugins
-        self.get_enabled_plugins()
-
-        # Fetch this library's plugin flow
-        self.get_plugin_flow()
 
     @staticmethod
     def get_all_libraries():
@@ -135,8 +129,23 @@ class Library(object):
 
         :return:
         """
-        # TODO: Fetch enabled plugins for this library
-        pass
+        # Fetch enabled plugins for this library
+        enabled_plugins_query = EnabledPlugins.select().join(Plugins)
+        enabled_plugins_query = enabled_plugins_query.where(EnabledPlugins.library_table_id == self.model.id)
+        enabled_plugins_query = enabled_plugins_query.order_by(Plugins.name)
+
+        # Extract required data
+        enabled_plugins = []
+        for enabled_plugin in enabled_plugins_query:
+            enabled_plugins.append({
+                'library_id':  enabled_plugin.library_table_id.id,
+                'plugin_id':   enabled_plugin.plugin_table_id.plugin_id,
+                'name':        enabled_plugin.plugin_table_id.name,
+                'description': enabled_plugin.plugin_table_id.description,
+                'icon':        enabled_plugin.plugin_table_id.icon,
+            })
+
+        return enabled_plugins
 
     def get_plugin_flow(self):
         """

@@ -655,23 +655,30 @@ class ApiSettingsHandler(BaseApiHandler):
         try:
             from unmanic.libs.library import Library
             json_request = self.read_json_request(SettingsLibraryConfigReadAndWriteSchema())
-            library_config = json_request['library_config']
 
+            # Parse library config
+            library_config = json_request['library_config']
             if library_config.get('id'):
                 # Fetch existing library by ID
                 library = Library(library_config.get('id'))
             else:
                 # Create a new library
                 library = Library.create(library_config)
-
-            # Update config
+            # Update library config
             library.set_name(library_config.get('name', library.get_name()))
             library.set_path(library_config.get('path', library.get_path()))
             library.set_enable_scanner(library_config.get('enable_scanner', library.get_enable_scanner()))
             library.set_enable_inotify(library_config.get('enable_inotify', library.get_enable_inotify()))
 
-            # TODO: Update enabled plugins
-            # TODO: Update plugin flow
+            # Parse plugin config
+            plugin_config = json_request.get('plugins')
+            if library_config is not None:
+                # Update enabled plugins (if provided)
+                enabled_plugins = plugin_config.get('enabled_plugins')
+                if enabled_plugins is not None:
+                    library.set_enabled_plugins(enabled_plugins)
+
+                # TODO: Update plugin flow
 
             # Save config
             library.save()

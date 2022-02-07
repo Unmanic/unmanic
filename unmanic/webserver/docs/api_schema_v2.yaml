@@ -941,6 +941,8 @@ components:
         library_config:
           description: The library configuration
           example:
+            enable_inotify: false
+            enable_scanner: false
             id: 1
             name: Default
             path: /library

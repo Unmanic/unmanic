@@ -1367,7 +1367,9 @@
                         "example": {
                             "id": 1,
                             "name": "Default",
-                            "path": "/library"
+                            "path": "/library",
+                            "enable_scanner": false,
+                            "enable_inotify": false
                         }
                     }
                 },

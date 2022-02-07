@@ -1004,9 +1004,11 @@ class SettingsLibraryConfigReadAndWriteSchema(BaseSchema):
         required=True,
         description="The library configuration",
         example={
-            "id":   1,
-            "name": "Default",
-            "path": "/library",
+            "id":             1,
+            "name":           "Default",
+            "path":           "/library",
+            "enable_scanner": False,
+            "enable_inotify": False,
         },
     )
 

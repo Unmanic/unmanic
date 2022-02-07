@@ -587,9 +587,11 @@ class ApiSettingsHandler(BaseApiHandler):
                 SettingsLibraryConfigReadAndWriteSchema(),
                 {
                     "library_config": {
-                        "id":   library_config.get_id(),
-                        "name": library_config.get_name(),
-                        "path": library_config.get_path(),
+                        "id":             library_config.get_id(),
+                        "name":           library_config.get_name(),
+                        "path":           library_config.get_path(),
+                        "enable_scanner": library_config.get_enable_scanner(),
+                        "enable_inotify": library_config.get_enable_inotify(),
                     },
                 }
             )
@@ -651,8 +653,6 @@ class ApiSettingsHandler(BaseApiHandler):
             from unmanic.libs.library import Library
             json_request = self.read_json_request(SettingsLibraryConfigReadAndWriteSchema())
             library_config = json_request['library_config']
-
-            print(json_request['library_config'])
 
             if library_config.get('id'):
                 # Fetch existing library by ID

@@ -947,6 +947,16 @@ components:
             name: Default
             path: /library
           type: object
+        plugins:
+          description: The library's enabled plugins
+          example:
+            enabled_plugins:
+            - description: Notify Plex on completion of a task.
+              icon: https://raw.githubusercontent.com/Josh5/unmanic.plugin.notify_plex/master/icon.png
+              library_id: 1
+              name: Notify Plex
+              plugin_id: notify_plex
+          type: object
       required:
       - library_config
       type: object

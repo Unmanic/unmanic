@@ -1012,6 +1012,22 @@ class SettingsLibraryConfigReadAndWriteSchema(BaseSchema):
         },
     )
 
+    plugins = fields.Dict(
+        required=False,
+        description="The library's enabled plugins",
+        example={
+            "enabled_plugins": [
+                {
+                    "library_id":  1,
+                    "plugin_id":   "notify_plex",
+                    "name":        "Notify Plex",
+                    "description": "Notify Plex on completion of a task.",
+                    "icon":        "https://raw.githubusercontent.com/Josh5/unmanic.plugin.notify_plex/master/icon.png"
+                }
+            ]
+        },
+    )
+
 
 # VERSION
 # =======

@@ -547,6 +547,11 @@ class RequestPluginsInfoSchema(RequestPluginsByIdSchema):
         load_default=True,
         example=True,
     )
+    library_id = fields.Int(
+        required=False,
+        load_default=0,
+        example=1,
+    )
 
 
 class PluginsConfigInputItemSchema(BaseSchema):
@@ -631,6 +636,11 @@ class RequestPluginsSettingsSaveSchema(BaseSchema):
         required=True,
         many=True,
         description="The plugin settings",
+    )
+    library_id = fields.Int(
+        required=False,
+        load_default=0,
+        example=1,
     )
 
 

@@ -783,6 +783,10 @@ components:
           default: true
           example: true
           type: boolean
+        library_id:
+          default: 0
+          example: 1
+          type: integer
       required:
       - plugin_id
       type: object
@@ -796,6 +800,10 @@ components:
           items:
             $ref: '#/components/schemas/PluginsConfigInputItem'
           type: array
+        library_id:
+          default: 0
+          example: 1
+          type: integer
       required:
       - plugin_id
       - settings

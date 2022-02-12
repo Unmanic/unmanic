@@ -690,6 +690,11 @@
                         "type": "boolean",
                         "default": true,
                         "example": true
+                    },
+                    "library_id": {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 1
                     }
                 },
                 "required": [
@@ -849,6 +854,11 @@
                         "items": {
                             "$ref": "#/components/schemas/PluginsConfigInputItem"
                         }
+                    },
+                    "library_id": {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 1
                     }
                 },
                 "required": [

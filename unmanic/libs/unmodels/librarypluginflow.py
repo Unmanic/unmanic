@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.pluginflow.py
+    unmanic.librarypluginflow.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     19 Apr 2021, (8:47 PM)
+    Date:                     13 Feb 2022, (11:27 AM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -33,14 +33,16 @@
 from peewee import *
 
 from unmanic.libs.unmodels.lib import BaseModel
+from unmanic.libs.unmodels.libraries import Libraries
 from unmanic.libs.unmodels.plugins import Plugins
 
 
-class PluginFlow(BaseModel):
+class LibraryPluginFlow(BaseModel):
     """
-    PluginFlow
+    LibraryPluginFlow
     """
     plugin_id = ForeignKeyField(Plugins, backref='flow', on_delete='CASCADE', on_update='CASCADE')
+    library_id = ForeignKeyField(Libraries, backref='plugin_flow', on_delete='CASCADE', on_update='CASCADE')
     plugin_name = TextField(null=False)
     plugin_type = TextField(null=False)
     position = IntegerField(null=False, default=9999)

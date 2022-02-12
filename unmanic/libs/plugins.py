@@ -42,7 +42,7 @@ from unmanic import config
 from unmanic.libs import common, unlogger
 from unmanic.libs.session import Session
 from unmanic.libs.singleton import SingletonType
-from unmanic.libs.unmodels import PluginFlow, Plugins, PluginRepos
+from unmanic.libs.unmodels import EnabledPlugins, LibraryPluginFlow, Plugins, PluginRepos
 from unmanic.libs.unplugins import PluginExecutor
 
 
@@ -453,13 +453,13 @@ class PluginsHandler(object, metaclass=SingletonType):
         return task_query.count()
 
     def get_plugin_list_filtered_and_sorted(self, order=None, start=0, length=None, search_value=None, id_list=None,
-                                            enabled=None, plugin_id=None, plugin_type=None):
+                                            enabled=None, plugin_id=None, plugin_type=None, library_id=None):
         try:
             query = (Plugins.select())
 
             if plugin_type:
-                join_condition = ((PluginFlow.plugin_id == Plugins.id) & (PluginFlow.plugin_type == plugin_type))
-                query = query.join(PluginFlow, join_type='LEFT OUTER JOIN', on=join_condition)
+                join_condition = ((LibraryPluginFlow.plugin_id == Plugins.id) & (LibraryPluginFlow.plugin_type == plugin_type))
+                query = query.join(LibraryPluginFlow, join_type='LEFT OUTER JOIN', on=join_condition)
 
             if id_list:
                 query = query.where(Plugins.id.in_(id_list))
@@ -471,8 +471,16 @@ class PluginsHandler(object, metaclass=SingletonType):
             if plugin_id is not None:
                 query = query.where(Plugins.plugin_id.in_([plugin_id]))
 
+            # TODO: Deprecate this "enabled" status as plugins are now enabled when the are assigned to a library
             if enabled is not None:
                 query = query.where(Plugins.enabled == enabled)
+                # raise Exception("Fetching plugins by 'enabled' status is deprecated")
+
+            if library_id is not None:
+                join_condition = (
+                    (EnabledPlugins.plugin_id == Plugins.id) & (EnabledPlugins.library_id == library_id))
+                query = query.join(EnabledPlugins, join_type='LEFT OUTER JOIN', on=join_condition)
+                query = query.where(EnabledPlugins.plugin_id != None)
 
             # Get order by
             if order:
@@ -613,16 +621,18 @@ class PluginsHandler(object, metaclass=SingletonType):
 
         return True
 
-    def set_plugin_flow(self, plugin_type, flow):
+    def set_plugin_flow(self, plugin_type, library_id, flow):
         """
         Update the plugin flow for all plugins in a given plugin type
 
         :param plugin_type:
+        :param library_id:
         :param flow:
         :return:
         """
         # Delete all current flow data for this plugin type
-        delete_query = PluginFlow.delete().where(PluginFlow.plugin_type == plugin_type)
+        delete_query = LibraryPluginFlow.delete().where(
+            (LibraryPluginFlow.plugin_type == plugin_type) & (LibraryPluginFlow.library_id == library_id))
         delete_query.execute()
 
         success = True
@@ -636,7 +646,7 @@ class PluginsHandler(object, metaclass=SingletonType):
                 continue
 
             # Save the plugin flow
-            plugin_flow = self.set_plugin_flow_position_for_single_plugin(plugin_info, plugin_type, priority)
+            plugin_flow = self.set_plugin_flow_position_for_single_plugin(plugin_info, plugin_type, library_id, priority)
             priority += 1
 
             if not plugin_flow:
@@ -645,12 +655,13 @@ class PluginsHandler(object, metaclass=SingletonType):
         return success
 
     @staticmethod
-    def set_plugin_flow_position_for_single_plugin(plugin_info: Plugins, plugin_type: str, priority: int):
+    def set_plugin_flow_position_for_single_plugin(plugin_info: Plugins, plugin_type: str, library_id: int, priority: int):
         """
         Update the plugin flow for a single plugin and type with the provided priority.
 
         :param plugin_info:
         :param plugin_type:
+        :param library_id:
         :param priority:
         :return:
         """
@@ -658,15 +669,16 @@ class PluginsHandler(object, metaclass=SingletonType):
         # Save the plugin flow
         flow_dict = {
             'plugin_id':   plugin_info.id,
+            'library_id':  library_id,
             'plugin_name': plugin_info.plugin_id,
             'plugin_type': plugin_type,
             'position':    priority,
         }
-        plugin_flow = PluginFlow.create(**flow_dict)
+        plugin_flow = LibraryPluginFlow.create(**flow_dict)
 
         return plugin_flow
 
-    def get_enabled_plugin_modules_by_type(self, plugin_type):
+    def get_enabled_plugin_modules_by_type(self, plugin_type, library_id=1):
         """
         Return a list of enabled plugin modules when given a plugin type
 
@@ -674,6 +686,7 @@ class PluginsHandler(object, metaclass=SingletonType):
         configured order of execution.
 
         :param plugin_type:
+        :param library_id:
         :return:
         """
         # Refresh session
@@ -683,7 +696,7 @@ class PluginsHandler(object, metaclass=SingletonType):
         # First fetch all enabled plugins
         order = [
             {
-                "model":  PluginFlow,
+                "model":  LibraryPluginFlow,
                 "column": 'position',
                 "dir":    'asc',
             },
@@ -692,7 +705,7 @@ class PluginsHandler(object, metaclass=SingletonType):
                 "dir":    'asc',
             },
         ]
-        enabled_plugins = self.get_plugin_list_filtered_and_sorted(order=order, enabled=True, plugin_type=plugin_type)
+        enabled_plugins = self.get_plugin_list_filtered_and_sorted(order=order, plugin_type=plugin_type, library_id=library_id)
         # Validate enabled plugins
         if not (s.level > 1) and (len(enabled_plugins) > s.plugin_count):
             enabled_plugins = []

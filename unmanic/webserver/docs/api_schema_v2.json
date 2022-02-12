@@ -988,6 +988,11 @@
                     "plugin_type": {
                         "type": "string",
                         "example": "library_management.file_test"
+                    },
+                    "library_id": {
+                        "type": "integer",
+                        "default": 1,
+                        "example": 1
                     }
                 },
                 "required": [
@@ -1064,6 +1069,11 @@
                     "plugin_type": {
                         "type": "string",
                         "example": "library_management.file_test"
+                    },
+                    "library_id": {
+                        "type": "integer",
+                        "default": 1,
+                        "example": 1
                     },
                     "plugin_flow": {
                         "minItems": 1,

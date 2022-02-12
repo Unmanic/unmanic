@@ -117,9 +117,16 @@ def get_plugin_types_with_flows():
     return return_plugin_types
 
 
-def get_enabled_plugin_flows_for_plugin_type(plugin_type):
+def get_enabled_plugin_flows_for_plugin_type(plugin_type, library_id):
+    """
+    Fetch all enabled plugin flows for a plugin type
+
+    :param plugin_type:
+    :param library_id:
+    :return:
+    """
     plugin_handler = PluginsHandler()
-    plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type(plugin_type)
+    plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type(plugin_type, library_id)
 
     # Only return the data that we need
     return_plugin_flow = []
@@ -153,9 +160,17 @@ def exec_plugin_runner(data, plugin_id):
     return plugin_handler.exec_plugin_runner(data, plugin_id, 'frontend.panel')
 
 
-def save_enabled_plugin_flows_for_plugin_type(plugin_type, plugin_flow):
+def save_enabled_plugin_flows_for_plugin_type(plugin_type, library_id, plugin_flow):
+    """
+    Save a plugin flow given the plugin type and library ID
+
+    :param plugin_type:
+    :param library_id:
+    :param plugin_flow:
+    :return:
+    """
     plugins = PluginsHandler()
-    return plugins.set_plugin_flow(plugin_type, plugin_flow)
+    return plugins.set_plugin_flow(plugin_type, library_id, plugin_flow)
 
 
 def enable_plugins(plugin_table_ids, frontend_messages=None):

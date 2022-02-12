@@ -110,7 +110,7 @@ class Library(object):
 
         :return:
         """
-        EnabledPlugins.delete().where(EnabledPlugins.library_table_id == self.model.id).execute()
+        EnabledPlugins.delete().where(EnabledPlugins.library_id == self.model.id).execute()
 
     def get_id(self):
         return self.model.id
@@ -146,19 +146,19 @@ class Library(object):
         :return:
         """
         # Fetch enabled plugins for this library
-        enabled_plugins_query = EnabledPlugins.select().join(Plugins)
-        enabled_plugins_query = enabled_plugins_query.where(EnabledPlugins.library_table_id == self.model.id)
-        enabled_plugins_query = enabled_plugins_query.order_by(Plugins.name)
+        query = self.model.enabled_plugins.select(Plugins, EnabledPlugins.library_id)
+        query = query.join(Plugins, join_type='LEFT OUTER JOIN', on=(EnabledPlugins.plugin_id == Plugins.id))
+        query = query.order_by(Plugins.name)
 
         # Extract required data
         enabled_plugins = []
-        for enabled_plugin in enabled_plugins_query:
+        for enabled_plugin in query.dicts():
             enabled_plugins.append({
-                'library_id':  enabled_plugin.library_table_id.id,
-                'plugin_id':   enabled_plugin.plugin_table_id.plugin_id,
-                'name':        enabled_plugin.plugin_table_id.name,
-                'description': enabled_plugin.plugin_table_id.description,
-                'icon':        enabled_plugin.plugin_table_id.icon,
+                'library_id':  enabled_plugin.get('library_id'),
+                'plugin_id':   enabled_plugin.get('plugin_id'),
+                'name':        enabled_plugin.get('name'),
+                'description': enabled_plugin.get('description'),
+                'icon':        enabled_plugin.get('icon'),
             })
 
         return enabled_plugins
@@ -179,9 +179,9 @@ class Library(object):
             plugin = Plugins.get(plugin_id=plugin_info.get('plugin_id'))
             if plugin:
                 data.append({
-                    "library_table_id": self.model.id,
-                    "plugin_table_id":  plugin,
-                    "plugin_name":      plugin.name,
+                    "library_id":  self.model.id,
+                    "plugin_id":   plugin,
+                    "plugin_name": plugin.name,
                 })
         EnabledPlugins.insert_many(data).execute()
 

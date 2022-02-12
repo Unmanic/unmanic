@@ -704,6 +704,11 @@ class RequestPluginsFlowByPluginTypeSchema(BaseSchema):
         required=True,
         example="library_management.file_test",
     )
+    library_id = fields.Int(
+        required=False,
+        load_default=1,
+        example=1,
+    )
 
 
 class PluginFlowDataResultsSchema(BaseSchema):
@@ -762,6 +767,11 @@ class RequestSavingPluginsFlowByPluginTypeSchema(RequestPluginsFlowByPluginTypeS
         description="Saved flow",
         many=True,
         validate=validate.Length(min=1),
+    )
+    library_id = fields.Int(
+        required=False,
+        load_default=1,
+        example=1,
     )
 
 

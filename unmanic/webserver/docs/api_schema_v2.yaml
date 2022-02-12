@@ -767,6 +767,10 @@ components:
         plugin_type:
           example: library_management.file_test
           type: string
+        library_id:
+          default: 1
+          example: 1
+          type: integer
       required:
       - plugin_type
       type: object
@@ -851,6 +855,10 @@ components:
         plugin_type:
           example: library_management.file_test
           type: string
+        library_id:
+          default: 1
+          example: 1
+          type: integer
         plugin_flow:
           description: Saved flow
           items:

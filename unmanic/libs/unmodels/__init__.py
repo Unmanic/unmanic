@@ -36,10 +36,10 @@ from .completedtaskscommandlogs import CompletedTasksCommandLogs
 from .completedtasks import CompletedTasks
 from .enabledplugins import EnabledPlugins
 from .installation import Installation
-from .pluginflow import PluginFlow
 from .pluginrepos import PluginRepos
 from .plugins import Plugins
 from .libraries import Libraries
+from .librarypluginflow import LibraryPluginFlow
 from .tasks import Tasks
 
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
@@ -50,7 +50,7 @@ __all__ = (
     'EnabledPlugins',
     'Installation',
     'Libraries',
-    'PluginFlow',
+    'LibraryPluginFlow',
     'PluginRepos',
     'Plugins',
     'Tasks',

@@ -815,7 +815,8 @@ class ApiPluginsHandler(BaseApiHandler):
         try:
             json_request = self.read_json_request(RequestPluginsFlowByPluginTypeSchema())
 
-            results = plugins.get_enabled_plugin_flows_for_plugin_type(json_request.get('plugin_type'))
+            results = plugins.get_enabled_plugin_flows_for_plugin_type(json_request.get('plugin_type'),
+                                                                       json_request.get('library_id'))
             response = self.build_response(
                 PluginFlowResultsSchema(),
                 {
@@ -879,6 +880,7 @@ class ApiPluginsHandler(BaseApiHandler):
             json_request = self.read_json_request(RequestSavingPluginsFlowByPluginTypeSchema())
 
             if not plugins.save_enabled_plugin_flows_for_plugin_type(json_request.get('plugin_type'),
+                                                                     json_request.get('library_id'),
                                                                      json_request.get('plugin_flow')):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to update plugin flow by type")
                 self.write_error()

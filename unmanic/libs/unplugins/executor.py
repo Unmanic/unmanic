@@ -38,7 +38,7 @@ import sys
 
 from . import plugin_types
 from unmanic.libs import unlogger, common
-from ..unmodels.pluginflow import PluginFlow
+from ..unmodels import LibraryPluginFlow
 
 
 class PluginExecutor(object):
@@ -87,27 +87,6 @@ class PluginExecutor(object):
         :return:
         """
         return os.path.join(self.plugins_directory, plugin_id)
-
-    def __get_enabled_plugins(self, plugin_type=None):
-        """
-        Returns a list of enabled plugins
-
-        :return:
-        """
-        from unmanic.libs.plugins import PluginsHandler
-        plugin_handler = PluginsHandler()
-        order = [
-            {
-                "model":  PluginFlow,
-                "column": 'position',
-                "dir":    'asc',
-            },
-            {
-                "column": 'name',
-                "dir":    'asc',
-            },
-        ]
-        return plugin_handler.get_plugin_list_filtered_and_sorted(order=order, enabled=True, plugin_type=plugin_type)
 
     @staticmethod
     def __include_plugin_site_packages(path):

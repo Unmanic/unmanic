@@ -56,11 +56,6 @@ class ApiPluginsHandler(BaseApiHandler):
             "path_pattern":      r"/api/v1/plugins/flow",
         },
         {
-            "supported_methods": ["POST"],
-            "call_method":       "set_installed_plugin_flow",
-            "path_pattern":      r"/api/v1/plugins/flow/save",
-        },
-        {
             "supported_methods": ["GET"],
             "call_method":       "get_plugin_list",
             "path_pattern":      r"/api/v1/plugins/list",
@@ -266,27 +261,6 @@ class ApiPluginsHandler(BaseApiHandler):
                 }
             )
         self.write(json.dumps({"success": True, "plugin_flow": return_plugin_flow}))
-
-    def set_installed_plugin_flow(self, *args, **kwargs):
-        request_dict = json.loads(self.request.body)
-
-        plugin_type = request_dict.get('plugin_type')
-        if not plugin_type:
-            # Return failure
-            self.write(json.dumps({"success": False, "error": "Missing plugin_type"}))
-            return
-
-        flow = request_dict.get('flow', [])
-
-        plugins = PluginsHandler()
-        success = plugins.set_plugin_flow(plugin_type, flow)
-
-        if success:
-            # Return success
-            self.write(json.dumps({"success": True}))
-        else:
-            # Return failure
-            self.write(json.dumps({"success": False}))
 
     def get_plugin_list(self, *args, **kwargs):
         plugins = PluginsHandler()

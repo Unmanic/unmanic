@@ -42,6 +42,9 @@ class Library(object):
     """
 
     def __init__(self, library_id: int):
+        # Ensure library ID is not 0
+        if library_id < 1:
+            raise Exception("Library ID cannot be less than 1")
         self.model = Libraries.get(id=library_id)
 
     @staticmethod
@@ -93,6 +96,9 @@ class Library(object):
         :param data:
         :return:
         """
+        # Ensure ID is removed from data for a create
+        if 'id' in data:
+            del data['id']
         new_library = Libraries.create(**data)
         return Library(new_library.id)
 

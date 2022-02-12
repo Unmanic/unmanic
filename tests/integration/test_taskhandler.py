@@ -36,7 +36,6 @@ import tempfile
 
 from tests.support_.test_data import data_queues, mock_jobqueue_class
 from unmanic.libs.taskhandler import TaskHandler
-from unmanic.libs.unmodels import Settings
 from unmanic.libs.unmodels.tasks import Tasks
 
 
@@ -79,7 +78,7 @@ class TestClass(object):
         self.db_connection = Database.select_database(database_settings)
 
         # Create required tables
-        self.db_connection.create_tables([Settings, Tasks])
+        self.db_connection.create_tables([Tasks])
 
         # import config
         from unmanic import config

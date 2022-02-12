@@ -580,12 +580,23 @@ class ApiSettingsHandler(BaseApiHandler):
         try:
             json_request = self.read_json_request(RequestLibraryConfigSchema())
 
-            # Read the library
-            from unmanic.libs.library import Library
-            library_config = Library(json_request.get('id'))
-            response = self.build_response(
-                SettingsLibraryConfigReadAndWriteSchema(),
-                {
+            library_settings = {
+                "library_config": {
+                    "id":             0,
+                    "name":           '',
+                    "path":           '/',
+                    "enable_scanner": False,
+                    "enable_inotify": False,
+                },
+                "plugins":        {
+                    "enabled_plugins": [],
+                }
+            }
+            if json_request.get('id'):
+                # Read the library
+                from unmanic.libs.library import Library
+                library_config = Library(json_request.get('id'))
+                library_settings = {
                     "library_config": {
                         "id":             library_config.get_id(),
                         "name":           library_config.get_name(),
@@ -597,6 +608,10 @@ class ApiSettingsHandler(BaseApiHandler):
                         "enabled_plugins": library_config.get_enabled_plugins(),
                     }
                 }
+
+            response = self.build_response(
+                SettingsLibraryConfigReadAndWriteSchema(),
+                library_settings
             )
 
             self.write_success(response)
@@ -658,12 +673,16 @@ class ApiSettingsHandler(BaseApiHandler):
 
             # Parse library config
             library_config = json_request['library_config']
-            if library_config.get('id'):
+
+            # Check if this save requires a new library entry
+            library_id = library_config.get('id', 0)
+            if int(library_id) > 0:
                 # Fetch existing library by ID
-                library = Library(library_config.get('id'))
+                library = Library(library_id)
             else:
                 # Create a new library
                 library = Library.create(library_config)
+
             # Update library config
             library.set_name(library_config.get('name', library.get_name()))
             library.set_path(library_config.get('path', library.get_path()))

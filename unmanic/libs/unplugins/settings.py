@@ -58,7 +58,13 @@ class PluginSettings(object, metaclass=SingletonType):
     """
     settings_configured = None
 
-    def __get_plugin_settings_file(self):
+    """
+    The library ID that we are fetching settings for.
+    
+    """
+    library_id = None
+
+    def __get_plugin_settings_file(self, force_library_settings=False):
         plugin_directory = self.get_plugin_directory()
         profile_directory = self.get_profile_directory()
         # Temp code to migrate settings to userdata
@@ -70,7 +76,14 @@ class PluginSettings(object, metaclass=SingletonType):
                     os.path.join(plugin_directory, 'settings.json'),
                     os.path.join(profile_directory, 'settings.json')
                 )
-        return os.path.join(profile_directory, 'settings.json')
+        # If provided with a library ID, then the settings file will be different
+        plugin_settings_file = os.path.join(profile_directory, 'settings.json')
+        if self.library_id:
+            plugin_settings_file = os.path.join(profile_directory, 'settings.{}.json'.format(self.library_id))
+            if not os.path.exists(plugin_settings_file) and not force_library_settings:
+                # If the library file does not yet exist, then resort to using the default settings file
+                plugin_settings_file = os.path.join(profile_directory, 'settings.json')
+        return plugin_settings_file
 
     def __export_configured_settings(self):
         """
@@ -78,7 +91,7 @@ class PluginSettings(object, metaclass=SingletonType):
 
         :return:
         """
-        plugin_settings_file = self.__get_plugin_settings_file()
+        plugin_settings_file = self.__get_plugin_settings_file(force_library_settings=True)
 
         with open(plugin_settings_file, 'w') as f:
             json.dump(self.settings_configured, f, indent=2)

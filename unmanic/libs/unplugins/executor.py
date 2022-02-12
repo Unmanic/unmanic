@@ -174,7 +174,7 @@ class PluginExecutor(object):
         """
         # Set the module name
         module_name = '{}.plugin'.format(plugin_id)
-        #self._log("Reloading module '{}'".format(module_name), level="debug")
+        # self._log("Reloading module '{}'".format(module_name), level="debug")
 
         if module_name in sys.modules:
             # Get all submodules
@@ -276,7 +276,7 @@ class PluginExecutor(object):
                           level="exception")
 
             del runner
-            #gc.collect()
+            # gc.collect()
 
         return run_successfully
 
@@ -355,11 +355,12 @@ class PluginExecutor(object):
         # Return runners
         return plugin_data
 
-    def get_plugin_settings(self, plugin_id):
+    def get_plugin_settings(self, plugin_id, library_id=0):
         """
         Returns a dictionary of a given plugin's settings
 
         :param plugin_id:
+        :param library_id:
         :return:
         """
         # Get the path for this plugin
@@ -375,6 +376,8 @@ class PluginExecutor(object):
         try:
             # Settings plugin_settings
             plugin_settings = plugin_module.Settings()
+            if library_id != 0:
+                plugin_settings.library_id = library_id
 
             all_plugin_settings = copy.deepcopy(plugin_settings.get_setting())
             plugin_form_settings = copy.deepcopy(plugin_settings.get_form_settings())
@@ -385,7 +388,7 @@ class PluginExecutor(object):
 
         return all_plugin_settings, plugin_form_settings
 
-    def save_plugin_settings(self, plugin_id, settings):
+    def save_plugin_settings(self, plugin_id, settings, library_id=0):
         """
         Saves a collection of a given plugin's settings.
         Returns a boolean result for the overall success
@@ -393,6 +396,7 @@ class PluginExecutor(object):
 
         :param plugin_id:
         :param settings:
+        :param library_id:
         :return:
         """
         # Get the path for this plugin
@@ -403,6 +407,8 @@ class PluginExecutor(object):
 
         try:
             plugin_settings = plugin_module.Settings()
+            if library_id != 0:
+                plugin_settings.library_id = library_id
 
             save_result = True
             for key in settings:

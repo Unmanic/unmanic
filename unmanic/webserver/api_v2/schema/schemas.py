@@ -997,8 +997,8 @@ class SettingsLibrariesListSchema(BaseSchema):
     )
 
 
-class RequestLibraryConfigSchema(BaseSchema):
-    """Schema to request a single library configuration given its ID"""
+class RequestLibraryByIdSchema(BaseSchema):
+    """Schema to request a single library given its ID"""
 
     id = fields.Int(
         required=True,

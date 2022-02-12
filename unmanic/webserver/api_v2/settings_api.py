@@ -36,7 +36,7 @@ from unmanic import config
 from unmanic.libs.installation_link import Links
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiError, BaseApiHandler
-from unmanic.webserver.api_v2.schema.schemas import RequestLibraryConfigSchema, RequestRemoteInstallationLinkConfigSchema, \
+from unmanic.webserver.api_v2.schema.schemas import RequestLibraryByIdSchema, RequestRemoteInstallationLinkConfigSchema, \
     SettingsLibrariesListSchema, SettingsLibraryConfigReadAndWriteSchema, SettingsReadAndWriteSchema, \
     SettingsRemoteInstallationDataSchema, \
     SettingsRemoteInstallationLinkConfigSchema, SettingsSystemConfigSchema, \
@@ -93,6 +93,11 @@ class ApiSettingsHandler(BaseApiHandler):
             "path_pattern":      r"/settings/library/write",
             "supported_methods": ["POST"],
             "call_method":       "write_library_config",
+        },
+        {
+            "path_pattern":      r"/settings/library/remove",
+            "supported_methods": ["DELETE"],
+            "call_method":       "remove_library",
         },
     ]
 
@@ -544,7 +549,7 @@ class ApiSettingsHandler(BaseApiHandler):
             content:
                 application/json:
                     schema:
-                        RequestLibraryConfigSchema
+                        RequestLibraryByIdSchema
         responses:
             200:
                 description: 'Sample response: Returns the remote installation link configuration.'
@@ -578,7 +583,7 @@ class ApiSettingsHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            json_request = self.read_json_request(RequestLibraryConfigSchema())
+            json_request = self.read_json_request(RequestLibraryByIdSchema())
 
             library_settings = {
                 "library_config": {
@@ -690,7 +695,7 @@ class ApiSettingsHandler(BaseApiHandler):
             library.set_enable_inotify(library_config.get('enable_inotify', library.get_enable_inotify()))
 
             # Parse plugin config
-            plugin_config = json_request.get('plugins')
+            plugin_config = json_request.get('plugins', {})
             if library_config is not None:
                 # Update enabled plugins (if provided)
                 enabled_plugins = plugin_config.get('enabled_plugins')
@@ -701,6 +706,72 @@ class ApiSettingsHandler(BaseApiHandler):
 
             # Save config
             library.save()
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def remove_library(self):
+        """
+        Plugins - remove
+        ---
+        description: Remove a library
+        requestBody:
+            description: Requested a library to remove.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestLibraryByIdSchema
+        responses:
+            200:
+                description: 'Successful request; Returns success status'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            from unmanic.libs.library import Library
+            json_request = self.read_json_request(RequestLibraryByIdSchema())
+
+            # Fetch existing library by ID
+            library = Library(json_request.get('id'))
+
+            # Delete the library
+            if not library.delete():
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to remove library by its ID")
+                self.write_error()
+                return
 
             self.write_success()
             return

@@ -45,7 +45,9 @@ class Library(object):
         # Ensure library ID is not 0
         if library_id < 1:
             raise Exception("Library ID cannot be less than 1")
-        self.model = Libraries.get(id=library_id)
+        self.model = Libraries.get_or_none(id=library_id)
+        if not self.model:
+            raise Exception("Unable to fetch library with ID {}".format(library_id))
 
     @staticmethod
     def get_all_libraries():
@@ -101,6 +103,14 @@ class Library(object):
             del data['id']
         new_library = Libraries.create(**data)
         return Library(new_library.id)
+
+    def __remove_enabled_plugins(self):
+        """
+        Remove all enabled plugins
+
+        :return:
+        """
+        EnabledPlugins.delete().where(EnabledPlugins.library_table_id == self.model.id).execute()
 
     def get_id(self):
         return self.model.id
@@ -161,7 +171,7 @@ class Library(object):
         :return:
         """
         # Remove all enabled plugins
-        EnabledPlugins.delete().where(EnabledPlugins.library_table_id == self.model.id).execute()
+        self.__remove_enabled_plugins()
 
         # Add new repos
         data = []
@@ -197,3 +207,19 @@ class Library(object):
         if self.get_id() == 1:
             config = Config()
             config.set_config_item('library_path', self.get_path())
+
+    def delete(self):
+        """
+        Delete the current library
+
+        :return:
+        """
+        # Ensure we can never delete library ID 1 (the default library)
+        if self.get_id() == 1:
+            raise Exception("Unable remove the default library")
+
+        # Remove all enabled plugins
+        self.__remove_enabled_plugins()
+
+        # Remove the library entry
+        return self.model.delete_instance(recursive=True)

@@ -692,7 +692,7 @@ components:
           example: desc
           type: string
       type: object
-    RequestLibraryConfig:
+    RequestLibraryById:
       properties:
         id:
           description: The ID of the library
@@ -2670,7 +2670,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RequestLibraryConfig'
+              $ref: '#/components/schemas/RequestLibraryById'
         description: The ID of the library
         required: true
       responses:
@@ -2713,6 +2713,47 @@ paths:
             schema:
               $ref: '#/components/schemas/SettingsLibraryConfigReadAndWrite'
         description: Requested a dictionary of settings to save.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: Successful request; Returns success status
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /settings/library/remove:
+    delete:
+      description: Remove a library
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestLibraryById'
+        description: Requested a library to remove.
         required: true
       responses:
         '200':

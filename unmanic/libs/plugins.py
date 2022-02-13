@@ -678,12 +678,15 @@ class PluginsHandler(object, metaclass=SingletonType):
 
         return plugin_flow
 
-    def get_enabled_plugin_modules_by_type(self, plugin_type, library_id=1):
+    def get_enabled_plugin_modules_by_type(self, plugin_type, library_id=None):
         """
         Return a list of enabled plugin modules when given a plugin type
 
         Runners are filtered by the given 'plugin_type' and sorted by
         configured order of execution.
+
+        If no library ID is provided, this will return all installed plugins for that type.
+        This case should only be used for plugin runner types that are not associated with a library.
 
         :param plugin_type:
         :param library_id:

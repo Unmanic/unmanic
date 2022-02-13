@@ -69,7 +69,7 @@ class Library(object):
             default_library = {
                 'id':   1,
                 'name': 'Default',
-                'path': default_library_path
+                'path': default_library_path,
             }
             Libraries.create(**default_library)
             return [default_library]

@@ -56,18 +56,16 @@ def prepare_filtered_plugins(params):
         })
     ]
 
-    enabled = params.get('enabled')
-
     # Fetch Plugins
     plugins = PluginsHandler()
     # Get total count
     records_total_count = plugins.get_total_plugin_list_count()
     # Get quantity after filters (without pagination)
     records_filtered_count = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=0,
-                                                                         search_value=search_value, enabled=enabled).count()
+                                                                         search_value=search_value).count()
     # Get filtered/sorted results
     plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=start, length=length,
-                                                                 search_value=search_value, enabled=enabled)
+                                                                 search_value=search_value)
 
     # Build return data
     return_data = {

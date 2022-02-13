@@ -48,14 +48,15 @@ class FileTest(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, library_id: int):
         self.settings = config.Config()
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         self.logger = unmanic_logging.get_logger(__class__.__name__)
 
         # Init plugins
         self.plugin_handler = PluginsHandler()
-        self.plugin_modules = self.plugin_handler.get_enabled_plugin_modules_by_type('library_management.file_test')
+        self.plugin_modules = self.plugin_handler.get_enabled_plugin_modules_by_type('library_management.file_test',
+                                                                                     library_id)
 
         # List of filed tasks
         self.failed_paths = []
@@ -159,12 +160,13 @@ class FileTest(object):
 
 
 class FileTesterThread(threading.Thread):
-    def __init__(self, name, files_to_test, files_to_process, status_updates):
+    def __init__(self, name, files_to_test, files_to_process, status_updates, library_id):
         super(FileTesterThread, self).__init__(name=name)
         self.settings = config.Config()
         self.logger = None
         self.files_to_test = files_to_test
         self.files_to_process = files_to_process
+        self.library_id = library_id
         self.status_updates = status_updates
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
@@ -183,7 +185,7 @@ class FileTesterThread(threading.Thread):
         # If we have a config set to run a schedule, then start the process.
         # Otherwise close this thread now.
         self._log("Starting {}".format(self.name))
-        file_test = FileTest()
+        file_test = FileTest(self.library_id)
         while not self.abort_flag.is_set():
             try:
                 # Pending task queue has an item available. Fetch it.

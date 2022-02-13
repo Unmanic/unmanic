@@ -35,6 +35,7 @@ import threading
 import time
 
 from unmanic import config
+from unmanic.libs.library import Library
 from unmanic.libs.plugins import PluginsHandler
 
 try:
@@ -76,9 +77,10 @@ class EventHandler(FileSystemEventHandler):
     From this, the only event we really need to monitor is the "created" and "closed" events.
     """
 
-    def __init__(self, files_to_test):
+    def __init__(self, files_to_test, library_id):
         self.name = "EventProcessor"
         self.files_to_test = files_to_test
+        self.library_id = library_id
         self.logger = None
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
@@ -98,7 +100,10 @@ class EventHandler(FileSystemEventHandler):
                 self._log("Detected event is for a directory. Ignoring...", level="debug")
             else:
                 self._log("Detected '{}' event on file path '{}'".format(event.event_type, event.src_path))
-                self.files_to_test.put(event.src_path)
+                self.files_to_test.put({
+                    'src_path':   event.src_path,
+                    'library_id': self.library_id,
+                })
 
 
 class EventMonitorManager(threading.Thread):
@@ -125,6 +130,7 @@ class EventMonitorManager(threading.Thread):
         self.abort_flag.clear()
 
         self.event_observer_thread = None
+        self.event_observer_threads = []
 
     def _log(self, message, message2='', level="info"):
         if not self.logger:
@@ -148,7 +154,10 @@ class EventMonitorManager(threading.Thread):
                 continue
 
             if not self.files_to_test.empty():
-                self.manage_event_queue(self.files_to_test.get())
+                item = self.files_to_test.get()
+                pathname = item.get('src_path')
+                library_id = item.get('library_id')
+                self.manage_event_queue(pathname, library_id)
                 continue
 
             # Check settings to ensure the event monitor should be enabled...
@@ -183,17 +192,24 @@ class EventMonitorManager(threading.Thread):
         :return:
         """
         if not self.event_observer_thread:
-            library_path = self.settings.get_library_path()
-            if not os.path.exists(library_path):
-                time.sleep(.1)
-                return
-            self._log("EventMonitorManager spawning EventProcessor thread...")
-            event_handler = EventHandler(self.files_to_test)
-
+            monitoring_path = False
             self.event_observer_thread = Observer()
-            self.event_observer_thread.schedule(event_handler, self.settings.get_library_path(), recursive=True)
-
-            self.event_observer_thread.start()
+            for lib_info in Library.get_all_libraries():
+                library = Library(lib_info['id'])
+                # Check if library scanner is enabled on any library
+                if library.get_enable_inotify():
+                    library_path = library.get_path()
+                    if not os.path.exists(library_path):
+                        time.sleep(.1)
+                        continue
+                    self._log("Adding library path to monitor '{}'".format(library_path))
+                    event_handler = EventHandler(self.files_to_test, library.get_id())
+                    self.event_observer_thread.schedule(event_handler, library_path, recursive=True)
+                    monitoring_path = True
+            # Only start observer if a path was added to be monitored
+            if monitoring_path:
+                self._log("EventMonitorManager spawning EventProcessor thread...")
+                self.event_observer_thread.start()
         else:
             self._log("Given signal to start the EventProcessor thread, but it is already running....")
 
@@ -217,7 +233,7 @@ class EventMonitorManager(threading.Thread):
 
         self.event_observer_thread = None
 
-    def manage_event_queue(self, pathname):
+    def manage_event_queue(self, pathname, library_id):
         """
         Manage all monitored events
 
@@ -225,11 +241,12 @@ class EventMonitorManager(threading.Thread):
         This avoids a file being added twice on 2 events.
 
         :param pathname:
+        :param library_id:
         :return:
         """
         # Test file to be added to task list. Add it if required
         try:
-            file_test = FileTest()
+            file_test = FileTest(library_id)
             result, issues = file_test.should_file_be_added_to_task_list(pathname)
             # Log any error messages
             for issue in issues:

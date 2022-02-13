@@ -42,6 +42,7 @@ import schedule
 from unmanic import config
 from unmanic.libs import common, unlogger
 from unmanic.libs.filetest import FileTesterThread
+from unmanic.libs.library import Library
 
 
 class LibraryScannerManager(threading.Thread):
@@ -153,15 +154,24 @@ class LibraryScannerManager(threading.Thread):
             return
         if not plugin_handler.within_enabled_plugin_limits(self.data_queues.get('frontend_messages')):
             return
-        self._log("Running full library scan")
-        self.scan_library_path(self.settings.get_library_path())
+
+        # For each configured library, check if a library scan is required
+        for lib_info in Library.get_all_libraries():
+            library = Library(lib_info['id'])
+            # Check if library scanner is enabled on any library
+            if library.get_enable_scanner():
+                # Run library scan
+                self._log("Running full library scan on library '{}'".format(library.get_name()))
+                self.scan_library_path(library.get_path(), library.get_id())
+        else:
+            self._log("No libraries are configured to run a library scan")
 
     def add_path_to_queue(self, pathname):
         self.scheduledtasks.put(pathname)
 
-    def start_results_manager_thread(self, manager_id, status_updates):
+    def start_results_manager_thread(self, manager_id, status_updates, library_id):
         manager = FileTesterThread("FileTesterThread-{}".format(manager_id), self.files_to_test,
-                                   self.files_to_process, status_updates)
+                                   self.files_to_process, status_updates, library_id)
         manager.daemon = True
         manager.start()
         self.file_test_managers[manager_id] = manager
@@ -170,12 +180,19 @@ class LibraryScannerManager(threading.Thread):
         for manager_id in self.file_test_managers:
             self.file_test_managers[manager_id].abort_flag.set()
 
-    def scan_library_path(self, search_folder):
-        if not os.path.exists(search_folder):
-            self._log("Path does not exist - '{}'".format(search_folder), level="warning")
+    def scan_library_path(self, library_path, library_id):
+        """
+        Run a scan of the given library path
+
+        :param library_path:
+        :param library_id:
+        :return:
+        """
+        if not os.path.exists(library_path):
+            self._log("Path does not exist - '{}'".format(library_path), level="warning")
             return
         if self.settings.get_debugging():
-            self._log("Scanning directory - '{}'".format(search_folder), level="debug")
+            self._log("Scanning directory - '{}'".format(library_path), level="debug")
 
         # Push status notification to frontend
         frontend_messages = self.data_queues.get('frontend_messages')
@@ -185,7 +202,7 @@ class LibraryScannerManager(threading.Thread):
         status_updates = queue.Queue()
         self.file_test_managers = {}
         for results_manager_id in range(int(concurrent_file_testers)):
-            self.start_results_manager_thread(results_manager_id, status_updates)
+            self.start_results_manager_thread(results_manager_id, status_updates, library_id)
 
         start_time = time.time()
 
@@ -194,7 +211,7 @@ class LibraryScannerManager(threading.Thread):
                 'id':      'libraryScanProgress',
                 'type':    'status',
                 'code':    'libraryScanProgress',
-                'message': "Scanning directory - '{}'".format(search_folder),
+                'message': "Scanning directory - '{}'".format(library_path),
                 'timeout': 0
             }
         )
@@ -203,7 +220,7 @@ class LibraryScannerManager(threading.Thread):
         total_file_count = 0
         current_file = ''
         percent_completed_string = ''
-        for root, subFolders, files in os.walk(search_folder, followlinks=follow_symlinks):
+        for root, subFolders, files in os.walk(library_path, followlinks=follow_symlinks):
             if self.abort_flag.is_set():
                 break
             if self.settings.get_debugging():

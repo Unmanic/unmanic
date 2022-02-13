@@ -178,7 +178,7 @@ class Task(object):
         # Get task matching the abspath
         self.task = Tasks.get(abspath=abspath)
 
-    def create_task_by_absolute_path(self, abspath, task_type='local'):
+    def create_task_by_absolute_path(self, abspath, task_type='local', library_id=1):
         """
         Creates the task by it's absolute path.
         If the task already exists in the list, then this will throw an exception and return false
@@ -187,10 +187,11 @@ class Task(object):
 
         :param abspath:
         :param task_type:
+        :param library_id:
         :return:
         """
         try:
-            self.task = Tasks.create(abspath=abspath, status='creating')
+            self.task = Tasks.create(abspath=abspath, status='creating', library_id=library_id)
             self.save()
             self._log("Created new task with ID: {} for {}".format(self.task, abspath), level="debug")
 

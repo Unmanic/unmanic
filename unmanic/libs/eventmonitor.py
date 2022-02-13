@@ -256,17 +256,21 @@ class EventMonitorManager(threading.Thread):
                     self._log(issue)
             # If file needs to be added, then add it
             if result:
-                self.__add_path_to_queue(pathname)
+                self.__add_path_to_queue(pathname, library_id)
         except UnicodeEncodeError:
             self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
         except Exception as e:
             self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e), level="exception")
 
-    def __add_path_to_queue(self, pathname):
+    def __add_path_to_queue(self, pathname, library_id):
         """
         Add a given path to the pending task queue
 
         :param pathname:
+        :param library_id:
         :return:
         """
-        self.data_queues.get('inotifytasks').put(pathname)
+        self.data_queues.get('inotifytasks').put({
+            'pathname':   pathname,
+            'library_id': library_id,
+        })

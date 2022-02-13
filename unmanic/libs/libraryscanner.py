@@ -166,8 +166,11 @@ class LibraryScannerManager(threading.Thread):
         else:
             self._log("No libraries are configured to run a library scan")
 
-    def add_path_to_queue(self, pathname):
-        self.scheduledtasks.put(pathname)
+    def add_path_to_queue(self, pathname, library_id):
+        self.scheduledtasks.put({
+            'pathname':   pathname,
+            'library_id': library_id,
+        })
 
     def start_results_manager_thread(self, manager_id, status_updates, library_id):
         manager = FileTesterThread("FileTesterThread-{}".format(manager_id), self.files_to_test,
@@ -286,7 +289,7 @@ class LibraryScannerManager(threading.Thread):
                 current_file = status_updates.get()
                 continue
             elif not self.files_to_process.empty():
-                self.add_path_to_queue(self.files_to_process.get())
+                self.add_path_to_queue(self.files_to_process.get(), library_id)
                 continue
             else:
                 time.sleep(.1)

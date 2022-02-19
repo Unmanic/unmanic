@@ -160,8 +160,16 @@ class EventMonitorManager(threading.Thread):
                 self.manage_event_queue(pathname, library_id)
                 continue
 
-            # Check settings to ensure the event monitor should be enabled...
-            if self.settings.get_enable_inotify():
+            # Check if monitor is enabled for at least one library
+            enable_inotify = False
+            for lib_info in Library.get_all_libraries():
+                library = Library(lib_info['id'])
+                # Check if library scanner is enabled on any library
+                if library.get_enable_inotify():
+                    enable_inotify = True
+
+            # If at least library has the monitor enabled, then start it. Otherwise stop the monitor process
+            if enable_inotify:
                 # If enabled, ensure it is running and start it if it is not
                 if not self.event_observer_thread:
                     self.start_event_processor()

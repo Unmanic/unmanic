@@ -893,7 +893,6 @@ class SettingsReadAndWriteSchema(BaseSchema):
             "schedule_full_scan_minutes": 1440,
             "follow_symlinks":            True,
             "run_full_scan_on_start":     False,
-            "enable_inotify":             False,
             "number_of_workers":          1,
             "worker_event_schedules":     [
                 {

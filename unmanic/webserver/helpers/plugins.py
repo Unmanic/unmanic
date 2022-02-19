@@ -58,6 +58,7 @@ def prepare_filtered_plugins(params):
 
     # Fetch Plugins
     plugins = PluginsHandler()
+    plugin_executor = PluginExecutor()
     # Get total count
     records_total_count = plugins.get_total_plugin_list_count()
     # Get quantity after filters (without pagination)
@@ -81,6 +82,11 @@ def prepare_filtered_plugins(params):
             "enabled":          plugin_result.get('enabled'),
             "update_available": plugin_result.get('update_available'),
         }
+        # Check if plugin is able to be configured
+        has_config = False
+        plugin_settings, plugin_settings_meta = plugin_executor.get_plugin_settings(plugin_result.get('plugin_id'))
+        if plugin_settings:
+            has_config = True
         # Set params as required in template
         item = {
             'id':          plugin_result.get('id'),
@@ -92,6 +98,7 @@ def prepare_filtered_plugins(params):
             'author':      plugin_result.get('author'),
             'version':     plugin_result.get('version'),
             'status':      plugin_status,
+            'has_config':  has_config,
         }
         return_data["results"].append(item)
 

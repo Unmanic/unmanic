@@ -515,6 +515,11 @@ class PluginsMetadataResultsSchema(BaseSchema):
         description="The plugin changelog",
         example="[b][color=56adda]0.0.1[/color][/b]• initial version",
     )
+    has_config = fields.Boolean(
+        required=False,
+        description="The plugin has the ability to be configured",
+        example=True,
+    )
 
 
 class PluginsTableResultsSchema(PluginsMetadataResultsSchema):

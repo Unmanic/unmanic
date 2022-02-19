@@ -69,7 +69,6 @@ class Config(object, metaclass=SingletonType):
         self.follow_symlinks = True
         self.concurrent_file_testers = 2
         self.run_full_scan_on_start = False
-        self.enable_inotify = False
         self.clear_pending_tasks_on_restart = True
 
         # Worker settings
@@ -331,14 +330,6 @@ class Config(object, metaclass=SingletonType):
         else:
             unmanic_logging.disable_debugging()
         self.debugging = value
-
-    def get_enable_inotify(self):
-        """
-        Get setting - enable_inotify
-
-        :return:
-        """
-        return self.enable_inotify
 
     def get_library_path(self):
         """

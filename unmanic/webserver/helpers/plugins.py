@@ -216,7 +216,7 @@ def update_plugins(plugin_table_ids):
     return plugins_handler.update_plugins_by_db_table_id(plugin_table_ids)
 
 
-def get_plugin_settings(plugin_id: str, library_id: int):
+def get_plugin_settings(plugin_id: str, library_id=None):
     """
     Given a plugin installation ID, return a list of plugin settings for that plugin
 
@@ -320,7 +320,7 @@ def get_plugin_long_description(plugin_id):
     return plugin_executor.get_plugin_long_description(plugin_id)
 
 
-def prepare_plugin_info_and_settings(plugin_id, prefer_local=True, library_id=0):
+def prepare_plugin_info_and_settings(plugin_id, prefer_local=True, library_id=None):
     """
     Returns a object of plugin metadata and current settings for the requested plugin_id
 
@@ -373,7 +373,7 @@ def prepare_plugin_info_and_settings(plugin_id, prefer_local=True, library_id=0)
             'settings':    [],
         }
         if plugin_installed:
-            plugin_data['settings'] = get_plugin_settings(plugin_result.get('plugin_id'), library_id)
+            plugin_data['settings'] = get_plugin_settings(plugin_result.get('plugin_id'), library_id=library_id)
             plugin_data['changelog'] = "".join(get_plugin_changelog(plugin_result.get('plugin_id')))
             plugin_data['description'] += "\n" + "".join(
                 get_plugin_long_description(plugin_result.get('plugin_id')))
@@ -382,7 +382,7 @@ def prepare_plugin_info_and_settings(plugin_id, prefer_local=True, library_id=0)
     return plugin_data
 
 
-def update_plugin_settings(plugin_id, settings, library_id=0):
+def update_plugin_settings(plugin_id, settings, library_id=None):
     """
     Updates the settings for the requested plugin_id
 
@@ -392,7 +392,7 @@ def update_plugin_settings(plugin_id, settings, library_id=0):
     :return:
     """
     # Fetch plugin info (and settings if any)
-    plugin_data = prepare_plugin_info_and_settings(plugin_id)
+    plugin_data = prepare_plugin_info_and_settings(plugin_id, library_id=library_id)
 
     # If no plugin data was found for the posted plugin table ID, then return a failure response
     if not plugin_data:
@@ -418,7 +418,9 @@ def update_plugin_settings(plugin_id, settings, library_id=0):
     # If we found settings that need to be saved, save them...
     if settings_to_save:
         plugin_executor = PluginExecutor()
-        saved_all_settings = plugin_executor.save_plugin_settings(plugin_data.get('plugin_id'), settings_to_save, library_id)
+        saved_all_settings = plugin_executor.save_plugin_settings(plugin_data.get('plugin_id'),
+                                                                  settings_to_save,
+                                                                  library_id=library_id)
         # If the save function was successful
         if saved_all_settings:
             # Update settings in plugin data that will be returned

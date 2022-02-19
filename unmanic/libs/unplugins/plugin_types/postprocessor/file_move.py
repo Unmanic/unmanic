@@ -40,6 +40,7 @@ class FileMove(PluginType):
     Runner function - configures additional postprocessor file movements during the postprocessor stage of a task.
 
     The 'data' object argument includes:
+        library_id              - The library that the current task is associated with
         source_data             - Dictionary containing data pertaining to the original source file.
         remove_source_file      - Boolean, should Unmanic remove the original source file after all copy operations are complete.
         copy_file               - Boolean, should Unmanic run a copy operation with the returned data variables.

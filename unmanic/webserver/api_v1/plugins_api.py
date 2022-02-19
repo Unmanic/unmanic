@@ -46,11 +46,6 @@ class ApiPluginsHandler(BaseApiHandler):
 
     routes = [
         {
-            "supported_methods": ["POST"],
-            "call_method":       "manage_installed_plugins_list",
-            "path_pattern":      r"/api/v1/plugins/installed",
-        },
-        {
             "supported_methods": ["GET"],
             "call_method":       "get_plugin_list",
             "path_pattern":      r"/api/v1/plugins/list",
@@ -92,39 +87,6 @@ class ApiPluginsHandler(BaseApiHandler):
 
     def post(self, path):
         self.action_route()
-
-    def manage_installed_plugins_list(self, *args, **kwargs):
-        request_dict = json.loads(self.request.body)
-
-        plugins = PluginsHandler()
-
-        # Uninstall selected plugins
-        if request_dict.get("customActionName") == "remove-selected-plugins":
-            if not plugins.uninstall_plugins_by_db_table_id(request_dict.get("id")):
-                self.write(json.dumps({"success": False}))
-                return
-
-        # Update selected plugins
-        if request_dict.get("customActionName") == "update-selected-plugins":
-            if not plugins.update_plugins_by_db_table_id(request_dict.get("id")):
-                self.write(json.dumps({"success": False}))
-                return
-
-        # Enable selected plugins
-        if request_dict.get("customActionName") == "enable-selected-plugins":
-            if not plugins.enable_plugin_by_db_table_id(request_dict.get("id")):
-                self.write(json.dumps({"success": False}))
-                return
-
-        # Disable selected plugins
-        if request_dict.get("customActionName") == "disable-selected-plugins":
-            if not plugins.disable_plugin_by_db_table_id(request_dict.get("id")):
-                self.write(json.dumps({"success": False}))
-                return
-
-        # Return a list of plugins based on the request JSON body
-        results = self.prepare_filtered_plugins(request_dict)
-        self.write(json.dumps(results))
 
     def prepare_filtered_plugins(self, request_dict):
         """

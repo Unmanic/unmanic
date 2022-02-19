@@ -40,6 +40,7 @@ import requests
 
 from unmanic import config
 from unmanic.libs import common, unlogger
+from unmanic.libs.library import Library
 from unmanic.libs.session import Session
 from unmanic.libs.singleton import SingletonType
 from unmanic.libs.unmodels import EnabledPlugins, LibraryPluginFlow, Plugins, PluginRepos
@@ -168,7 +169,7 @@ class PluginsHandler(object, metaclass=SingletonType):
 
         return True
 
-    def get_settings_of_all_enabled_plugins(self):
+    def get_settings_of_all_installed_plugins(self):
         all_settings = {}
 
         # First fetch all enabled plugins
@@ -178,11 +179,11 @@ class PluginsHandler(object, metaclass=SingletonType):
                 "dir":    'asc',
             },
         ]
-        enabled_plugins = self.get_plugin_list_filtered_and_sorted(order=order, enabled=True)
+        installed_plugins = self.get_plugin_list_filtered_and_sorted(order=order)
 
         # Fetch settings for each plugin
         plugin_executor = PluginExecutor()
-        for plugin in enabled_plugins:
+        for plugin in installed_plugins:
             plugin_settings, plugin_settings_meta = plugin_executor.get_plugin_settings(plugin.get('plugin_id'))
             all_settings[plugin.get('plugin_id')] = plugin_settings
 
@@ -420,8 +421,6 @@ class PluginsHandler(object, metaclass=SingletonType):
             update_query.execute()
         else:
             # Insert a new entry
-            # Plugins are disable when first installed. This will help to prevent issues with broken plugins
-            plugin_data[Plugins.enabled] = False
             Plugins.insert(plugin_data).execute()
 
             # On first install, set the priority for each runner
@@ -471,10 +470,9 @@ class PluginsHandler(object, metaclass=SingletonType):
             if plugin_id is not None:
                 query = query.where(Plugins.plugin_id.in_([plugin_id]))
 
-            # TODO: Deprecate this "enabled" status as plugins are now enabled when the are assigned to a library
+            # Deprecate this "enabled" status as plugins are now enabled when the are assigned to a library
             if enabled is not None:
-                query = query.where(Plugins.enabled == enabled)
-                # raise Exception("Fetching plugins by 'enabled' status is deprecated")
+                raise Exception("Fetching plugins by 'enabled' status is deprecated")
 
             if library_id is not None:
                 join_condition = (
@@ -504,52 +502,6 @@ class PluginsHandler(object, metaclass=SingletonType):
         except Plugins.DoesNotExist:
             # No plugin entries exist yet
             self._log("No plugins exist yet.", level="warning")
-
-    def enable_plugin_by_db_table_id(self, plugin_table_ids, frontend_messages=None):
-        self._log("Enable plugins '{}'".format(plugin_table_ids), level='debug')
-
-        # Refresh session
-        s = Session()
-        s.register_unmanic()
-
-        # Enable the matching entries in the table
-        Plugins.update(enabled=True).where(Plugins.id.in_(plugin_table_ids)).execute()
-
-        # Fetch records
-        records_by_id = self.get_plugin_list_filtered_and_sorted(id_list=plugin_table_ids)
-
-        # Ensure they are now enabled
-        plugin_executor = PluginExecutor()
-        for record in records_by_id:
-            if record.get('enabled'):
-                # Reload the plugin module
-                plugin_executor.reload_plugin_module(record.get('plugin_id'))
-                continue
-            self._log("Failed to enable plugin '{}'".format(record.get('plugin_id')), level='debug')
-            return False
-
-        # Warn on any incompatible enabled plugins
-        self.get_incompatible_enabled_plugins(frontend_messages)
-        self.within_enabled_plugin_limits(frontend_messages)
-
-        return True
-
-    def disable_plugin_by_db_table_id(self, plugin_table_ids):
-        self._log("Disable plugins '{}'".format(plugin_table_ids), level='debug')
-        # Disable the matching entries in the table
-        Plugins.update(enabled=False).where(Plugins.id.in_(plugin_table_ids)).execute()
-
-        # Fetch records
-        records_by_id = self.get_plugin_list_filtered_and_sorted(id_list=plugin_table_ids)
-
-        # Ensure they are now disabled
-        for record in records_by_id:
-            if not record.get('enabled'):
-                continue
-            self._log("Failed to disable plugin '{}'".format(record.get('plugin_id')), level='debug')
-            return False
-
-        return True
 
     def flag_plugin_for_update_by_id(self, plugin_id):
         self._log("Flagging update available for installed plugin '{}'".format(plugin_id), level='debug')
@@ -709,9 +661,6 @@ class PluginsHandler(object, metaclass=SingletonType):
             },
         ]
         enabled_plugins = self.get_plugin_list_filtered_and_sorted(order=order, plugin_type=plugin_type, library_id=library_id)
-        # Validate enabled plugins
-        if not (s.level > 1) and (len(enabled_plugins) > s.plugin_count):
-            enabled_plugins = []
 
         # Fetch all plugin modules from the given list of enabled plugins
         plugin_executor = PluginExecutor()
@@ -732,42 +681,6 @@ class PluginsHandler(object, metaclass=SingletonType):
         plugin_executor = PluginExecutor()
         return plugin_executor.execute_plugin_runner(data, plugin_id, plugin_type)
 
-    def within_enabled_plugin_limits(self, frontend_messages=None):
-        """
-        Ensure enabled plugins are within limits
-
-        :param frontend_messages:
-        :return:
-        """
-        # Fetch level from session
-        s = Session()
-        s.register_unmanic()
-        if s.level > 1:
-            return True
-
-        # Fetch all enabled plugins
-        enabled_plugins = self.get_plugin_list_filtered_and_sorted(enabled=True)
-
-        def add_frontend_message():
-            # If the frontend messages queue was included in request, append a message
-            if frontend_messages:
-                frontend_messages.put(
-                    {
-                        'id':      'pluginEnabledLimits',
-                        'type':    'error',
-                        'code':    'pluginEnabledLimits',
-                        'message': '',
-                        'timeout': 0
-                    }
-                )
-
-        # Ensure enabled plugins are within limits
-        # Function was returned above if the user was logged in and able to use infinite
-        if len(enabled_plugins) > s.plugin_count:
-            add_frontend_message()
-            return False
-        return True
-
     def get_incompatible_enabled_plugins(self, frontend_messages=None):
         """
         Ensure that the currently installed plugins are compatible with this PluginsHandler version
@@ -776,8 +689,8 @@ class PluginsHandler(object, metaclass=SingletonType):
         :return:
         :rtype:
         """
-        # Fetch all enabled plugins
-        enabled_plugins = self.get_plugin_list_filtered_and_sorted(enabled=True)
+        # Fetch all libraries
+        all_libraries = Library.get_all_libraries()
 
         def add_frontend_message(plugin_id, name):
             # If the frontend messages queue was included in request, append a message
@@ -792,30 +705,34 @@ class PluginsHandler(object, metaclass=SingletonType):
                     }
                 )
 
-        # Ensure only compatible plugins are enabled
-        # If all enabled plugins are compatible, then return true
+        # Fetch all enabled plugins
         incompatible_list = []
-        for record in enabled_plugins:
-            try:
-                # Ensure plugin is compatible
-                plugin_info = self.get_plugin_info(record.get('plugin_id'))
-            except Exception as e:
-                plugin_info = None
-                self._log("Exception while fetching plugin info for {}:".format(record.get('plugin_id')), message2=str(e),
-                          level="exception")
-            if plugin_info:
-                # Plugins will require a 'compatibility' entry in their info.json file.
-                #   This must list the plugin handler versions that it is compatible with
-                if self.version in plugin_info.get('compatibility', []):
-                    continue
+        for library in all_libraries:
+            enabled_plugins = self.get_plugin_list_filtered_and_sorted(library_id=library.get('id'))
 
-            incompatible_list.append(
-                {
-                    'plugin_id': record.get('plugin_id'),
-                    'name':      record.get('name'),
-                }
-            )
-            add_frontend_message(record.get('plugin_id'), record.get('name'))
+            # Ensure only compatible plugins are enabled
+            # If all enabled plugins are compatible, then return true
+            for record in enabled_plugins:
+                try:
+                    # Ensure plugin is compatible
+                    plugin_info = self.get_plugin_info(record.get('plugin_id'))
+                except Exception as e:
+                    plugin_info = None
+                    self._log("Exception while fetching plugin info for {}:".format(record.get('plugin_id')), message2=str(e),
+                              level="exception")
+                if plugin_info:
+                    # Plugins will require a 'compatibility' entry in their info.json file.
+                    #   This must list the plugin handler versions that it is compatible with
+                    if self.version in plugin_info.get('compatibility', []):
+                        continue
+
+                incompatible_list.append(
+                    {
+                        'plugin_id': record.get('plugin_id'),
+                        'name':      record.get('name'),
+                    }
+                )
+                add_frontend_message(record.get('plugin_id'), record.get('name'))
 
         return incompatible_list
 

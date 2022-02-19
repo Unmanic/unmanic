@@ -359,7 +359,7 @@ class PluginExecutor(object):
             all_plugin_settings = copy.deepcopy(plugin_settings.get_setting())
             plugin_form_settings = copy.deepcopy(plugin_settings.get_form_settings())
         except Exception as e:
-            self._log(str(e), level='exception')
+            self._log("Exception while fetching settings for plugin '{}'".format(plugin_id), str(e), level='exception')
             all_plugin_settings = {}
             plugin_form_settings = {}
 

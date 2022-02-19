@@ -131,6 +131,7 @@ class PostProcessor(threading.Thread):
 
         # Read current task data
         # task_data = self.current_task.get_task_data()
+        library_id = self.current_task.get_task_library()
         cache_path = self.current_task.get_cache_path()
         source_data = self.current_task.get_source_data()
         destination_data = self.current_task.get_destination_data()
@@ -142,7 +143,8 @@ class PostProcessor(threading.Thread):
             # Run a postprocess file movement on the cache file for for each plugin that configures it
 
             # Fetch all 'postprocessor.file_move' plugin modules
-            plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('postprocessor.file_move')
+            plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('postprocessor.file_move',
+                                                                               library_id=library_id)
 
             # Check if the source file needs to be remove by default (only if it does not match the destination file)
             remove_source_file = False
@@ -151,11 +153,12 @@ class PostProcessor(threading.Thread):
 
             # Set initial data (some fields will be overwritten further down)
             data = {
-                "source_data":        None,
+                'library_id':         library_id,
+                'source_data':        None,
                 'remove_source_file': remove_source_file,
                 'copy_file':          None,
-                "file_in":            None,
-                "file_out":           None,
+                'file_in':            None,
+                'file_out':           None,
             }
 
             for plugin_module in plugin_modules:
@@ -216,11 +219,12 @@ class PostProcessor(threading.Thread):
                       level='warning')
 
         # Fetch all 'postprocessor.task_result' plugin modules
-        plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('postprocessor.task_result')
+        plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('postprocessor.task_result', library_id=library_id)
 
         for plugin_module in plugin_modules:
             data = {
-                "source_data":                 source_data,
+                'library_id':                  library_id,
+                'source_data':                 source_data,
                 'task_processing_success':     self.current_task.task.success,
                 'file_move_processes_success': file_move_processes_success,
                 'destination_files':           destination_files,

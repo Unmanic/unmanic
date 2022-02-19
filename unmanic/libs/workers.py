@@ -264,10 +264,10 @@ class Worker(threading.Thread):
 
         :return:
         """
-
         # Init plugins
+        library_id = self.current_task.get_task_library()
         plugin_handler = PluginsHandler()
-        plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('worker.process_item')
+        plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('worker.process_item', library_id=library_id)
 
         # Create dictionary of runners info for the frontend
         self.worker_runners_info = {}
@@ -322,6 +322,7 @@ class Worker(threading.Thread):
 
             # Generate/Reset the data for the runner functions
             data = {
+                "library_id":              library_id,
                 "exec_command":            [],
                 "command_progress_parser": default_progress_parser,
                 "file_in":                 file_in,

@@ -40,6 +40,7 @@ class ProcessItem(PluginType):
     Runner function - enables additional configured processing jobs during the worker stages of a task.
 
     The 'data' object argument includes:
+        library_id              - The library that the current task is associated with
         exec_command            - A command that Unmanic should execute. Can be empty.
         command_progress_parser - A function that Unmanic can use to parse the STDOUT of the command to collect progress stats. Can be empty.
         file_in                 - The source file to be processed by the command.

@@ -109,13 +109,18 @@ class Task(object):
 
     def get_task_id(self):
         if not self.task:
-            raise Exception('Unable to fetch task type. Task has not been set!')
+            raise Exception('Unable to fetch task ID. Task has not been set!')
         return self.task.id
 
     def get_task_type(self):
         if not self.task:
             raise Exception('Unable to fetch task type. Task has not been set!')
         return self.task.type
+
+    def get_task_library(self):
+        if not self.task:
+            raise Exception('Unable to fetch task library ID. Task has not been set!')
+        return self.task.library_id
 
     def get_cache_path(self):
         if not self.task:

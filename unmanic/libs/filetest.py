@@ -57,7 +57,7 @@ class FileTest(object):
         self.library_id = library_id
         self.plugin_handler = PluginsHandler()
         self.plugin_modules = self.plugin_handler.get_enabled_plugin_modules_by_type('library_management.file_test',
-                                                                                     library_id)
+                                                                                     library_id=library_id)
 
         # List of filed tasks
         self.failed_paths = []

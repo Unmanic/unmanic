@@ -100,7 +100,7 @@ class Foreman(threading.Thread):
 
     def get_current_plugin_configuration(self):
         plugin_handler = PluginsHandler()
-        all_plugin_settings = plugin_handler.get_settings_of_all_enabled_plugins()
+        all_plugin_settings = plugin_handler.get_settings_of_all_installed_plugins()
         return all_plugin_settings
 
     def plugin_configuration_changed(self):
@@ -122,8 +122,6 @@ class Foreman(threading.Thread):
         # Ensure that the enabled plugins are compatible with the PluginHandler version
         plugin_handler = PluginsHandler()
         if plugin_handler.get_incompatible_enabled_plugins(frontend_messages):
-            valid = False
-        if not plugin_handler.within_enabled_plugin_limits(frontend_messages):
             valid = False
         if not self.links.within_enabled_link_limits(frontend_messages):
             valid = False

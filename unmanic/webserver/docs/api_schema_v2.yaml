@@ -360,10 +360,6 @@ components:
           description: Is the plugin installed
           example: true
           type: boolean
-        enabled:
-          description: Is the plugin enabled
-          example: true
-          type: boolean
         update_available:
           description: Does the plugin have an update available
           example: true
@@ -507,6 +503,10 @@ components:
           description: The plugin changelog
           example: "[b][color=56adda]0.0.1[/color][/b]\u2022 initial version"
           type: string
+        has_config:
+          description: The plugin has the ability to be configured
+          example: true
+          type: boolean
         settings:
           description: The plugin settings
           items:
@@ -572,6 +572,10 @@ components:
           description: The plugin changelog
           example: "[b][color=56adda]0.0.1[/color][/b]\u2022 initial version"
           type: string
+        has_config:
+          description: The plugin has the ability to be configured
+          example: true
+          type: boolean
         package_url:
           description: The plugin package download URL
           example: https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/plugin_id/plugin_id-1.0.0.zip
@@ -637,6 +641,10 @@ components:
           description: The plugin changelog
           example: "[b][color=56adda]0.0.1[/color][/b]\u2022 initial version"
           type: string
+        has_config:
+          description: The plugin has the ability to be configured
+          example: true
+          type: boolean
         id:
           description: Item table ID
           example: 1
@@ -983,7 +991,6 @@ components:
           example:
             cache_path: /tmp/unmanic
             debugging: false
-            enable_inotify: false
             enable_library_scanner: false
             follow_symlinks: true
             library_path: /library
@@ -1755,7 +1762,7 @@ paths:
           description: Internal error; Check `error` for exception
   /plugins/enable:
     post:
-      description: Enable a list of plugins.
+      description: DEPRECATED! Enable a list of plugins.
       requestBody:
         content:
           application/json:
@@ -1796,7 +1803,7 @@ paths:
           description: Internal error; Check `error` for exception
   /plugins/disable:
     post:
-      description: Disable a list of plugins.
+      description: DEPRECATED! Disable a list of plugins.
       requestBody:
         content:
           application/json:
@@ -1837,7 +1844,7 @@ paths:
           description: Internal error; Check `error` for exception
   /plugins/update:
     post:
-      description: Update a list of plugins.
+      description: Update a list of plugins given their DB table IDs.
       requestBody:
         content:
           application/json:
@@ -1878,7 +1885,7 @@ paths:
           description: Internal error; Check `error` for exception
   /plugins/remove:
     delete:
-      description: Remove a list of plugins.
+      description: Remove a list of plugins given their DB table IDs.
       requestBody:
         content:
           application/json:

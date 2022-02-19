@@ -216,7 +216,7 @@ class ApiPluginsHandler(BaseApiHandler):
         """
         Plugins - enable
         ---
-        description: Enable a list of plugins.
+        description: DEPRECATED! Enable a list of plugins.
         requestBody:
             description: Requested list of plugins to enable.
             required: True
@@ -257,15 +257,7 @@ class ApiPluginsHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            json_request = self.read_json_request(RequestTableUpdateByIdList())
-
-            if not plugins.enable_plugins(json_request.get('id_list', []), self.unmanic_data_queues.get('frontend_messages')):
-                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to enable the plugins by their IDs")
-                self.write_error()
-                return
-
-            self.write_success()
-            return
+            raise Exception('Endpoint is deprecated. Plugins are now enabled by assigning them to a library')
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
             return
@@ -277,7 +269,7 @@ class ApiPluginsHandler(BaseApiHandler):
         """
         Plugins - disable
         ---
-        description: Disable a list of plugins.
+        description: DEPRECATED! Disable a list of plugins.
         requestBody:
             description: Requested list of plugins to disable.
             required: True
@@ -318,15 +310,7 @@ class ApiPluginsHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            json_request = self.read_json_request(RequestTableUpdateByIdList())
-
-            if not plugins.disable_plugins(json_request.get('id_list', [])):
-                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to disable the plugins by their IDs")
-                self.write_error()
-                return
-
-            self.write_success()
-            return
+            raise Exception('Endpoint is deprecated. Plugins are now enabled by assigning them to a library')
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
             return
@@ -338,7 +322,7 @@ class ApiPluginsHandler(BaseApiHandler):
         """
         Plugins - update
         ---
-        description: Update a list of plugins.
+        description: Update a list of plugins given their DB table IDs.
         requestBody:
             description: Requested list of plugins to update.
             required: True
@@ -399,7 +383,7 @@ class ApiPluginsHandler(BaseApiHandler):
         """
         Plugins - remove
         ---
-        description: Remove a list of plugins.
+        description: Remove a list of plugins given their DB table IDs.
         requestBody:
             description: Requested list of plugins to remove.
             required: True

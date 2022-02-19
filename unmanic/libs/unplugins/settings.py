@@ -37,7 +37,7 @@ from unmanic import config
 from unmanic.libs.singleton import SingletonType
 
 
-class PluginSettings(object, metaclass=SingletonType):
+class PluginSettings(object):
     """
     A dictionary of settings accessible to the Plugin class and able
     to be configured by users from within the Unmanic WebUI.
@@ -63,6 +63,9 @@ class PluginSettings(object, metaclass=SingletonType):
     
     """
     library_id = None
+
+    def __init__(self, *args, **kwargs):
+        self.library_id = kwargs.get('library_id')
 
     def __get_plugin_settings_file(self, force_library_settings=False):
         plugin_directory = self.get_plugin_directory()

@@ -552,6 +552,10 @@ class PluginsHandler(object, metaclass=SingletonType):
             # Unload plugin modules
             PluginExecutor.unload_plugin_module(record.get('plugin_id'))
 
+        # Unlink from library by ID in DB
+        if not EnabledPlugins.delete().where(EnabledPlugins.plugin_id.in_(plugin_table_ids)).execute():
+            return False
+
         # Delete by ID in DB
         if not Plugins.delete().where(Plugins.id.in_(plugin_table_ids)).execute():
             return False

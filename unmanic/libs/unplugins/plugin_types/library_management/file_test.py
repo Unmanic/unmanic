@@ -40,6 +40,7 @@ class FileTest(PluginType):
     Runner function - enables additional actions during the library management file tests.
 
     The 'data' object argument includes:
+        library_id                      - The library that the current task is associated with
         path                            - String containing the full path to the file being tested.
         issues                          - List of currently found issues for not processing the file.
         add_file_to_pending_tasks       - Boolean, is the file currently marked to be added to the queue for processing.

@@ -51,7 +51,7 @@ class PluginsHandler(object, metaclass=SingletonType):
     Set plugin version.
     Plugins must be compatible with this version to be installed.
     """
-    version: int = 1
+    version: int = 2
 
     """
     Set the default repo to main repo

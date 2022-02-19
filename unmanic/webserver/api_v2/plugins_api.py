@@ -507,7 +507,9 @@ class ApiPluginsHandler(BaseApiHandler):
             prefer_local = json_request.get('prefer_local')
             library_id = json_request.get('library_id')
 
-            plugins_info = plugins.prepare_plugin_info_and_settings(plugin_id, prefer_local, library_id)
+            plugins_info = plugins.prepare_plugin_info_and_settings(plugin_id,
+                                                                    prefer_local=prefer_local,
+                                                                    library_id=library_id)
 
             response = self.build_response(
                 PluginsInfoResultsSchema(),
@@ -521,7 +523,7 @@ class ApiPluginsHandler(BaseApiHandler):
                     "version":     plugins_info.get('version'),
                     "changelog":   plugins_info.get('changelog'),
                     "status":      plugins_info.get('status'),
-                    "settings":    plugins_info.get('settings')
+                    "settings":    plugins_info.get('settings'),
                 }
             )
             self.write_success(response)
@@ -584,7 +586,7 @@ class ApiPluginsHandler(BaseApiHandler):
             settings = json_request.get('settings')
             library_id = json_request.get('library_id')
 
-            if not plugins.update_plugin_settings(plugin_id, settings, library_id):
+            if not plugins.update_plugin_settings(plugin_id, settings, library_id=library_id):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to save plugins settings")
                 self.write_error()
                 return

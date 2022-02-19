@@ -217,8 +217,12 @@ class PluginsCLI(object):
             "class Settings(PluginSettings):",
             "    settings = {}",
             "",
-            ""
+            "    def __init__(self, *args, **kwargs):",
+            "       super(Settings, self).__init__(*args, **kwargs)",
+            "",
+            "",
         ]
+
 
         # Create runner function template
         runner_template = [

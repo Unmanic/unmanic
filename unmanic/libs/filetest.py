@@ -54,6 +54,7 @@ class FileTest(object):
         self.logger = unmanic_logging.get_logger(__class__.__name__)
 
         # Init plugins
+        self.library_id = library_id
         self.plugin_handler = PluginsHandler()
         self.plugin_modules = self.plugin_handler.get_enabled_plugin_modules_by_type('library_management.file_test',
                                                                                      library_id)
@@ -136,6 +137,7 @@ class FileTest(object):
             # Run tests against plugins
             for plugin_module in self.plugin_modules:
                 data = {
+                    'library_id':                self.library_id,
                     'path':                      path,
                     'issues':                    file_issues.copy(),
                     'add_file_to_pending_tasks': None,

@@ -334,7 +334,7 @@ class PluginExecutor(object):
         # Return runners
         return plugin_data
 
-    def get_plugin_settings(self, plugin_id, library_id=0):
+    def get_plugin_settings(self, plugin_id, library_id=None):
         """
         Returns a dictionary of a given plugin's settings
 
@@ -354,9 +354,7 @@ class PluginExecutor(object):
 
         try:
             # Settings plugin_settings
-            plugin_settings = plugin_module.Settings()
-            if library_id != 0:
-                plugin_settings.library_id = library_id
+            plugin_settings = plugin_module.Settings(library_id=library_id)
 
             all_plugin_settings = copy.deepcopy(plugin_settings.get_setting())
             plugin_form_settings = copy.deepcopy(plugin_settings.get_form_settings())
@@ -367,7 +365,7 @@ class PluginExecutor(object):
 
         return all_plugin_settings, plugin_form_settings
 
-    def save_plugin_settings(self, plugin_id, settings, library_id=0):
+    def save_plugin_settings(self, plugin_id, settings, library_id=None):
         """
         Saves a collection of a given plugin's settings.
         Returns a boolean result for the overall success
@@ -385,9 +383,7 @@ class PluginExecutor(object):
         plugin_module = self.__load_plugin_module(plugin_id, plugin_path)
 
         try:
-            plugin_settings = plugin_module.Settings()
-            if library_id != 0:
-                plugin_settings.library_id = library_id
+            plugin_settings = plugin_module.Settings(library_id=library_id)
 
             save_result = True
             for key in settings:

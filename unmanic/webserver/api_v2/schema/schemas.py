@@ -441,11 +441,6 @@ class PluginStatusSchema(BaseSchema):
         description="Is the plugin installed",
         example=True,
     )
-    enabled = fields.Boolean(
-        required=False,
-        description="Is the plugin enabled",
-        example=True,
-    )
     update_available = fields.Boolean(
         required=False,
         description="Does the plugin have an update available",

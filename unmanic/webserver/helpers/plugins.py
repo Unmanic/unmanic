@@ -79,7 +79,6 @@ def prepare_filtered_plugins(params):
     for plugin_result in plugin_results:
         # Set plugin status
         plugin_status = {
-            "enabled":          plugin_result.get('enabled'),
             "update_available": plugin_result.get('update_available'),
         }
         # Check if plugin is able to be configured
@@ -176,29 +175,6 @@ def save_enabled_plugin_flows_for_plugin_type(plugin_type, library_id, plugin_fl
     """
     plugins = PluginsHandler()
     return plugins.set_plugin_flow(plugin_type, library_id, plugin_flow)
-
-
-def enable_plugins(plugin_table_ids, frontend_messages=None):
-    """
-    Enables a list of plugins
-
-    :param frontend_messages:
-    :param plugin_table_ids:
-    :return:
-    """
-    plugins_handler = PluginsHandler()
-    return plugins_handler.enable_plugin_by_db_table_id(plugin_table_ids, frontend_messages)
-
-
-def disable_plugins(plugin_table_ids):
-    """
-    Disables a list of plugins
-
-    :param plugin_table_ids:
-    :return:
-    """
-    plugins_handler = PluginsHandler()
-    return plugins_handler.disable_plugin_by_db_table_id(plugin_table_ids)
 
 
 def remove_plugins(plugin_table_ids):
@@ -362,7 +338,6 @@ def prepare_plugin_info_and_settings(plugin_id, prefer_local=True, library_id=No
         # Set plugin status
         plugin_status = {
             "installed":        plugin_result.get('installed', False),
-            "enabled":          plugin_result.get('enabled', False),
             "update_available": plugin_result.get('update_available', False),
         }
         # Set params as required in template

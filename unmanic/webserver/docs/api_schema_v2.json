@@ -566,11 +566,6 @@
                         "description": "Is the plugin installed",
                         "example": true
                     },
-                    "enabled": {
-                        "type": "boolean",
-                        "description": "Is the plugin enabled",
-                        "example": true
-                    },
                     "update_available": {
                         "type": "boolean",
                         "description": "Does the plugin have an update available",
@@ -628,6 +623,11 @@
                         "type": "string",
                         "description": "The plugin changelog",
                         "example": "[b][color=56adda]0.0.1[/color][/b]• initial version"
+                    },
+                    "has_config": {
+                        "type": "boolean",
+                        "description": "The plugin has the ability to be configured",
+                        "example": true
                     },
                     "id": {
                         "type": "integer",
@@ -822,6 +822,11 @@
                         "description": "The plugin changelog",
                         "example": "[b][color=56adda]0.0.1[/color][/b]• initial version"
                     },
+                    "has_config": {
+                        "type": "boolean",
+                        "description": "The plugin has the ability to be configured",
+                        "example": true
+                    },
                     "settings": {
                         "description": "The plugin settings",
                         "type": "array",
@@ -916,6 +921,11 @@
                         "type": "string",
                         "description": "The plugin changelog",
                         "example": "[b][color=56adda]0.0.1[/color][/b]• initial version"
+                    },
+                    "has_config": {
+                        "type": "boolean",
+                        "description": "The plugin has the ability to be configured",
+                        "example": true
                     },
                     "package_url": {
                         "type": "string",
@@ -1224,7 +1234,6 @@
                             "schedule_full_scan_minutes": 1440,
                             "follow_symlinks": true,
                             "run_full_scan_on_start": false,
-                            "enable_inotify": false,
                             "number_of_workers": 1,
                             "worker_event_schedules": [
                                 {
@@ -2529,7 +2538,7 @@
         },
         "/plugins/enable": {
             "post": {
-                "description": "Enable a list of plugins.",
+                "description": "DEPRECATED! Enable a list of plugins.",
                 "requestBody": {
                     "description": "Requested list of plugins to enable.",
                     "required": true,
@@ -2597,7 +2606,7 @@
         },
         "/plugins/disable": {
             "post": {
-                "description": "Disable a list of plugins.",
+                "description": "DEPRECATED! Disable a list of plugins.",
                 "requestBody": {
                     "description": "Requested list of plugins to disable.",
                     "required": true,
@@ -2665,7 +2674,7 @@
         },
         "/plugins/update": {
             "post": {
-                "description": "Update a list of plugins.",
+                "description": "Update a list of plugins given their DB table IDs.",
                 "requestBody": {
                     "description": "Requested list of plugins to update.",
                     "required": true,
@@ -2733,7 +2742,7 @@
         },
         "/plugins/remove": {
             "delete": {
-                "description": "Remove a list of plugins.",
+                "description": "Remove a list of plugins given their DB table IDs.",
                 "requestBody": {
                     "description": "Requested list of plugins to remove.",
                     "required": true,

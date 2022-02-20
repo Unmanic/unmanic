@@ -148,7 +148,7 @@ class ApiPendingHandler(BaseApiHandler):
                     "dir":    json_request.get('order_direction', 'desc'),
                 }
             }
-            task_list = pending_tasks.prepare_filtered_pending_tasks(params)
+            task_list = pending_tasks.prepare_filtered_pending_tasks(params, include_library=True)
 
             response = self.build_response(
                 PendingTasksSchema(),

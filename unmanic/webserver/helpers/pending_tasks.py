@@ -32,6 +32,7 @@
 import os
 
 from unmanic.libs import task
+from unmanic.libs.library import Library
 
 
 def prepare_filtered_pending_tasks_for_table(request_dict):
@@ -94,12 +95,13 @@ def prepare_filtered_pending_tasks_for_table(request_dict):
     return return_data
 
 
-def prepare_filtered_pending_tasks(params):
+def prepare_filtered_pending_tasks(params, include_library=False):
     """
     Returns a object of records filtered and sorted
     according to the provided request.
 
     :param params:
+    :param include_library:
     :return:
     """
     start = params.get('start', 0)
@@ -141,6 +143,11 @@ def prepare_filtered_pending_tasks(params):
             'type':     pending_task['type'],
             'status':   pending_task['status'],
         }
+        if include_library:
+            # Get library
+            library = Library(pending_task['library_id'])
+            item['library_id'] = library.get_id()
+            item['library_name'] = library.get_name()
         return_data["results"].append(item)
 
     # Return results

@@ -332,6 +332,28 @@
                     "success"
                 ]
             },
+            "RequestAddCompletedToPendingTasks": {
+                "type": "object",
+                "properties": {
+                    "id_list": {
+                        "type": "array",
+                        "minItems": 1,
+                        "description": "List of table IDs",
+                        "example": [],
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "library_id": {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "id_list"
+                ]
+            },
             "CompletedTasksLogRequest": {
                 "type": "object",
                 "properties": {
@@ -444,6 +466,16 @@
                         "type": "string",
                         "description": "The uploaded file md5 checksum",
                         "example": "5425ab3df5cdbad2e1099bb4cb963a4f"
+                    },
+                    "library_id": {
+                        "type": "integer",
+                        "description": "The ID of the library for which this task was created",
+                        "example": 1
+                    },
+                    "library_name": {
+                        "type": "string",
+                        "description": "The name of the library for which this task was created",
+                        "example": "Default"
                     }
                 },
                 "required": [
@@ -1906,7 +1938,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/RequestTableUpdateByIdList"
+                                "$ref": "#/components/schemas/RequestAddCompletedToPendingTasks"
                             }
                         }
                     }

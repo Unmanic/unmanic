@@ -150,15 +150,25 @@ class Library(object):
         query = query.join(Plugins, join_type='LEFT OUTER JOIN', on=(EnabledPlugins.plugin_id == Plugins.id))
         query = query.order_by(Plugins.name)
 
+        from unmanic.libs.unplugins import PluginExecutor
+        plugin_executor = PluginExecutor()
+
         # Extract required data
         enabled_plugins = []
         for enabled_plugin in query.dicts():
+            # Check if plugin is able to be configured
+            has_config = False
+            plugin_settings, plugin_settings_meta = plugin_executor.get_plugin_settings(enabled_plugin.get('plugin_id'))
+            if plugin_settings:
+                has_config = True
+            # Add plugin to list of enabled plugins
             enabled_plugins.append({
                 'library_id':  enabled_plugin.get('library_id'),
                 'plugin_id':   enabled_plugin.get('plugin_id'),
                 'name':        enabled_plugin.get('name'),
                 'description': enabled_plugin.get('description'),
                 'icon':        enabled_plugin.get('icon'),
+                'has_config':  has_config,
             })
 
         return enabled_plugins

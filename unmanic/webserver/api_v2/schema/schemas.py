@@ -343,6 +343,16 @@ class CompletedTasksLogSchema(BaseSchema):
     )
 
 
+class RequestAddCompletedToPendingTasksSchema(RequestTableUpdateByIdList):
+    """Schema for adding a completed task to the pending task queue"""
+
+    library_id = fields.Int(
+        required=False,
+        load_default=0,
+        example=1,
+    )
+
+
 # PENDING
 # =======
 
@@ -387,6 +397,16 @@ class PendingTasksTableResultsSchema(BaseSchema):
         required=False,
         description="The uploaded file md5 checksum",
         example="5425ab3df5cdbad2e1099bb4cb963a4f",
+    )
+    library_id = fields.Int(
+        required=False,
+        description="The ID of the library for which this task was created",
+        example=1,
+    )
+    library_name = fields.Str(
+        required=False,
+        description="The name of the library for which this task was created",
+        example="Default",
     )
 
 

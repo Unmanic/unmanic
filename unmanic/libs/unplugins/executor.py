@@ -398,7 +398,29 @@ class PluginExecutor(object):
 
             return save_result
         except Exception as e:
+            self._log("Exception while saving settings for plugin '{}'".format(plugin_id), str(e), level='exception')
             self._log(str(e), level='exception')
+            return False
+
+    def reset_plugin_settings(self, plugin_id, library_id=None):
+        """
+        Reset a plugin settings by removing the config file
+
+        :param plugin_id:
+        :param library_id:
+        :return:
+        """
+        # Get the path for this plugin
+        plugin_path = self.__get_plugin_directory(plugin_id)
+
+        # Load this plugin module
+        plugin_module = self.__load_plugin_module(plugin_id, plugin_path)
+
+        try:
+            plugin_settings = plugin_module.Settings(library_id=library_id)
+            return plugin_settings.reset_settings_to_defaults()
+        except Exception as e:
+            self._log("Exception while resetting settings for plugin '{}'".format(plugin_id), str(e), level='exception')
             return False
 
     def get_plugin_changelog(self, plugin_id):

@@ -644,6 +644,20 @@ class RequestPluginsSettingsSaveSchema(BaseSchema):
     )
 
 
+class RequestPluginsSettingsResetSchema(BaseSchema):
+    """Schema for requesting the reset of a plugins settings by the plugin install ID"""
+
+    plugin_id = fields.Str(
+        required=True,
+        example="encoder_video_hevc_vaapi",
+    )
+    library_id = fields.Int(
+        required=False,
+        load_default=0,
+        example=1,
+    )
+
+
 class PluginsMetadataInstallableResultsSchema(PluginsMetadataResultsSchema):
     """Schema for plugin metadata that will be returned when fetching installable plugins """
 

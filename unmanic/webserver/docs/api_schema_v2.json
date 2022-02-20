@@ -871,6 +871,23 @@
                     "settings"
                 ]
             },
+            "RequestPluginsSettingsReset": {
+                "type": "object",
+                "properties": {
+                    "plugin_id": {
+                        "type": "string",
+                        "example": "encoder_video_hevc_vaapi"
+                    },
+                    "library_id": {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "plugin_id"
+                ]
+            },
             "PluginsMetadataInstallableResults": {
                 "type": "object",
                 "properties": {
@@ -2886,6 +2903,74 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/RequestPluginsSettingsSave"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful request; Returns success status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugins/settings/reset": {
+            "post": {
+                "description": "Reset the settings of a single plugin.",
+                "requestBody": {
+                    "description": "Requested a plugins settings be reset.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestPluginsSettingsReset"
                             }
                         }
                     }

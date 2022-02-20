@@ -802,6 +802,18 @@ components:
       required:
       - plugin_id
       type: object
+    RequestPluginsSettingsReset:
+      properties:
+        plugin_id:
+          example: encoder_video_hevc_vaapi
+          type: string
+        library_id:
+          default: 0
+          example: 1
+          type: integer
+      required:
+      - plugin_id
+      type: object
     RequestPluginsSettingsSave:
       properties:
         plugin_id:
@@ -1975,6 +1987,47 @@ paths:
             schema:
               $ref: '#/components/schemas/RequestPluginsSettingsSave'
         description: Requested a plugins settings be updated.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: Successful request; Returns success status
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /plugins/settings/reset:
+    post:
+      description: Reset the settings of a single plugin.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestPluginsSettingsReset'
+        description: Requested a plugins settings be reset.
         required: true
       responses:
         '200':

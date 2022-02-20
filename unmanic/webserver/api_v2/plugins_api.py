@@ -37,7 +37,8 @@ from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiErr
 from unmanic.webserver.api_v2.schema.schemas import PluginFlowResultsSchema, PluginReposListResultsSchema, \
     PluginTypesResultsSchema, PluginsDataPanelTypesDataSchema, PluginsDataSchema, PluginsInfoResultsSchema, \
     PluginsInstallableResultsSchema, RequestPluginsByIdSchema, RequestPluginsFlowByPluginTypeSchema, \
-    RequestPluginsInfoSchema, RequestPluginsSettingsSaveSchema, RequestPluginsTableDataSchema, \
+    RequestPluginsInfoSchema, RequestPluginsSettingsResetSchema, RequestPluginsSettingsSaveSchema, \
+    RequestPluginsTableDataSchema, \
     RequestSavingPluginsFlowByPluginTypeSchema, RequestTableUpdateByIdList, RequestUpdatePluginReposListSchema
 from unmanic.webserver.helpers import plugins
 
@@ -83,6 +84,11 @@ class ApiPluginsHandler(BaseApiHandler):
             "path_pattern":      r"/plugins/settings/update",
             "supported_methods": ["POST"],
             "call_method":       "update_plugin_settings",
+        },
+        {
+            "path_pattern":      r"/plugins/settings/reset",
+            "supported_methods": ["POST"],
+            "call_method":       "reset_plugin_settings",
         },
         {
             "path_pattern":      r"/plugins/installable",
@@ -572,6 +578,70 @@ class ApiPluginsHandler(BaseApiHandler):
 
             if not plugins.update_plugin_settings(plugin_id, settings, library_id=library_id):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to save plugins settings")
+                self.write_error()
+                return
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def reset_plugin_settings(self):
+        """
+        Plugins - Reset the settings of a single plugin
+        ---
+        description: Reset the settings of a single plugin.
+        requestBody:
+            description: Requested a plugins settings be reset.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestPluginsSettingsResetSchema
+        responses:
+            200:
+                description: 'Successful request; Returns success status'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(RequestPluginsSettingsResetSchema())
+
+            plugin_id = json_request.get('plugin_id')
+            library_id = json_request.get('library_id')
+
+            if not plugins.reset_plugin_settings(plugin_id, library_id=library_id):
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to reset plugins settings")
                 self.write_error()
                 return
 

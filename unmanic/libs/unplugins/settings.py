@@ -123,6 +123,22 @@ class PluginSettings(object):
             if key in plugin_settings:
                 self.settings_configured[key] = plugin_settings.get(key)
 
+    def reset_settings_to_defaults(self):
+        """
+        Remove all currently configured settings by deleting the settings.json file
+
+        :return:
+        """
+        plugin_settings_file = self.__get_plugin_settings_file()
+
+        # if the file does not yet exist, create it
+        if os.path.exists(plugin_settings_file):
+            os.remove(plugin_settings_file)
+
+        if not os.path.exists(plugin_settings_file):
+            return True
+        return False
+
     def get_plugin_directory(self):
         """
         Return the absolute path to the Plugin's directory.

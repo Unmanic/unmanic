@@ -30,7 +30,7 @@
 
 """
 from unmanic.config import Config
-from unmanic.libs.unmodels import EnabledPlugins, Libraries, Plugins
+from unmanic.libs.unmodels import EnabledPlugins, Libraries, Plugins, Tasks
 
 
 class Library(object):
@@ -111,6 +111,14 @@ class Library(object):
         :return:
         """
         EnabledPlugins.delete().where(EnabledPlugins.library_id == self.model.id).execute()
+
+    def __remove_associated_tasks(self):
+        """
+        Remove all tasks associated with a library
+
+        :return:
+        """
+        Tasks.delete().where(Tasks.library_id == self.model.id).execute()
 
     def get_id(self):
         return self.model.id
@@ -230,6 +238,9 @@ class Library(object):
 
         # Remove all enabled plugins
         self.__remove_enabled_plugins()
+
+        # Delete all tasks with matching library_id
+        self.__remove_associated_tasks()
 
         # Remove the library entry
         return self.model.delete_instance(recursive=True)

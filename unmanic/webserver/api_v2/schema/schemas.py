@@ -1082,6 +1082,50 @@ class SettingsLibraryConfigReadAndWriteSchema(BaseSchema):
     )
 
 
+class SettingsLibraryPluginConfigExportSchema(BaseSchema):
+    """Schema for exporting a library's plugin config"""
+
+    plugins = fields.Dict(
+        required=True,
+        description="The library's enabled plugins",
+        example={
+            "enabled_plugins": [
+                {
+                    "library_id":  1,
+                    "plugin_id":   "encoder_audio_ac3",
+                    "name":        "Audio Encoder AC3",
+                    "description": "Ensure all audio streams are encoded with the AC3 codec using the native FFmpeg ac3 encoder.",
+                    "icon":        "https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png"
+                }
+            ],
+            "plugin_flow":     {
+                "library_management.file_test": [
+                    {
+                        "plugin_id":   "encoder_audio_ac3",
+                        "name":        "Audio Encoder AC3",
+                        "author":      "Josh.5",
+                        "description": "Ensure all audio streams are encoded with the AC3 codec using the native FFmpeg ac3 encoder.",
+                        "version":     "0.0.2",
+                        "icon":        "https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png"
+                    }
+                ],
+                "worker.process_item":          [
+                    {
+                        "plugin_id":   "encoder_audio_ac3",
+                        "name":        "Audio Encoder AC3",
+                        "author":      "Josh.5",
+                        "description": "Ensure all audio streams are encoded with the AC3 codec using the native FFmpeg ac3 encoder.",
+                        "version":     "0.0.2",
+                        "icon":        "https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png"
+                    }
+                ],
+                "postprocessor.file_move":      [],
+                "postprocessor.task_result":    []
+            }
+        },
+    )
+
+
 # VERSION
 # =======
 

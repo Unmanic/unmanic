@@ -411,6 +411,26 @@ def update_plugin_settings(plugin_id, settings, library_id=None):
     return False
 
 
+def reset_plugin_settings(plugin_id, library_id=None):
+    """
+    Reset a plugin's settings back to defaults (or global config if a library ID is provided)
+
+    :param plugin_id:
+    :param library_id:
+    :return:
+    """
+    # Fetch plugin info (and settings if any)
+    plugin_data = prepare_plugin_info_and_settings(plugin_id, library_id=library_id)
+
+    # If no plugin data was found for the posted plugin table ID, then return a failure response
+    if not plugin_data:
+        return False
+
+    # Reset the plugin settings
+    plugin_executor = PluginExecutor()
+    return plugin_executor.reset_plugin_settings(plugin_data.get('plugin_id'), library_id=library_id)
+
+
 def prepare_installable_plugins_list():
     """
     Return a list of plugins able to be installed.

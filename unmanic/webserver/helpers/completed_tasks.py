@@ -104,11 +104,12 @@ def remove_completed_tasks(completed_task_ids):
     return task_handler.delete_historic_tasks_recursively(id_list=completed_task_ids)
 
 
-def add_historic_tasks_to_pending_tasks_list(historic_task_ids):
+def add_historic_tasks_to_pending_tasks_list(historic_task_ids, library_id=None):
     """
     Adds a list of historical tasks to the pending tasks list.
 
     :param historic_task_ids:
+    :param library_id:
     :return:
     """
     errors = {}
@@ -129,7 +130,7 @@ def add_historic_tasks_to_pending_tasks_list(historic_task_ids):
         # Create a new task
         new_task = task.Task()
 
-        if not new_task.create_task_by_absolute_path(abspath):
+        if not new_task.create_task_by_absolute_path(abspath, library_id=library_id):
             # If file exists in task queue already this will return false.
             # Do not carry on.
             errors[record.get("id")] = "File already in task queue - '{}'".format(abspath)

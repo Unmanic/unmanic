@@ -277,6 +277,14 @@ components:
           description: The uploaded file md5 checksum
           example: 5425ab3df5cdbad2e1099bb4cb963a4f
           type: string
+        library_id:
+          description: The ID of the library for which this task was created
+          example: 1
+          type: integer
+        library_name:
+          description: The name of the library for which this task was created
+          example: Default
+          type: string
       required:
       - abspath
       - id
@@ -660,6 +668,22 @@ components:
       - tags
       - version
       type: object
+    RequestAddCompletedToPendingTasks:
+      properties:
+        id_list:
+          description: List of table IDs
+          example: &id003 []
+          items:
+            type: integer
+          minItems: 1
+          type: array
+        library_id:
+          default: 0
+          example: 1
+          type: integer
+      required:
+      - id_list
+      type: object
     RequestDirectoryListingData:
       properties:
         current_path:
@@ -742,7 +766,7 @@ components:
       properties:
         id_list:
           description: List of table IDs
-          example: &id003 []
+          example: *id003
           items:
             type: integer
           minItems: 1
@@ -1382,7 +1406,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RequestTableUpdateByIdList'
+              $ref: '#/components/schemas/RequestAddCompletedToPendingTasks'
         description: Requested list of items to reprocess.
         required: true
       responses:

@@ -39,7 +39,7 @@ from unmanic.webserver.api_v2.base_api_handler import BaseApiError, BaseApiHandl
 from unmanic.webserver.api_v2.schema.schemas import CompletedTasksLogRequestSchema, CompletedTasksLogSchema, \
     CompletedTasksSchema, \
     RequestHistoryTableDataSchema, \
-    RequestTableUpdateByIdList
+    RequestAddCompletedToPendingTasksSchema, RequestTableUpdateByIdList
 from unmanic.webserver.helpers import completed_tasks
 
 
@@ -228,7 +228,7 @@ class ApiHistoryHandler(BaseApiHandler):
             content:
                 application/json:
                     schema:
-                        RequestTableUpdateByIdList
+                        RequestAddCompletedToPendingTasksSchema
         responses:
             200:
                 description: 'Successful request; Returns success status'
@@ -262,9 +262,11 @@ class ApiHistoryHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            json_request = self.read_json_request(RequestTableUpdateByIdList())
+            json_request = self.read_json_request(RequestAddCompletedToPendingTasksSchema())
+            id_list = json_request.get('id_list', [])
+            library_id = json_request.get('library_id')
 
-            errors = completed_tasks.add_historic_tasks_to_pending_tasks_list(json_request.get('id_list', []))
+            errors = completed_tasks.add_historic_tasks_to_pending_tasks_list(id_list, library_id=library_id)
             if errors:
                 failed_ids = ''
                 for task_id in errors:

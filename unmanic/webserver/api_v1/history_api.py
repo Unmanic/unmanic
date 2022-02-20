@@ -81,14 +81,6 @@ class ApiHistoryHandler(BaseApiHandler):
     def manage_historic_tasks_list(self, *args, **kwargs):
         request_dict = json.loads(self.request.body)
 
-        # Return a list of historical tasks to the pending task list.
-        #   (on success will continue to return the current list of historical tasks)
-        if request_dict.get("customActionName") == "add-to-pending":
-            errors = completed_tasks.add_historic_tasks_to_pending_tasks_list(request_dict.get('id'))
-            if errors:
-                self.write(json.dumps({"success": False}))
-                return
-
         # Delete a list of historical tasks.
         #   (on success will continue to return the current list of historical tasks)
         if request_dict.get("customActionName") == "delete-from-history":

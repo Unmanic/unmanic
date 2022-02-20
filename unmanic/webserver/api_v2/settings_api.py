@@ -37,10 +37,12 @@ from unmanic.libs.installation_link import Links
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiError, BaseApiHandler
 from unmanic.webserver.api_v2.schema.schemas import RequestLibraryByIdSchema, RequestRemoteInstallationLinkConfigSchema, \
-    SettingsLibrariesListSchema, SettingsLibraryConfigReadAndWriteSchema, SettingsReadAndWriteSchema, \
+    SettingsLibrariesListSchema, SettingsLibraryConfigReadAndWriteSchema, SettingsLibraryPluginConfigExportSchema, \
+    SettingsReadAndWriteSchema, \
     SettingsRemoteInstallationDataSchema, \
     SettingsRemoteInstallationLinkConfigSchema, SettingsSystemConfigSchema, \
     RequestSettingsRemoteInstallationAddressValidationSchema
+from unmanic.webserver.helpers import plugins
 
 
 class ApiSettingsHandler(BaseApiHandler):
@@ -98,6 +100,11 @@ class ApiSettingsHandler(BaseApiHandler):
             "path_pattern":      r"/settings/library/remove",
             "supported_methods": ["DELETE"],
             "call_method":       "remove_library",
+        },
+        {
+            "path_pattern":      r"/settings/library/export",
+            "supported_methods": ["POST"],
+            "call_method":       "export_library_plugin_config",
         },
     ]
 
@@ -774,6 +781,94 @@ class ApiSettingsHandler(BaseApiHandler):
                 return
 
             self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def export_library_plugin_config(self):
+        """
+        Settings - export the plugin configuration of one library
+        ---
+        description: Export the plugin configuration of one library
+        requestBody:
+            description: The ID of the library
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestLibraryByIdSchema
+        responses:
+            200:
+                description: 'Sample response: Returns the remote installation link configuration.'
+                content:
+                    application/json:
+                        schema:
+                            SettingsLibraryPluginConfigExportSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(RequestLibraryByIdSchema())
+
+            # Read the library
+            from unmanic.libs.library import Library
+            library_config = Library(json_request.get('id'))
+
+            # Get list of enabled plugins with their settings
+            enabled_plugins = []
+            for enabled_plugin in library_config.get_enabled_plugins(include_settings=True):
+                enabled_plugins.append({
+                    'plugin_id': enabled_plugin.get('plugin_id'),
+                    'settings':  enabled_plugin.get('settings'),
+                })
+
+            # Create plugin flow
+            plugin_flow = {}
+            for plugin_type in plugins.get_plugin_types_with_flows():
+                plugin_flow[plugin_type] = []
+                flow = plugins.get_enabled_plugin_flows_for_plugin_type(plugin_type, json_request.get('id'))
+                for f in flow:
+                    plugin_flow[plugin_type].append(f.get('plugin_id'))
+
+            plugin_settings = {
+                "plugins": {
+                    "enabled_plugins": enabled_plugins,
+                    "plugin_flow":     plugin_flow,
+                },
+            }
+
+            response = self.build_response(
+                SettingsLibraryPluginConfigExportSchema(),
+                plugin_settings
+            )
+
+            self.write_success(response)
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

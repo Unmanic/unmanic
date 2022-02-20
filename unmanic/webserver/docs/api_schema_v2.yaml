@@ -1020,6 +1020,41 @@ components:
       required:
       - library_config
       type: object
+    SettingsLibraryPluginConfigExport:
+      properties:
+        plugins:
+          description: The library's enabled plugins
+          example:
+            enabled_plugins:
+            - description: Ensure all audio streams are encoded with the AC3 codec
+                using the native FFmpeg ac3 encoder.
+              icon: https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png
+              library_id: 1
+              name: Audio Encoder AC3
+              plugin_id: encoder_audio_ac3
+            plugin_flow:
+              library_management.file_test:
+              - author: Josh.5
+                description: Ensure all audio streams are encoded with the AC3 codec
+                  using the native FFmpeg ac3 encoder.
+                icon: https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png
+                name: Audio Encoder AC3
+                plugin_id: encoder_audio_ac3
+                version: 0.0.2
+              postprocessor.file_move: []
+              postprocessor.task_result: []
+              worker.process_item:
+              - author: Josh.5
+                description: Ensure all audio streams are encoded with the AC3 codec
+                  using the native FFmpeg ac3 encoder.
+                icon: https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png
+                name: Audio Encoder AC3
+                plugin_id: encoder_audio_ac3
+                version: 0.0.2
+          type: object
+      required:
+      - plugins
+      type: object
     SettingsReadAndWrite:
       properties:
         settings:
@@ -2854,6 +2889,47 @@ paths:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
           description: Successful request; Returns success status
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /settings/library/export:
+    post:
+      description: Export the plugin configuration of one library
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestLibraryById'
+        description: The ID of the library
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsLibraryPluginConfigExport'
+          description: 'Sample response: Returns the remote installation link configuration.'
         '400':
           content:
             application/json:

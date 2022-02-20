@@ -147,7 +147,7 @@ class Library(object):
     def set_enable_inotify(self, value):
         self.model.enable_inotify = value
 
-    def get_enabled_plugins(self):
+    def get_enabled_plugins(self, include_settings=False):
         """
         Get all enabled plugins for this library
 
@@ -170,14 +170,16 @@ class Library(object):
             if plugin_settings:
                 has_config = True
             # Add plugin to list of enabled plugins
-            enabled_plugins.append({
-                'library_id':  enabled_plugin.get('library_id'),
+            item = {
                 'plugin_id':   enabled_plugin.get('plugin_id'),
                 'name':        enabled_plugin.get('name'),
                 'description': enabled_plugin.get('description'),
                 'icon':        enabled_plugin.get('icon'),
                 'has_config':  has_config,
-            })
+            }
+            if include_settings:
+                item['settings'] = plugin_settings
+            enabled_plugins.append(item)
 
         return enabled_plugins
 

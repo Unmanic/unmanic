@@ -54,9 +54,9 @@ class Session(object, metaclass=SingletonType):
     level = 0
 
     """
-    non supporter plugin count
+    non supporter library count
     """
-    plugin_count = 20
+    library_count = 2
 
     """
     non supporter linked installations count

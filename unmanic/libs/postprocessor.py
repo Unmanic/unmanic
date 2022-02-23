@@ -36,6 +36,7 @@ import time
 
 from unmanic import config
 from unmanic.libs import common, history
+from unmanic.libs.library import Library
 from unmanic.libs.plugins import PluginsHandler
 
 """
@@ -86,7 +87,7 @@ class PostProcessor(threading.Thread):
         while not self.abort_flag.is_set():
             time.sleep(1)
 
-            if not self.all_plugins_are_compatible():
+            if not self.system_configuration_is_valid():
                 time.sleep(2)
                 continue
 
@@ -115,11 +116,17 @@ class PostProcessor(threading.Thread):
 
         self._log("Leaving PostProcessor Monitor loop...")
 
-    def all_plugins_are_compatible(self):
-        """Ensure all plugins are compatible before running"""
+    def system_configuration_is_valid(self):
+        """
+        Check and ensure the system configuration is correct for running
+
+        :return:
+        """
         valid = True
         plugin_handler = PluginsHandler()
         if plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages')):
+            valid = False
+        if not Library.within_library_count_limits(self.data_queues.get('frontend_messages')):
             valid = False
         return valid
 

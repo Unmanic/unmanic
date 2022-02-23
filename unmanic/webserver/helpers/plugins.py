@@ -211,7 +211,7 @@ def get_plugin_settings(plugin_id: str, library_id=None):
 
     # Check plugin for settings
     plugin_executor = PluginExecutor()
-    plugin_settings, plugin_settings_meta = plugin_executor.get_plugin_settings(plugin_id, library_id)
+    plugin_settings, plugin_settings_meta = plugin_executor.get_plugin_settings(plugin_id, library_id=library_id)
     if plugin_settings:
         for key in plugin_settings:
             form_input = {
@@ -363,6 +363,23 @@ def prepare_plugin_info_and_settings(plugin_id, prefer_local=True, library_id=No
 
     return plugin_data
 
+def check_if_plugin_is_installed(plugin_id):
+    """
+    Returns true if the given plugin is installed
+
+    :param plugin_id:
+    :return:
+    """
+    plugins_handler = PluginsHandler()
+
+    plugin_installed = True
+    plugin_results = plugins_handler.get_plugin_list_filtered_and_sorted(plugin_id=plugin_id)
+
+    if not plugin_results:
+        # This plugin is not installed
+        plugin_installed = False
+
+    return plugin_installed
 
 def update_plugin_settings(plugin_id, settings, library_id=None):
     """

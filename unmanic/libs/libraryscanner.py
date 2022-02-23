@@ -43,6 +43,7 @@ from unmanic import config
 from unmanic.libs import common, unlogger
 from unmanic.libs.filetest import FileTesterThread
 from unmanic.libs.library import Library
+from unmanic.libs.plugins import PluginsHandler
 
 
 class LibraryScannerManager(threading.Thread):
@@ -144,13 +145,13 @@ class LibraryScannerManager(threading.Thread):
         self._log("Leaving LibraryScanner Monitor loop...")
 
     def scheduled_job(self):
-        from unmanic.libs.plugins import PluginsHandler
-        plugin_handler = PluginsHandler()
-        incompatible_plugins = plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages'))
-        if incompatible_plugins:
-            self._log("Skipping library scanner due incompatible plugins.", level='warning')
-            for incompatible_plugin in incompatible_plugins:
-                self._log("Found incompatible plugin '{}'".format(incompatible_plugin.get('plugin_id')), level='warning')
+        """
+        Function called by the scheduled task
+
+        :return:
+        """
+        if not self.system_configuration_is_valid():
+            self._log("Skipping library scanner due invalid system configuration.", level='warning')
             return
 
         # For each configured library, check if a library scan is required
@@ -163,6 +164,20 @@ class LibraryScannerManager(threading.Thread):
                 self.scan_library_path(library.get_path(), library.get_id())
         else:
             self._log("No libraries are configured to run a library scan")
+
+    def system_configuration_is_valid(self):
+        """
+        Check and ensure the system configuration is correct for running
+
+        :return:
+        """
+        valid = True
+        plugin_handler = PluginsHandler()
+        if plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages')):
+            valid = False
+        if not Library.within_library_count_limits(self.data_queues.get('frontend_messages')):
+            valid = False
+        return valid
 
     def add_path_to_queue(self, pathname, library_id):
         self.scheduledtasks.put({

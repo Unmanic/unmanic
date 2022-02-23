@@ -148,8 +148,7 @@ class EventMonitorManager(threading.Thread):
         self._log("Starting EventMonitorManager loop")
         while not self.abort_flag.is_set():
 
-            # Ensure all enabled plugins are compatible before starting the event monitor
-            if not self.all_plugins_are_compatible():
+            if not self.system_configuration_is_valid():
                 time.sleep(2)
                 continue
 
@@ -183,11 +182,17 @@ class EventMonitorManager(threading.Thread):
         self.stop_event_processor()
         self._log("Leaving EventMonitorManager loop...")
 
-    def all_plugins_are_compatible(self):
-        """Ensure all plugins are compatible before running"""
+    def system_configuration_is_valid(self):
+        """
+        Check and ensure the system configuration is correct for running
+
+        :return:
+        """
         valid = True
         plugin_handler = PluginsHandler()
         if plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages')):
+            valid = False
+        if not Library.within_library_count_limits(self.data_queues.get('frontend_messages')):
             valid = False
         return valid
 

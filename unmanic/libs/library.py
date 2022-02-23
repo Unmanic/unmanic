@@ -30,7 +30,7 @@
 
 """
 from unmanic.config import Config
-from unmanic.libs.unmodels import EnabledPlugins, Libraries, Plugins, Tasks
+from unmanic.libs.unmodels import EnabledPlugins, Libraries, LibraryPluginFlow, Plugins, Tasks
 
 
 class Library(object):
@@ -91,6 +91,38 @@ class Library(object):
         return libraries
 
     @staticmethod
+    def within_library_count_limits(frontend_messages=None):
+        # Fetch level from session
+        from unmanic.libs.session import Session
+        s = Session()
+        s.register_unmanic()
+        if s.level > 1:
+            return True
+
+        # Fetch all enabled plugins
+        library_count = Libraries.select().count()
+
+        def add_frontend_message():
+            # If the frontend messages queue was included in request, append a message
+            if frontend_messages:
+                frontend_messages.put(
+                    {
+                        'id':      'libraryEnabledLimits',
+                        'type':    'error',
+                        'code':    'libraryEnabledLimits',
+                        'message': '',
+                        'timeout': 0
+                    }
+                )
+
+        # Ensure enabled plugins are within limits
+        # Function was returned above if the user was logged in and able to use infinite
+        if library_count > s.library_count:
+            add_frontend_message()
+            return False
+        return True
+
+    @staticmethod
     def create(data: dict):
         """
         Create a new library
@@ -110,7 +142,20 @@ class Library(object):
 
         :return:
         """
-        EnabledPlugins.delete().where(EnabledPlugins.library_id == self.model.id).execute()
+        query = EnabledPlugins.delete()
+        query = query.where(EnabledPlugins.library_id == self.model.id)
+        return query.execute()
+
+    def __trim_plugin_flow(self, plugin_ids: list):
+        """
+        Trim the plugin flow removing entries not in the given plugin ids list
+
+        :param plugin_ids:
+        :return:
+        """
+        query = LibraryPluginFlow.delete()
+        query = query.where((LibraryPluginFlow.library_id == self.model.id) & (LibraryPluginFlow.plugin_id.not_in(plugin_ids)))
+        return query.execute()
 
     def __remove_associated_tasks(self):
         """
@@ -166,7 +211,8 @@ class Library(object):
         for enabled_plugin in query.dicts():
             # Check if plugin is able to be configured
             has_config = False
-            plugin_settings, plugin_settings_meta = plugin_executor.get_plugin_settings(enabled_plugin.get('plugin_id'))
+            plugin_settings, plugin_settings_meta = plugin_executor.get_plugin_settings(enabled_plugin.get('plugin_id'),
+                                                                                        library_id=self.model.id)
             if plugin_settings:
                 has_config = True
             # Add plugin to list of enabled plugins
@@ -195,24 +241,22 @@ class Library(object):
 
         # Add new repos
         data = []
+        plugin_ids = []
         for plugin_info in plugin_list:
             plugin = Plugins.get(plugin_id=plugin_info.get('plugin_id'))
+            plugin_ids.append(plugin.id)
             if plugin:
                 data.append({
                     "library_id":  self.model.id,
                     "plugin_id":   plugin,
                     "plugin_name": plugin.name,
                 })
+
+        # Delete all plugin flows for plugins not to be enabled for this library
+        self.__trim_plugin_flow(plugin_ids)
+
+        # Insert plugins
         EnabledPlugins.insert_many(data).execute()
-
-    def get_plugin_flow(self):
-        """
-        Get the plugin flow config for this library
-
-        :return:
-        """
-        # TODO: Fetch plugin flow for this library
-        pass
 
     def save(self):
         """
@@ -240,6 +284,9 @@ class Library(object):
 
         # Remove all enabled plugins
         self.__remove_enabled_plugins()
+
+        # Remove all plugin flows
+        self.__trim_plugin_flow([])
 
         # Delete all tasks with matching library_id
         self.__remove_associated_tasks()

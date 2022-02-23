@@ -452,7 +452,7 @@ class ApiPluginsHandler(BaseApiHandler):
         ---
         description: Returns a the metadata and settings of a requested plugin.
         requestBody:
-            description: Requested a single plugin to install.
+            description: Requested a single plugin's info.
             required: True
             content:
                 application/json:

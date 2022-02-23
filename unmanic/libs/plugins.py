@@ -337,7 +337,7 @@ class PluginsHandler(object, metaclass=SingletonType):
         :param repo_id:
         :return:
         """
-        plugin_list = self.get_installable_plugins_list(repo_id)
+        plugin_list = self.get_installable_plugins_list(filter_repo_id=repo_id)
         for plugin in plugin_list:
             if plugin.get('plugin_id') == plugin_id:
                 success = self.install_plugin(plugin)
@@ -457,7 +457,13 @@ class PluginsHandler(object, metaclass=SingletonType):
             query = (Plugins.select())
 
             if plugin_type:
-                join_condition = ((LibraryPluginFlow.plugin_id == Plugins.id) & (LibraryPluginFlow.plugin_type == plugin_type))
+                if library_id is not None:
+                    join_condition = (
+                            (LibraryPluginFlow.plugin_id == Plugins.id) & (LibraryPluginFlow.plugin_type == plugin_type) & (
+                                LibraryPluginFlow.library_id == library_id))
+                else:
+                    join_condition = (
+                        (LibraryPluginFlow.plugin_id == Plugins.id) & (LibraryPluginFlow.plugin_type == plugin_type))
                 query = query.join(LibraryPluginFlow, join_type='LEFT OUTER JOIN', on=join_condition)
 
             if id_list:
@@ -535,6 +541,14 @@ class PluginsHandler(object, metaclass=SingletonType):
 
         # Remove each plugin from disk
         for record in records_by_id:
+            # Unload plugin modules
+            try:
+                PluginExecutor.unload_plugin_module(record.get('plugin_id'))
+            except Exception as e:
+                self._log("Exception while unloading python module {}:".format(record.get('plugin_id')), message2=str(e),
+                          level="exception")
+
+            # Remove from disk
             plugin_directory = self.get_plugin_path(record.get('plugin_id'))
             self._log("Removing plugin files from disk '{}'".format(plugin_directory), level='debug')
             try:
@@ -549,12 +563,8 @@ class PluginsHandler(object, metaclass=SingletonType):
                 self._log("Exception while removing directory {}:".format(plugin_directory), message2=str(e),
                           level="exception")
 
-            # Unload plugin modules
-            PluginExecutor.unload_plugin_module(record.get('plugin_id'))
-
         # Unlink from library by ID in DB
-        if not EnabledPlugins.delete().where(EnabledPlugins.plugin_id.in_(plugin_table_ids)).execute():
-            return False
+        EnabledPlugins.delete().where(EnabledPlugins.plugin_id.in_(plugin_table_ids)).execute()
 
         # Delete by ID in DB
         if not Plugins.delete().where(Plugins.id.in_(plugin_table_ids)).execute():

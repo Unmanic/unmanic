@@ -1125,6 +1125,27 @@ class SettingsLibraryPluginConfigExportSchema(BaseSchema):
         },
     )
 
+    library_config = fields.Dict(
+        required=False,
+        description="The library configuration",
+        example={
+            "id":             1,
+            "name":           "Default",
+            "path":           "/library",
+            "enable_scanner": False,
+            "enable_inotify": False,
+        },
+    )
+
+
+class SettingsLibraryPluginConfigImportSchema(SettingsLibraryPluginConfigExportSchema):
+    """Schema for import a library's plugin config"""
+
+    library_id = fields.Int(
+        required=True,
+        example=1,
+    )
+
 
 # VERSION
 # =======

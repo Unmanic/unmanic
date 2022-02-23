@@ -34,11 +34,12 @@ import tornado.log
 
 from unmanic import config
 from unmanic.libs.installation_link import Links
+from unmanic.libs.library import Library
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiError, BaseApiHandler
 from unmanic.webserver.api_v2.schema.schemas import RequestLibraryByIdSchema, RequestRemoteInstallationLinkConfigSchema, \
     SettingsLibrariesListSchema, SettingsLibraryConfigReadAndWriteSchema, SettingsLibraryPluginConfigExportSchema, \
-    SettingsReadAndWriteSchema, \
+    SettingsLibraryPluginConfigImportSchema, SettingsReadAndWriteSchema, \
     SettingsRemoteInstallationDataSchema, \
     SettingsRemoteInstallationLinkConfigSchema, SettingsSystemConfigSchema, \
     RequestSettingsRemoteInstallationAddressValidationSchema
@@ -105,6 +106,11 @@ class ApiSettingsHandler(BaseApiHandler):
             "path_pattern":      r"/settings/library/export",
             "supported_methods": ["POST"],
             "call_method":       "export_library_plugin_config",
+        },
+        {
+            "path_pattern":      r"/settings/library/import",
+            "supported_methods": ["POST"],
+            "call_method":       "import_library_plugin_config",
         },
     ]
 
@@ -528,7 +534,6 @@ class ApiSettingsHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            from unmanic.libs.library import Library
             libraries = Library.get_all_libraries()
             response = self.build_response(
                 SettingsLibrariesListSchema(),
@@ -606,7 +611,6 @@ class ApiSettingsHandler(BaseApiHandler):
             }
             if json_request.get('id'):
                 # Read the library
-                from unmanic.libs.library import Library
                 library_config = Library(json_request.get('id'))
                 library_settings = {
                     "library_config": {
@@ -680,39 +684,14 @@ class ApiSettingsHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            from unmanic.libs.library import Library
             json_request = self.read_json_request(SettingsLibraryConfigReadAndWriteSchema())
 
-            # Parse library config
+            # Save settings
+            from unmanic.webserver.helpers import settings
             library_config = json_request['library_config']
-
-            # Check if this save requires a new library entry
-            library_id = library_config.get('id', 0)
-            if int(library_id) > 0:
-                # Fetch existing library by ID
-                library = Library(library_id)
-            else:
-                # Create a new library
-                library = Library.create(library_config)
-
-            # Update library config
-            library.set_name(library_config.get('name', library.get_name()))
-            library.set_path(library_config.get('path', library.get_path()))
-            library.set_enable_scanner(library_config.get('enable_scanner', library.get_enable_scanner()))
-            library.set_enable_inotify(library_config.get('enable_inotify', library.get_enable_inotify()))
-
-            # Parse plugin config
             plugin_config = json_request.get('plugins', {})
-            if library_config is not None:
-                # Update enabled plugins (if provided)
-                enabled_plugins = plugin_config.get('enabled_plugins')
-                if enabled_plugins is not None:
-                    library.set_enabled_plugins(enabled_plugins)
-
-                # TODO: Update plugin flow
-
-            # Save config
-            library.save()
+            library_id = library_config.get('id', 0)
+            settings.save_library_config(library_id, library_config=library_config, plugin_config=plugin_config)
 
             self.write_success()
             return
@@ -768,7 +747,6 @@ class ApiSettingsHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            from unmanic.libs.library import Library
             json_request = self.read_json_request(RequestLibraryByIdSchema())
 
             # Fetch existing library by ID
@@ -837,7 +815,6 @@ class ApiSettingsHandler(BaseApiHandler):
             json_request = self.read_json_request(RequestLibraryByIdSchema())
 
             # Read the library
-            from unmanic.libs.library import Library
             library_config = Library(json_request.get('id'))
 
             # Get list of enabled plugins with their settings
@@ -857,9 +834,15 @@ class ApiSettingsHandler(BaseApiHandler):
                     plugin_flow[plugin_type].append(f.get('plugin_id'))
 
             plugin_settings = {
-                "plugins": {
+                "plugins":        {
                     "enabled_plugins": enabled_plugins,
                     "plugin_flow":     plugin_flow,
+                },
+                "library_config": {
+                    "name":           library_config.get_name(),
+                    "path":           library_config.get_path(),
+                    "enable_scanner": library_config.get_enable_scanner(),
+                    "enable_inotify": library_config.get_enable_inotify(),
                 },
             }
 
@@ -869,6 +852,69 @@ class ApiSettingsHandler(BaseApiHandler):
             )
 
             self.write_success(response)
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def import_library_plugin_config(self):
+        """
+        Settings - import the plugin configuration of one library
+        ---
+        description: Import the configuration of one library
+        requestBody:
+            description: Requested a dictionary of settings to save.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        SettingsLibraryPluginConfigImportSchema
+        responses:
+            200:
+                description: 'Successful request; Returns success status'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(SettingsLibraryPluginConfigImportSchema())
+
+            # Save settings
+            from unmanic.webserver.helpers import settings
+            library_config = json_request.get('library_config')
+            plugin_config = json_request.get('plugins', {})
+            library_id = json_request.get('library_id')
+            settings.save_library_config(library_id, library_config=library_config, plugin_config=plugin_config)
+
+            self.write_success()
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

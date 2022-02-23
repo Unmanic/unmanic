@@ -1511,9 +1511,83 @@
                                 "postprocessor.task_result": []
                             }
                         }
+                    },
+                    "library_config": {
+                        "type": "object",
+                        "description": "The library configuration",
+                        "example": {
+                            "id": 1,
+                            "name": "Default",
+                            "path": "/library",
+                            "enable_scanner": false,
+                            "enable_inotify": false
+                        }
                     }
                 },
                 "required": [
+                    "plugins"
+                ]
+            },
+            "SettingsLibraryPluginConfigImport": {
+                "type": "object",
+                "properties": {
+                    "plugins": {
+                        "type": "object",
+                        "description": "The library's enabled plugins",
+                        "example": {
+                            "enabled_plugins": [
+                                {
+                                    "library_id": 1,
+                                    "plugin_id": "encoder_audio_ac3",
+                                    "name": "Audio Encoder AC3",
+                                    "description": "Ensure all audio streams are encoded with the AC3 codec using the native FFmpeg ac3 encoder.",
+                                    "icon": "https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png"
+                                }
+                            ],
+                            "plugin_flow": {
+                                "library_management.file_test": [
+                                    {
+                                        "plugin_id": "encoder_audio_ac3",
+                                        "name": "Audio Encoder AC3",
+                                        "author": "Josh.5",
+                                        "description": "Ensure all audio streams are encoded with the AC3 codec using the native FFmpeg ac3 encoder.",
+                                        "version": "0.0.2",
+                                        "icon": "https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png"
+                                    }
+                                ],
+                                "worker.process_item": [
+                                    {
+                                        "plugin_id": "encoder_audio_ac3",
+                                        "name": "Audio Encoder AC3",
+                                        "author": "Josh.5",
+                                        "description": "Ensure all audio streams are encoded with the AC3 codec using the native FFmpeg ac3 encoder.",
+                                        "version": "0.0.2",
+                                        "icon": "https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png"
+                                    }
+                                ],
+                                "postprocessor.file_move": [],
+                                "postprocessor.task_result": []
+                            }
+                        }
+                    },
+                    "library_config": {
+                        "type": "object",
+                        "description": "The library configuration",
+                        "example": {
+                            "id": 1,
+                            "name": "Default",
+                            "path": "/library",
+                            "enable_scanner": false,
+                            "enable_inotify": false
+                        }
+                    },
+                    "library_id": {
+                        "type": "integer",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "library_id",
                     "plugins"
                 ]
             },
@@ -2908,7 +2982,7 @@
             "post": {
                 "description": "Returns a the metadata and settings of a requested plugin.",
                 "requestBody": {
-                    "description": "Requested a single plugin to install.",
+                    "description": "Requested a single plugin's info.",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -4447,6 +4521,74 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/SettingsLibraryPluginConfigExport"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/library/import": {
+            "post": {
+                "description": "Import the configuration of one library",
+                "requestBody": {
+                    "description": "Requested a dictionary of settings to save.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SettingsLibraryPluginConfigImport"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful request; Returns success status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
                                 }
                             }
                         }

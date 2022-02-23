@@ -37,6 +37,7 @@ import time
 from datetime import datetime
 
 from unmanic.libs import common, installation_link
+from unmanic.libs.library import Library
 from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.workers import Worker
 
@@ -140,6 +141,10 @@ class Foreman(threading.Thread):
                     'timeout': 0
                 }
             )
+            valid = False
+
+        # Ensure library config is within limits
+        if not Library.within_library_count_limits(frontend_messages):
             valid = False
 
         return valid

@@ -39,7 +39,7 @@ class Libraries(BaseModel):
     """
     Libraries
     """
-    name = TextField(null=False)
+    name = TextField(null=False, unique=True)
     path = TextField(null=False)
     enable_scanner = BooleanField(null=False, default=False)
     enable_inotify = BooleanField(null=False, default=False)

@@ -57,6 +57,11 @@ class ApiSessionHandler(BaseApiHandler):
         },
         {
             "supported_methods": ["GET"],
+            "call_method":       "get_github_login_url",
+            "path_pattern":      r"/api/v1/session/unmanic-github-login-url",
+        },
+        {
+            "supported_methods": ["GET"],
             "call_method":       "get_patreon_page",
             "path_pattern":      r"/api/v1/session/unmanic-patreon-page",
         },
@@ -107,6 +112,22 @@ class ApiSessionHandler(BaseApiHandler):
                 "uuid":    uuid,
                 "data":    {
                     "url": patreon_oauth_url,
+                }
+            }))
+            return
+
+    def get_github_login_url(self, *args, **kwargs):
+        uuid = self.session.get_installation_uuid()
+        github_oauth_url = self.session.get_github_login_url()
+        if not github_oauth_url:
+            self.write(json.dumps({"success": False}))
+            return
+        else:
+            self.write(json.dumps({
+                "success": True,
+                "uuid":    uuid,
+                "data":    {
+                    "url": github_oauth_url,
                 }
             }))
             return

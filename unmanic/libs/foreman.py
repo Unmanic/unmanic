@@ -100,8 +100,26 @@ class Foreman(threading.Thread):
         self._log('Updated plugin config', message2=self.plugin_config, level='debug')
 
     def get_current_plugin_configuration(self):
-        plugin_handler = PluginsHandler()
-        all_plugin_settings = plugin_handler.get_settings_of_all_installed_plugins()
+        # Fetch all libraries
+        all_plugin_settings = {}
+        for library in Library.get_all_libraries():
+            library_config = Library(library.get('id'))
+            # Get list of enabled plugins with their settings
+            enabled_plugins = []
+            for enabled_plugin in library_config.get_enabled_plugins(include_settings=True):
+                enabled_plugins.append({
+                    'plugin_id': enabled_plugin.get('plugin_id'),
+                    'settings':  enabled_plugin.get('settings'),
+                })
+
+            # Get the plugin flow
+            plugin_flow = library_config.get_plugin_flow()
+
+            # Append this library's plugin config and flow the the dictionary
+            all_plugin_settings[library.get('id')] = {
+                'enabled_plugins': enabled_plugins,
+                'plugin_flow':     plugin_flow,
+            }
         return all_plugin_settings
 
     def plugin_configuration_changed(self):

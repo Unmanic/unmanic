@@ -229,6 +229,39 @@ class Library(object):
 
         return enabled_plugins
 
+    def get_plugin_flow(self):
+        """
+        Fetch the plugin flow for a library
+
+        :return:
+        """
+        plugin_flow = {}
+        from unmanic.libs.plugins import PluginsHandler
+        plugin_handler = PluginsHandler()
+        from unmanic.libs.unplugins import PluginExecutor
+        plugin_ex = PluginExecutor()
+        for plugin_type in plugin_ex.get_all_plugin_types():
+            # Ignore types without flows
+            if not plugin_type.get('has_flow'):
+                continue
+
+            # Create list of plugins in this plugin type
+            plugin_flow[plugin_type.get('id')] = []
+            plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type(plugin_type.get('id'), library_id=self.model.id)
+            for plugin_module in plugin_modules:
+                plugin_flow[plugin_type.get('id')].append(
+                    {
+                        "plugin_id":   plugin_module.get("plugin_id"),
+                        "name":        plugin_module.get("name", ""),
+                        "author":      plugin_module.get("author", ""),
+                        "description": plugin_module.get("description", ""),
+                        "version":     plugin_module.get("version", ""),
+                        "icon":        plugin_module.get("icon", ""),
+                    }
+                )
+
+        return plugin_flow
+
     def set_enabled_plugins(self, plugin_list: list):
         """
         Update the list of enabled plugins

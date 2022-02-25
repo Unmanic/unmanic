@@ -61,7 +61,7 @@ class Session(object, metaclass=SingletonType):
     """
     non supporter linked installations count
     """
-    link_count = 1
+    link_count = 5
 
     """
     picture_uri - The user avatar
@@ -281,6 +281,14 @@ class Session(object, metaclass=SingletonType):
         :return:
         """
         return "{0}/patreon-login".format(self.get_site_url())
+
+    def get_github_login_url(self):
+        """
+        Fetch the Patreon client ID
+
+        :return:
+        """
+        return "{0}/github-login".format(self.get_site_url())
 
     def get_patreon_sponsor_page(self):
         """

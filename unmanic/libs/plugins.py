@@ -423,28 +423,6 @@ class PluginsHandler(object, metaclass=SingletonType):
             # Insert a new entry
             Plugins.insert(plugin_data).execute()
 
-            # On first install, set the priority for each runner
-            plugin_priorities = plugin.get('priorities')
-            if plugin_priorities:
-                # Fetch the plugin info back from the DB
-                plugin_info = Plugins.select().where(Plugins.plugin_id == plugin.get("plugin_id")).first()
-                # Fetch all plugin types in this plugin
-                plugin_executor = PluginExecutor()
-                plugin_types_in_plugin = plugin_executor.get_all_plugin_types_in_plugin(plugin.get("plugin_id"))
-                # Loop over the plugin types in this plugin
-                for plugin_type in plugin_types_in_plugin:
-                    # get the plugin runner function name for this runner
-                    plugin_type_meta = plugin_executor.get_plugin_type_meta(plugin_type)
-                    runner_string = plugin_type_meta.plugin_runner()
-                    if plugin_priorities.get(runner_string) and int(plugin_priorities.get(runner_string, 0)) > 0:
-                        # If the runner has a priority set and that value is greater than 0 (default that wont set anything),
-                        # Save the priority
-                        PluginsHandler.set_plugin_flow_position_for_single_plugin(
-                            plugin_info,
-                            plugin_type,
-                            plugin_priorities.get(runner_string)
-                        )
-
         return True
 
     def get_total_plugin_list_count(self):
@@ -459,8 +437,8 @@ class PluginsHandler(object, metaclass=SingletonType):
             if plugin_type:
                 if library_id is not None:
                     join_condition = (
-                            (LibraryPluginFlow.plugin_id == Plugins.id) & (LibraryPluginFlow.plugin_type == plugin_type) & (
-                                LibraryPluginFlow.library_id == library_id))
+                        (LibraryPluginFlow.plugin_id == Plugins.id) & (LibraryPluginFlow.plugin_type == plugin_type) & (
+                        LibraryPluginFlow.library_id == library_id))
                 else:
                     join_condition = (
                         (LibraryPluginFlow.plugin_id == Plugins.id) & (LibraryPluginFlow.plugin_type == plugin_type))

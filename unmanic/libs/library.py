@@ -262,6 +262,44 @@ class Library(object):
 
         return plugin_flow
 
+    def __set_default_plugin_flow_priority(self, plugin_list):
+        from unmanic.libs.unplugins import PluginExecutor
+        plugin_executor = PluginExecutor()
+        from unmanic.libs.plugins import PluginsHandler
+        plugin_handler = PluginsHandler()
+
+        # Fetch current items
+        configured_plugin_ids = []
+        query = LibraryPluginFlow.select().where(LibraryPluginFlow.library_id == self.model.id)
+        for flow_item in query:
+            configured_plugin_ids.append(flow_item.plugin_id.plugin_id)
+
+        for plugin in plugin_list:
+            # Ignore already configured plugins
+            if plugin.get('plugin_id') in configured_plugin_ids:
+                continue
+            plugin_info = plugin_handler.get_plugin_info(plugin.get('plugin_id'))
+            plugin_priorities = plugin_info.get('priorities')
+            if plugin_priorities:
+                # Fetch the plugin info back from the DB
+                plugin_info = Plugins.select().where(Plugins.plugin_id == plugin.get("plugin_id")).first()
+                # Fetch all plugin types in this plugin
+                plugin_types_in_plugin = plugin_executor.get_all_plugin_types_in_plugin(plugin.get("plugin_id"))
+                # Loop over the plugin types in this plugin
+                for plugin_type in plugin_types_in_plugin:
+                    # get the plugin runner function name for this runner
+                    plugin_type_meta = plugin_executor.get_plugin_type_meta(plugin_type)
+                    runner_string = plugin_type_meta.plugin_runner()
+                    if plugin_priorities.get(runner_string) and int(plugin_priorities.get(runner_string, 0)) > 0:
+                        # If the runner has a priority set and that value is greater than 0 (default that wont set anything),
+                        # Save the priority
+                        PluginsHandler.set_plugin_flow_position_for_single_plugin(
+                            plugin_info,
+                            plugin_type,
+                            self.model.id,
+                            plugin_priorities.get(runner_string)
+                        )
+
     def set_enabled_plugins(self, plugin_list: list):
         """
         Update the list of enabled plugins
@@ -290,6 +328,9 @@ class Library(object):
 
         # Insert plugins
         EnabledPlugins.insert_many(data).execute()
+
+        # Add default flow for newly added plugins
+        self.__set_default_plugin_flow_priority(plugin_list)
 
     def save(self):
         """

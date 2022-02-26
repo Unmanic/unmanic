@@ -80,7 +80,7 @@ def resume_all_workers():
 
 def terminate_worker_by_id(worker_id: int):
     """
-    Resume a worker given that worker's ID
+    Terminate a worker given that worker's ID
 
     :param worker_id:
     :return:
@@ -88,3 +88,14 @@ def terminate_worker_by_id(worker_id: int):
     urt = UnmanicRunningTreads()
     foreman = urt.get_unmanic_running_thread('foreman')
     return foreman.terminate_worker_thread(worker_id)
+
+
+def terminate_all_workers():
+    """
+    Terminate all workers
+
+    :return:
+    """
+    urt = UnmanicRunningTreads()
+    foreman = urt.get_unmanic_running_thread('foreman')
+    return foreman.terminate_all_worker_threads()

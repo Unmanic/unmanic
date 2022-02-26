@@ -358,22 +358,6 @@ class Foreman(threading.Thread):
                     'address': remote_address,
                 }
 
-    def pause_all_worker_threads(self):
-        """Pause all threads"""
-        result = True
-        for thread in self.worker_threads:
-            if not self.pause_worker_thread(thread):
-                result = False
-        return result
-
-    def resume_all_worker_threads(self):
-        """Resume all threads"""
-        result = True
-        for thread in self.worker_threads:
-            if not self.resume_worker_thread(thread):
-                result = False
-        return result
-
     def start_worker_thread(self, worker_id):
         thread = Worker(worker_id, "Worker-{}".format(worker_id), self.workers_pending_task_queue, self.complete_queue)
         thread.daemon = True
@@ -439,6 +423,14 @@ class Foreman(threading.Thread):
         self.worker_threads[worker_id].paused_flag.set()
         return True
 
+    def pause_all_worker_threads(self):
+        """Pause all threads"""
+        result = True
+        for thread in self.worker_threads:
+            if not self.pause_worker_thread(thread):
+                result = False
+        return result
+
     def resume_worker_thread(self, worker_id):
         """
         Resume a single worker thread
@@ -456,6 +448,14 @@ class Foreman(threading.Thread):
         self.worker_threads[worker_id].paused_flag.clear()
         return True
 
+    def resume_all_worker_threads(self):
+        """Resume all threads"""
+        result = True
+        for thread in self.worker_threads:
+            if not self.resume_worker_thread(thread):
+                result = False
+        return result
+
     def terminate_worker_thread(self, worker_id):
         """
         Terminate a single worker thread
@@ -472,6 +472,14 @@ class Foreman(threading.Thread):
 
         self.mark_worker_thread_as_redundant(worker_id)
         return True
+
+    def terminate_all_worker_threads(self):
+        """Terminate all threads"""
+        result = True
+        for thread in self.worker_threads:
+            if not self.terminate_worker_thread(thread):
+                result = False
+        return result
 
     def mark_worker_thread_as_redundant(self, worker_id):
         self.worker_threads[worker_id].redundant_flag.set()

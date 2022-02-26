@@ -50,9 +50,8 @@ menus = {
             'cli_action',
             message="What would you like to do?",
             choices=[
-                'Test installed plugins',
-                'Test enabled plugins',
-                'List installed plugins',
+                'List all installed plugins',
+                'Test plugins',
                 'Create new plugin',
                 'Reload all plugins from disk',
                 'Remove plugin',
@@ -223,7 +222,6 @@ class PluginsCLI(object):
             "",
         ]
 
-
         # Create runner function template
         runner_template = [
             'def {}(data):'.format(selected_plugin_runner),
@@ -290,14 +288,7 @@ class PluginsCLI(object):
 
     def reload_plugin_from_disk(self):
         # Fetch list of installed plugins
-        plugins = PluginsHandler()
-        order = [
-            {
-                "column": 'name',
-                "dir":    'asc',
-            }
-        ]
-        plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
+        plugin_results = self.__get_installed_plugins()
 
         # Build choice selection list from installed plugins
         for plugin in plugin_results:
@@ -321,17 +312,9 @@ class PluginsCLI(object):
             print()
         print()
 
-    @staticmethod
-    def remove_plugin():
+    def remove_plugin(self):
         # Fetch list of installed plugins
-        plugins = PluginsHandler()
-        order = [
-            {
-                "column": 'name',
-                "dir":    'asc',
-            }
-        ]
-        plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
+        plugin_results = self.__get_installed_plugins()
 
         # Build choice selection list from installed plugins
         table_ids = {}
@@ -340,7 +323,7 @@ class PluginsCLI(object):
             choices.append(plugin.get('plugin_id'))
             table_ids[plugin.get('plugin_id')] = plugin.get('id')
         # Append a "return" option
-        choices.append('Return')
+        choices.append('Go Back')
 
         # Generate menu menu
         remove_plugin_inquirer = inquirer.List(
@@ -352,53 +335,46 @@ class PluginsCLI(object):
         # Prompt for selection of Plugin by ID
         selection = inquirer.prompt([remove_plugin_inquirer])
 
-        # If the 'Return' option was given, just return to previous menu
-        if not selection or selection.get('cli_action') == "Return":
+        # If the 'Go Back' option was given, just return to previous menu
+        if not selection or selection.get('cli_action') == "Go Back":
             return
 
         # Remove the selected Plugin by ID
         plugin_table_id = table_ids[selection.get('cli_action')]
+        plugins = PluginsHandler()
         plugins.uninstall_plugins_by_db_table_id([plugin_table_id])
         print()
 
-    @staticmethod
-    def list_installed_plugins():
-        plugins = PluginsHandler()
-        order = [
-            {
-                "column": 'name',
-                "dir":    'asc',
-            },
-        ]
-        plugin_results = plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
+    def list_installed_plugins(self):
+        plugin_results = self.__get_installed_plugins()
         print_table(plugin_results)
         print()
         print()
 
     @staticmethod
-    def __get_installed_plugins(limit_enabled=False):
+    def __get_installed_plugins(plugin_id=None):
         plugins = PluginsHandler()
         order = [
             {
-                "column": 'name',
+                "column": 'plugin_id',
                 "dir":    'asc',
             },
         ]
-        if limit_enabled:
-            return plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None, enabled=True)
+        if plugin_id:
+            return plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None, plugin_id=plugin_id)
         return plugins.get_plugin_list_filtered_and_sorted(order=order, start=0, length=None)
 
-    def test_installed_plugins(self, limit_enabled=False):
+    def test_installed_plugins(self, plugin_id=None):
         """
         Test all plugin runners for correct return data.
-        If limit_enabled is True, only enabled plugins will be tested.
+        If plugin_id is provided, only the matching plugin will be tested.
 
-        :param limit_enabled:
+        :param plugin_id:
         :return:
         """
         plugin_executor = PluginExecutor()
 
-        plugin_results = self.__get_installed_plugins(limit_enabled=limit_enabled)
+        plugin_results = self.__get_installed_plugins(plugin_id=plugin_id)
         for plugin_result in plugin_results:
             # plugin_runners = plugin_executor.get_plugin_runners('worker.process_item')
             print("{1}Testing plugin: '{0}'{2}".format(plugin_result.get("name"), BColours.HEADER, BColours.ENDC))
@@ -440,14 +416,47 @@ class PluginsCLI(object):
             print()
             print()
 
-    def test_enabled_plugins(self):
-        self.test_installed_plugins(limit_enabled=True)
+    def test_plugins(self):
+        plugin_results = self.__get_installed_plugins()
+
+        # Generate menu choices
+        all_plugin_details = {}
+        choices = ["Test All Plugins"]
+        for plugin_details in plugin_results:
+            choices.append(plugin_details.get('plugin_id'))
+            all_plugin_details[plugin_details.get('plugin_id')] = plugin_details
+        choices.append("Go Back")
+
+        print()
+        default_selection = None
+        while True:
+            plugin_test_inquirer = inquirer.List(
+                'selected_plugin',
+                message="Which plugin would you like to test?",
+                choices=choices,
+                default=default_selection,
+            )
+            selection = inquirer.prompt([plugin_test_inquirer])
+
+            # If the 'Go Back' option was given, just return to previous menu
+            if not selection or selection.get('selected_plugin') == "Go Back":
+                return
+
+            # If 'Test All Plugins' was selected, then run tests against all plugins
+            if selection.get('selected_plugin') == "Test All Plugins":
+                self.test_installed_plugins()
+
+            # Get the details for the selected plugin
+            selected_plugin_details = all_plugin_details[selection.get('selected_plugin')]
+            # Set that selection as the default for the next time
+            default_selection = selection.get('selected_plugin')
+            # Test that plugin
+            self.test_installed_plugins(plugin_id=selected_plugin_details.get('plugin_id'))
 
     def main(self, arg):
         switcher = {
-            'Test installed plugins':       'test_installed_plugins',
-            'Test enabled plugins':         'test_enabled_plugins',
-            'List installed plugins':       'list_installed_plugins',
+            'List all installed plugins':   'list_installed_plugins',
+            'Test plugins':                 'test_plugins',
             'Create new plugin':            'create_new_plugins',
             'Reload all plugins from disk': 'reload_plugin_from_disk',
             'Remove plugin':                'remove_plugin',

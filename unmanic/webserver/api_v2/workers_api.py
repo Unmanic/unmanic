@@ -69,6 +69,11 @@ class ApiWorkersHandler(BaseApiHandler):
             "call_method":       "terminate_worker",
         },
         {
+            "path_pattern":      r"/workers/worker/terminate/all",
+            "supported_methods": ["DELETE"],
+            "call_method":       "terminate_all_workers",
+        },
+        {
             "path_pattern":      r"/workers/status",
             "supported_methods": ["GET"],
             "call_method":       "workers_status",
@@ -357,6 +362,58 @@ class ApiWorkersHandler(BaseApiHandler):
 
             if not workers.terminate_worker_by_id(json_request.get('worker_id')):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to resume worker")
+                self.write_error()
+                return
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def terminate_all_workers(self):
+        """
+        Workers - Terminate all workers
+        ---
+        description: Terminate all workers.
+        responses:
+            200:
+                description: 'Successful request; Returns success status'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            if not workers.terminate_all_workers():
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to terminate all workers")
                 self.write_error()
                 return
 

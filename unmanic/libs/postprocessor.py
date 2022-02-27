@@ -157,13 +157,21 @@ class PostProcessor(threading.Thread):
                 remove_source_file = True
 
             # Set initial data (some fields will be overwritten further down)
+            # - 'library_id'                - The library ID for this task
+            # - 'source_data'               - Dictionary of data pertaining to the source file
+            # - 'remove_source_file'        - True to remove the original file (default is True if file name has changed)
+            # - 'copy_file'                 - True to run a plugin initiated file copy (default is False unless the plugin says otherwise)
+            # - 'file_in'                   - Source path to copy from (if 'copy_file' is True)
+            # - 'file_out'                  - Destination path to copy to (if 'copy_file' is True)
+            # - 'run_default_file_copy'     - Prevent the final Unmanic post-process file movement (if different from the original file name)
             data = {
-                'library_id':         library_id,
-                'source_data':        None,
-                'remove_source_file': remove_source_file,
-                'copy_file':          None,
-                'file_in':            None,
-                'file_out':           None,
+                'library_id':            library_id,
+                'source_data':           None,
+                'remove_source_file':    remove_source_file,
+                'copy_file':             None,
+                'file_in':               None,
+                'file_out':              None,
+                'run_default_file_copy': True,
             }
 
             for plugin_module in plugin_modules:
@@ -191,7 +199,7 @@ class PostProcessor(threading.Thread):
                     self._log("Plugin did not request a file copy ({})".format(plugin_module.get('plugin_id')), level='debug')
 
             # Only carry out final post-processor file moments if all others were successful
-            if file_move_processes_success:
+            if file_move_processes_success and data.get('run_default_file_copy'):
                 # Run the default post-process file movement.
                 # This will always move the file back to the original location.
                 # If that original location is the same file name, it will overwrite the original file.

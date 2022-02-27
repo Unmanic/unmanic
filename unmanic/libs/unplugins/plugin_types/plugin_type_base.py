@@ -172,9 +172,9 @@ class PluginType(object):
         data_schema = self.get_data_schema()
 
         # Execute plugin function
-        result_data = plugin_runner_function(test_data_copy)
+        plugin_runner_function(test_data_copy)
 
-        # Ensure the test data returned is valid according to the schema
-        errors = self.__data_schema_test_data(plugin_id, plugin_runner, result_data, data_schema)
+        # Ensure the modified test data is valid according to the schema
+        errors = self.__data_schema_test_data(plugin_id, plugin_runner, test_data_copy, data_schema)
 
         return errors

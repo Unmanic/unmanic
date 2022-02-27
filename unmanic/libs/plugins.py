@@ -727,8 +727,3 @@ class PluginsHandler(object, metaclass=SingletonType):
                 add_frontend_message(record.get('plugin_id'), record.get('name'))
 
         return incompatible_list
-
-    @staticmethod
-    def test_plugin_runner(plugin_id, plugin_type, test_data=None):
-        plugin_executor = PluginExecutor()
-        return plugin_executor.test_plugin_runner(plugin_id, plugin_type, test_data)

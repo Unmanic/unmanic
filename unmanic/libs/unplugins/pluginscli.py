@@ -227,7 +227,7 @@ class PluginsCLI(object):
             'def {}(data):'.format(selected_plugin_runner),
             '    """{}'.format(selected_plugin_runner_docstring),
             '    """',
-            '    return data',
+            '    return',
         ]
 
         # Write above templates to main python file

@@ -217,7 +217,7 @@ class PluginsCLI(object):
             "    settings = {}",
             "",
             "    def __init__(self, *args, **kwargs):",
-            "       super(Settings, self).__init__(*args, **kwargs)",
+            "        super(Settings, self).__init__(*args, **kwargs)",
             "",
             "",
         ]

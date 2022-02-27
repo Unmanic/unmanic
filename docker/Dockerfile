@@ -261,3 +261,6 @@ RUN \
 
 # Add local files
 COPY /docker/root /
+
+# Unmanic runs on port 8888
+EXPOSE 8888/tcp

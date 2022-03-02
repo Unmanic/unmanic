@@ -131,6 +131,11 @@ class PluginSettings(object):
         """
         plugin_settings_file = self.__get_plugin_settings_file()
 
+        # If the settings file returned is the global settings file and this was called on a library config,
+        # do not reset the config.
+        if self.library_id is not None and os.path.basename(plugin_settings_file) == 'settings.json':
+            return False
+
         # if the file does not yet exist, create it
         if os.path.exists(plugin_settings_file):
             os.remove(plugin_settings_file)

@@ -59,6 +59,11 @@ class ApiPendingHandler(BaseApiHandler):
             "call_method":       "delete_pending_tasks",
         },
         {
+            "path_pattern":      r"/pending/rescan",
+            "supported_methods": ["POST"],
+            "call_method":       "trigger_library_rescan",
+        },
+        {
             "path_pattern":      r"/pending/reorder",
             "supported_methods": ["POST"],
             "call_method":       "reorder_pending_tasks",
@@ -83,7 +88,6 @@ class ApiPendingHandler(BaseApiHandler):
             "supported_methods": ["GET"],
             "call_method":       "gen_download_link_pending_task_data",
         },
-
     ]
 
     def initialize(self, **kwargs):
@@ -218,6 +222,63 @@ class ApiPendingHandler(BaseApiHandler):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to delete the pending tasks by their IDs")
                 self.write_error()
                 return
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def trigger_library_rescan(self):
+        """
+        Pending - trigger a library scan
+        ---
+        description: Triggers a library scan.
+        responses:
+            200:
+                description: 'Successful request; Returns success status'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            # Fetch library scan queue. If it is full, then a library scan has already been requested.
+            library_scanner_triggers = self.unmanic_data_queues.get('library_scanner_triggers')
+            if library_scanner_triggers.full():
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to queue library scan")
+                self.write_error()
+                return
+
+            # Add library scan to queue
+            library_scanner_triggers.put('library_scan')
 
             self.write_success()
             return

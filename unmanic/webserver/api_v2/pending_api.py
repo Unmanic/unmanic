@@ -35,8 +35,8 @@ import tornado.log
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
-from unmanic.webserver.api_v2.schema.schemas import RequestPendingTasksReorderSchema, PendingTasksSchema, \
-    RequestPendingTableDataSchema, RequestTableUpdateByIdList, TaskDownloadLinkSchema
+from unmanic.webserver.api_v2.schema.schemas import RequestPendingTasksLibraryUpdateSchema, RequestPendingTasksReorderSchema, \
+    PendingTasksSchema, RequestPendingTableDataSchema, RequestTableUpdateByIdList, TaskDownloadLinkSchema
 from unmanic.webserver.downloads import DownloadsLinks
 from unmanic.webserver.helpers import pending_tasks
 
@@ -67,6 +67,11 @@ class ApiPendingHandler(BaseApiHandler):
             "path_pattern":      r"/pending/reorder",
             "supported_methods": ["POST"],
             "call_method":       "reorder_pending_tasks",
+        },
+        {
+            "path_pattern":      r"/pending/library/update",
+            "supported_methods": ["POST"],
+            "call_method":       "set_pending_library_by_name",
         },
         {
             "path_pattern":      r"/pending/status/get",
@@ -467,6 +472,70 @@ class ApiPendingHandler(BaseApiHandler):
 
             if not pending_tasks.update_pending_tasks_status(json_request.get('id_list', []), status='pending'):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to update pending tasks status")
+                self.write_error()
+                return
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def set_pending_library_by_name(self):
+        """
+        Pending - set the library of a list of given tasks
+        ---
+        description: Set the library of a list of created tasks who's status has not yet been updated.
+        requestBody:
+            description: The ID list of the task to update and the Library Name to use.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestPendingTasksLibraryUpdateSchema
+        responses:
+            200:
+                description: 'Successful request; Returns success status'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(RequestPendingTasksLibraryUpdateSchema())
+
+            id_list = json_request.get('id_list', [])
+            library_name = json_request.get('library_name')
+
+            if not pending_tasks.update_pending_tasks_library(id_list, library_name):
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to update pending tasks library")
                 self.write_error()
                 return
 

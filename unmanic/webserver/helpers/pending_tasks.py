@@ -208,9 +208,30 @@ def update_pending_tasks_status(pending_task_ids, status='pending'):
     :param status:
     :return:
     """
-    # Fetch tasks
-    task_handler = task.Task()
-    return task_handler.set_tasks_status(pending_task_ids, status)
+    # Update tasks
+    return task.Task.set_tasks_status(pending_task_ids, status)
+
+
+def update_pending_tasks_library(pending_task_ids, library_name):
+    """
+    Updates the status of a number pending tasks given their table IDs
+
+    :param pending_task_ids:
+    :param library_name:
+    :return:
+    """
+    # Fetch Library ID by it's name
+    library_id = None
+    libraries = Library.get_all_libraries()
+    for library in libraries:
+        if library.get('name') == library_name:
+            library_id = library.get('id')
+            break
+    # Ensure a library was found matching the name
+    if library_id is None:
+        return False
+    # Update the tasks
+    return task.Task.set_tasks_library_id(pending_task_ids, library_id)
 
 
 def fetch_tasks_status(pending_task_ids):

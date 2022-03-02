@@ -1035,6 +1035,11 @@ class LibraryResultsSchema(BaseSchema):
         description="The library path",
         example="/library",
     )
+    locked = fields.Boolean(
+        required=True,
+        description="If the library is locked and cannot be deleted",
+        example=False,
+    )
 
 
 class SettingsLibrariesListSchema(BaseSchema):

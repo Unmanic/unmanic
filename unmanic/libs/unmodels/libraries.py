@@ -41,5 +41,6 @@ class Libraries(BaseModel):
     """
     name = TextField(null=False, unique=True)
     path = TextField(null=False)
+    locked = BooleanField(null=False, default=False)
     enable_scanner = BooleanField(null=False, default=False)
     enable_inotify = BooleanField(null=False, default=False)

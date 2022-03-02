@@ -617,6 +617,7 @@ class ApiSettingsHandler(BaseApiHandler):
                         "id":             library_config.get_id(),
                         "name":           library_config.get_name(),
                         "path":           library_config.get_path(),
+                        "locked":         library_config.get_locked(),
                         "enable_scanner": library_config.get_enable_scanner(),
                         "enable_inotify": library_config.get_enable_inotify(),
                     },

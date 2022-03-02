@@ -70,6 +70,7 @@ class Library(object):
                 'id':   1,
                 'name': 'Default',
                 'path': default_library_path,
+                'locked': False,
             }
             Libraries.create(**default_library)
             return [default_library]
@@ -85,6 +86,7 @@ class Library(object):
                 'id':   lib.id,
                 'name': lib.name,
                 'path': lib.path,
+                'locked': lib.locked,
             })
 
         # Return the list of libraries
@@ -179,6 +181,12 @@ class Library(object):
 
     def set_path(self, value):
         self.model.path = value
+
+    def get_locked(self):
+        return self.model.locked
+
+    def set_locked(self, value):
+        self.model.locked = value
 
     def get_enable_scanner(self):
         return self.model.enable_scanner
@@ -354,7 +362,11 @@ class Library(object):
         """
         # Ensure we can never delete library ID 1 (the default library)
         if self.get_id() == 1:
-            raise Exception("Unable remove the default library")
+            raise Exception("Unable to remove the default library")
+
+        # Ensure we are not trying to delete a locked library
+        if self.get_locked():
+            raise Exception("Unable to remove a locked library")
 
         # Remove all enabled plugins
         self.__remove_enabled_plugins()

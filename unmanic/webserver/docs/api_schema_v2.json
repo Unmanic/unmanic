@@ -1421,10 +1421,16 @@
                         "type": "string",
                         "description": "The library path",
                         "example": "/library"
+                    },
+                    "locked": {
+                        "type": "boolean",
+                        "description": "If the library is locked and cannot be deleted",
+                        "example": false
                     }
                 },
                 "required": [
                     "id",
+                    "locked",
                     "name",
                     "path"
                 ]

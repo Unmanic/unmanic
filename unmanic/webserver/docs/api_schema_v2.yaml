@@ -226,8 +226,13 @@ components:
           description: The library path
           example: /library
           type: string
+        locked:
+          description: If the library is locked and cannot be deleted
+          example: false
+          type: boolean
       required:
       - id
+      - locked
       - name
       - path
       type: object

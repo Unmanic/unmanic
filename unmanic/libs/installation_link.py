@@ -500,7 +500,7 @@ class Links(object, metaclass=SingletonType):
                 # Only installations that have not pending tasks
                 max_pending_tasks = 0
                 if local_config.get('enable_task_preloading'):
-                    max_pending_tasks = 1
+                    max_pending_tasks = 3
                 results = self.remote_api_post(local_config.get('address'), '/unmanic/api/v2/pending/tasks', {
                     "start":  0,
                     "length": 1

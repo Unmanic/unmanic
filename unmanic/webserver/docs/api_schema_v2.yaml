@@ -762,6 +762,22 @@ components:
           example: desc
           type: string
       type: object
+    RequestPendingTasksLibraryUpdate:
+      properties:
+        id_list:
+          description: List of table IDs
+          example: *id003
+          items:
+            type: integer
+          minItems: 1
+          type: array
+        library_name:
+          example: Default
+          type: string
+      required:
+      - id_list
+      - library_name
+      type: object
     RequestPendingTasksReorder:
       properties:
         id_list:
@@ -1666,6 +1682,48 @@ paths:
             schema:
               $ref: '#/components/schemas/RequestPendingTasksReorder'
         description: Requested list of items to reorder.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: Successful request; Returns success status
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /pending/library/update:
+    post:
+      description: Set the library of a list of created tasks who's status has not
+        yet been updated.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestPendingTasksLibraryUpdate'
+        description: The ID list of the task to update and the Library Name to use.
         required: true
       responses:
         '200':

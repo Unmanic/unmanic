@@ -540,6 +540,28 @@
                     "position"
                 ]
             },
+            "RequestPendingTasksLibraryUpdate": {
+                "type": "object",
+                "properties": {
+                    "id_list": {
+                        "type": "array",
+                        "minItems": 1,
+                        "description": "List of table IDs",
+                        "example": [],
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "library_name": {
+                        "type": "string",
+                        "example": "Default"
+                    }
+                },
+                "required": [
+                    "id_list",
+                    "library_name"
+                ]
+            },
             "TaskDownloadLink": {
                 "type": "object",
                 "properties": {
@@ -2387,6 +2409,74 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/RequestPendingTasksReorder"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful request; Returns success status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pending/library/update": {
+            "post": {
+                "description": "Set the library of a list of created tasks who's status has not yet been updated.",
+                "requestBody": {
+                    "description": "The ID list of the task to update and the Library Name to use.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestPendingTasksLibraryUpdate"
                             }
                         }
                     }

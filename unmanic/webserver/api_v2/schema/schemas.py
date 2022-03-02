@@ -443,6 +443,15 @@ class TaskDownloadLinkSchema(BaseSchema):
     )
 
 
+class RequestPendingTasksLibraryUpdateSchema(RequestTableUpdateByIdList):
+    """Schema for updating the library for a list of created tasks"""
+
+    library_name = fields.Str(
+        required=True,
+        example='Default',
+    )
+
+
 # PLUGINS
 # =======
 

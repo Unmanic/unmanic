@@ -398,7 +398,8 @@ class Task(object):
             Tasks.id.in_(id_list))
         return query.execute()
 
-    def set_tasks_status(self, id_list, status):
+    @staticmethod
+    def set_tasks_status(id_list, status):
         """
         Updates the task status for a given list of tasks by ID
 
@@ -407,4 +408,16 @@ class Task(object):
         :return:
         """
         query = Tasks.update(status=status).where(Tasks.id.in_(id_list))
+        return query.execute()
+
+    @staticmethod
+    def set_tasks_library_id(id_list, library_id):
+        """
+        Updates the task library_id for a given list of tasks by ID
+
+        :param id_list:
+        :param library_id:
+        :return:
+        """
+        query = Tasks.update(library_id=library_id).where(Tasks.id.in_(id_list))
         return query.execute()

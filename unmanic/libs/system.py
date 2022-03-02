@@ -29,84 +29,8 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-import subprocess
-
 from unmanic.libs import unlogger, common
 from unmanic.libs.singleton import SingletonType
-
-
-class NvidiaGPUs(object):
-    """
-    Fetch details for NVIDIA GPUs
-
-        Credit:
-            https://github.com/Avlyssna/gpu-info/
-    """
-
-    def query_nvsmi(self, properties, index=None):
-        """
-        Query NVIDIA's 'nvidia-smi' tool
-
-        :param properties:
-        :param index:
-        :return:
-        """
-        query = ['nvidia-smi', '--query-gpu={}'.format(properties), '--format=csv,noheader,nounits']
-
-        if index is not None:
-            query.append('--id={}'.format(index))
-
-        process = subprocess.Popen(query, stdout=subprocess.PIPE)
-        output = process.stdout.read().decode()
-        rows = []
-
-        for line in output.splitlines():
-            rows.append(line.rstrip().split(', '))
-
-        return rows
-
-    def __get_clock_speeds(self, index):
-        row = self.query_nvsmi('clocks.gr,clocks.mem', index)[0]
-
-        return {
-            'core_clock_speed':   int(row[0]),
-            'memory_clock_speed': int(row[1])
-        }
-
-    def __get_max_clock_speeds(self, index):
-        row = self.query_nvsmi('clocks.max.gr,clocks.max.mem', index)[0]
-
-        return {
-            'max_core_clock_speed':   int(row[0]),
-            'max_memory_clock_speed': int(row[1])
-        }
-
-    def __get_memory_details(self, index):
-        row = self.query_nvsmi('memory.used,memory.free', index)[0]
-
-        return {
-            'used_memory': int(row[0]),
-            'free_memory': int(row[1])
-        }
-
-    def probe_all_gpus(self):
-        gpu_list = []
-        rows = self.query_nvsmi('index,name,memory.total')
-        for row in rows:
-            index = int(row[0])
-            name = row[1]
-            total_memory = int(row[2])
-            gpu_list.append(
-                {
-                    'index':            index,
-                    'name':             name,
-                    'total_memory':     total_memory,
-                    'clock_speeds':     self.__get_clock_speeds(index),
-                    'max_clock_speeds': self.__get_max_clock_speeds(index),
-                    'memory_details':   self.__get_memory_details(index),
-                }
-            )
-        return gpu_list
 
 
 class System(object, metaclass=SingletonType):
@@ -141,19 +65,10 @@ class System(object, metaclass=SingletonType):
         :return:
         """
         import cpuinfo
-        gpu_devices = []
-        try:
-            nvidia = NvidiaGPUs()
-            for gpu_info in nvidia.probe_all_gpus():
-                gpu_info['type'] = 'nvidia'
-                gpu_devices.append(gpu_info)
-        except FileNotFoundError as e:
-            # self._log("NVIDIA GPU support not available", level="debug")
-            pass
         if not self.devices:
             self.devices = {
                 "cpu_info": cpuinfo.get_cpu_info(),
-                "gpu_info": gpu_devices,
+                "gpu_info": [],
             }
         return self.devices
 

@@ -29,6 +29,8 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import os
+
 from unmanic.config import Config
 from unmanic.libs.unmodels import EnabledPlugins, Libraries, LibraryPluginFlow, Plugins, Tasks
 
@@ -59,6 +61,8 @@ class Library(object):
         # Fetch default library path from
         from unmanic.config import Config
         default_library_path = Config().get_library_path()
+        if not default_library_path:
+            default_library_path = os.path.join('/', 'library')
 
         # Fetch all libraries from DB
         configured_libraries = Libraries.select()
@@ -67,9 +71,9 @@ class Library(object):
         # If the libraries path is empty, then we should add the default path
         if not configured_libraries:
             default_library = {
-                'id':   1,
-                'name': 'Default',
-                'path': default_library_path,
+                'id':     1,
+                'name':   'Default',
+                'path':   default_library_path,
                 'locked': False,
             }
             Libraries.create(**default_library)
@@ -83,9 +87,9 @@ class Library(object):
                 lib.path = default_library_path
                 lib.save()
             libraries.append({
-                'id':   lib.id,
-                'name': lib.name,
-                'path': lib.path,
+                'id':     lib.id,
+                'name':   lib.name,
+                'path':   lib.path,
                 'locked': lib.locked,
             })
 

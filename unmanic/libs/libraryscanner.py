@@ -155,14 +155,16 @@ class LibraryScannerManager(threading.Thread):
             return
 
         # For each configured library, check if a library scan is required
+        no_libraries_configured = True
         for lib_info in Library.get_all_libraries():
+            no_libraries_configured = False
             library = Library(lib_info['id'])
             # Check if library scanner is enabled on any library
             if library.get_enable_scanner():
                 # Run library scan
                 self._log("Running full library scan on library '{}'".format(library.get_name()))
                 self.scan_library_path(library.get_path(), library.get_id())
-        else:
+        if no_libraries_configured:
             self._log("No libraries are configured to run a library scan")
 
     def system_configuration_is_valid(self):

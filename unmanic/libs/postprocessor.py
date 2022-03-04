@@ -228,7 +228,7 @@ class PostProcessor(threading.Thread):
                         cache_path), level="error")
 
         else:
-            self._log("Encoded file failed post processing test '{}'".format(cache_path),
+            self._log("Skipping file movement post-processor as the task was not successful '{}'".format(cache_path),
                       level='warning')
 
         # Fetch all 'postprocessor.task_result' plugin modules

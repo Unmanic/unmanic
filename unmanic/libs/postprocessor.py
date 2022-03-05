@@ -198,6 +198,7 @@ class PostProcessor(threading.Thread):
                 else:
                     self._log("Plugin did not request a file copy ({})".format(plugin_module.get('plugin_id')), level='debug')
 
+            # Unmanic's default file movement process
             # Only carry out final post-processor file moments if all others were successful
             if file_move_processes_success and data.get('run_default_file_copy'):
                 # Run the default post-process file movement.
@@ -211,6 +212,9 @@ class PostProcessor(threading.Thread):
                 elif not self.__copy_file(cache_path, destination_data.get('abspath'), destination_files, 'DEFAULT'):
                     file_move_processes_success = False
 
+            # Source file removal process
+            # Only run if all final post-processor file moments were successful
+            if file_move_processes_success:
                 # Check if the remove source flag is still True after all plugins have run. If so, we will remove the source file
                 if data.get('remove_source_file'):
                     # Only carry out a source removal if the file exists and the final copy was also successful

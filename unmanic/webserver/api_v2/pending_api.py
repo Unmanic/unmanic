@@ -35,8 +35,9 @@ import tornado.log
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
-from unmanic.webserver.api_v2.schema.schemas import RequestPendingTasksLibraryUpdateSchema, RequestPendingTasksReorderSchema, \
-    PendingTasksSchema, RequestPendingTableDataSchema, RequestTableUpdateByIdList, TaskDownloadLinkSchema
+from unmanic.webserver.api_v2.schema.schemas import PendingTasksTableResultsSchema, RequestPendingTaskCreateSchema, \
+    RequestPendingTasksLibraryUpdateSchema, RequestPendingTasksReorderSchema, PendingTasksSchema, \
+    RequestPendingTableDataSchema, RequestTableUpdateByIdList, TaskDownloadLinkSchema
 from unmanic.webserver.downloads import DownloadsLinks
 from unmanic.webserver.helpers import pending_tasks
 
@@ -67,6 +68,11 @@ class ApiPendingHandler(BaseApiHandler):
             "path_pattern":      r"/pending/reorder",
             "supported_methods": ["POST"],
             "call_method":       "reorder_pending_tasks",
+        },
+        {
+            "path_pattern":      r"/pending/create",
+            "supported_methods": ["POST"],
+            "call_method":       "create_task_from_path",
         },
         {
             "path_pattern":      r"/pending/library/update",
@@ -347,6 +353,87 @@ class ApiPendingHandler(BaseApiHandler):
                 return
 
             self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def create_task_from_path(self):
+        """
+        Pending - create
+        ---
+        description: Create a new pending tasks from an absolute path
+        requestBody:
+            description: Specify path and library to create a pending tasks from.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestPendingTaskCreateSchema
+        responses:
+            200:
+                description: 'Successful request; Returns data for the generated task'
+                content:
+                    application/json:
+                        schema:
+                            PendingTasksTableResultsSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(RequestPendingTaskCreateSchema())
+
+            abspath = os.path.abspath(json_request.get('path', ''))
+            library_id = json_request.get('library_id', 1)
+            library_name = json_request.get('library_name')
+
+            # Ensure path exists
+            if not os.path.exists(abspath):
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="Path does not exist: '{}'".format(abspath))
+                self.write_error()
+                return False
+
+            # Ensure a task does not already exist with this path
+            if pending_tasks.check_if_task_exists_matching_path(abspath):
+                self.set_status(self.STATUS_ERROR_EXTERNAL,
+                                reason="A task already exists with the provided path: '{}'".format(abspath))
+                self.write_error()
+                return False
+
+            task_info = pending_tasks.create_task(abspath, library_id=library_id, library_name=library_name)
+            if not task_info:
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="Failed to save new pending task for the provided path")
+                self.write_error()
+                return
+
+            # Return the details of the generated task
+            response = self.build_response(PendingTasksTableResultsSchema(), task_info)
+            self.write_success(response)
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

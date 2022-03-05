@@ -123,6 +123,19 @@ class TaskHandler(threading.Thread):
         rows_deleted_count = query.execute()
         self._log("Deleted {} items from tasks list".format(rows_deleted_count), level='debug')
 
+    @staticmethod
+    def check_if_task_exists_matching_path(abspath):
+        """
+        Check if a task already exists matching the given path
+
+        :param abspath:
+        :return:
+        """
+        existing_task_query = Tasks.select().where((Tasks.abspath == abspath)).limit(1)
+        if existing_task_query.count() > 0:
+            return True
+        return False
+
     def add_path_to_task_queue(self, pathname, library_id):
         """
         Add the path to the task queue ensuring that the path is only added once
@@ -133,8 +146,7 @@ class TaskHandler(threading.Thread):
         """
         # Check if file exists in task queue based on it's absolute path
         abspath = os.path.abspath(pathname)
-        existing_task_query = Tasks.select().where((Tasks.abspath == abspath)).limit(1)
-        if existing_task_query.count() > 0:
+        if self.check_if_task_exists_matching_path(abspath):
             return False
         # Create the new task from the provide path
         new_task = self.create_task_from_path(pathname, library_id)

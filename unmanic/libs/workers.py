@@ -265,7 +265,7 @@ class Worker(threading.Thread):
         :return:
         """
         # Init plugins
-        library_id = self.current_task.get_task_library()
+        library_id = self.current_task.get_task_library_id()
         plugin_handler = PluginsHandler()
         plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('worker.process_item', library_id=library_id)
 

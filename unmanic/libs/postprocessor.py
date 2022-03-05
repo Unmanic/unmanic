@@ -136,7 +136,7 @@ class PostProcessor(threading.Thread):
 
         # Read current task data
         # task_data = self.current_task.get_task_data()
-        library_id = self.current_task.get_task_library()
+        library_id = self.current_task.get_task_library_id()
         cache_path = self.current_task.get_cache_path()
         source_data = self.current_task.get_source_data()
         destination_data = self.current_task.get_destination_data()

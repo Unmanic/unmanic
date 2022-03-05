@@ -480,7 +480,7 @@ class Links(object, metaclass=SingletonType):
 
         :return:
         """
-        available_workers = {}
+        installations_with_info = {}
         for local_config in self.settings.get_remote_installations():
 
             # Only installations that are available
@@ -496,43 +496,67 @@ class Links(object, metaclass=SingletonType):
                 continue
 
             try:
+                # Only installations that have at least one idle worker that is not paused
+                results = self.remote_api_get(local_config.get('address'), '/unmanic/api/v2/workers/status')
+                worker_list = results.get('workers_status', [])
 
-                # Only installations that have not pending tasks
+                # Only add installations that have not got pending tasks. This is unless we are configured to preload the queue
                 max_pending_tasks = 0
                 if local_config.get('enable_task_preloading'):
-                    max_pending_tasks = 3
+                    # Preload with the number of workers (regardless of the worker status) plus an additional one to account
+                    # for delays in the downloads
+                    max_pending_tasks = len(worker_list) + 1
                 results = self.remote_api_post(local_config.get('address'), '/unmanic/api/v2/pending/tasks', {
                     "start":  0,
                     "length": 1
                 })
-                if int(results.get('recordsFiltered', 0)) > max_pending_tasks:
+                current_pending_tasks = int(results.get('recordsFiltered', 0))
+                if current_pending_tasks >= max_pending_tasks:
+                    self._log(
+                        "Remote installation has exceeded the max remote pending task ({})".format(current_pending_tasks),
+                        level='debug')
                     continue
 
-                # Only installations that have at least one idle worker that is not paused
-                results = self.remote_api_get(local_config.get('address'), '/unmanic/api/v2/workers/status')
-                for worker in results.get('workers_status', []):
+                # Fetch remote installation library name list
+                results = self.remote_api_get(local_config.get('address'), '/unmanic/api/v2/settings/libraries')
+                library_names = []
+                for library in results.get('libraries', []):
+                    library_names.append(library.get('name'))
+
+                # Ensure that worker count is more than 0
+                if len(worker_list):
+                    installations_with_info[local_config.get('uuid')] = {
+                        "address":                local_config.get('address'),
+                        "enable_task_preloading": local_config.get('enable_task_preloading'),
+                        "library_names":          library_names,
+                        "available_slots":        0,
+                    }
+
+                available_workers = False
+                for worker in worker_list:
+                    # Add a slot for each worker regardless of its status
+                    installations_with_info[local_config.get('uuid')]['available_slots'] += 1
                     if worker.get('idle') and not worker.get('paused'):
-                        if not available_workers.get(local_config.get('uuid')):
-                            available_workers[local_config.get('uuid')] = {
-                                "address":                local_config.get('address'),
-                                "enable_task_preloading": local_config.get('enable_task_preloading'),
-                                "workers":                []
-                            }
-                        available_workers[local_config.get('uuid')]['workers'].append(worker)
-                    elif not worker.get('idle') and not worker.get('paused'):
-                        # And an empty entry if all workers are busy and not paused.
-                        # This allows us to know that a remote is available for loading the pending task queue
-                        if not available_workers.get(local_config.get('uuid')):
-                            available_workers[local_config.get('uuid')] = {
-                                "address":                local_config.get('address'),
-                                "enable_task_preloading": local_config.get('enable_task_preloading'),
-                                "workers":                []
-                            }
+                        # If any workers are idle and not paused then we have an available worker slot
+                        available_workers = True
+                        installations_with_info[local_config.get('uuid')]['available_workers'] = True
+                    elif not worker.get('idle'):
+                        # If any workers are busy with a task then also mark that as an an available worker slot
+                        available_workers = True
+                        installations_with_info[local_config.get('uuid')]['available_workers'] = True
+
+                # Check if this installation is configured for preloading
+                if available_workers and local_config.get('enable_task_preloading'):
+                    # Add more slots to fill up the pending task queue
+                    while not current_pending_tasks > max_pending_tasks:
+                        installations_with_info[local_config.get('uuid')]['available_slots'] += 1
+                        current_pending_tasks += 1
+
             except Exception as e:
                 self._log("Failed to contact remote installation '{}'".format(local_config.get('address')), level='warning')
                 continue
 
-        return available_workers
+        return installations_with_info
 
     def within_enabled_link_limits(self, frontend_messages=None):
         """
@@ -960,7 +984,7 @@ class RemoteTaskManager(threading.Thread):
             return False
 
         # Set the library of the remote task using the library's name
-        library_id = self.current_task.get_task_library()
+        library_id = self.current_task.get_task_library_id()
         library = Library(library_id)
         library_name = library.get_name()
         while not self.redundant_flag.is_set():

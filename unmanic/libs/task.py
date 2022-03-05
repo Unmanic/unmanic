@@ -39,6 +39,7 @@ from playhouse.shortcuts import model_to_dict
 
 from unmanic import config
 from unmanic.libs import common, unlogger
+from unmanic.libs.library import Library
 from unmanic.libs.unmodels.tasks import IntegrityError, Tasks
 
 
@@ -101,6 +102,13 @@ class Task(object):
         # Set cache path class attribute
         self.task.cache_path = os.path.join(cache_directory, out_file)
 
+    def get_cache_path(self):
+        if not self.task:
+            raise Exception('Unable to fetch cache path. Task has not been set!')
+        if not self.task.cache_path:
+            raise Exception('Unable to fetch cache path. Task cache path has not been set!')
+        return self.task.cache_path
+
     def get_task_data(self):
         if not self.task:
             raise Exception('Unable to fetch task dictionary. Task has not been set!')
@@ -117,17 +125,16 @@ class Task(object):
             raise Exception('Unable to fetch task type. Task has not been set!')
         return self.task.type
 
-    def get_task_library(self):
+    def get_task_library_id(self):
         if not self.task:
             raise Exception('Unable to fetch task library ID. Task has not been set!')
         return self.task.library_id
 
-    def get_cache_path(self):
+    def get_task_library_name(self):
         if not self.task:
-            raise Exception('Unable to fetch cache path. Task has not been set!')
-        if not self.task.cache_path:
-            raise Exception('Unable to fetch cache path. Task cache path has not been set!')
-        return self.task.cache_path
+            raise Exception('Unable to fetch task library ID. Task has not been set!')
+        library = Library(self.task.library_id)
+        return library.get_name()
 
     def get_destination_data(self):
         if not self.task:

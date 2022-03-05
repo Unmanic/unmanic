@@ -512,9 +512,8 @@ class Links(object, metaclass=SingletonType):
                 })
                 current_pending_tasks = int(results.get('recordsFiltered', 0))
                 if current_pending_tasks >= max_pending_tasks:
-                    self._log(
-                        "Remote installation has exceeded the max remote pending task ({})".format(current_pending_tasks),
-                        level='debug')
+                    self._log("Remote installation has exceeded the max remote pending task count ({})".format(
+                        current_pending_tasks), level='debug')
                     continue
 
                 # Fetch remote installation library name list
@@ -956,14 +955,19 @@ class RemoteTaskManager(threading.Thread):
 
         # Get source file checksum
         initial_checksum = common.get_file_checksum(original_abspath)
+        initial_file_size = os.path.getsize(original_abspath)
 
         # Loop until we are able to upload the file to the remote installation
         info = {}
         while not self.redundant_flag.is_set():
-            # Check for network transfer lock
-            if not self.links.acquire_network_transfer_lock(address):
-                time.sleep(1)
-                continue
+            # For files smaller than 100MB, just transfer them in parallel
+            # Smaller files add a lot of time overhead with the waiting in line and it slows the whole process down
+            # Larger files benefit from being transferred one at a time.
+            if initial_file_size > 100000000:
+                # Check for network transfer lock
+                if not self.links.acquire_network_transfer_lock(address):
+                    time.sleep(1)
+                    continue
 
             # Send a file to a remote installation.
             self._log("Uploading file to remote installation '{}'".format(original_abspath), level='debug')

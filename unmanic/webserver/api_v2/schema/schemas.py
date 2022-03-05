@@ -433,6 +433,23 @@ class RequestPendingTasksReorderSchema(RequestTableUpdateByIdList):
     )
 
 
+class RequestPendingTaskCreateSchema(BaseSchema):
+    """Schema for requesting the creation of a pending task"""
+
+    path = fields.Str(
+        required=True,
+        example="/library/TEST_FILE.mkv",
+    )
+    library_id = fields.Int(
+        required=False,
+        example=1,
+    )
+    library_name = fields.Str(
+        required=False,
+        example='Default',
+    )
+
+
 class TaskDownloadLinkSchema(BaseSchema):
     """Schema for returning a download link ID"""
 

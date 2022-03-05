@@ -92,28 +92,37 @@ class Links(object, metaclass=SingletonType):
         }
 
     def acquire_network_transfer_lock(self, url):
+        """
+        Limit transfers to each installation to 1 at a time
+
+        :param url:
+        :return:
+        """
         time_now = time.time()
         lock = threading.RLock()
         with lock:
-            if self._network_transfer_lock.get('expires', 0) < time_now:
-                # Create new upload lock that will expire in 2 minutes
-                self._network_transfer_lock['expires'] = (time.time() + 120)
-                self._network_transfer_lock['url'] = url
+            if self._network_transfer_lock.get(url, {}).get('expires', 0) < time_now:
+                # Create new upload lock that will expire in 1 minute
+                self._network_transfer_lock[url] = {
+                    'expires': (time_now + 60),
+                }
                 # Return success
                 return True
-        # Failed to acquire network transfer lock
-        return False
+            # Failed to acquire network transfer lock
+            return False
 
     def release_network_transfer_lock(self, url):
+        """
+        Expire the transfer lock for the given URL
+
+        :param url:
+        :return:
+        """
         lock = threading.RLock()
         with lock:
-            if self._network_transfer_lock.get('url') == url:
-                # Expire the lock
-                self._network_transfer_lock = {}
-                # Return success
-                return True
-        # Failed to release network transfer lock - perhaps the url is incorrect
-        return False
+            # Expire the lock for this address
+            self._network_transfer_lock[url] = {}
+            return True
 
     def remote_api_get(self, remote_url: str, endpoint: str):
         """

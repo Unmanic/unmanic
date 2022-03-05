@@ -58,11 +58,11 @@ class Foreman(threading.Thread):
         self.abort_flag.clear()
 
         # Set the current plugin config
-        self.plugin_config = {
+        self.current_config = {
             'settings':      {},
             'settings_hash': ''
         }
-        self.plugin_configuration_changed()
+        self.configuration_changed()
 
         # Set the current time for scheduler
         self.last_schedule_run = datetime.today().strftime('%H:%M')
@@ -92,14 +92,15 @@ class Foreman(threading.Thread):
         """Returns the worker count as an integer"""
         return int(self.settings.get_number_of_workers())
 
-    def save_plugin_config(self, settings=None, settings_hash=None):
+    def save_current_config(self, settings=None, settings_hash=None):
         if settings:
-            self.plugin_config['settings'] = settings
+            self.current_config['settings'] = settings
         if settings_hash:
-            self.plugin_config['settings_hash'] = settings_hash
-        self._log('Updated plugin config', message2=self.plugin_config, level='debug')
+            self.current_config['settings_hash'] = settings_hash
+        self._log('Updated config. If this is modified, all workers will be paused', level='debug')
 
-    def get_current_plugin_configuration(self):
+    @staticmethod
+    def get_current_library_configuration():
         # Fetch all libraries
         all_plugin_settings = {}
         for library in Library.get_all_libraries():
@@ -122,15 +123,15 @@ class Foreman(threading.Thread):
             }
         return all_plugin_settings
 
-    def plugin_configuration_changed(self):
-        current_plugin_settings = self.get_current_plugin_configuration()
+    def configuration_changed(self):
+        current_settings = self.get_current_library_configuration()
         # Compare current settings with foreman recorded settings.
-        json_encoded_settings = json.dumps(current_plugin_settings, sort_keys=True).encode()
+        json_encoded_settings = json.dumps(current_settings, sort_keys=True).encode()
         current_settings_hash = hashlib.md5(json_encoded_settings).hexdigest()
-        if current_settings_hash == self.plugin_config.get('settings_hash', ''):
+        if current_settings_hash == self.current_config.get('settings_hash', ''):
             return False
         # Record current settings
-        self.save_plugin_config(settings=current_plugin_settings, settings_hash=current_settings_hash)
+        self.save_current_config(settings=current_settings, settings_hash=current_settings_hash)
         # Settings have changed
         return True
 
@@ -148,7 +149,7 @@ class Foreman(threading.Thread):
         # Check if plugin configuration has been modified. If it has, stop the workers.
         # What we want to avoid here is someone partially modifying the plugin configuration
         #   and having the workers pickup a job mid configuration.
-        if self.plugin_configuration_changed():
+        if self.configuration_changed():
             # Generate a frontend message and falsify validation
             frontend_messages.put(
                 {

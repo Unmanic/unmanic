@@ -29,49 +29,139 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
+import json
 import os
-from configparser import ConfigParser
+import configparser
 
 
-class UnmanicDirectoryInfo(ConfigParser):
+class UnmanicDirectoryInfoException(Exception):
+    def __init__(self, message, path):
+        errmsg = '%s: file %s' % (message, path)
+        Exception.__init__(self, errmsg)
+        self.message = message
+        self.path = path
+
+    def __repr__(self):
+        return self.message
+
+    __str__ = __repr__
+
+
+class UnmanicDirectoryInfo:
     """
     UnmanicDirectoryInfo
 
     Manages the reading and writing of the '.unmanic' files located in the directories
     parsed by Unmanic's library scanner or any plugins.
 
+    Legacy support:
+        On read, if the config is an INI file, uses ConfigParser.get to fetch information
+        and convert it to JSON.
+        INI was initially used in order to be a simple syntax for manually editing.
+        However, INI is not ideal for managing file names and paths with special characters
+
     """
 
     def __init__(self, directory):
-        super().__init__(allow_no_value=True)
         self.path = os.path.join(directory, '.unmanic')
-        self.read(self.path)
+        self.json_data = None
+        self.config_parser = None
+        # If the path does not exist, do not try to read it
+        if not os.path.exists(self.path):
+            self.json_data = {}
+            return
+        # First read JSON data
+        try:
+            with open(self.path) as infile:
+                self.json_data = json.load(infile)
+        except json.decoder.JSONDecodeError:
+            pass
+        # If we were unable to import the JSON data, attempt to read as INI
+        if self.json_data is None:
+            try:
+                self.config_parser = configparser.ConfigParser(allow_no_value=True)
+                self.config_parser.optionxform = str  # Ensure keys are not converted to lowercase
+                self.config_parser.read(self.path)
+                # Migrate file to JSON
+                self.__migrate_to_json()
+            except configparser.MissingSectionHeaderError:
+                pass
+            except configparser.NoSectionError:
+                pass
+            except configparser.NoOptionError:
+                pass
+        # If we still do not have JSON data at this point, something has gone wrong
+        if self.json_data is None:
+            raise UnmanicDirectoryInfoException("Failed to read directory info", self.path)
+
+    def __migrate_to_json(self):
+        sections = self.config_parser.sections()
+        json_data = {}
+        for section in sections:
+            section_data = {}
+            for key in self.config_parser[section]:
+                section_data[key] = self.config_parser.get(section, key)
+            json_data[section] = section_data
+        self.json_data = json_data
 
     def set(self, section, option, value=None):
         """
         Set an option.
-        Extends ConfigParser.set by ensuring the section exists and creates it if not.
 
         :param section:
         :param option:
         :param value:
         :return:
         """
-        if not self.has_section(section):
-            self.add_section(section)
-        super().set(section, option, value)
+        if self.json_data is not None:
+            if not self.json_data.get(section):
+                self.json_data[section] = {}
+            self.json_data[section][option] = value
+            return
+        elif self.config_parser:
+            if not self.config_parser.has_section(section):
+                self.config_parser.add_section(section)
+            self.config_parser.set(section, option, value)
+            return
+        raise UnmanicDirectoryInfoException("Failed to set section '{}' option '{}' value '{}'".format(section, option, value),
+                                            self.path)
+
+    def get(self, section, option):
+        """
+        Get an option
+
+        :param section:
+        :param option:
+        :return:
+        """
+        if self.json_data is not None:
+            return self.json_data.get(section, {}).get(option)
+        elif self.config_parser:
+            return self.config_parser.get(section, option)
+        raise UnmanicDirectoryInfoException("Failed to get section '{}' option '{}'".format(section, option), self.path)
 
     def save(self):
         """
-        Saves the info file.
+        Saves the data to file.
 
         :return:
         """
-        with open(self.path, 'w') as configfile:
-            self.write(configfile)
+        if self.json_data is not None:
+            with open(self.path, 'w') as outfile:
+                json.dump(self.json_data, outfile, indent=2)
+            return
+        elif self.config_parser:
+            with open(self.path, 'w') as outfile:
+                self.config_parser.write(outfile)
+            return
+        raise UnmanicDirectoryInfoException("Failed to save directory info", self.path)
 
 
 if __name__ == '__main__':
     directory_info = UnmanicDirectoryInfo('/tmp/unmanic')
-    directory_info.get('normalise_aac', 'key')
+    directory_info.set('test_section', 'key', 'value')
+    directory_info.save()
+    print(directory_info.get('test_section', 'key'))
+    directory_info.set('"section with double quotes"', '"key with double quotes"', '"value with double quotes"')
+    directory_info.save()
+    print(directory_info.get('"section with double quotes"', '"key with double quotes"'))

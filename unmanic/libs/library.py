@@ -30,9 +30,39 @@
 
 """
 import os
+import random
 
 from unmanic.config import Config
 from unmanic.libs.unmodels import EnabledPlugins, Libraries, LibraryPluginFlow, Plugins, Tasks
+
+
+def generate_random_library_name():
+    names = [
+        "Willes", "Here", "Helry", "Vyncent", "Burgwy", "Homas Yournet", "Roguy Eldys", "George Ewes", "Hearda",
+        "Mathye Gedde", "Wynfre", "Gauwill", "Aldhert", "Ryany", "Reward", "Atwulf", "Amer", "Alten Yourner", "Reda", "Oled",
+        "Anthohn Dene", "Rarder", "Artin Borne", "Eadwean", "Freyny Loray", "Breda", "Gauwalt Nynsell", "Lodwy", "Exam",
+        "Alters Corby", "Wilhye", "Gery", "Raffin", "Ceolbehrt", "Jamath", "George Sone", "Geoffrey Nette", "Eadund", "Dunne",
+        "Gilda", "Aered", "Lafa", "Eadulf", "Eanmaed", "Cyni", "Draffin", "Nichye", "Reder", "Aldwid", "Conbad", "Munda",
+        "Willex", "Ichohn", "Orkold", "Gyleon", "Ealard", "Helmund", "Nother", "Bertio", "Phamund Erett", "Cuthre", "Aewald",
+        "Aehehrt", "Folke", "Ales", "Chury Kypwe", "Liamund", "Rewalt Wyne", "Arryn", "Charlip", "Georguy", "Lare", "Aenward",
+        "Eanwald", "Ashwid", "Britheard", "Cholas", "Eolhed", "Anwulf", "Eorcorht", "Piersym", "Godre", "Edward", "Dreder",
+        "Geoffry", "Wyny", "Hardwy", "Witio", "Grewis", "Chilew", "Gare", "Arnwulf", "Masym Arren", "Iged", "Uwan", "Coenwy",
+        "Saefa", "Thiles", "Cyne", "Exard", "Ichas Horne", "Rewilh Morley", "Edmur Ferry", "Wine", "Ered", "Lacio", "Elres",
+        "Gaenbyrtf", "Stomund", "Riffin Maley", "Thiliam Save", "Walda", "Giles Drighte", "Robern Finchey", "Wulfa", "James",
+        "Stiny Fane", "Driffin", "Andrers", "Beorhtio", "Balda", "Warder", "Bealdu", "Dene", "Andren", "Stephye", "Ealcar",
+        "Richye Corby", "Ament Anes", "Tharry", "Germund", "Ralphye Payney"
+    ]
+    adjectives = [
+        "awesome", "adorable", "abounding", "aspiring", "beloved", "blue", "blissful", "creamy", "cavernous", "content",
+        "droopy", "excited", "enchanted", "enormous", "extroverted", "exciting", "gullible", "gaseous", "grumpy", "giant",
+        "handsome", "hefty", "harmless", "happy", "hairy", "humdrum", "invincible", "illiterate", "inexperienced", "impolite",
+        "illustrious", "impartial", "innocent""jovial", "juvenile", "joyful", "jumpy", "jagged", "joyous", "kooky", "large",
+        "likeable", "mountainous", "momentous", "minty", "nocturnal", "nautical", "organic", "overcooked", "productive",
+        "plush", "polished", "queasy", "quirky", "quintessential", "reminiscent", "remarkable", "ragged", "rowdy", "soggy",
+        "sudden", "scandalous", "secretive", "spry", "squiggly", "smooth", "sulky", "scented", "spicy", "sticky", "slushy",
+        "symptomatic", "tart", "turbulent", "tiresome", "typical", "xyloid", "xanthic", "zealous", "zany",
+    ]
+    return "{name}, the {adjective} library".format(name=random.choice(names), adjective=random.choice(adjectives))
 
 
 class Library(object):
@@ -72,7 +102,7 @@ class Library(object):
         if not configured_libraries:
             default_library = {
                 'id':     1,
-                'name':   'Default',
+                'name':   generate_random_library_name(),
                 'path':   default_library_path,
                 'locked': False,
             }

@@ -284,11 +284,19 @@ class Session(object, metaclass=SingletonType):
 
     def get_github_login_url(self):
         """
-        Fetch the Patreon client ID
+        Fetch the GitHub client ID
 
         :return:
         """
         return "{0}/github-login".format(self.get_site_url())
+
+    def get_discord_login_url(self):
+        """
+        Fetch the Discord client ID
+
+        :return:
+        """
+        return "{0}/discord-login".format(self.get_site_url())
 
     def get_patreon_sponsor_page(self):
         """

@@ -18,7 +18,7 @@ RUN \
         && apt-get update \
         && apt-get install -y \
             libexpat1=2.2.9-1build1 \
-            libgl1-mesa-dri=21.2.6-0ubuntu0.1~20.04.1 \
+            libgl1-mesa-dri=21.2.6-0ubuntu0.1~20.04.2 \
             libglib2.0-0=2.64.6-1~ubuntu20.04.4 \
             libgomp1=10.3.0-1ubuntu1~20.04 \
             libharfbuzz0b=2.6.4-1ubuntu4 \
@@ -59,7 +59,7 @@ RUN \
             && \
             echo "**** Install MESA Media Drivers for AMD VAAPI ****" \
                 && apt-get install -y \
-                    mesa-va-drivers=21.2.6-0ubuntu0.1~20.04.1 \
+                    mesa-va-drivers=21.2.6-0ubuntu0.1~20.04.2 \
             && \
             echo "**** Remove build packages ****" \
                 && apt-get remove -y \

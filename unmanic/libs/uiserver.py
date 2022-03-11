@@ -353,10 +353,15 @@ class UIServer(threading.Thread):
         # Add widgets routes
         from unmanic.webserver.plugins import DataPanelRequestHandler
         from unmanic.webserver.plugins import PluginStaticFileHandler
+        from unmanic.webserver.plugins import PluginAPIRequestHandler
         app.add_handlers(r'.*', [
             (
                 PathMatches(r"/unmanic/panel/[^/]+(/(?!static/|assets$).*)?$"),
                 DataPanelRequestHandler
+            ),
+            (
+                PathMatches(r"/unmanic/plugin_api/[^/]+(/(?!static/|assets$).*)?$"),
+                PluginAPIRequestHandler
             ),
             (r"/unmanic/panel/.*/static/(.*)", PluginStaticFileHandler, dict(
                 path=tornado_settings['static_img']

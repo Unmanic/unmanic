@@ -56,6 +56,10 @@ class PluginExecutor(object):
                 'has_flow': False,
             },
             {
+                'id':       'frontend.plugin_api',
+                'has_flow': False,
+            },
+            {
                 'id':       'library_management.file_test',
                 'has_flow': True,
             },

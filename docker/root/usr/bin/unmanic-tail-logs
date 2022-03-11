@@ -1,4 +1,11 @@
 #!/usr/bin/with-contenv bash
 
 unmanic_dev_logs_dir=${config_dir}/.unmanic/logs
-tail -f /config/.unmanic/logs/unmanic.log | grcat /.grc.conf.unmanic.logs
+
+args="-f"
+if [[ ! -z "${@}" ]]; then
+    args="${args} ${@}"
+fi
+
+echo "tail ${args} /config/.unmanic/logs/unmanic.log | grcat /.grc.conf.unmanic.logs"
+tail ${args} /config/.unmanic/logs/unmanic.log | grcat /.grc.conf.unmanic.logs

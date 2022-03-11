@@ -159,9 +159,38 @@ def get_enabled_plugin_data_panels():
     return plugin_handler.get_enabled_plugin_modules_by_type('frontend.panel')
 
 
-def exec_plugin_runner(data, plugin_id):
+def exec_data_panels_plugin_runner(data, plugin_id):
+    """
+    Exec a frontend.panel plugin runner
+
+    :param data:
+    :param plugin_id:
+    :return:
+    """
     plugin_handler = PluginsHandler()
     return plugin_handler.exec_plugin_runner(data, plugin_id, 'frontend.panel')
+
+
+def get_enabled_plugin_plugin_apis():
+    """
+    Returns a list of all enabled plugin APIs
+
+    :return:
+    """
+    plugin_handler = PluginsHandler()
+    return plugin_handler.get_enabled_plugin_modules_by_type('frontend.plugin_api')
+
+
+def exec_plugin_api_plugin_runner(data, plugin_id):
+    """
+    Exec a frontend.plugin_api plugin runner
+
+    :param data:
+    :param plugin_id:
+    :return:
+    """
+    plugin_handler = PluginsHandler()
+    return plugin_handler.exec_plugin_runner(data, plugin_id, 'frontend.plugin_api')
 
 
 def save_enabled_plugin_flows_for_plugin_type(plugin_type, library_id, plugin_flow):
@@ -363,6 +392,7 @@ def prepare_plugin_info_and_settings(plugin_id, prefer_local=True, library_id=No
 
     return plugin_data
 
+
 def check_if_plugin_is_installed(plugin_id):
     """
     Returns true if the given plugin is installed
@@ -380,6 +410,7 @@ def check_if_plugin_is_installed(plugin_id):
         plugin_installed = False
 
     return plugin_installed
+
 
 def update_plugin_settings(plugin_id, settings, library_id=None):
     """

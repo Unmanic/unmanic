@@ -30,6 +30,8 @@
 
 """
 import os
+import sys
+import traceback
 
 import tornado.web
 import tornado.log
@@ -39,9 +41,15 @@ from unmanic.webserver.helpers import plugins
 
 def get_plugin_by_path(path):
     # Get the plugin ID from the url
-    plugin_id = path.split('/')[3]
-    # Fetch all frontend plugins
-    results = plugins.get_enabled_plugin_data_panels()
+    split_path = path.split('/')
+    plugin_type = split_path[2]
+    plugin_id = split_path[3]
+    if plugin_type == 'plugin_api':
+        # Fetch all api plugins
+        results = plugins.get_enabled_plugin_plugin_apis()
+    else:
+        # Fetch all frontend plugins
+        results = plugins.get_enabled_plugin_data_panels()
     # Check if their path matches
     plugin_module = None
     for result in results:
@@ -75,7 +83,7 @@ class DataPanelRequestHandler(tornado.web.RequestHandler):
             'path':         "/" + "/".join(path),
             'uri':          self.request.uri,
             'query':        self.request.query,
-            'arguments':    self.request.arguments
+            'arguments':    self.request.arguments,
         }
         plugin_module = get_plugin_by_path(self.request.path)
         if not plugin_module:
@@ -84,16 +92,77 @@ class DataPanelRequestHandler(tornado.web.RequestHandler):
             return
 
         # Run plugin and fetch return data
-        if not plugins.exec_plugin_runner(data, plugin_module.get('plugin_id')):
+        if not plugins.exec_data_panels_plugin_runner(data, plugin_module.get('plugin_id')):
             tornado.log.app_log.exception(
-                "Exception while carrying out plugin runner on postprocessor task result '{}'".format(
-                    plugin_module.get('plugin_id')))
+                "Exception while carrying out plugin runner on DataPanel '{}'".format(plugin_module.get('plugin_id')))
 
         self.render_data(data)
         return
 
     def render_data(self, data):
         self.set_header("Content-Type", data.get('content_type', 'text/html'))
+        self.write(data.get('content'))
+
+
+class PluginAPIRequestHandler(tornado.web.RequestHandler):
+    name = None
+
+    def initialize(self):
+        self.name = 'PluginAPI'
+
+    def get(self, path):
+        self.handle_panel_request()
+
+    def post(self, path):
+        self.handle_panel_request()
+
+    def handle_panel_request(self):
+        path = list(filter(None, self.request.path.split('/')[4:]))
+
+        # Generate default data
+        data = {
+            'content_type': 'application/json',
+            'content':      {},
+            'path':         "/" + "/".join(path),
+            'uri':          self.request.uri,
+            'query':        self.request.query,
+            'arguments':    self.request.arguments,
+            'body':         self.request.body,
+        }
+        plugin_module = get_plugin_by_path(self.request.path)
+        if not plugin_module:
+            self.set_status(404, reason="404 Not Found")
+            status_code = self.get_status()
+            self.write({
+                'error':    "%(code)d: %(message)s" % {"code": status_code, "message": self._reason},
+                'messages': {},
+            })
+            return
+
+        # Run plugin and fetch return data
+        try:
+            if not plugins.exec_plugin_api_plugin_runner(data, plugin_module.get('plugin_id')):
+                tornado.log.app_log.exception(
+                    "Exception while carrying out plugin runner on PluginAPI '{}'".format(plugin_module.get('plugin_id')))
+        except Exception as e:
+            self.set_status(500, reason="Error running plugin API: {}".format(str(e)))
+            status_code = self.get_status()
+            exc_info = sys.exc_info()
+            traceback_lines = []
+            if exc_info and exc_info[0]:
+                for line in traceback.format_exception(*exc_info):
+                    traceback_lines.append(line)
+            self.write({
+                'error':     "%(code)d: %(message)s" % {"code": status_code, "message": self._reason},
+                'messages':  {},
+                'traceback': traceback_lines
+            })
+            return
+
+        self.render_data(data)
+
+    def render_data(self, data):
+        self.set_header("Content-Type", data.get('content_type', 'application/json'))
         self.write(data.get('content'))
 
 

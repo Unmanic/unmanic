@@ -78,7 +78,7 @@ RUN \
 
 
 # Install ffmpeg
-ARG JELLYFIN_FFMPEG_VERSION="4.3.1-4"
+ARG JELLYFIN_FFMPEG_VERSION="4.4.1-3"
 RUN \
     echo "**** Install FFmpeg for $(uname -m) ****" \
         && sleep 2 \

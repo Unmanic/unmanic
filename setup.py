@@ -101,26 +101,33 @@ class BuildFrontendCommand(setuptools.command.build_py.build_py):
 
     def run(self):
         setuptools.command.build_py.build_py.run(self)
+
+        public_asset_path = os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'public'))
+        frontend_path = os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'frontend'))
+
         # Start by clearing out anything if this was pulled from a dirty tree
-        shutil.rmtree(os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'public')),
-                      ignore_errors=True)
+        shutil.rmtree(public_asset_path, ignore_errors=True)
+        shutil.rmtree(os.path.join(frontend_path, 'node_modules'), ignore_errors=True)
+
         # Install all modules
         subprocess.run(
-            ["npm", "--prefix", os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'frontend'), "install"],
-            check=True
+            ["npm", "install"],
+            check=True,
+            shell=True,
+            cwd=frontend_path,
         )
         # Build the frontend
         subprocess.run(
-            ["npm", "--prefix", os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'frontend'), "run", "build:publish"],
-            check=True
+            ["npm", "run", "build:publish"],
+            check=True,
+            shell=True,
+            cwd=frontend_path,
         )
+
         # Move built dist to templates directory
-        shutil.move(
-            os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'frontend', 'dist', 'spa'),
-            os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'public'))
+        shutil.move(os.path.join(frontend_path, 'dist', 'spa'), public_asset_path)
         # Remove the frontend source from the package (we will not distribute these)
-        shutil.rmtree(os.path.abspath(os.path.join('.', 'build', 'lib', src_dir, 'webserver', 'frontend')),
-                      ignore_errors=True)
+        shutil.rmtree(frontend_path, ignore_errors=True)
 
 
 class CleanCommand(Command):

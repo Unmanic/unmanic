@@ -243,10 +243,17 @@ class Service:
         self.start_threads(settings)
 
         # Watch for the term signal
-        signal.signal(signal.SIGINT, self.sig_handle)
-        signal.signal(signal.SIGTERM, self.sig_handle)
-        while self.run_threads:
-            signal.pause()
+        if os.name == "nt":
+            while self.run_threads:
+                try:
+                    time.sleep(1)
+                except (KeyboardInterrupt, SystemExit) as e:
+                    break
+        else:
+            signal.signal(signal.SIGINT, self.sig_handle)
+            signal.signal(signal.SIGTERM, self.sig_handle)
+            while self.run_threads:
+                signal.pause()
 
         # Received term signal. Stop everything
         self.stop_threads()

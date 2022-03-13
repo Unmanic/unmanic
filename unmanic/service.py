@@ -173,10 +173,6 @@ class Service:
         s = session.Session()
         s.register_unmanic(s.get_installation_uuid())
 
-    def sig_handle(self, a, b):
-        main_logger.info("SIGTERM Received")
-        self.run_threads = False
-
     def start_threads(self, settings):
         # Create our data queues
         data_queues = {
@@ -231,6 +227,13 @@ class Service:
             thread['thread'].join(10)
             main_logger.info("Thread {} has successfully stopped".format(thread['name']))
         self.threads = []
+
+    def sig_handle(self, frame):
+        main_logger.info("SIGTERM Received")
+        self.stop()
+
+    def stop(self):
+        self.run_threads = False
 
     def run(self):
         # Init the configuration

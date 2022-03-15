@@ -74,13 +74,14 @@ class UnmanicDirectoryInfo:
         try:
             with open(self.path) as infile:
                 self.json_data = json.load(infile)
+            # Migrate JSON to latest formatting
+            self.__migrate_json_formatting()
         except json.decoder.JSONDecodeError:
             pass
         # If we were unable to import the JSON data, attempt to read as INI
         if self.json_data is None:
             try:
                 self.config_parser = configparser.ConfigParser(allow_no_value=True)
-                self.config_parser.optionxform = str  # Ensure keys are not converted to lowercase
                 self.config_parser.read(self.path)
                 # Migrate file to JSON
                 self.__migrate_to_json()
@@ -95,14 +96,39 @@ class UnmanicDirectoryInfo:
             raise UnmanicDirectoryInfoException("Failed to read directory info", self.path)
 
     def __migrate_to_json(self):
+        """
+        Migrate data from INI to JSON
+
+        :return:
+        """
         sections = self.config_parser.sections()
         json_data = {}
         for section in sections:
             section_data = {}
             for key in self.config_parser[section]:
-                section_data[key] = self.config_parser.get(section, key)
+                section_data[key.lower()] = self.config_parser.get(section, key)
             json_data[section] = section_data
         self.json_data = json_data
+
+    def __migrate_json_formatting(self):
+        """
+        Migrate JSON to latest format
+
+        Migration 1:
+            As Unmanic may be used on platforms that view files as case-insensitive,
+            we should ensure that all keys are also stored this way.
+
+        :return:
+        """
+        # Ensure all keys are lower case
+        sections = [s for s in self.json_data]
+        for section in sections:
+            # Sections remain case sensitive, but keys must be lowercase
+            keys = [k for k in self.json_data[section]]
+            for key in keys:
+                if key != key.lower():
+                    self.json_data[section][key.lower()] = self.json_data[section][key]
+                    del self.json_data[section][key]
 
     def set(self, section, option, value=None):
         """
@@ -113,6 +139,8 @@ class UnmanicDirectoryInfo:
         :param value:
         :return:
         """
+        # Ensure keys are always lower-case
+        option = option.lower()
         if self.json_data is not None:
             if not self.json_data.get(section):
                 self.json_data[section] = {}
@@ -134,6 +162,7 @@ class UnmanicDirectoryInfo:
         :param option:
         :return:
         """
+        option = option.lower()
         if self.json_data is not None:
             return self.json_data.get(section, {}).get(option)
         elif self.config_parser:

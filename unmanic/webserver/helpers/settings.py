@@ -78,7 +78,8 @@ def save_library_config(library_id, library_config=None, plugin_config=None):
         # Import settings
         plugin_executor = PluginExecutor()
         for ep in enabled_plugins:
-            plugin_executor.save_plugin_settings(ep.get('plugin_id'), ep.get('settings', {}), library_id=library_id)
+            if ep.get('has_config'):
+                plugin_executor.save_plugin_settings(ep.get('plugin_id'), ep.get('settings', {}), library_id=library_id)
 
     # Update plugin flow (if the data was given)
     plugin_flow = plugin_config.get('plugin_flow')

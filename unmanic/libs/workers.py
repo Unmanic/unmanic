@@ -494,7 +494,7 @@ class Worker(threading.Thread):
 
         # If the overall result of the jobs carried out on this task were not successful, we will get here.
         # Log the failure and return False
-        self._log("Failed to convert file '{}'".format(original_abspath), level='warning')
+        self._log("Failed to process task for file '{}'".format(original_abspath), level='warning')
         return False
 
     def __log_proc_terminated(self, proc):

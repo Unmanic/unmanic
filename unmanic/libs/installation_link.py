@@ -325,7 +325,21 @@ class Links(object, metaclass=SingletonType):
                 self.__merge_config_dicts(updated_config, merge_dict)
 
                 # Fetch the corresponding remote configuration for this local installation
-                remote_config = self.fetch_remote_installation_link_config_for_this(local_config.get('address'))
+                remote_config = {}
+                try:
+                    remote_config = self.fetch_remote_installation_link_config_for_this(local_config.get('address'))
+                except requests.exceptions.Timeout:
+                    self._log("Request to fetch remote installation config timed out", level='warning')
+                    updated_config["available"] = False
+                    save_settings = True
+                except requests.exceptions.RequestException as e:
+                    self._log("Request to fetch remote installation config failed", message2=str(e), level='warning')
+                    updated_config["available"] = False
+                    save_settings = True
+                except Exception as e:
+                    self._log("Failed to fetch remote installation config", message2=str(e), level='error')
+                    updated_config["available"] = False
+                    save_settings = True
 
                 # If the remote configuration is newer than this one, use those values
                 # The remote installation will do the same and this will synchronise
@@ -342,7 +356,20 @@ class Links(object, metaclass=SingletonType):
                 # If the remote config is unable to contact this installation (or it does not have a corresponding config yet)
                 #   then also push the configuration
                 if not remote_link_config.get('available'):
-                    self.push_remote_installation_link_config(updated_config)
+                    try:
+                        self.push_remote_installation_link_config(updated_config)
+                    except requests.exceptions.Timeout:
+                        self._log("Request to push link config to remote installation timed out", level='warning')
+                        updated_config["available"] = False
+                        save_settings = True
+                    except requests.exceptions.RequestException as e:
+                        self._log("Request to push link config to remote installation failed", message2=str(e), level='warning')
+                        updated_config["available"] = False
+                        save_settings = True
+                    except Exception as e:
+                        self._log("Failed to push link config to remote installation", message2=str(e), level='error')
+                        updated_config["available"] = False
+                        save_settings = True
 
             # Only save to file if the settings have been updated
             if updated_config.get('last_updated') == local_config.get('last_updated'):

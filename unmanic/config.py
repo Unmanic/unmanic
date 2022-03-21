@@ -63,7 +63,7 @@ class Config(object, metaclass=SingletonType):
         self.debugging = False
 
         # Library Settings:
-        self.library_path = os.path.join('/', 'library')
+        self.library_path = common.get_default_library_path()
         self.enable_library_scanner = False
         self.schedule_full_scan_minutes = 1440
         self.follow_symlinks = True
@@ -74,7 +74,7 @@ class Config(object, metaclass=SingletonType):
         # Worker settings
         self.number_of_workers = 1
         self.worker_event_schedules = []
-        self.cache_path = os.path.join('/', 'tmp', 'unmanic')
+        self.cache_path = common.get_default_cache_path()
 
         # Link settings
         self.installation_name = ''
@@ -299,6 +299,17 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.cache_path
+
+    def set_cache_path(self, cache_path):
+        """
+        Get setting - cache_path
+
+        :return:
+        """
+        if cache_path == "":
+            self._log("Cache path cannot be empty. Resetting it to default", level="warning")
+            cache_path = common.get_default_cache_path()
+        self.cache_path = cache_path
 
     def get_config_path(self):
         """

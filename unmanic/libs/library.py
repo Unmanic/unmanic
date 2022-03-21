@@ -33,6 +33,7 @@ import os
 import random
 
 from unmanic.config import Config
+from unmanic.libs import common
 from unmanic.libs.unmodels import EnabledPlugins, Libraries, LibraryPluginFlow, Plugins, Tasks
 
 
@@ -92,7 +93,7 @@ class Library(object):
         from unmanic.config import Config
         default_library_path = Config().get_library_path()
         if not default_library_path:
-            default_library_path = os.path.join('/', 'library')
+            default_library_path = common.get_default_library_path()
 
         # Fetch all libraries from DB
         configured_libraries = Libraries.select()

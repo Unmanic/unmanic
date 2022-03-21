@@ -30,6 +30,14 @@
 
 """
 import os
+import string
+
+from unmanic.libs import common
+
+
+def fetch_windows_drives():
+    # Credit: https://stackoverflow.com/a/37761506
+    return ['%s:' % d for d in string.ascii_uppercase if os.path.exists('%s:' % d)]
 
 
 class DirectoryListing(object):
@@ -86,22 +94,43 @@ class DirectoryListing(object):
                         "full_path": os.path.abspath(parent_path),
                     }
                 )
-            for item in sorted(os.listdir(path)):
-                abspath = os.path.abspath(os.path.join(path, item))
-                if os.path.isdir(abspath):
-                    results.append(
-                        {
-                            "name":      item,
-                            "full_path": abspath,
-                        }
-                    )
+            elif os.name == "nt":
+                # Windows allow selection of drives as parent to root directory
+                results.append(
+                    {
+                        "name":      "..",
+                        "full_path": "",
+                    }
+                )
+            try:
+                for item in sorted(os.listdir(path)):
+                    abspath = os.path.abspath(os.path.join(path, item))
+                    if os.path.isdir(abspath):
+                        results.append(
+                            {
+                                "name":      item,
+                                "full_path": abspath,
+                            }
+                        )
+            except PermissionError:
+                pass
+        elif os.name == "nt":
+            # If path does not exist and OS is Windows, then list the available drives
+            for drive in fetch_windows_drives():
+                results.append(
+                    {
+                        "name":      drive,
+                        "full_path": os.path.abspath(os.path.join(drive, os.sep)),
+                    }
+                )
         else:
             # Path doesn't exist!
             # Just return the root dir as the first directory option
+            root_path = common.get_default_root_path()
             results.append(
                 {
-                    "name":      "/",
-                    "full_path": "/",
+                    "name":      root_path,
+                    "full_path": root_path,
                 }
             )
         return results

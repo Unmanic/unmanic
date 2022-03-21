@@ -111,7 +111,7 @@ class BuildFrontendCommand(setuptools.command.build_py.build_py):
 
         # Install all modules
         subprocess.run(
-            "npm install",
+            "npm ci",
             check=True,
             shell=True,
             cwd=frontend_path,

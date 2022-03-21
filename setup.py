@@ -111,14 +111,14 @@ class BuildFrontendCommand(setuptools.command.build_py.build_py):
 
         # Install all modules
         subprocess.run(
-            ["npm", "install"],
+            "npm install",
             check=True,
             shell=True,
             cwd=frontend_path,
         )
         # Build the frontend
         subprocess.run(
-            ["npm", "run", "build:publish"],
+            "npm run build:publish",
             check=True,
             shell=True,
             cwd=frontend_path,

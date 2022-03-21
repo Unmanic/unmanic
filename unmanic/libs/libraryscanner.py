@@ -281,12 +281,15 @@ class LibraryScannerManager(threading.Thread):
             # Check if all files have been tested
             if self.files_to_test.empty() and self.files_to_process.empty() and status_updates.empty():
                 percent_completed_string = '100%'
+                # Add a "double check" section.
+                # This is used to ensure that the loop does not prematurely exit when the last file tests still
+                # progressing that have not yet made it to the "files_to_process" queue.
                 double_check += 1
-                if double_check > 3:
+                if double_check > 5:
                     # There are not more files to test. Mark manager threads as completed
                     self.stop_all_file_test_managers()
                     break
-                time.sleep(.2)
+                time.sleep(1)
                 continue
 
             # Calculate percent of files tested

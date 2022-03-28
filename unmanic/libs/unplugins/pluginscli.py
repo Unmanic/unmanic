@@ -138,7 +138,8 @@ class PluginsCLI(object):
 
         # Set plugins directory
         if not plugins_directory:
-            plugins_directory = os.path.join(os.path.expanduser("~"), '.unmanic', 'plugins')
+            home_directory = common.get_home_dir()
+            plugins_directory = os.path.join(home_directory, '.unmanic', 'plugins')
         self.plugins_directory = plugins_directory
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         unmanic_logging.disable_file_handler(debugging=True)

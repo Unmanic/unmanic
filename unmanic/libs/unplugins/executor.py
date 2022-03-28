@@ -46,7 +46,8 @@ class PluginExecutor(object):
     def __init__(self, plugins_directory=None):
         # Set plugins directory
         if not plugins_directory:
-            plugins_directory = os.path.join(os.path.expanduser("~"), '.unmanic', 'plugins')
+            home_directory = common.get_home_dir()
+            plugins_directory = os.path.join(home_directory, '.unmanic', 'plugins')
         self.plugins_directory = plugins_directory
         # List plugin types in order that they are run
         # Listing them in order helps for the frontend

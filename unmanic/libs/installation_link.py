@@ -547,7 +547,7 @@ class Links(object, metaclass=SingletonType):
                     "length": 1
                 })
                 current_pending_tasks = int(results.get('recordsFiltered', 0))
-                if current_pending_tasks >= max_pending_tasks:
+                if local_config.get('enable_task_preloading') and current_pending_tasks >= max_pending_tasks:
                     self._log("Remote installation has exceeded the max remote pending task count ({})".format(
                         current_pending_tasks), level='debug')
                     continue

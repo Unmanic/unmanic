@@ -70,8 +70,14 @@ def save_library_config(library_id, library_config=None, plugin_config=None):
     enabled_plugins = plugin_config.get('enabled_plugins')
     if enabled_plugins is not None:
         # Ensure plugins are installed (install them if they are not)
+        repo_refreshed = False
         for ep in enabled_plugins:
             if not plugins.check_if_plugin_is_installed(ep.get('plugin_id')):
+                # Trigger plugin repo refresh if this is the first install
+                if not repo_refreshed:
+                    plugins.reload_plugin_repos_data()
+                    repo_refreshed = True
+                # Install the plugin
                 plugins.install_plugin_by_id(ep.get('plugin_id'))
         # Enable the plugins against this library
         library.set_enabled_plugins(enabled_plugins)

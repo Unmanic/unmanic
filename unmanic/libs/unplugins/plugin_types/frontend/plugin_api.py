@@ -34,7 +34,7 @@ from ..plugin_type_base import PluginType
 
 
 class PluginAPI(PluginType):
-    name = "Frontend - PluginAPI"
+    name = "Frontend - Plugin API"
     runner = "render_plugin_api"
     runner_docstring = """
     Runner function - provide a custom API endpoint managed by a plugin.
@@ -42,8 +42,11 @@ class PluginAPI(PluginType):
     The 'data' object argument includes:
         content_type                    - The content type to be set when writing back to the browser.
         content                         - The content to print to the browser.
-        path                            - The path received after the '/unmanic/plugin_api' path.
+        path                            - The path received after the '/unmanic/panel' path.
+        uri                             - The request uri.
+        query                           - The request query.
         arguments                       - A dictionary of GET arguments received.
+        body                            - A dictionary of body arguments received.
 
     :param data:
     :return:
@@ -61,7 +64,19 @@ class PluginAPI(PluginType):
             "required": False,
             "type":     str,
         },
+        "uri":          {
+            "required": False,
+            "type":     str,
+        },
+        "query":        {
+            "required": False,
+            "type":     str,
+        },
         "arguments":    {
+            "required": False,
+            "type":     dict,
+        },
+        "body":         {
             "required": False,
             "type":     dict,
         },
@@ -71,4 +86,5 @@ class PluginAPI(PluginType):
         'content':      {},
         'path':         "/webhook",
         'arguments':    {'param': [b'true'], 'foo': [b'ba']},
+        'body':         {'param': [b'true'], 'foo': [b'ba']},
     }

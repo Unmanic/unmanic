@@ -155,7 +155,7 @@ class Session(object, metaclass=SingletonType):
         :return:
         """
         api_proto = "https"
-        api_domain = "unmanic.app"
+        api_domain = "api.unmanic.app"
         return "{0}://{1}".format(api_proto, api_domain)
 
     def set_full_api_url(self, api_version, api_path):

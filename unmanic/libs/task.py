@@ -94,9 +94,10 @@ class Task(object):
             file_extension = split_file_name[1].lstrip('.')
 
         # Parse an output cache path
-        out_file = "{}-{}.{}".format(file_name_without_extension, time.time(), file_extension)
+        random_string = '{}-{}'.format(common.random_string(), int(time.time()))
+        out_file = "{}-{}.{}".format(file_name_without_extension, random_string, file_extension)
         if not cache_directory:
-            out_folder = "unmanic_file_conversion-{}".format(time.time())
+            out_folder = "unmanic_file_conversion-{}".format(random_string)
             cache_directory = os.path.join(self.settings.get_cache_path(), out_folder)
 
         # Set cache path class attribute

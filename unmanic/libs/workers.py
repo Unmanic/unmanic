@@ -301,6 +301,18 @@ class Worker(threading.Thread):
         # Flag if a task has run a command
         no_exec_command_run = True
 
+        # Generate default data object for the runner functions
+        data = {
+            "worker_log":              self.worker_log,
+            "library_id":              library_id,
+            "exec_command":            [],
+            "command_progress_parser": default_progress_parser,
+            "file_in":                 file_in,
+            "file_out":                None,
+            "original_file_path":      original_abspath,
+            "repeat":                  False,
+        }
+
         for plugin_module in plugin_modules:
             # Increment the runners count (first runner will be set as #1)
             runner_count += 1
@@ -314,29 +326,30 @@ class Worker(threading.Thread):
             self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'in_progress'
             self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = False
 
-            # Fetch file out details
-            # This creates a temp file labeled "WORKING" that will be moved to the cache_path on completion
-            split_file_out = os.path.splitext(task_cache_path)
-            split_file_in = os.path.splitext(file_in)
-            file_out = "{}-{}-{}{}".format(split_file_out[0], "WORKING", runner_count, split_file_in[1])
-
-            # Generate/Reset the data for the runner functions
-            data = {
-                "library_id":              library_id,
-                "exec_command":            [],
-                "command_progress_parser": default_progress_parser,
-                "file_in":                 file_in,
-                "file_out":                file_out,
-                "original_file_path":      original_abspath,
-                "repeat":                  False,
-            }
             # Loop over runner. This way we can repeat the function with the same data if requested by the repeat flag
             runner_pass_count = 0
             while not self.redundant_flag.is_set():
                 runner_pass_count += 1
+
+                # Fetch file out details
+                # This creates a temp file labeled "WORKING" that will be moved to the cache_path on completion
+                split_file_out = os.path.splitext(task_cache_path)
+                split_file_in = os.path.splitext(file_in)
+                file_out = "{}-{}-{}-{}{}".format(split_file_out[0], "WORKING", runner_count, runner_pass_count,
+                                                  split_file_in[1])
+
+                # Reset data object for this runner functions
+                data['library_id'] = library_id
+                data['exec_command'] = []
+                data['command_progress_parser'] = default_progress_parser
+                data['file_in'] = file_in
+                data['file_out'] = file_out
+                data['original_file_path'] = original_abspath
+                data['repeat'] = False
+
                 time.sleep(.2)  # Add delay for preventing loop maxing compute resources
                 self.worker_log.append("\n\nRUNNER: \n{} [Pass #{}]\n\n".format(plugin_module.get('name'), runner_pass_count))
-                self.worker_log.append("\nExecuting plugin runner... Please wait")
+                self.worker_log.append("\nExecuting plugin runner... Please wait\n")
 
                 # Run plugin to update data
                 if not plugin_handler.exec_plugin_runner(data, plugin_module.get('plugin_id'), 'worker.process_item'):
@@ -390,11 +403,12 @@ class Worker(threading.Thread):
                             # We want to ensure that we do not accidentally remove any original files here.
                             # To avoid this, run x2 tests.
                             # First, check current 'file_in' is not the original file.
-                            if os.path.abspath(file_in) != os.path.abspath(original_abspath):
+                            if os.path.abspath(data.get("file_in")) != os.path.abspath(original_abspath):
                                 # Second, check that the 'file_in' is in cache directory.
-                                if "unmanic_file_conversion" in os.path.abspath(file_in):
+                                if "unmanic_file_conversion" in os.path.abspath(data.get("file_in")):
                                     # Remove this file
-                                    os.remove(os.path.abspath(file_in))
+                                    os.remove(os.path.abspath(data.get("file_in")))
+
                             # Set the new 'file_in' as the previous runner's 'file_out' for the next loop
                             file_in = data.get("file_out")
                     else:
@@ -407,21 +421,33 @@ class Worker(threading.Thread):
                             level="error")
                         self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = False
                         overall_success = False
+
+                        # Ensure the new 'file_in' is set to the previous runner's 'file_in' for the next loop
+                        file_in = data.get("file_in")
                 else:
+                    # Ensure the new 'file_in' is set to the previous runner's 'file_in' for the next loop
+                    file_in = data.get("file_in")
+                    # Log that this plugin did not request to execute anything
                     self.worker_log.append("\nRunner did not request to execute a command")
                     self._log(
                         "Worker process '{}' did not request to execute a command.".format(plugin_module.get('plugin_id')),
                         level='debug')
 
+                if os.path.exists(data.get('file_out')):
+                    # Set the current file out to the most recently completed cache file
+                    # If the file out does not exist, it is likely never used by the plugin.
+                    current_file_out = data.get('file_out')
+                else:
+                    # Ensure the current_file_out is set the currently set 'file_in'
+                    current_file_out = data.get('file_in')
+
+                self._log("current_file_out: {} ".format(current_file_out), level='warning')
+
                 if data.get("repeat"):
-                    # Returned data contained the repeat flag, repeat it
+                    # The returned data contained the 'repeat'' flag.
+                    # Run another pass against this same plugin
                     continue
                 break
-
-            # Set the current file out to the most recently completed cache file
-            # If the file out does not exist, it is likely never used by the plugin.
-            if os.path.exists(data.get('file_out')):
-                current_file_out = data.get('file_out')
 
             self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = True
             self.worker_runners_info[plugin_module.get('plugin_id')]['status'] = 'complete'
@@ -554,7 +580,6 @@ class Worker(threading.Thread):
         common.ensure_dir(data.get("file_out"))
 
         # Convert file
-        success = False
         try:
             proc_pause_time = 0
             proc_start_time = time.time()
@@ -629,3 +654,5 @@ class Worker(threading.Thread):
 
         except Exception as e:
             self._log("Error while executing the command {}.".format(data.get("file_in")), message2=str(e), level="error")
+
+        return False

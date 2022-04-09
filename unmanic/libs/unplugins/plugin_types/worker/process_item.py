@@ -40,18 +40,27 @@ class ProcessItem(PluginType):
     Runner function - enables additional configured processing jobs during the worker stages of a task.
 
     The 'data' object argument includes:
-        library_id              - The library that the current task is associated with
-        exec_command            - A command that Unmanic should execute. Can be empty.
-        command_progress_parser - A function that Unmanic can use to parse the STDOUT of the command to collect progress stats. Can be empty.
-        file_in                 - The source file to be processed by the command.
-        file_out                - The destination that the command should output (may be the same as the file_in if necessary).
-        original_file_path      - The absolute path to the original file.
+        worker_log              - Array, the log lines that are being tailed by the frontend. Can be left empty.
+        library_id              - Number, the library that the current task is associated with.
+        exec_command            - Array, a subprocess command that Unmanic should execute. Can be empty.
+        command_progress_parser - Function, a function that Unmanic can use to parse the STDOUT of the command to collect progress stats. Can be empty.
+        file_in                 - String, the source file to be processed by the command.
+        file_out                - String, the destination that the command should output (may be the same as the file_in if necessary).
+        original_file_path      - String, the absolute path to the original file.
         repeat                  - Boolean, should this runner be executed again once completed with the same variables.
 
     :param data:
     :return:
     """
     data_schema = {
+        "worker_log":              {
+            "required": True,
+            "type":     list,
+        },
+        "library_id":              {
+            "required": True,
+            "type":     int,
+        },
         "exec_command":            {
             "required": True,
             "type":     list,
@@ -78,6 +87,8 @@ class ProcessItem(PluginType):
         },
     }
     test_data = {
+        'worker_log':              [],
+        'library_id':              1,
         'exec_command':            [],
         'command_progress_parser': exec,
         'file_in':                 '/library/TEST_FILE.mkv',

@@ -199,6 +199,9 @@ class PluginSettings(object):
             # If the import fails, then it will resort to defaults.
             # That is fine. Better than breaking the rest of the process
             pass
+        except FileNotFoundError:
+            # If the settings file did not exist, then also resort to defaults.
+            pass
 
         if key is None:
             return self.settings_configured

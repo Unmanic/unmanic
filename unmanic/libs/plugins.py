@@ -57,7 +57,7 @@ class PluginsHandler(object, metaclass=SingletonType):
     """
     Set the default repo to main repo
     """
-    default_repo = 'https://unmanic.app/api/v1/unmanic-plugin-repo/uuid'
+    default_repo = 'https://api.unmanic.app/api/v1/unmanic-plugin-repo/uuid'
 
     def __init__(self, *args, **kwargs):
         self.settings = config.Config()
@@ -304,7 +304,7 @@ class PluginsHandler(object, metaclass=SingletonType):
 
     def notify_site_of_plugin_install(self, plugin):
         """
-        Notify the Unmanic.app site of the install.
+        Notify the unmanic.app site API of the install.
         This is used for metric stats so that we can get a count of plugin downloads.
 
         :param plugin:

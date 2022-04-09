@@ -172,7 +172,12 @@ class PluginType(object):
         data_schema = self.get_data_schema()
 
         # Execute plugin function
-        plugin_runner_function(test_data_copy)
+        run_count = 0
+        while run_count < 2:
+            plugin_runner_function(test_data_copy)
+            if not test_data_copy.get('repeat', False):
+                break
+            run_count += 1
 
         # Ensure the modified test data is valid according to the schema
         errors = self.__data_schema_test_data(plugin_id, plugin_runner, test_data_copy, data_schema)

@@ -66,6 +66,12 @@ class PluginSettings(object):
 
     def __init__(self, *args, **kwargs):
         self.library_id = kwargs.get('library_id')
+        # If the given library is not None, ensure that it is a number
+        if self.library_id:
+            try:
+                self.library_id = int(self.library_id)
+            except ValueError:
+                raise Exception("Library ID needs to be an integer. You have provided '{}'".format(self.library_id))
 
     def __get_plugin_settings_file(self, force_library_settings=False):
         plugin_directory = self.get_plugin_directory()

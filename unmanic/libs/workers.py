@@ -584,7 +584,7 @@ class Worker(threading.Thread):
             proc_pause_time = 0
             proc_start_time = time.time()
             # Execute command
-            sub_proc = subprocess.Popen(exec_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            sub_proc = subprocess.Popen(' '.join(exec_command), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                         universal_newlines=True, errors='replace', shell=True)
             # Fetch process using psutil for control (sending SIGSTOP on windows will not work)
             proc = psutil.Process(pid=sub_proc.pid)

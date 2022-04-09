@@ -114,7 +114,10 @@ class PluginSettings(object):
         plugin_settings_file = self.__get_plugin_settings_file()
 
         # Default the configured settings to the plugin defaults
-        self.settings_configured = self.settings
+        # Loop over the self.settings object to clone the keys/values
+        self.settings_configured = {}
+        for key in self.settings:
+            self.settings_configured[key] = self.settings[key]
 
         # if the file does not yet exist, create it
         if not os.path.exists(plugin_settings_file):

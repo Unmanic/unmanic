@@ -63,7 +63,7 @@ class ProcessItem(PluginType):
         },
         "exec_command":            {
             "required": True,
-            "type":     list,
+            "type":     [list, str],
         },
         "command_progress_parser": {
             "required": True,

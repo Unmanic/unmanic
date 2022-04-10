@@ -103,6 +103,17 @@ class PluginType(object):
         :param data_tree:
         :return:
         """
+
+        def test_data_type(provided_data, expected_data_type):
+            # Callable functions are best tested with the callable function
+            # Everything else should be tested with the isinstance function
+            if expected_data_type == 'callable':
+                if callable(provided_data):
+                    return True
+            elif isinstance(provided_data, expected_data_type):
+                return True
+            return False
+
         errors = []
         if not isinstance(result_data, dict):
             # This runner function is not returning anything
@@ -126,15 +137,16 @@ class PluginType(object):
                 child_data = result_data.get(key)
 
                 # Test that the data is of the correct type
+                # Types can be multiple things for some plugin runners. If type is a list of types,
+                #   iterate over that list and test all types.
                 correct_type = False
-
-                # Callable functions are best tested with the callable function
-                # Everything else should be tested with the isinstance function
-                if data_type == 'callable':
-                    if callable(child_data):
-                        correct_type = True
-                elif isinstance(child_data, data_type):
-                    correct_type = True
+                if isinstance(data_type, list):
+                    for dt in data_type:
+                        if test_data_type(child_data, dt):
+                            correct_type = True
+                            break
+                else:
+                    correct_type = test_data_type(child_data, data_type)
 
                 # If data is not of the correct type, then append the error message
                 if not correct_type:

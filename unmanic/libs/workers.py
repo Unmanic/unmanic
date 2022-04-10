@@ -441,8 +441,6 @@ class Worker(threading.Thread):
                     # Ensure the current_file_out is set the currently set 'file_in'
                     current_file_out = data.get('file_in')
 
-                self._log("current_file_out: {} ".format(current_file_out), level='warning')
-
                 if data.get("repeat"):
                     # The returned data contained the 'repeat'' flag.
                     # Run another pass against this same plugin
@@ -565,13 +563,16 @@ class Worker(threading.Thread):
         command_progress_parser = data.get("command_progress_parser", default_progress_parser)
 
         # Log the command for debugging
-        self._log("Executing: {}".format(' '.join(exec_command)), level='debug')
+        command_string = exec_command
+        if isinstance(exec_command, list):
+            command_string = ' '.join(exec_command)
+        self._log("Executing: {}".format(command_string), level='debug')
 
         # Append start of command to worker subprocess stdout
         self.worker_log += [
             '\n\n',
             'COMMAND:\n',
-            ' '.join(exec_command),
+            command_string,
             '\n\n',
             'LOG:\n',
         ]
@@ -584,8 +585,16 @@ class Worker(threading.Thread):
             proc_pause_time = 0
             proc_start_time = time.time()
             # Execute command
-            sub_proc = subprocess.Popen(' '.join(exec_command), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                        universal_newlines=True, errors='replace', shell=True)
+            if isinstance(exec_command, list):
+                sub_proc = subprocess.Popen(exec_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                            universal_newlines=True, errors='replace')
+            elif isinstance(exec_command, str):
+                sub_proc = subprocess.Popen(exec_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                            universal_newlines=True, errors='replace', shell=True)
+            else:
+                raise Exception(
+                    "Plugin's returned 'exec_command' object must be either a list or a string. Received type {}.".format(
+                        type(exec_command)))
             # Fetch process using psutil for control (sending SIGSTOP on windows will not work)
             proc = psutil.Process(pid=sub_proc.pid)
 
@@ -653,6 +662,7 @@ class Worker(threading.Thread):
                 return False
 
         except Exception as e:
-            self._log("Error while executing the command {}.".format(data.get("file_in")), message2=str(e), level="error")
+            self._log("Error while executing the command against file{}.".format(data.get("file_in")), message2=str(e),
+                      level="error")
 
         return False

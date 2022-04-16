@@ -34,7 +34,7 @@ import random
 
 from unmanic.config import Config
 from unmanic.libs import common
-from unmanic.libs.unmodels import EnabledPlugins, Libraries, LibraryPluginFlow, Plugins, Tasks
+from unmanic.libs.unmodels import EnabledPlugins, Libraries, LibraryPluginFlow, Plugins, Tags, Tasks
 
 
 def generate_random_library_name():
@@ -240,6 +240,24 @@ class Library(object):
 
     def set_priority_score(self, value):
         self.model.priority_score = value
+
+    def get_tags(self):
+        return_tags = []
+        for tag in self.model.tags.order_by(Tags.name):
+            return_tags.append(tag.name)
+        return return_tags
+
+    def set_tags(self, value):
+        # Create any missing tags
+        for tag_name in value:
+            # Do not update any current tags with on_conflict_replace() as this will also change their IDs
+            # Instead, just ignore them
+            Tags.insert(name=tag_name).on_conflict_ignore().execute()
+        # Create a SELECT query for all tags with the listed names
+        tags_select_query = Tags.select().where(Tags.name.in_(value))
+        # Clear out the current linking table of tags linked to this library
+        # Add new links for each tag that was fetched matching the provided names
+        self.model.tags.add(tags_select_query, clear_existing=True)
 
     def get_enabled_plugins(self, include_settings=False):
         """

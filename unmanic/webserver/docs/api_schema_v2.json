@@ -1504,7 +1504,8 @@
                             "path": "/library",
                             "enable_scanner": false,
                             "enable_inotify": false,
-                            "priority_score": 0
+                            "priority_score": 0,
+                            "tags": []
                         }
                     },
                     "plugins": {
@@ -1578,7 +1579,8 @@
                             "path": "/library",
                             "enable_scanner": false,
                             "enable_inotify": false,
-                            "priority_score": 0
+                            "priority_score": 0,
+                            "tags": []
                         }
                     }
                 },
@@ -1637,7 +1639,8 @@
                             "path": "/library",
                             "enable_scanner": false,
                             "enable_inotify": false,
-                            "priority_score": 0
+                            "priority_score": 0,
+                            "tags": []
                         }
                     },
                     "library_id": {

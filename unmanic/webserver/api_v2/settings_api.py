@@ -604,6 +604,7 @@ class ApiSettingsHandler(BaseApiHandler):
                     "path":           '/',
                     "enable_scanner": False,
                     "enable_inotify": False,
+                    "priority_score": 0,
                 },
                 "plugins":        {
                     "enabled_plugins": [],
@@ -620,6 +621,7 @@ class ApiSettingsHandler(BaseApiHandler):
                         "locked":         library_config.get_locked(),
                         "enable_scanner": library_config.get_enable_scanner(),
                         "enable_inotify": library_config.get_enable_inotify(),
+                        "priority_score": library_config.get_priority_score(),
                     },
                     "plugins":        {
                         "enabled_plugins": library_config.get_enabled_plugins(),

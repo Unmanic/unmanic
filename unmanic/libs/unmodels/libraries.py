@@ -44,3 +44,4 @@ class Libraries(BaseModel):
     locked = BooleanField(null=False, default=False)
     enable_scanner = BooleanField(null=False, default=False)
     enable_inotify = BooleanField(null=False, default=False)
+    priority_score = BigIntegerField(null=False, default=0)

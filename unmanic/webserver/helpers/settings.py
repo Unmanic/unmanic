@@ -65,6 +65,7 @@ def save_library_config(library_id, library_config=None, plugin_config=None):
         library.set_locked(library_config.get('locked', library.get_locked()))
         library.set_enable_scanner(library_config.get('enable_scanner', library.get_enable_scanner()))
         library.set_enable_inotify(library_config.get('enable_inotify', library.get_enable_inotify()))
+        library.set_priority_score(library_config.get('priority_score', library.get_priority_score()))
 
     # Update enabled plugins (if the data was given)
     enabled_plugins = plugin_config.get('enabled_plugins')

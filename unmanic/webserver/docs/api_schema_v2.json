@@ -545,15 +545,23 @@
                 "properties": {
                     "path": {
                         "type": "string",
+                        "description": "The absolute path to a file",
                         "example": "/library/TEST_FILE.mkv"
                     },
                     "library_id": {
                         "type": "integer",
+                        "description": "The ID of the library to append this task to",
                         "example": 1
                     },
                     "library_name": {
                         "type": "string",
+                        "description": "The name of the library to append this task to",
                         "example": "Default"
+                    },
+                    "priority_score": {
+                        "type": "integer",
+                        "description": "Apply a priority score to the created task to either increase or decrease its position in the queue",
+                        "example": 1000
                     }
                 },
                 "required": [
@@ -1495,7 +1503,8 @@
                             "name": "Default",
                             "path": "/library",
                             "enable_scanner": false,
-                            "enable_inotify": false
+                            "enable_inotify": false,
+                            "priority_score": 0
                         }
                     },
                     "plugins": {
@@ -1568,7 +1577,8 @@
                             "name": "Default",
                             "path": "/library",
                             "enable_scanner": false,
-                            "enable_inotify": false
+                            "enable_inotify": false,
+                            "priority_score": 0
                         }
                     }
                 },
@@ -1626,7 +1636,8 @@
                             "name": "Default",
                             "path": "/library",
                             "enable_scanner": false,
-                            "enable_inotify": false
+                            "enable_inotify": false,
+                            "priority_score": 0
                         }
                     },
                     "library_id": {

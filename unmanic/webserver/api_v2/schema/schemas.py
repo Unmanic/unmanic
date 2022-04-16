@@ -1102,6 +1102,7 @@ class SettingsLibraryConfigReadAndWriteSchema(BaseSchema):
             "enable_scanner": False,
             "enable_inotify": False,
             "priority_score": 0,
+            "tags":           [],
         },
     )
 
@@ -1175,6 +1176,7 @@ class SettingsLibraryPluginConfigExportSchema(BaseSchema):
             "enable_scanner": False,
             "enable_inotify": False,
             "priority_score": 0,
+            "tags":           [],
         },
     )
 

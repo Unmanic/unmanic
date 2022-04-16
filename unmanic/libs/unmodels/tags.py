@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.libraries.py
+    unmanic.tags.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     06 Feb 2022, (9:44 AM)
+    Date:                     16 Apr 2022, (7:01 PM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,25 +30,16 @@
 
 """
 
+import datetime
+
 from peewee import *
 
 from unmanic.libs.unmodels.lib import BaseModel
-from unmanic.libs.unmodels.tags import Tags
 
 
-class Libraries(BaseModel):
+class Tags(BaseModel):
     """
-    Libraries
+    Tags
     """
     name = TextField(null=False, unique=True)
-    path = TextField(null=False)
-    locked = BooleanField(null=False, default=False)
-    enable_scanner = BooleanField(null=False, default=False)
-    enable_inotify = BooleanField(null=False, default=False)
-    priority_score = BigIntegerField(null=False, default=0)
-    # ManyToMany Linking field. Does not create a column in the DB. See linking table below
-    tags = ManyToManyField(Tags, backref='tags')
-
-# Generate linking table for the 'tags' field above
-# https://docs.peewee-orm.com/en/latest/peewee/relationships.html#manytomanyfield
-LibraryTags = Libraries.tags.get_through_model()
+    created = DateTimeField(null=False, default=datetime.datetime.now)

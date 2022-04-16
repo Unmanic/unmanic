@@ -181,10 +181,11 @@ class LibraryScannerManager(threading.Thread):
             valid = False
         return valid
 
-    def add_path_to_queue(self, pathname, library_id):
+    def add_path_to_queue(self, pathname, library_id, priority_score):
         self.scheduledtasks.put({
             'pathname':   pathname,
             'library_id': library_id,
+            'priority_score': priority_score,
         })
 
     def start_results_manager_thread(self, manager_id, status_updates, library_id):
@@ -307,7 +308,8 @@ class LibraryScannerManager(threading.Thread):
                 current_file = status_updates.get()
                 continue
             elif not self.files_to_process.empty():
-                self.add_path_to_queue(self.files_to_process.get(), library_id)
+                item = self.files_to_process.get()
+                self.add_path_to_queue(item.get('path'), library_id, item.get('priority_score'))
                 continue
             else:
                 time.sleep(.1)

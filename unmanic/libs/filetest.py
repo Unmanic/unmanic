@@ -133,15 +133,18 @@ class FileTest(object):
             return_value = False
 
         # Only run checks with plugins if other tests were not conclusive
+        priority_score_modification = 0
         if return_value is None:
+            # Set the initial data with just the priority score.
+            data = {
+                'priority_score':              0,
+            }
             # Run tests against plugins
             for plugin_module in self.plugin_modules:
-                data = {
-                    'library_id':                self.library_id,
-                    'path':                      path,
-                    'issues':                    file_issues.copy(),
-                    'add_file_to_pending_tasks': None,
-                }
+                data['library_id'] = self.library_id
+                data['path'] = path
+                data['issues'] = file_issues.copy()
+                data['add_file_to_pending_tasks'] = None
 
                 # Run plugin to update data
                 if not self.plugin_handler.exec_plugin_runner(data, plugin_module.get('plugin_id'),
@@ -157,8 +160,10 @@ class FileTest(object):
                 if data.get('add_file_to_pending_tasks') is not None:
                     return_value = data.get('add_file_to_pending_tasks')
                     break
+            # Set the priority score modification
+            priority_score_modification = data.get('priority_score', 0)
 
-        return return_value, file_issues
+        return return_value, file_issues, priority_score_modification
 
 
 class FileTesterThread(threading.Thread):
@@ -197,7 +202,7 @@ class FileTesterThread(threading.Thread):
 
                 # Test file to be added to task list. Add it if required
                 try:
-                    result, issues = file_test.should_file_be_added_to_task_list(next_file)
+                    result, issues, priority_score = file_test.should_file_be_added_to_task_list(next_file)
                     # Log any error messages
                     for issue in issues:
                         if type(issue) is dict:
@@ -206,7 +211,10 @@ class FileTesterThread(threading.Thread):
                             self._log(issue)
                     # If file needs to be added, then add it
                     if result:
-                        self.add_path_to_queue(next_file)
+                        self.add_path_to_queue({
+                            'path':           next_file,
+                            'priority_score': priority_score,
+                        })
                 except UnicodeEncodeError:
                     self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
                 except Exception as e:
@@ -220,5 +228,5 @@ class FileTesterThread(threading.Thread):
                           level="exception")
         self._log("Exiting {}".format(self.name))
 
-    def add_path_to_queue(self, pathname):
-        self.files_to_process.put(pathname)
+    def add_path_to_queue(self, item):
+        self.files_to_process.put(item)

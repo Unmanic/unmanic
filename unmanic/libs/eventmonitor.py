@@ -258,7 +258,7 @@ class EventMonitorManager(threading.Thread):
         # Test file to be added to task list. Add it if required
         try:
             file_test = FileTest(library_id)
-            result, issues = file_test.should_file_be_added_to_task_list(pathname)
+            result, issues, priority_score = file_test.should_file_be_added_to_task_list(pathname)
             # Log any error messages
             for issue in issues:
                 if type(issue) is dict:
@@ -267,21 +267,23 @@ class EventMonitorManager(threading.Thread):
                     self._log(issue)
             # If file needs to be added, then add it
             if result:
-                self.__add_path_to_queue(pathname, library_id)
+                self.__add_path_to_queue(pathname, library_id, priority_score)
         except UnicodeEncodeError:
             self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
         except Exception as e:
             self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e), level="exception")
 
-    def __add_path_to_queue(self, pathname, library_id):
+    def __add_path_to_queue(self, pathname, library_id, priority_score):
         """
         Add a given path to the pending task queue
 
         :param pathname:
         :param library_id:
+        :param priority_score:
         :return:
         """
         self.data_queues.get('inotifytasks').put({
-            'pathname':   pathname,
-            'library_id': library_id,
+            'pathname':       pathname,
+            'library_id':     library_id,
+            'priority_score': priority_score,
         })

@@ -44,6 +44,7 @@ class FileTest(PluginType):
         path                            - String containing the full path to the file being tested.
         issues                          - List of currently found issues for not processing the file.
         add_file_to_pending_tasks       - Boolean, is the file currently marked to be added to the queue for processing.
+        priority_score                  - Integer, an additional score that can be added to set the position of the new task in the task queue.
 
     :param data:
     :return:
@@ -61,6 +62,10 @@ class FileTest(PluginType):
             "required": True,
             "type":     bool,
         },
+        "priority_score":            {
+            "required": True,
+            "type":     int,
+        },
     }
     test_data = {
         'path':                      '/library/TEST_FILE.mkv',
@@ -71,4 +76,5 @@ class FileTest(PluginType):
             }
         ],
         'add_file_to_pending_tasks': True,
+        'priority_score':            0,
     }

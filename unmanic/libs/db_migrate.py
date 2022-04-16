@@ -33,7 +33,7 @@ import importlib
 import inspect
 import os
 
-from peewee import SqliteDatabase, Field
+from peewee import Model, SqliteDatabase, Field
 from peewee_migrate import Router
 
 from unmanic.libs import unlogger
@@ -97,10 +97,19 @@ class Migrations(object):
         """
         # Fetch all model classes
         all_models = []
+        all_base_models = []
         for model in list_all_models():
             imported_model = getattr(importlib.import_module("unmanic.libs.unmodels"), model)
             if inspect.isclass(imported_model) and issubclass(imported_model, BaseModel):
+                # Add this model to both the 'all_models' list and our list of base models
                 all_models.append(imported_model)
+                all_base_models.append(imported_model)
+            elif inspect.isclass(imported_model) and issubclass(imported_model, Model):
+                # If the model is not one of the base models, it is an in-build model from peewee.
+                # For, this list of models we will not run a migration, but we will still ensure that the
+                #   table is created in the DB
+                all_models.append(imported_model)
+                pass
 
         # Start by creating all models
         self.__log("Initialising database tables")
@@ -120,7 +129,7 @@ class Migrations(object):
         # Newly added fields can be auto added with this function... no need for a migration script
         # Ensure all files are also present for each of the model classes
         self.__log("Updating database fields")
-        for model in all_models:
+        for model in all_base_models:
             # Fetch all peewee fields for the model class
             # https://stackoverflow.com/questions/22573558/peewee-determining-meta-data-about-model-at-run-time
             fields = model._meta.fields

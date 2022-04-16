@@ -137,7 +137,8 @@ class FileTest(object):
         if return_value is None:
             # Set the initial data with just the priority score.
             data = {
-                'priority_score':              0,
+                'priority_score': 0,
+                'shared_info':    {},
             }
             # Run tests against plugins
             for plugin_module in self.plugin_modules:

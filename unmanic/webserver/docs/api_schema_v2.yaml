@@ -1050,6 +1050,7 @@ components:
             name: Default
             path: /library
             priority_score: 0
+            tags: []
           type: object
         plugins:
           description: The library's enabled plugins
@@ -1105,6 +1106,7 @@ components:
             name: Default
             path: /library
             priority_score: 0
+            tags: []
           type: object
       required:
       - plugins

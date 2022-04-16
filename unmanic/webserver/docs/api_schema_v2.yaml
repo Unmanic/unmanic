@@ -770,14 +770,22 @@ components:
     RequestPendingTaskCreate:
       properties:
         path:
+          description: The absolute path to a file
           example: /library/TEST_FILE.mkv
           type: string
         library_id:
+          description: The ID of the library to append this task to
           example: 1
           type: integer
         library_name:
+          description: The name of the library to append this task to
           example: Default
           type: string
+        priority_score:
+          description: Apply a priority score to the created task to either increase
+            or decrease its position in the queue
+          example: 1000
+          type: integer
       required:
       - path
       type: object
@@ -1041,6 +1049,7 @@ components:
             id: 1
             name: Default
             path: /library
+            priority_score: 0
           type: object
         plugins:
           description: The library's enabled plugins
@@ -1095,6 +1104,7 @@ components:
             id: 1
             name: Default
             path: /library
+            priority_score: 0
           type: object
       required:
       - plugins

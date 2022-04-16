@@ -438,15 +438,23 @@ class RequestPendingTaskCreateSchema(BaseSchema):
 
     path = fields.Str(
         required=True,
+        description="The absolute path to a file",
         example="/library/TEST_FILE.mkv",
     )
     library_id = fields.Int(
         required=False,
+        description="The ID of the library to append this task to",
         example=1,
     )
     library_name = fields.Str(
         required=False,
+        description="The name of the library to append this task to",
         example='Default',
+    )
+    priority_score = fields.Int(
+        required=False,
+        description="Apply a priority score to the created task to either increase or decrease its position in the queue",
+        example=1000,
     )
 
 
@@ -1093,6 +1101,7 @@ class SettingsLibraryConfigReadAndWriteSchema(BaseSchema):
             "path":           "/library",
             "enable_scanner": False,
             "enable_inotify": False,
+            "priority_score": 0,
         },
     )
 
@@ -1165,6 +1174,7 @@ class SettingsLibraryPluginConfigExportSchema(BaseSchema):
             "path":           "/library",
             "enable_scanner": False,
             "enable_inotify": False,
+            "priority_score": 0,
         },
     )
 

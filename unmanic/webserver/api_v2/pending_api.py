@@ -411,6 +411,7 @@ class ApiPendingHandler(BaseApiHandler):
             abspath = os.path.abspath(json_request.get('path', ''))
             library_id = json_request.get('library_id', 1)
             library_name = json_request.get('library_name')
+            priority_score = json_request.get('priority_score', 0)
 
             # Ensure path exists
             if not os.path.exists(abspath):
@@ -425,7 +426,8 @@ class ApiPendingHandler(BaseApiHandler):
                 self.write_error()
                 return False
 
-            task_info = pending_tasks.create_task(abspath, library_id=library_id, library_name=library_name)
+            task_info = pending_tasks.create_task(abspath, library_id=library_id, library_name=library_name,
+                                                  priority_score=priority_score)
             if not task_info:
                 self.set_status(self.STATUS_ERROR_EXTERNAL, reason="Failed to save new pending task for the provided path")
                 self.write_error()

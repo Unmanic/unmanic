@@ -235,6 +235,12 @@ class Library(object):
     def set_enable_inotify(self, value):
         self.model.enable_inotify = value
 
+    def get_priority_score(self):
+        return self.model.priority_score
+
+    def set_priority_score(self, value):
+        self.model.priority_score = value
+
     def get_enabled_plugins(self, include_settings=False):
         """
         Get all enabled plugins for this library

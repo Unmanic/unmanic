@@ -89,7 +89,8 @@ class TaskHandler(threading.Thread):
                 item = self.scheduledtasks.get_nowait()
                 pathname = item['pathname']
                 library_id = item['library_id']
-                if self.add_path_to_task_queue(pathname, library_id):
+                priority_score = item.get('priority_score', 0)
+                if self.add_path_to_task_queue(pathname, library_id, priority_score=priority_score):
                     self._log("Adding file to task queue", pathname, level='info')
                 else:
                     self._log("Skipping file as it is already in the queue", pathname, level='info')
@@ -104,9 +105,10 @@ class TaskHandler(threading.Thread):
                 item = self.inotifytasks.get_nowait()
                 pathname = item['pathname']
                 library_id = item['library_id']
+                priority_score = item.get('priority_score', 0)
                 # TODO: Ensure the file is not still being modified at this point.
                 #  If it is still being modified here, it is ok to wait for that to finish (should not matter much)
-                if self.add_path_to_task_queue(pathname, library_id):
+                if self.add_path_to_task_queue(pathname, library_id, priority_score=priority_score):
                     self._log("Adding inotify job to queue", pathname, level='info')
                 else:
                     self._log("Skipping inotify job already in the queue", pathname, level='info')
@@ -136,12 +138,13 @@ class TaskHandler(threading.Thread):
             return True
         return False
 
-    def add_path_to_task_queue(self, pathname, library_id):
+    def add_path_to_task_queue(self, pathname, library_id, priority_score=0):
         """
         Add the path to the task queue ensuring that the path is only added once
 
         :param pathname:
         :param library_id:
+        :param priority_score:
         :return:
         """
         # Check if file exists in task queue based on it's absolute path
@@ -149,24 +152,25 @@ class TaskHandler(threading.Thread):
         if self.check_if_task_exists_matching_path(abspath):
             return False
         # Create the new task from the provide path
-        new_task = self.create_task_from_path(pathname, library_id)
+        new_task = self.create_task_from_path(pathname, library_id, priority_score=priority_score)
         if not new_task:
             return False
         return True
 
-    def create_task_from_path(self, pathname, library_id):
+    def create_task_from_path(self, pathname, library_id, priority_score=0):
         """
         Generate a Task object from a pathname
 
         :param pathname:
         :param library_id:
+        :param priority_score:
         :return:
         """
         abspath = os.path.abspath(pathname)
         # Create a new task
         new_task = task.Task()
 
-        if not new_task.create_task_by_absolute_path(abspath, library_id=library_id):
+        if not new_task.create_task_by_absolute_path(abspath, library_id=library_id, priority_score=priority_score):
             # If file exists in task queue already this will return false.
             # Do not carry on.
             return False

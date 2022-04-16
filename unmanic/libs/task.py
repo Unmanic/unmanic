@@ -137,6 +137,12 @@ class Task(object):
         library = Library(self.task.library_id)
         return library.get_name()
 
+    def get_task_library_priority_score(self):
+        if not self.task:
+            raise Exception('Unable to fetch task library ID. Task has not been set!')
+        library = Library(self.task.library_id)
+        return library.get_priority_score()
+
     def get_destination_data(self):
         if not self.task:
             raise Exception('Unable to fetch destination data. Task has not been set!')
@@ -191,7 +197,7 @@ class Task(object):
         # Get task matching the abspath
         self.task = Tasks.get(abspath=abspath)
 
-    def create_task_by_absolute_path(self, abspath, task_type='local', library_id=1):
+    def create_task_by_absolute_path(self, abspath, task_type='local', library_id=1, priority_score=0):
         """
         Creates the task by it's absolute path.
         If the task already exists in the list, then this will throw an exception and return false
@@ -201,6 +207,7 @@ class Task(object):
         :param abspath:
         :param task_type:
         :param library_id:
+        :param priority_score:
         :return:
         """
         try:
@@ -211,8 +218,11 @@ class Task(object):
             # Set the cache path to use during the transcoding
             self.set_cache_path()
 
+            # Fetch the library priority score also for this task
+            library_priority_score = self.get_task_library_priority_score()
+
             # Set the default priority to the ID of the task
-            self.task.priority = self.task.id
+            self.task.priority = int(self.task.id) + int(library_priority_score) + int(priority_score)
 
             # Set the task type
             self.task.type = task_type

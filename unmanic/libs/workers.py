@@ -71,10 +71,13 @@ class Worker(threading.Thread):
 
     worker_runners_info = {}
 
-    def __init__(self, thread_id, name, pending_queue, complete_queue):
+    def __init__(self, thread_id, name, worker_group_id, pending_queue, complete_queue):
         super(Worker, self).__init__(name=name)
         self.thread_id = thread_id
         self.name = name
+        self.worker_group_id = worker_group_id
+
+        self.current_task = None
         self.pending_queue = pending_queue
         self.complete_queue = complete_queue
 
@@ -99,7 +102,7 @@ class Worker(threading.Thread):
         while not self.redundant_flag.is_set():
             time.sleep(.2)  # Add delay for preventing loop maxing compute resources
 
-            # If the Foreman has paused this worker, then dont do anything
+            # If the Foreman has paused this worker, then don't do anything
             if self.paused_flag.is_set():
                 self.paused = True
                 # If the worker is paused, wait for 5 seconds before continuing the loop
@@ -107,21 +110,15 @@ class Worker(threading.Thread):
                 continue
             self.paused = False
 
-            # Set the worker as Idle - This will announce to the Foreman that its ready for a task
+            # Set the worker as Idle - This will announce to the Foreman that it's ready for a task
             self.idle = True
 
             # Wait for task
-            while not self.redundant_flag.is_set() and not self.pending_queue.empty():
+            while not self.redundant_flag.is_set() and self.current_task:
                 time.sleep(.2)  # Add delay for preventing loop maxing compute resources
 
                 try:
-                    # Pending task queue has an item available. Fetch it.
-                    next_task = self.pending_queue.get_nowait()
-
-                    # Configure worker for this task
-                    self.__set_current_task(next_task)
-
-                    # Process the set task task
+                    # Process the set task
                     self.__process_task_queue_item()
                 except queue.Empty:
                     continue
@@ -130,6 +127,16 @@ class Worker(threading.Thread):
                               level="exception")
 
         self._log("Stopping worker")
+
+    def set_task(self, new_task):
+        """Sets the given task to the worker class"""
+        # Ensure only one task can be set for a worker
+        if self.current_task:
+            return
+        # Set the task
+        self.current_task = new_task
+        self.worker_log = []
+        self.idle = False
 
     def get_status(self):
         """
@@ -187,11 +194,6 @@ class Worker(threading.Thread):
                 self._log("Exception in runners info of worker {}:".format(self.name), message2=str(e),
                           level="exception")
         return status
-
-    def __set_current_task(self, current_task):
-        """Sets the given task to the worker class"""
-        self.current_task = current_task
-        self.worker_log = []
 
     def __unset_current_task(self):
         self.current_task = None

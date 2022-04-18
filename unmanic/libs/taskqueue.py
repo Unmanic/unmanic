@@ -32,7 +32,7 @@
 
 from unmanic.libs import task
 from unmanic.libs import common
-from unmanic.libs.unmodels import Libraries
+from unmanic.libs.unmodels import Libraries, LibraryTags, Tags
 from unmanic.libs.unmodels.tasks import Tasks
 
 """
@@ -59,7 +59,7 @@ def build_tasks_count_query(status):
     return query.count()
 
 
-def build_tasks_query(status, sort_by='id', sort_order='asc', local_only=False, library_names=None):
+def build_tasks_query(status, sort_by='id', sort_order='asc', local_only=False, library_names=None, library_tags=None):
     """
     Return the first task item in the task list filtered by status
     and sorted by the self.sort_by and self.sort_order variables.
@@ -69,6 +69,7 @@ def build_tasks_query(status, sort_by='id', sort_order='asc', local_only=False, 
     :param sort_by:
     :param local_only:
     :param library_names:
+    :param library_tags:
     :return:
     """
     # pick query based on sort params
@@ -78,9 +79,14 @@ def build_tasks_query(status, sort_by='id', sort_order='asc', local_only=False, 
     if local_only:
         query = query.where((Tasks.type == 'local'))
 
-    if library_names:
-        query = query.join(Libraries, join_type='LEFT OUTER JOIN', on=(Libraries.id == Tasks.library_id))
-        query = query.where(Libraries.name.in_(library_names))
+    if library_names or library_tags:
+        query = query.join(Libraries, on=(Libraries.id == Tasks.library_id))
+        if library_names:
+            query = query.where(Libraries.name.in_(library_names))
+        if library_tags:
+            query = query.join(LibraryTags)
+            query = query.join(Tags)
+            query = query.where(Tags.name.in_(library_tags))
 
     # Limit to one result
     query = query.limit(1)
@@ -119,7 +125,7 @@ def build_tasks_query_full_task_list(status, sort_by='id', sort_order='asc', lim
     return query.dicts()
 
 
-def fetch_next_task_filtered(status, sort_by='id', sort_order='asc', local_only=False, library_names=None):
+def fetch_next_task_filtered(status, sort_by='id', sort_order='asc', local_only=False, library_names=None, library_tags=None):
     """
     Returns the next task in the task list for a given status
 
@@ -128,11 +134,12 @@ def fetch_next_task_filtered(status, sort_by='id', sort_order='asc', local_only=
     :param sort_by:
     :param local_only:
     :param library_names:
+    :param library_tags:
     :return:
     """
     # Fetch the task item first (to ensure it exists)
     task_item = build_tasks_query(status, sort_by=sort_by, sort_order=sort_order, local_only=local_only,
-                                  library_names=library_names)
+                                  library_names=library_names, library_tags=library_tags)
     if not task_item:
         return False
     # Set the task object by the abspath and return it
@@ -213,18 +220,19 @@ class TaskQueue(object):
     Get first task in task list based on status pending, in_progress or processed
     """
 
-    def get_next_pending_tasks(self, local_only=False, library_names=None):
+    def get_next_pending_tasks(self, local_only=False, library_names=None, library_tags=None):
         """
         Fetch the next pending task.
         Set that task status as 'in_progress' and then return it.
 
         :param local_only:
         :param library_names:
+        :param library_tags:
         :return:
         """
         # Fetch Task item matching the filters specified
         task_item = fetch_next_task_filtered('pending', sort_by=self.sort_by, sort_order=self.sort_order,
-                                             local_only=local_only, library_names=library_names)
+                                             local_only=local_only, library_names=library_names, library_tags=library_tags)
         return task_item
 
     def get_next_processed_tasks(self):

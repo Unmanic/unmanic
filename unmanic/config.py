@@ -72,14 +72,17 @@ class Config(object, metaclass=SingletonType):
         self.clear_pending_tasks_on_restart = True
 
         # Worker settings
-        self.number_of_workers = 1
-        self.worker_event_schedules = []
         self.cache_path = common.get_default_cache_path()
 
         # Link settings
         self.installation_name = ''
         self.remote_installations = []
         self.distributed_worker_count_target = 0
+
+        # Legacy config
+        # TODO: Remove this before next major version bump
+        self.number_of_workers = None
+        self.worker_event_schedules = None
 
         # Import env variables and override all previous settings.
         self.__import_settings_from_env()

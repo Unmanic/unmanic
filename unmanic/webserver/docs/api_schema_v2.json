@@ -1333,17 +1333,6 @@
                             "schedule_full_scan_minutes": 1440,
                             "follow_symlinks": true,
                             "run_full_scan_on_start": false,
-                            "number_of_workers": 1,
-                            "worker_event_schedules": [
-                                {
-                                    "repetition": "weekday",
-                                    "repetitionLabel": "Every Weekday",
-                                    "scheduleTime": "23:00",
-                                    "scheduleTask": "resume",
-                                    "scheduleTaskLabel": "Resume all workers",
-                                    "scheduleWorkerCount": 0
-                                }
-                            ],
                             "cache_path": "/tmp/unmanic"
                         }
                     }
@@ -1389,6 +1378,118 @@
                 },
                 "required": [
                     "installation"
+                ]
+            },
+            "WorkerEventScheduleResults": {
+                "type": "object",
+                "properties": {
+                    "repetition": {
+                        "type": "string",
+                        "description": "",
+                        "example": "daily"
+                    },
+                    "schedule_task": {
+                        "type": "string",
+                        "description": "The type of task. ['count', 'pause', 'resume']",
+                        "example": "count"
+                    },
+                    "schedule_time": {
+                        "type": "string",
+                        "description": "",
+                        "example": "The time when the task should be executed on"
+                    },
+                    "schedule_worker_count": {
+                        "type": "integer",
+                        "description": "The worker count to set (only valid if schedule_task is count)",
+                        "example": 4
+                    }
+                },
+                "required": [
+                    "repetition",
+                    "schedule_task",
+                    "schedule_time"
+                ]
+            },
+            "SettingsWorkerGroupConfig": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "",
+                        "example": 1
+                    },
+                    "locked": {
+                        "type": "boolean",
+                        "description": "If the worker group is locked and cannot be deleted",
+                        "example": false
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the worker group",
+                        "example": "Default Group"
+                    },
+                    "number_of_workers": {
+                        "type": "integer",
+                        "description": "The number of workers in this group",
+                        "example": 3
+                    },
+                    "worker_event_schedules": {
+                        "minItems": 0,
+                        "description": "Any scheduled evenets for this worker group",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WorkerEventScheduleResults"
+                        }
+                    },
+                    "tags": {
+                        "type": "array",
+                        "description": "A list of tags associated with this worker",
+                        "example": [
+                            "GPU",
+                            "priority"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "locked",
+                    "name",
+                    "number_of_workers",
+                    "tags",
+                    "worker_event_schedules"
+                ]
+            },
+            "WorkerGroupsList": {
+                "type": "object",
+                "properties": {
+                    "worker_groups": {
+                        "minItems": 0,
+                        "description": "Results",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SettingsWorkerGroupConfig"
+                        }
+                    }
+                },
+                "required": [
+                    "worker_groups"
+                ]
+            },
+            "RequestDatabaseItemById": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "The ID of the table item",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "id"
                 ]
             },
             "RequestRemoteInstallationLinkConfig": {
@@ -4311,6 +4412,267 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/SettingsRemoteInstallationData"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/worker_groups": {
+            "get": {
+                "description": "Returns a list of all worker groups.",
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns a list of all worker groups.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WorkerGroupsList"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/worker_group/read": {
+            "post": {
+                "description": "Read the configuration of a worker group",
+                "requestBody": {
+                    "description": "The ID of the worker group",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestDatabaseItemById"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sample response: Returns the worker group configuration.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SettingsWorkerGroupConfig"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/worker_group/write": {
+            "post": {
+                "description": "Write the configuration of a worker group",
+                "requestBody": {
+                    "description": "The config of a worker group that is to be saved",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SettingsWorkerGroupConfig"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful request; Returns success status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/worker_group/remove": {
+            "delete": {
+                "description": "Remove a worker group",
+                "requestBody": {
+                    "description": "Requested a worker group to remove.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestDatabaseItemById"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful request; Returns success status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
                                 }
                             }
                         }

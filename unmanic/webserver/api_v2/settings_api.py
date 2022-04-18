@@ -36,13 +36,15 @@ from unmanic import config
 from unmanic.libs.installation_link import Links
 from unmanic.libs.library import Library
 from unmanic.libs.uiserver import UnmanicDataQueues
+from unmanic.libs.worker_group import WorkerGroup
 from unmanic.webserver.api_v2.base_api_handler import BaseApiError, BaseApiHandler
-from unmanic.webserver.api_v2.schema.schemas import RequestLibraryByIdSchema, RequestRemoteInstallationLinkConfigSchema, \
-    SettingsLibrariesListSchema, SettingsLibraryConfigReadAndWriteSchema, SettingsLibraryPluginConfigExportSchema, \
+from unmanic.webserver.api_v2.schema.schemas import RequestDatabaseItemByIdSchema, RequestLibraryByIdSchema, \
+    RequestRemoteInstallationLinkConfigSchema, SettingsLibrariesListSchema, SettingsLibraryConfigReadAndWriteSchema, \
+    SettingsLibraryPluginConfigExportSchema, \
     SettingsLibraryPluginConfigImportSchema, SettingsReadAndWriteSchema, \
     SettingsRemoteInstallationDataSchema, \
     SettingsRemoteInstallationLinkConfigSchema, SettingsSystemConfigSchema, \
-    RequestSettingsRemoteInstallationAddressValidationSchema
+    RequestSettingsRemoteInstallationAddressValidationSchema, SettingsWorkerGroupConfigSchema, WorkerGroupsListSchema
 from unmanic.webserver.helpers import plugins
 
 
@@ -71,6 +73,26 @@ class ApiSettingsHandler(BaseApiHandler):
             "path_pattern":      r"/settings/link/validate",
             "supported_methods": ["POST"],
             "call_method":       "validate_remote_installation",
+        },
+        {
+            "path_pattern":      r"/settings/worker_groups",
+            "supported_methods": ["GET"],
+            "call_method":       "get_all_worker_groups",
+        },
+        {
+            "path_pattern":      r"/settings/worker_group/read",
+            "supported_methods": ["POST"],
+            "call_method":       "read_worker_group_config",
+        },
+        {
+            "path_pattern":      r"/settings/worker_group/write",
+            "supported_methods": ["POST"],
+            "call_method":       "write_worker_group_config",
+        },
+        {
+            "path_pattern":      r"/settings/worker_group/remove",
+            "supported_methods": ["DELETE"],
+            "call_method":       "remove_worker_group",
         },
         {
             "path_pattern":      r"/settings/link/read",
@@ -349,6 +371,262 @@ class ApiSettingsHandler(BaseApiHandler):
                 }
             )
             self.write_success(response)
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def get_all_worker_groups(self):
+        """
+        Settings - get list of all worker groups
+        ---
+        description: Returns a list of all worker groups.
+        responses:
+            200:
+                description: 'Sample response: Returns a list of all worker groups.'
+                content:
+                    application/json:
+                        schema:
+                            WorkerGroupsListSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            worker_groups = WorkerGroup.get_all_worker_groups()
+            response = self.build_response(
+                WorkerGroupsListSchema(),
+                {
+                    "worker_groups": worker_groups,
+                }
+            )
+            self.write_success(response)
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def read_worker_group_config(self):
+        """
+        Settings - read the configuration of a worker group
+        ---
+        description: Read the configuration of a worker group
+        requestBody:
+            description: The ID of the worker group
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestDatabaseItemByIdSchema
+        responses:
+            200:
+                description: 'Sample response: Returns the worker group configuration.'
+                content:
+                    application/json:
+                        schema:
+                            SettingsWorkerGroupConfigSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(RequestDatabaseItemByIdSchema())
+
+            # Fetch all data for this worker group
+            worker_group = WorkerGroup(json_request.get('id'))
+            if not worker_group:
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Unable to find worker group config by its ID")
+                self.write_error()
+                return
+
+            response = self.build_response(
+                SettingsWorkerGroupConfigSchema(),
+                {
+                    "id":                     worker_group.get_id(),
+                    "locked":                 worker_group.get_locked(),
+                    "name":                   worker_group.get_name(),
+                    "number_of_workers":      worker_group.get_number_of_workers(),
+                    "worker_event_schedules": worker_group.get_worker_event_schedules(),
+                    "tags":                   worker_group.get_tags(),
+                }
+            )
+            self.write_success(response)
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def write_worker_group_config(self):
+        """
+        Settings - write the configuration of a worker group
+        ---
+        description: Write the configuration of a worker group
+        requestBody:
+            description: The config of a worker group that is to be saved
+            required: True
+            content:
+                application/json:
+                    schema:
+                        SettingsWorkerGroupConfigSchema
+        responses:
+            200:
+                description: 'Successful request; Returns success status'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(SettingsWorkerGroupConfigSchema())
+
+            # Write config for this worker group
+            if not json_request.get('id'):
+                WorkerGroup.create(json_request)
+            else:
+                from unmanic.webserver.helpers import settings
+                settings.save_worker_group_config(json_request)
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def remove_worker_group(self):
+        """
+        Settings - remove a worker group
+        ---
+        description: Remove a worker group
+        requestBody:
+            description: Requested a worker group to remove.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestDatabaseItemByIdSchema
+        responses:
+            200:
+                description: 'Successful request; Returns success status'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(RequestDatabaseItemByIdSchema())
+
+            # Fetch existing worker group by ID
+            worker_group = WorkerGroup(json_request.get('id'))
+
+            # Delete the worker group
+            if not worker_group.delete():
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to remove worker group by its ID")
+                self.write_error()
+                return
+
+            self.write_success()
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
@@ -708,7 +986,7 @@ class ApiSettingsHandler(BaseApiHandler):
 
     def remove_library(self):
         """
-        Plugins - remove
+        Settings - remove a library
         ---
         description: Remove a library
         requestBody:

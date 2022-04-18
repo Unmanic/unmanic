@@ -689,6 +689,15 @@ components:
       required:
       - id_list
       type: object
+    RequestDatabaseItemById:
+      properties:
+        id:
+          description: The ID of the table item
+          example: 1
+          type: integer
+      required:
+      - id
+      type: object
     RequestDirectoryListingData:
       properties:
         current_path:
@@ -1138,17 +1147,9 @@ components:
             enable_library_scanner: false
             follow_symlinks: true
             library_path: /library
-            number_of_workers: 1
             run_full_scan_on_start: false
             schedule_full_scan_minutes: 1440
             ui_port: 8888
-            worker_event_schedules:
-            - repetition: weekday
-              repetitionLabel: Every Weekday
-              scheduleTask: resume
-              scheduleTaskLabel: Resume all workers
-              scheduleTime: '23:00'
-              scheduleWorkerCount: 0
           type: object
       required:
       - settings
@@ -1194,6 +1195,47 @@ components:
       required:
       - configuration
       type: object
+    SettingsWorkerGroupConfig:
+      properties:
+        id:
+          description: ''
+          example: 1
+          nullable: true
+          type: integer
+        locked:
+          description: If the worker group is locked and cannot be deleted
+          example: false
+          type: boolean
+        name:
+          description: The name of the worker group
+          example: Default Group
+          type: string
+        number_of_workers:
+          description: The number of workers in this group
+          example: 3
+          type: integer
+        worker_event_schedules:
+          description: Any scheduled evenets for this worker group
+          items:
+            $ref: '#/components/schemas/WorkerEventScheduleResults'
+          minItems: 0
+          type: array
+        tags:
+          description: A list of tags associated with this worker
+          example:
+          - GPU
+          - priority
+          items:
+            type: string
+          type: array
+      required:
+      - id
+      - locked
+      - name
+      - number_of_workers
+      - tags
+      - worker_event_schedules
+      type: object
     TaskDownloadLink:
       properties:
         link_id:
@@ -1211,6 +1253,40 @@ components:
           type: string
       required:
       - version
+      type: object
+    WorkerEventScheduleResults:
+      properties:
+        repetition:
+          description: ''
+          example: daily
+          type: string
+        schedule_task:
+          description: The type of task. ['count', 'pause', 'resume']
+          example: count
+          type: string
+        schedule_time:
+          description: ''
+          example: The time when the task should be executed on
+          type: string
+        schedule_worker_count:
+          description: The worker count to set (only valid if schedule_task is count)
+          example: 4
+          type: integer
+      required:
+      - repetition
+      - schedule_task
+      - schedule_time
+      type: object
+    WorkerGroupsList:
+      properties:
+        worker_groups:
+          description: Results
+          items:
+            $ref: '#/components/schemas/SettingsWorkerGroupConfig'
+          minItems: 0
+          type: array
+      required:
+      - worker_groups
       type: object
     WorkerStatusResults:
       properties:
@@ -2840,6 +2916,163 @@ paths:
               schema:
                 $ref: '#/components/schemas/SettingsRemoteInstallationData'
           description: 'Sample response: Returns the remote installation data.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /settings/worker_groups:
+    get:
+      description: Returns a list of all worker groups.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerGroupsList'
+          description: 'Sample response: Returns a list of all worker groups.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /settings/worker_group/read:
+    post:
+      description: Read the configuration of a worker group
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestDatabaseItemById'
+        description: The ID of the worker group
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsWorkerGroupConfig'
+          description: 'Sample response: Returns the worker group configuration.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /settings/worker_group/write:
+    post:
+      description: Write the configuration of a worker group
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsWorkerGroupConfig'
+        description: The config of a worker group that is to be saved
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: Successful request; Returns success status
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /settings/worker_group/remove:
+    delete:
+      description: Remove a worker group
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestDatabaseItemById'
+        description: Requested a worker group to remove.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:

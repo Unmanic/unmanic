@@ -178,6 +178,16 @@ class TableRecordsSuccessSchema(BaseSchema):
     )
 
 
+class RequestDatabaseItemByIdSchema(BaseSchema):
+    """Schema to request a single table item given its ID"""
+
+    id = fields.Int(
+        required=True,
+        description="The ID of the table item",
+        example=1,
+    )
+
+
 # DOCS
 # ====
 
@@ -961,17 +971,6 @@ class SettingsReadAndWriteSchema(BaseSchema):
             "schedule_full_scan_minutes": 1440,
             "follow_symlinks":            True,
             "run_full_scan_on_start":     False,
-            "number_of_workers":          1,
-            "worker_event_schedules":     [
-                {
-                    "repetition":          "weekday",
-                    "repetitionLabel":     "Every Weekday",
-                    "scheduleTime":        "23:00",
-                    "scheduleTask":        "resume",
-                    "scheduleTaskLabel":   "Resume all workers",
-                    "scheduleWorkerCount": 0
-                }
-            ],
             "cache_path":                 "/tmp/unmanic"
         },
     )
@@ -984,6 +983,82 @@ class SettingsSystemConfigSchema(BaseSchema):
         required=True,
         description="The current system configuration",
         example={},
+    )
+
+
+class WorkerEventScheduleResultsSchema(BaseSchema):
+    """Schema for worker status results"""
+
+    repetition = fields.Str(
+        required=True,
+        description="",
+        example="daily",
+    )
+    schedule_task = fields.Str(
+        required=True,
+        description="The type of task. ['count', 'pause', 'resume']",
+        example="count",
+    )
+    schedule_time = fields.Str(
+        required=True,
+        description="",
+        example="The time when the task should be executed on",
+    )
+    schedule_worker_count = fields.Int(
+        required=False,
+        description="The worker count to set (only valid if schedule_task is count)",
+        example=4,
+    )
+
+
+class SettingsWorkerGroupConfigSchema(BaseSchema):
+    """Schema to display the config of a single worker group"""
+
+    id = fields.Int(
+        required=True,
+        description="",
+        example=1,
+        allow_none=True,
+    )
+    locked = fields.Boolean(
+        required=True,
+        description="If the worker group is locked and cannot be deleted",
+        example=False,
+    )
+    name = fields.Str(
+        required=True,
+        description="The name of the worker group",
+        example="Default Group",
+    )
+    number_of_workers = fields.Int(
+        required=True,
+        description="The number of workers in this group",
+        example=3,
+    )
+    worker_event_schedules = fields.Nested(
+        WorkerEventScheduleResultsSchema,
+        required=True,
+        description="Any scheduled evenets for this worker group",
+        many=True,
+        validate=validate.Length(min=0),
+    )
+    tags = fields.List(
+        cls_or_instance=fields.Str,
+        required=True,
+        description="A list of tags associated with this worker",
+        example=['GPU', 'priority'],
+    )
+
+
+class WorkerGroupsListSchema(BaseSchema):
+    """Schema to list all worker groups"""
+
+    worker_groups = fields.Nested(
+        SettingsWorkerGroupConfigSchema,
+        required=True,
+        description="Results",
+        many=True,
+        validate=validate.Length(min=0),
     )
 
 

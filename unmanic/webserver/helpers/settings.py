@@ -29,6 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+from unmanic import config
 from unmanic.libs.library import Library
 from unmanic.libs.unplugins import PluginExecutor
 from unmanic.webserver.helpers import plugins
@@ -100,3 +101,27 @@ def save_library_config(library_id, library_config=None, plugin_config=None):
 
     # Save config
     return library.save()
+
+
+def save_worker_group_config(data):
+    """
+    Save a complete worker group configuration
+
+    :param data:
+    :return:
+    """
+    from unmanic.libs.worker_group import WorkerGroup
+    worker_group = WorkerGroup(data.get('id'))
+    # Store locked status
+    worker_group.set_locked(data.get('locked', worker_group.get_locked()))
+    # Store name
+    worker_group.set_name(data.get('name', worker_group.get_name()))
+    # Store the number of workers
+    worker_group.set_number_of_workers(data.get('number_of_workers', worker_group.get_number_of_workers()))
+
+    # Set lists
+    worker_group.set_tags(data.get('tags', worker_group.get_tags()))
+    worker_group.set_worker_event_schedules(data.get('worker_event_schedules', worker_group.get_worker_event_schedules()))
+
+    # Save config
+    return worker_group.save()

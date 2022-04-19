@@ -79,14 +79,17 @@ def build_tasks_query(status, sort_by='id', sort_order='asc', local_only=False, 
     if local_only:
         query = query.where((Tasks.type == 'local'))
 
-    if library_names or library_tags:
-        query = query.join(Libraries, on=(Libraries.id == Tasks.library_id))
-        if library_names:
-            query = query.where(Libraries.name.in_(library_names))
+    query = query.join(Libraries, on=(Libraries.id == Tasks.library_id))
+    if library_names is not None:
+        query = query.where(Libraries.name.in_(library_names))
+    if library_tags is not None:
+        query = query.join(LibraryTags, join_type='LEFT OUTER JOIN')
+        query = query.join(Tags, join_type='LEFT OUTER JOIN')
         if library_tags:
-            query = query.join(LibraryTags)
-            query = query.join(Tags)
             query = query.where(Tags.name.in_(library_tags))
+        else:
+            # Handle a query where the list is empty. In this case we want to match for only libraries that have no tags
+            query = query.where(Tags.name.is_null())
 
     # Limit to one result
     query = query.limit(1)

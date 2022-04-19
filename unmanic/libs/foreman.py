@@ -402,12 +402,13 @@ class Foreman(threading.Thread):
         thread.start()
         self.worker_threads[worker_id] = thread
 
-    def fetch_available_worker_id(self):
+    def fetch_available_worker_ids(self):
+        tread_ids = []
         for thread in self.worker_threads:
             if self.worker_threads[thread].idle and self.worker_threads[thread].is_alive():
                 if not self.worker_threads[thread].paused:
-                    return self.worker_threads[thread].thread_id
-        return None
+                    tread_ids.append(self.worker_threads[thread].thread_id)
+        return tread_ids
 
     def check_for_idle_workers(self):
         for thread in self.worker_threads:
@@ -432,10 +433,7 @@ class Foreman(threading.Thread):
     def get_tags_configured_for_worker(self, worker_id):
         assigned_worker_group_id = self.worker_threads[worker_id].worker_group_id
         worker_group = WorkerGroup(group_id=assigned_worker_group_id)
-        tags = worker_group.get_tags()
-        if not tags:
-            return None
-        return tags
+        return worker_group.get_tags()
 
     def postprocessor_queue_full(self):
         """
@@ -651,9 +649,9 @@ class Foreman(threading.Thread):
                         # For local workers, process either local tasks or tasks provided from a remote installation
                         get_local_pending_tasks_only = False
                         # Specify the worker ID that will handle the next task
-                        worker_id = self.fetch_available_worker_id()
+                        worker_ids = self.fetch_available_worker_ids()
                         # If not workers were available (possibly due to being recycled), just continue loop
-                        if not worker_id:
+                        if not worker_ids:
                             continue
                     elif self.check_for_idle_remote_workers():
                         # Remote workers are available
@@ -673,9 +671,18 @@ class Foreman(threading.Thread):
                     # Fetch the next item in the queue
                     if process_local:
                         # For local processing, ensure tags match the available library and worker
-                        library_tags = self.get_tags_configured_for_worker(worker_id)
-                        next_item_to_process = self.task_queue.get_next_pending_tasks(local_only=get_local_pending_tasks_only,
-                                                                                      library_tags=library_tags)
+                        next_item_to_process = None
+                        for worker_id in worker_ids:
+                            library_tags = self.get_tags_configured_for_worker(worker_id)
+                            next_item_to_process = self.task_queue.get_next_pending_tasks(
+                                local_only=get_local_pending_tasks_only,
+                                library_tags=library_tags)
+                            if next_item_to_process:
+                                break
+                        # If no worker ID was assigned to the given item, then try again in 2 seconds
+                        if not worker_id:
+                            time.sleep(3)
+                            continue
                     else:
                         # For remote items, run a search matching an available remote installation library
                         remote_library_names = self.get_available_remote_library_names()

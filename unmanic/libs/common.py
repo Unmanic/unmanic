@@ -234,7 +234,7 @@ def json_dump_to_file(json_data, out_file, check=True, rollback_on_fail=True):
                 data = json.load(infile)
         except Exception as e:
             result['success'] = False
-            result['errors'].append("JSON file invalid")
+            result['errors'].append("JSON file invalid - {}".format(e))
 
     # If data save was unsuccessful and the rollback_on_fail param is flagged
     #   and there is a temp file set, roll back to old file

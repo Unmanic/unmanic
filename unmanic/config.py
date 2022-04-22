@@ -196,7 +196,7 @@ class Config(object, metaclass=SingletonType):
         result = common.json_dump_to_file(data, settings_file)
         if not result['success']:
             for message in result['errors']:
-                self._log("Exception:", message2=str(message), level="exception")
+                self._log("Error:", message2=str(message), level="error")
             raise Exception("Exception in writing settings to file")
 
     def get_config_item(self, key):
@@ -244,7 +244,10 @@ class Config(object, metaclass=SingletonType):
 
         # Save settings (if requested)
         if save_settings:
-            self.__write_settings_to_file()
+            try:
+                self.__write_settings_to_file()
+            except Exception as e:
+                self._log("Failed to write settings to file: ", message2=str(self.get_config_as_dict()), level="exception")
 
     def set_bulk_config_items(self, items, save_settings=True):
         """

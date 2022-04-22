@@ -597,6 +597,12 @@ class Foreman(threading.Thread):
 
     def run(self):
         self._log("Starting Foreman Monitor loop")
+
+        # Flag to force checking for idle remote workers when set to False.
+        # This will prevent always looping on idle local workers when the local worker's
+        # tags prevent them from taking up tasks
+        allow_local_idle_worker_check = True
+
         while not self.abort_flag.is_set():
             time.sleep(1)
 
@@ -642,8 +648,8 @@ class Foreman(threading.Thread):
                         continue
 
                     # Check if there are any free workers
-                    worker_id = None
-                    if self.check_for_idle_workers():
+                    worker_ids = []
+                    if allow_local_idle_worker_check and self.check_for_idle_workers():
                         # Local workers are available
                         process_local = True
                         # For local workers, process either local tasks or tasks provided from a remote installation
@@ -654,11 +660,13 @@ class Foreman(threading.Thread):
                         if not worker_ids:
                             continue
                     elif self.check_for_idle_remote_workers():
+                        allow_local_idle_worker_check = True
                         # Remote workers are available
                         process_local = False
                         # For remote workers, only process local tasks. Don't hand remote tasks to another remote installation
                         get_local_pending_tasks_only = True
                     else:
+                        allow_local_idle_worker_check = True
                         # All workers are currently busy
                         time.sleep(1)
                         continue
@@ -672,16 +680,19 @@ class Foreman(threading.Thread):
                     if process_local:
                         # For local processing, ensure tags match the available library and worker
                         next_item_to_process = None
+                        available_worker_id = None
                         for worker_id in worker_ids:
                             library_tags = self.get_tags_configured_for_worker(worker_id)
                             next_item_to_process = self.task_queue.get_next_pending_tasks(
                                 local_only=get_local_pending_tasks_only,
                                 library_tags=library_tags)
                             if next_item_to_process:
+                                available_worker_id = worker_id
                                 break
-                        # If no worker ID was assigned to the given item, then try again in 2 seconds
-                        if not worker_id:
-                            time.sleep(3)
+                        # If no local worker ID was assigned to the given item, then try again in 2 seconds
+                        if not available_worker_id:
+                            allow_local_idle_worker_check = False
+                            time.sleep(1)
                             continue
                     else:
                         # For remote items, run a search matching an available remote installation library

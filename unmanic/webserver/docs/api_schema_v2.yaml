@@ -230,11 +230,20 @@ components:
           description: If the library is locked and cannot be deleted
           example: false
           type: boolean
+        tags:
+          description: A list of tags associated with this library
+          example:
+          - GPU
+          - priority
+          items:
+            type: string
+          type: array
       required:
       - id
       - locked
       - name
       - path
+      - tags
       type: object
     PendingTasks:
       properties:

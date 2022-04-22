@@ -277,7 +277,10 @@ class PostProcessor(threading.Thread):
             self._log("Remote source file '{}' does not exist!".format(source_data.get('abspath')), level="warning")
 
         # Copy final cache file to original directory
-        self.__copy_file(cache_path, destination_data.get('abspath'), [], 'DEFAULT')
+        if os.path.exists(cache_path):
+            self.__copy_file(cache_path, destination_data.get('abspath'), [], 'DEFAULT')
+        else:
+            self._log("Final cache file '{}' does not exist!".format(cache_path), level="warning")
 
         # Cleanup cache files
         self.__cleanup_cache_files(cache_path)

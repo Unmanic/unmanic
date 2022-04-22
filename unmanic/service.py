@@ -227,8 +227,8 @@ class Service:
             main_logger.info("Thread {} has successfully stopped".format(thread['name']))
         self.threads = []
 
-    def sig_handle(self, frame):
-        main_logger.info("SIGTERM Received")
+    def sig_handle(self, signum, frame):
+        main_logger.info("Received {}".format(signum))
         self.stop()
 
     def stop(self):

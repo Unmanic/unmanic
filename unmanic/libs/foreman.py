@@ -206,8 +206,12 @@ class Foreman(threading.Thread):
             return
 
         for wg in WorkerGroup.get_all_worker_groups():
-            worker_group = WorkerGroup(group_id=wg.get('id'))
-            event_schedules = worker_group.get_worker_event_schedules()
+            try:
+                worker_group = WorkerGroup(group_id=wg.get('id'))
+                event_schedules = worker_group.get_worker_event_schedules()
+            except Exception as e:
+                self._log("While iterating through the worker groups, the worker group disappeared", str(e), level='debug')
+                continue
 
             for event_schedule in event_schedules:
                 schedule_time = event_schedule.get('schedule_time')
@@ -431,6 +435,7 @@ class Foreman(threading.Thread):
         return library_names
 
     def get_tags_configured_for_worker(self, worker_id):
+        """Fetch the tags for a given worker ID"""
         assigned_worker_group_id = self.worker_threads[worker_id].worker_group_id
         worker_group = WorkerGroup(group_id=assigned_worker_group_id)
         return worker_group.get_tags()
@@ -682,7 +687,13 @@ class Foreman(threading.Thread):
                         next_item_to_process = None
                         available_worker_id = None
                         for worker_id in worker_ids:
-                            library_tags = self.get_tags_configured_for_worker(worker_id)
+                            try:
+                                library_tags = self.get_tags_configured_for_worker(worker_id)
+                            except Exception as e:
+                                # This will happen if the worker group is deleted
+                                self._log("Error while fetching the tags for the configured worker", str(e), level='debug')
+                                # Break this fore loop. The main while loop wil clean up these workers on the next pass
+                                break
                             next_item_to_process = self.task_queue.get_next_pending_tasks(
                                 local_only=get_local_pending_tasks_only,
                                 library_tags=library_tags)

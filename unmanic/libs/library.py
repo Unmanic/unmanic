@@ -104,6 +104,7 @@ class Library(object):
                 'id':     1,
                 'name':   generate_random_library_name(),
                 'path':   default_library_path,
+                'tags':   [],
                 'locked': False,
             }
             Libraries.create(**default_library)
@@ -116,12 +117,19 @@ class Library(object):
             if lib.id == 1 and lib.path != default_library_path:
                 lib.path = default_library_path
                 lib.save()
-            libraries.append({
+            # Create library config dictionary
+            library_config = {
                 'id':     lib.id,
                 'name':   lib.name,
                 'path':   lib.path,
+                'tags':   [],
                 'locked': lib.locked,
-            })
+            }
+            # Append tags
+            for tag in lib.tags.order_by(Tags.name):
+                library_config['tags'].append(tag.name)
+
+            libraries.append(library_config)
 
         # Return the list of libraries
         return libraries

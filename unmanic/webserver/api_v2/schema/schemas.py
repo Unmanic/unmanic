@@ -1140,6 +1140,12 @@ class LibraryResultsSchema(BaseSchema):
         description="If the library is locked and cannot be deleted",
         example=False,
     )
+    tags = fields.List(
+        cls_or_instance=fields.Str,
+        required=True,
+        description="A list of tags associated with this library",
+        example=['GPU', 'priority'],
+    )
 
 
 class SettingsLibrariesListSchema(BaseSchema):

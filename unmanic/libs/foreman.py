@@ -459,8 +459,10 @@ class Foreman(threading.Thread):
         # Include a count of all available and busy remote workers for the postprocessor queue limit
         limit += len(self.available_remote_managers)
         limit += len(self.remote_task_manager_threads)
-        if len(self.task_queue.list_processed_tasks()) > limit:
-            self._log("Postprocessor queue is over {}. Halting feeding workers until it drops.".format(limit), level='warning')
+        current_count = len(self.task_queue.list_processed_tasks())
+        if current_count > limit:
+            msg = "There are currently {} items in the post-processor queue. Halting feeding workers until it drops below {}."
+            self._log(msg.format(current_count, limit), level='warning')
             frontend_messages.update(
                 {
                     'id':      'pendingTaskHaltedPostProcessorQueueFull',

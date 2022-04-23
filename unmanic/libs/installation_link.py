@@ -1209,7 +1209,7 @@ class RemoteTaskManager(threading.Thread):
             if task_status == 'complete':
                 break
             elif not all_task_states:
-                polling_delay = 30
+                polling_delay = 10
                 last_status_fetch = time_now
                 continue
             elif all_task_states.get('results') and task_status == '':
@@ -1218,7 +1218,7 @@ class RemoteTaskManager(threading.Thread):
             elif task_status != 'in_progress':
                 # Mark this as the last time run
                 last_status_fetch = time_now
-                polling_delay = 15
+                polling_delay = 10
                 continue
 
             # Check if we know the task's worker ID already

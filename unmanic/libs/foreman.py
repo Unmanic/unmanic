@@ -688,10 +688,10 @@ class Foreman(threading.Thread):
                         continue
 
                     # Fetch the next item in the queue
+                    available_worker_id = None
+                    next_item_to_process = None
                     if process_local:
                         # For local processing, ensure tags match the available library and worker
-                        next_item_to_process = None
-                        available_worker_id = None
                         for worker_id in worker_ids:
                             try:
                                 library_tags = self.get_tags_configured_for_worker(worker_id)
@@ -724,7 +724,7 @@ class Foreman(threading.Thread):
                             self._log("Exception in fetching task absolute path", message2=str(e), level="exception")
                         success = self.hand_task_to_workers(next_item_to_process, local=process_local,
                                                             library_name=next_item_to_process.get_task_library_name(),
-                                                            worker_id=worker_id)
+                                                            worker_id=available_worker_id)
                         if not success:
                             self._log("Re-queueing tasks. Unable to find worker capable of processing task '{}'".format(
                                 next_item_to_process.get_source_abspath()), level="warning")

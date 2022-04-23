@@ -36,6 +36,7 @@ import threading
 import time
 
 import requests
+from requests.auth import HTTPBasicAuth
 from requests_toolbelt import MultipartEncoder
 
 from unmanic import config
@@ -43,6 +44,29 @@ from unmanic.libs import common, session, task, unlogger
 from unmanic.libs.library import Library
 from unmanic.libs.session import Session
 from unmanic.libs.singleton import SingletonType
+
+
+class RequestHandler:
+
+    def __init__(self, *args, **kwargs):
+        self.auth = kwargs.get('auth', '')
+        self.username = kwargs.get('username')
+        self.password = kwargs.get('password')
+
+    def __get_request_auth(self):
+        request_auth = None
+        if self.auth and self.auth.lower() == 'basic':
+            request_auth = HTTPBasicAuth(self.username, self.password)
+        return request_auth
+
+    def get(self, url, **kwargs):
+        return requests.get(url, auth=self.__get_request_auth(), **kwargs)
+
+    def post(self, url, **kwargs):
+        return requests.post(url, auth=self.__get_request_auth(), **kwargs)
+
+    def delete(self, url, **kwargs):
+        return requests.delete(url, auth=self.__get_request_auth(), **kwargs)
 
 
 class Links(object, metaclass=SingletonType):
@@ -79,6 +103,9 @@ class Links(object, metaclass=SingletonType):
     def __generate_default_config(self, config_dict: dict):
         return {
             "address":                         config_dict.get('address', '???'),
+            "auth":                            config_dict.get('auth', 'None'),
+            "username":                        config_dict.get('username', ''),
+            "password":                        config_dict.get('password', ''),
             "enable_receiving_tasks":          config_dict.get('enable_receiving_tasks', False),
             "enable_sending_tasks":            config_dict.get('enable_sending_tasks', False),
             "enable_task_preloading":          config_dict.get('enable_task_preloading', True),
@@ -91,82 +118,104 @@ class Links(object, metaclass=SingletonType):
             "last_updated":                    config_dict.get('last_updated', time.time()),
         }
 
-    def acquire_network_transfer_lock(self, url):
+    def acquire_network_transfer_lock(self, url, transfer_limit=1):
         """
         Limit transfers to each installation to 1 at a time
 
         :param url:
+        :param transfer_limit:
         :return:
         """
         time_now = time.time()
         lock = threading.RLock()
+        # Limit maximum transfer limit to 5
+        if transfer_limit > 5:
+            transfer_limit = 5
+        # Acquire a lock if one is available
         with lock:
-            if self._network_transfer_lock.get(url, {}).get('expires', 0) < time_now:
-                # Create new upload lock that will expire in 1 minute
-                self._network_transfer_lock[url] = {
-                    'expires': (time_now + 60),
-                }
-                # Return success
-                return True
+            for tx_lock in range(transfer_limit):
+                lock_key = "[{}]-{}".format(tx_lock, url)
+                if self._network_transfer_lock.get(lock_key, {}).get('expires', 0) < time_now:
+                    # Create new upload lock that will expire in 1 minute
+                    self._network_transfer_lock[lock_key] = {
+                        'expires': (time_now + 60),
+                    }
+                    # Return success
+                    return lock_key
             # Failed to acquire network transfer lock
             return False
 
-    def release_network_transfer_lock(self, url):
+    def release_network_transfer_lock(self, lock_key):
         """
-        Expire the transfer lock for the given URL
+        Expire the transfer lock for the given lock_key
 
-        :param url:
+        :param lock_key:
         :return:
         """
         lock = threading.RLock()
         with lock:
             # Expire the lock for this address
-            self._network_transfer_lock[url] = {}
+            self._network_transfer_lock[lock_key] = {}
             return True
 
-    def remote_api_get(self, remote_url: str, endpoint: str):
+    def remote_api_get(self, remote_config: dict, endpoint: str):
         """
         GET to remote installation API
 
-        :param remote_url:
+        :param remote_config:
         :param endpoint:
         :return:
         """
-        address = self.__format_address(remote_url)
+        request_handler = RequestHandler(
+            auth=remote_config.get('auth'),
+            username=remote_config.get('username'),
+            password=remote_config.get('password'),
+        )
+        address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
-        res = requests.get(url, timeout=2)
+        res = request_handler.get(url, timeout=2)
         if res.status_code != 200:
             return {}
         return res.json()
 
-    def remote_api_post(self, remote_url: str, endpoint: str, data: dict, timeout=2):
+    def remote_api_post(self, remote_config: dict, endpoint: str, data: dict, timeout=2):
         """
         POST to remote installation API
 
-        :param remote_url:
+        :param remote_config:
         :param endpoint:
         :param data:
         :param timeout:
         :return:
         """
-        address = self.__format_address(remote_url)
+        request_handler = RequestHandler(
+            auth=remote_config.get('auth'),
+            username=remote_config.get('username'),
+            password=remote_config.get('password'),
+        )
+        address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
-        res = requests.post(url, json=data, timeout=timeout)
+        res = request_handler.post(url, json=data, timeout=timeout)
         if res.status_code == 200:
             return res.json()
         return {}
 
-    def remote_api_post_file(self, remote_url: str, endpoint: str, path: str):
+    def remote_api_post_file(self, remote_config: dict, endpoint: str, path: str):
         """
         Send a file to the remote installation
         No timeout is set so the request will continue until closed
 
-        :param remote_url:
+        :param remote_config:
         :param endpoint:
         :param path:
         :return:
         """
-        address = self.__format_address(remote_url)
+        request_handler = RequestHandler(
+            auth=remote_config.get('auth'),
+            username=remote_config.get('username'),
+            password=remote_config.get('password'),
+        )
+        address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
         # NOTE: If you remove a content type from the upload (text/plain) the file upload fails
         # NOTE2: The 'ith open(path, "rb") as f' method reads the file into memory before uploading.
@@ -177,32 +226,50 @@ class Links(object, metaclass=SingletonType):
         #           res = requests.post(url, files=files)
         #   ```
         m = MultipartEncoder(fields={'fileName': (os.path.basename(path), open(path, 'rb'), 'text/plain')})
-        res = requests.post(url, data=m, headers={'Content-Type': m.content_type})
+        res = request_handler.post(url, data=m, headers={'Content-Type': m.content_type})
         if res.status_code == 200:
             return res.json()
         return {}
 
-    def remote_api_delete(self, remote_url: str, endpoint: str, data: dict, timeout=2):
+    def remote_api_delete(self, remote_config: dict, endpoint: str, data: dict, timeout=2):
         """
         DELETE to remote installation API
 
-        :param remote_url:
+        :param remote_config:
         :param endpoint:
         :param data:
         :param timeout:
         :return:
         """
-        address = self.__format_address(remote_url)
+        request_handler = RequestHandler(
+            auth=remote_config.get('auth'),
+            username=remote_config.get('username'),
+            password=remote_config.get('password'),
+        )
+        address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
-        res = requests.delete(url, json=data, timeout=timeout)
+        res = request_handler.delete(url, json=data, timeout=timeout)
         if res.status_code == 200:
             return res.json()
         return {}
 
-    def remote_api_get_download(self, remote_url: str, endpoint: str, path: str):
-        address = self.__format_address(remote_url)
+    def remote_api_get_download(self, remote_config: dict, endpoint: str, path: str):
+        """
+        Download a file from a remote installation
+
+        :param remote_config:
+        :param endpoint:
+        :param path:
+        :return:
+        """
+        request_handler = RequestHandler(
+            auth=remote_config.get('auth'),
+            username=remote_config.get('username'),
+            password=remote_config.get('password'),
+        )
+        address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
-        with requests.get(url, stream=True) as r:
+        with request_handler.get(url, stream=True) as r:
             r.raise_for_status()
             with open(path, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=None):
@@ -210,40 +277,48 @@ class Links(object, metaclass=SingletonType):
                         f.write(chunk)
         return True
 
-    def validate_remote_installation(self, address: str):
+    def validate_remote_installation(self, address: str, **kwargs):
         """
         Validate a remote Unmanic installation by requesting
         its system info and version
 
         :param address:
+        :param username:
+        :param password:
         :return:
         """
         address = self.__format_address(address)
 
+        request_handler = RequestHandler(
+            auth=kwargs.get('auth'),
+            username=kwargs.get('username'),
+            password=kwargs.get('password'),
+        )
+
         # Fetch config
         url = "{}/unmanic/api/v2/settings/configuration".format(address)
-        res = requests.get(url, timeout=2)
+        res = request_handler.get(url, timeout=2)
         if res.status_code != 200:
             return {}
         system_configuration_data = res.json()
 
         # Fetch settings
         url = "{}/unmanic/api/v2/settings/read".format(address)
-        res = requests.get(url, timeout=2)
+        res = request_handler.get(url, timeout=2)
         if res.status_code != 200:
             return {}
         settings_data = res.json()
 
         # Fetch version
         url = "{}/unmanic/api/v2/version/read".format(address)
-        res = requests.get(url, timeout=2)
+        res = request_handler.get(url, timeout=2)
         if res.status_code != 200:
             return {}
         version_data = res.json()
 
         # Fetch version
         url = "{}/unmanic/api/v2/session/state".format(address)
-        res = requests.get(url, timeout=2)
+        res = request_handler.get(url, timeout=2)
         if res.status_code != 200:
             return {}
         session_data = res.json()
@@ -254,7 +329,7 @@ class Links(object, metaclass=SingletonType):
             "length": 1
         }
         url = "{}/unmanic/api/v2/pending/tasks".format(address)
-        res = requests.post(url, json=data, timeout=2)
+        res = request_handler.post(url, json=data, timeout=2)
         if res.status_code != 200:
             return {}
         tasks_data = res.json()
@@ -303,7 +378,10 @@ class Links(object, metaclass=SingletonType):
             # Fetch updated data
             installation_data = None
             try:
-                installation_data = self.validate_remote_installation(local_config.get('address'))
+                installation_data = self.validate_remote_installation(local_config.get('address'),
+                                                                      auth=local_config.get('auth'),
+                                                                      username=local_config.get('username'),
+                                                                      password=local_config.get('password'))
             except Exception:
                 pass
 
@@ -327,7 +405,7 @@ class Links(object, metaclass=SingletonType):
                 # Fetch the corresponding remote configuration for this local installation
                 remote_config = {}
                 try:
-                    remote_config = self.fetch_remote_installation_link_config_for_this(local_config.get('address'))
+                    remote_config = self.fetch_remote_installation_link_config_for_this(local_config)
                 except requests.exceptions.Timeout:
                     self._log("Request to fetch remote installation config timed out", level='warning')
                     updated_config["available"] = False
@@ -363,7 +441,8 @@ class Links(object, metaclass=SingletonType):
                         updated_config["available"] = False
                         save_settings = True
                     except requests.exceptions.RequestException as e:
-                        self._log("Request to push link config to remote installation failed", message2=str(e), level='warning')
+                        self._log("Request to push link config to remote installation failed", message2=str(e),
+                                  level='warning')
                         updated_config["available"] = False
                         save_settings = True
                     except Exception as e:
@@ -446,19 +525,24 @@ class Links(object, metaclass=SingletonType):
         }
         self.settings.set_bulk_config_items(settings_dict, save_settings=True)
 
-    def fetch_remote_installation_link_config_for_this(self, address: str):
+    def fetch_remote_installation_link_config_for_this(self, remote_config: dict):
         """
         Fetches and returns the corresponding link configuration from a remote installation
 
-        :param address:
+        :param remote_config:
         :return:
         """
-        address = self.__format_address(address)
+        request_handler = RequestHandler(
+            auth=remote_config.get('auth'),
+            username=remote_config.get('username'),
+            password=remote_config.get('password'),
+        )
+        address = self.__format_address(remote_config.get('address'))
         url = "{}/unmanic/api/v2/settings/link/read".format(address)
         data = {
             "uuid": self.session.uuid
         }
-        res = requests.post(url, json=data, timeout=2)
+        res = request_handler.post(url, json=data, timeout=2)
         if res.status_code == 200:
             return res.json()
         return {}
@@ -470,6 +554,11 @@ class Links(object, metaclass=SingletonType):
         :param configuration:
         :return:
         """
+        request_handler = RequestHandler(
+            auth=configuration.get('auth'),
+            username=configuration.get('username'),
+            password=configuration.get('password'),
+        )
         address = self.__format_address(configuration.get('address'))
         url = "{}/unmanic/api/v2/settings/link/write".format(address)
 
@@ -500,7 +589,7 @@ class Links(object, metaclass=SingletonType):
             'link_config':                     updated_config,
             'distributed_worker_count_target': distributed_worker_count_target
         }
-        res = requests.post(url, json=data, timeout=2)
+        res = request_handler.post(url, json=data, timeout=2)
         if res.status_code == 200:
             return True
         return False
@@ -532,8 +621,9 @@ class Links(object, metaclass=SingletonType):
                 continue
 
             try:
+                # Define auth
                 # Only installations that have at least one idle worker that is not paused
-                results = self.remote_api_get(local_config.get('address'), '/unmanic/api/v2/workers/status')
+                results = self.remote_api_get(local_config, '/unmanic/api/v2/workers/status')
                 worker_list = results.get('workers_status', [])
 
                 # Only add installations that have not got pending tasks. This is unless we are configured to preload the queue
@@ -542,7 +632,7 @@ class Links(object, metaclass=SingletonType):
                     # Preload with the number of workers (regardless of the worker status) plus an additional one to account
                     # for delays in the downloads
                     max_pending_tasks = len(worker_list) + 1
-                results = self.remote_api_post(local_config.get('address'), '/unmanic/api/v2/pending/tasks', {
+                results = self.remote_api_post(local_config, '/unmanic/api/v2/pending/tasks', {
                     "start":  0,
                     "length": 1
                 })
@@ -553,7 +643,7 @@ class Links(object, metaclass=SingletonType):
                     continue
 
                 # Fetch remote installation library name list
-                results = self.remote_api_get(local_config.get('address'), '/unmanic/api/v2/settings/libraries')
+                results = self.remote_api_get(local_config, '/unmanic/api/v2/settings/libraries')
                 library_names = []
                 for library in results.get('libraries', []):
                     library_names.append(library.get('name'))
@@ -562,6 +652,9 @@ class Links(object, metaclass=SingletonType):
                 if len(worker_list):
                     installations_with_info[local_config.get('uuid')] = {
                         "address":                local_config.get('address'),
+                        "auth":                   local_config.get('auth'),
+                        "username":               local_config.get('username'),
+                        "password":               local_config.get('password'),
                         "enable_task_preloading": local_config.get('enable_task_preloading'),
                         "library_names":          library_names,
                         "available_slots":        0,
@@ -629,32 +722,36 @@ class Links(object, metaclass=SingletonType):
             return False
         return True
 
-    def send_file_to_remote_installation(self, address: str, path: str):
+    def send_file_to_remote_installation(self, remote_config: dict, path: str):
         """
         Send a file to a remote installation.
         The remote installation will return the ID of a generated task.
 
+        :param remote_config:
+        :param path:
         :return:
         """
         try:
-            return self.remote_api_post_file(address, '/unmanic/api/v2/upload/pending/file', path)
+            return self.remote_api_post_file(remote_config, '/unmanic/api/v2/upload/pending/file', path)
         except requests.exceptions.RequestException as e:
             self._log("Request to upload to remote installation failed", message2=str(e), level='warning')
         except Exception as e:
             self._log("Failed to upload to remote installation", message2=str(e), level='error')
         return {}
 
-    def remove_task_from_remote_installation(self, address: str, remote_task_id: int):
+    def remove_task_from_remote_installation(self, remote_config: dict, remote_task_id: int):
         """
         Remove a task from the pending queue
 
+        :param remote_config:
+        :param remote_task_id:
         :return:
         """
         try:
             data = {
                 "id_list": [remote_task_id]
             }
-            return self.remote_api_delete(address, '/unmanic/api/v2/pending/tasks', data, timeout=15)
+            return self.remote_api_delete(remote_config, '/unmanic/api/v2/pending/tasks', data, timeout=15)
         except requests.exceptions.Timeout:
             self._log("Request to remove remote task timed out", level='warning')
             return None
@@ -665,11 +762,14 @@ class Links(object, metaclass=SingletonType):
             self._log("Failed to remove remote pending task", message2=str(e), level='error')
         return {}
 
-    def set_the_remote_task_library(self, address: str, remote_task_id: int, library_name: str):
+    def set_the_remote_task_library(self, remote_config: dict, remote_task_id: int, library_name: str):
         """
         Set the library for the remote task
         Defaults to the remote installation's default library
 
+        :param remote_config:
+        :param remote_task_id:
+        :param library_name:
         :return:
         """
         try:
@@ -677,7 +777,7 @@ class Links(object, metaclass=SingletonType):
                 "id_list":      [remote_task_id],
                 "library_name": library_name,
             }
-            return self.remote_api_post(address, '/unmanic/api/v2/pending/library/update', data, timeout=7)
+            return self.remote_api_post(remote_config, '/unmanic/api/v2/pending/library/update', data, timeout=7)
         except requests.exceptions.Timeout:
             self._log("Request to set remote task library timed out", level='warning')
             return None
@@ -688,17 +788,19 @@ class Links(object, metaclass=SingletonType):
             self._log("Failed to set remote task library", message2=str(e), level='error')
         return {}
 
-    def get_remote_pending_task_state(self, address: str, remote_task_id: int):
+    def get_remote_pending_task_state(self, remote_config: dict, remote_task_id: int):
         """
         Get the remote pending task status
 
+        :param remote_config:
+        :param remote_task_id:
         :return:
         """
         try:
             data = {
                 "id_list": [remote_task_id]
             }
-            return self.remote_api_post(address, '/unmanic/api/v2/pending/status/get', data, timeout=7)
+            return self.remote_api_post(remote_config, '/unmanic/api/v2/pending/status/get', data, timeout=7)
         except requests.exceptions.Timeout:
             self._log("Request to get status of remote task timed out", level='warning')
         except requests.exceptions.RequestException as e:
@@ -707,17 +809,19 @@ class Links(object, metaclass=SingletonType):
             self._log("Failed to get status of remote pending task", message2=str(e), level='error')
         return None
 
-    def start_the_remote_task_by_id(self, address: str, remote_task_id: int):
+    def start_the_remote_task_by_id(self, remote_config: dict, remote_task_id: int):
         """
         Start the remote pending task
 
+        :param remote_config:
+        :param remote_task_id:
         :return:
         """
         try:
             data = {
                 "id_list": [remote_task_id]
             }
-            return self.remote_api_post(address, '/unmanic/api/v2/pending/status/set/ready', data, timeout=7)
+            return self.remote_api_post(remote_config, '/unmanic/api/v2/pending/status/set/ready', data, timeout=7)
         except requests.exceptions.Timeout:
             self._log("Request to start remote task timed out", level='warning')
             return None
@@ -728,14 +832,15 @@ class Links(object, metaclass=SingletonType):
             self._log("Failed to start remote pending task", message2=str(e), level='error')
         return {}
 
-    def get_all_worker_status(self, address: str):
+    def get_all_worker_status(self, remote_config: dict):
         """
         Start the remote pending task
 
+        :param remote_config:
         :return:
         """
         try:
-            results = self.remote_api_get(address, '/unmanic/api/v2/workers/status')
+            results = self.remote_api_get(remote_config, '/unmanic/api/v2/workers/status')
             return results.get('workers_status', [])
         except requests.exceptions.Timeout:
             self._log("Request to get worker status timed out", level='warning')
@@ -745,29 +850,33 @@ class Links(object, metaclass=SingletonType):
             self._log("Failed to get worker status", message2=str(e), level='error')
         return []
 
-    def get_single_worker_status(self, address: str, worker_id: str):
+    def get_single_worker_status(self, remote_config: dict, worker_id: str):
         """
         Start the remote pending task
 
+        :param remote_config:
+        :param worker_id:
         :return:
         """
-        workers_status = self.get_all_worker_status(address)
+        workers_status = self.get_all_worker_status(remote_config)
         for worker in workers_status:
             if worker.get('id') == worker_id:
                 return worker
         return {}
 
-    def terminate_remote_worker(self, address: str, worker_id: str):
+    def terminate_remote_worker(self, remote_config: dict, worker_id: str):
         """
         Start the remote pending task
 
+        :param remote_config:
+        :param worker_id:
         :return:
         """
         try:
             data = {
                 "worker_id": [worker_id]
             }
-            return self.remote_api_delete(address, '/unmanic/api/v2/workers/worker/terminate', data)
+            return self.remote_api_delete(remote_config, '/unmanic/api/v2/workers/worker/terminate', data)
         except requests.exceptions.Timeout:
             self._log("Request to terminate remote worker timed out", level='warning')
         except requests.exceptions.RequestException as e:
@@ -776,11 +885,11 @@ class Links(object, metaclass=SingletonType):
             self._log("Failed to terminate remote worker", message2=str(e), level='error')
         return {}
 
-    def fetch_remote_task_data(self, address: str, remote_task_id: int, path: str):
+    def fetch_remote_task_data(self, remote_config: dict, remote_task_id: int, path: str):
         """
         Fetch the completed remote task data
 
-        :param address:
+        :param remote_config:
         :param remote_task_id:
         :param path:
         :return:
@@ -788,10 +897,12 @@ class Links(object, metaclass=SingletonType):
         task_data = {}
         try:
             # Request API generate a DL link
-            link_info = self.remote_api_get(address, '/unmanic/api/v2/pending/download/data/id/{}'.format(remote_task_id))
+            link_info = self.remote_api_get(remote_config,
+                                            '/unmanic/api/v2/pending/download/data/id/{}'.format(remote_task_id))
             if link_info.get('link_id'):
                 # Download the data file
-                res = self.remote_api_get_download(address, '/unmanic/downloads/{}'.format(link_info.get('link_id')), path)
+                res = self.remote_api_get_download(remote_config, '/unmanic/downloads/{}'.format(link_info.get('link_id')),
+                                                   path)
                 if res and os.path.exists(path):
                     with open(path) as f:
                         task_data = json.load(f)
@@ -803,21 +914,23 @@ class Links(object, metaclass=SingletonType):
             self._log("Failed to fetch remote task data", message2=str(e), level='error')
         return task_data
 
-    def fetch_remote_task_completed_file(self, address: str, remote_task_id: int, path: str):
+    def fetch_remote_task_completed_file(self, remote_config: dict, remote_task_id: int, path: str):
         """
         Fetch the completed remote task file
 
-        :param address:
+        :param remote_config:
         :param remote_task_id:
         :param path:
         :return:
         """
         try:
             # Request API generate a DL link
-            link_info = self.remote_api_get(address, '/unmanic/api/v2/pending/download/file/id/{}'.format(remote_task_id))
+            link_info = self.remote_api_get(remote_config,
+                                            '/unmanic/api/v2/pending/download/file/id/{}'.format(remote_task_id))
             if link_info.get('link_id'):
                 # Download the file
-                res = self.remote_api_get_download(address, '/unmanic/downloads/{}'.format(link_info.get('link_id')), path)
+                res = self.remote_api_get_download(remote_config, '/unmanic/downloads/{}'.format(link_info.get('link_id')),
+                                                   path)
                 if res and os.path.exists(path):
                     return True
         except requests.exceptions.Timeout:
@@ -986,8 +1099,10 @@ class RemoteTaskManager(threading.Thread):
             self._log("File no longer exists '{}'. Was it removed?".format(original_abspath), level='warning')
             return False
 
-        # Set the remote worker address and worker ID
+        # Set the remote worker address
         address = self.installation_info.get('address')
+
+        lock_key = None
 
         # Get source file checksum
         initial_checksum = common.get_file_checksum(original_abspath)
@@ -1001,14 +1116,15 @@ class RemoteTaskManager(threading.Thread):
             # Larger files benefit from being transferred one at a time.
             if initial_file_size > 100000000:
                 # Check for network transfer lock
-                if not self.links.acquire_network_transfer_lock(address):
+                lock_key = self.links.acquire_network_transfer_lock(address)
+                if not lock_key:
                     time.sleep(1)
                     continue
 
             # Send a file to a remote installation.
             self._log("Uploading file to remote installation '{}'".format(original_abspath), level='debug')
-            info = self.links.send_file_to_remote_installation(address, original_abspath)
-            self.links.release_network_transfer_lock(address)
+            info = self.links.send_file_to_remote_installation(self.installation_info, original_abspath)
+            self.links.release_network_transfer_lock(lock_key)
             if not info:
                 self._log("Failed to upload the file '{}'".format(original_abspath), level='error')
                 return False
@@ -1020,7 +1136,7 @@ class RemoteTaskManager(threading.Thread):
         if info.get('checksum') != initial_checksum:
             self._log("The uploaded file did not return a correct checksum '{}'".format(original_abspath), level='error')
             # Send request to terminate the remote worker then return
-            self.links.remove_task_from_remote_installation(address, remote_task_id)
+            self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
             return False
 
         # Set the library of the remote task using the library's name
@@ -1028,7 +1144,7 @@ class RemoteTaskManager(threading.Thread):
         library = Library(library_id)
         library_name = library.get_name()
         while not self.redundant_flag.is_set():
-            result = self.links.set_the_remote_task_library(address, remote_task_id, library_name)
+            result = self.links.set_the_remote_task_library(self.installation_info, remote_task_id, library_name)
             if result is None:
                 # Unable to reach remote installation
                 time.sleep(2)
@@ -1044,7 +1160,7 @@ class RemoteTaskManager(threading.Thread):
 
         # Start the remote task
         while not self.redundant_flag.is_set():
-            result = self.links.start_the_remote_task_by_id(address, remote_task_id)
+            result = self.links.start_the_remote_task_by_id(self.installation_info, remote_task_id)
             if not result:
                 # Unable to reach remote installation
                 time.sleep(2)
@@ -1052,7 +1168,7 @@ class RemoteTaskManager(threading.Thread):
             if not result.get('success'):
                 self._log("Failed to set initial remote pending task to status '{}'".format(original_abspath), level='error')
                 # Send request to terminate the remote worker then return
-                self.links.remove_task_from_remote_installation(address, remote_task_id)
+                self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
                 return False
             if result.get('success'):
                 break
@@ -1067,7 +1183,7 @@ class RemoteTaskManager(threading.Thread):
             if self.redundant_flag.is_set():
                 # Send request to terminate the remote worker then exit
                 if worker_id:
-                    self.links.terminate_remote_worker(address, worker_id)
+                    self.links.terminate_remote_worker(self.installation_info, worker_id)
                 break
 
             # Only fetch the status every 5 seconds
@@ -1076,7 +1192,7 @@ class RemoteTaskManager(threading.Thread):
                 continue
 
             # Fetch task status
-            all_task_states = self.links.get_remote_pending_task_state(address, remote_task_id)
+            all_task_states = self.links.get_remote_pending_task_state(self.installation_info, remote_task_id)
             task_status = ''
             polling_delay = 5
             if all_task_states:
@@ -1108,7 +1224,7 @@ class RemoteTaskManager(threading.Thread):
             # Check if we know the task's worker ID already
             if not worker_id:
                 # The task has been picked up by a worker, find out which one...
-                workers_status = self.links.get_all_worker_status(address)
+                workers_status = self.links.get_all_worker_status(self.installation_info)
                 if not workers_status:
                     # The request failed for some reason... Perhaps we lost contact with the remote installation
                     # Mark this as the last time run
@@ -1119,7 +1235,7 @@ class RemoteTaskManager(threading.Thread):
                         worker_id = worker.get('id')
 
             # Fetch worker progress
-            worker_status = self.links.get_single_worker_status(address, worker_id)
+            worker_status = self.links.get_single_worker_status(self.installation_info, worker_id)
             if not worker_status:
                 # Mark this as the last time run
                 last_status_fetch = time_now
@@ -1150,7 +1266,8 @@ class RemoteTaskManager(threading.Thread):
             os.makedirs(cache_directory)
 
         # Fetch remote task result data
-        data = self.links.fetch_remote_task_data(address, remote_task_id, os.path.join(cache_directory, 'remote_data.json'))
+        data = self.links.fetch_remote_task_data(self.installation_info, remote_task_id,
+                                                 os.path.join(cache_directory, 'remote_data.json'))
 
         if not data:
             self._log(
@@ -1177,16 +1294,17 @@ class RemoteTaskManager(threading.Thread):
             # Loop until we are able to upload the file to the remote installation
             while not self.redundant_flag.is_set():
                 # Check for network transfer lock
-                if not self.links.acquire_network_transfer_lock(address):
+                lock_key = self.links.acquire_network_transfer_lock(address)
+                if not lock_key:
                     time.sleep(1)
                     continue
                 # Download the file
-                success = self.links.fetch_remote_task_completed_file(address, remote_task_id, task_cache_path)
-                self.links.release_network_transfer_lock(address)
+                success = self.links.fetch_remote_task_completed_file(self.installation_info, remote_task_id, task_cache_path)
+                self.links.release_network_transfer_lock(lock_key)
                 if not success:
                     self._log("Failed to download file '{}'".format(os.path.basename(data.get('abspath'))), level='error')
                     # Send request to terminate the remote worker then return
-                    self.links.remove_task_from_remote_installation(address, remote_task_id)
+                    self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
                     return False
                 break
 
@@ -1201,11 +1319,11 @@ class RemoteTaskManager(threading.Thread):
                 self._log("The downloaded file did not produce a correct checksum '{}'".format(task_cache_path),
                           level='error')
                 # Send request to terminate the remote worker then return
-                self.links.remove_task_from_remote_installation(address, remote_task_id)
+                self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
                 return False
 
             # Send request to terminate the remote worker then return
-            self.links.remove_task_from_remote_installation(address, remote_task_id)
+            self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
 
             return True
 

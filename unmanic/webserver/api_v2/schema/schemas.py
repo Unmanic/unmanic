@@ -1070,6 +1070,21 @@ class RequestSettingsRemoteInstallationAddressValidationSchema(BaseSchema):
         description="The address of the remote installation",
         example="192.168.1.2:8888",
     )
+    auth = fields.Str(
+        required=False,
+        description="Authentication type",
+        example="Basic",
+    )
+    username = fields.Str(
+        required=False,
+        description="An optional username",
+        example="foo",
+    )
+    password = fields.Str(
+        required=False,
+        description="An optional password",
+        example="bar",
+    )
 
 
 class SettingsRemoteInstallationDataSchema(BaseSchema):
@@ -1100,6 +1115,9 @@ class SettingsRemoteInstallationLinkConfigSchema(BaseSchema):
         description="The configuration for the remote installation link",
         example={
             "address":                         "10.0.0.2:8888",
+            "auth":                            "None",
+            "username":                        "",
+            "password":                        "",
             "available":                       True,
             "name":                            "API schema generated",
             "version":                         "0.1.3",

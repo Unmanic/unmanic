@@ -35,6 +35,7 @@ PUID=$(id -u);
 PGID=$(id -g);
 DEBUGGING=false;
 CACHE_PATH="${PROJECT_BASE}/dev_environment/cache/";
+EXT_PORT=8888;
 
 ADDITIONAL_DOCKER_PARAMS=""
 for ARG in ${@}; do
@@ -53,6 +54,9 @@ for ARG in ${@}; do
             ;;
         --cache*)
             CACHE_PATH="$(echo ${ARG} | awk -F'=' '{print $2}')"
+            ;;
+        --port*)
+            EXT_PORT="$(echo ${ARG} | awk -F'=' '{print $2}')"
             ;;
         *)
             ;;
@@ -76,7 +80,7 @@ fi
 
 CMD="docker run -ti --rm --name=unmanic \
     -e TZ=Pacific/Auckland \
-    -p 8888:8888 \
+    -p ${EXT_PORT}:8888 \
     -v ${PROJECT_BASE}/:/app/ \
     -v ${PROJECT_BASE}/dev_environment/config/:/config/ \
     -v ${PROJECT_BASE}/dev_environment/library/:/library/ \

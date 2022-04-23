@@ -362,7 +362,10 @@ class ApiSettingsHandler(BaseApiHandler):
             # Fetch all data from the remote installation
             # Throws exception if the provided address is invalid
             links = Links()
-            data = links.validate_remote_installation(json_request.get('address'))
+            data = links.validate_remote_installation(json_request.get('address'),
+                                                      auth=json_request.get('auth'),
+                                                      username=json_request.get('username'),
+                                                      password=json_request.get('password'))
 
             response = self.build_response(
                 SettingsRemoteInstallationDataSchema(),
@@ -692,6 +695,9 @@ class ApiSettingsHandler(BaseApiHandler):
                 {
                     "link_config":                     {
                         "address":                         data.get('address'),
+                        "auth":                            data.get('auth'),
+                        "username":                        data.get('username'),
+                        "password":                        data.get('password'),
                         "available":                       data.get('available', False),
                         "name":                            data.get('name'),
                         "version":                         data.get('version'),

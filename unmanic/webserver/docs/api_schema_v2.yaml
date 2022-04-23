@@ -735,6 +735,11 @@ components:
           description: String to filter search results by
           example: items with this text in the value
           type: string
+        status:
+          default: all
+          description: Filter on the status
+          example: all
+          type: string
         order_by:
           default: finish_time
           example: finish_time
@@ -772,6 +777,11 @@ components:
           default: ''
           description: String to filter search results by
           example: items with this text in the value
+          type: string
+        status:
+          default: all
+          description: Filter on the status
+          example: all
           type: string
         order_by:
           default: priority
@@ -933,6 +943,11 @@ components:
           default: ''
           description: String to filter search results by
           example: items with this text in the value
+          type: string
+        status:
+          default: all
+          description: Filter on the status
+          example: all
           type: string
         order_by:
           default: name

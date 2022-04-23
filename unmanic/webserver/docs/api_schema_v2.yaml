@@ -740,6 +740,18 @@ components:
           description: Filter on the status
           example: all
           type: string
+        after:
+          description: Filter entries since datetime
+          example: 2022-04-07 01:45
+          format: date-time
+          nullable: true
+          type: string
+        before:
+          description: Filter entries prior to datetime
+          example: 2022-04-07 01:55
+          format: date-time
+          nullable: true
+          type: string
         order_by:
           default: finish_time
           example: finish_time
@@ -782,6 +794,18 @@ components:
           default: all
           description: Filter on the status
           example: all
+          type: string
+        after:
+          description: Filter entries since datetime
+          example: 2022-04-07 01:45
+          format: date-time
+          nullable: true
+          type: string
+        before:
+          description: Filter entries prior to datetime
+          example: 2022-04-07 01:55
+          format: date-time
+          nullable: true
           type: string
         order_by:
           default: priority
@@ -948,6 +972,18 @@ components:
           default: all
           description: Filter on the status
           example: all
+          type: string
+        after:
+          description: Filter entries since datetime
+          example: 2022-04-07 01:45
+          format: date-time
+          nullable: true
+          type: string
+        before:
+          description: Filter entries prior to datetime
+          example: 2022-04-07 01:55
+          format: date-time
+          nullable: true
           type: string
         order_by:
           default: name

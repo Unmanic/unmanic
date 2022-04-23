@@ -136,6 +136,18 @@ class RequestTableDataSchema(BaseSchema):
         example="all",
         load_default="all",
     )
+    after = fields.DateTime(
+        required=False,
+        description="Filter entries since datetime",
+        example="2022-04-07 01:45",
+        allow_none=True,
+    )
+    before = fields.DateTime(
+        required=False,
+        description="Filter entries prior to datetime",
+        example="2022-04-07 01:55",
+        allow_none=True,
+    )
     order_by = fields.Str(
         required=False,
         description="Column to order results by",

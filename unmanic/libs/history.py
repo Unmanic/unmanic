@@ -88,7 +88,7 @@ class History(object):
         return query.count()
 
     def get_historic_task_list_filtered_and_sorted(self, order=None, start=0, length=None, search_value=None, id_list=None,
-                                                   task_success=None):
+                                                   task_success=None, after_time=None, before_time=None):
         try:
             query = (CompletedTasks.select())
 
@@ -100,6 +100,12 @@ class History(object):
 
             if task_success is not None:
                 query = query.where(CompletedTasks.task_success.in_([task_success]))
+
+            if after_time is not None:
+                query = query.where(CompletedTasks.finish_time >= after_time)
+
+            if before_time is not None:
+                query = query.where(CompletedTasks.finish_time <= before_time)
 
             # Get order by
             if order:

@@ -980,6 +980,18 @@ components:
           description: The address of the remote installation
           example: 192.168.1.2:8888
           type: string
+        auth:
+          description: Authentication type
+          example: Basic
+          type: string
+        username:
+          description: An optional username
+          example: foo
+          type: string
+        password:
+          description: An optional password
+          example: bar
+          type: string
       required:
       - address
       type: object
@@ -1178,6 +1190,7 @@ components:
           description: The configuration for the remote installation link
           example:
             address: 10.0.0.2:8888
+            auth: None
             available: true
             enable_distributed_worker_count: false
             enable_receiving_tasks: false
@@ -1185,6 +1198,8 @@ components:
             enable_task_preloading: true
             last_updated: 1636166593.013826
             name: API schema generated
+            password: ''
+            username: ''
             version: 0.1.3
           type: object
         distributed_worker_count_target:

@@ -1361,6 +1361,21 @@
                         "type": "string",
                         "description": "The address of the remote installation",
                         "example": "192.168.1.2:8888"
+                    },
+                    "auth": {
+                        "type": "string",
+                        "description": "Authentication type",
+                        "example": "Basic"
+                    },
+                    "username": {
+                        "type": "string",
+                        "description": "An optional username",
+                        "example": "foo"
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "An optional password",
+                        "example": "bar"
                     }
                 },
                 "required": [
@@ -1513,6 +1528,9 @@
                         "description": "The configuration for the remote installation link",
                         "example": {
                             "address": "10.0.0.2:8888",
+                            "auth": "None",
+                            "username": "",
+                            "password": "",
                             "available": true,
                             "name": "API schema generated",
                             "version": "0.1.3",

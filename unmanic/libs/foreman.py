@@ -384,6 +384,9 @@ class Foreman(threading.Thread):
         available_installations = self.links.check_remote_installation_for_available_workers()
         for installation_uuid in available_installations:
             remote_address = available_installations[installation_uuid].get('address', '')
+            remote_auth = available_installations[installation_uuid].get('auth', 'None')
+            remote_username = available_installations[installation_uuid].get('username', '')
+            remote_password = available_installations[installation_uuid].get('password', '')
             remote_library_names = available_installations[installation_uuid].get('library_names', [])
             available_slots = available_installations[installation_uuid].get('available_slots', 0)
             for slot_number in range(available_slots):
@@ -395,6 +398,9 @@ class Foreman(threading.Thread):
                 self.available_remote_managers[remote_manager_id] = {
                     'uuid':          installation_uuid,
                     'address':       remote_address,
+                    'auth':          remote_auth,
+                    'username':      remote_username,
+                    'password':      remote_password,
                     'library_names': remote_library_names,
                     'created':       datetime.now(),
                 }

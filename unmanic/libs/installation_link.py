@@ -1287,8 +1287,10 @@ class RemoteTaskManager(threading.Thread):
 
         # Fetch remote task file
         if data.get('task_success'):
+            task_label = data.get('task_label')
             self._log(
-                "Remote task was successful, proceeding to download the completed file '{}'".format(data.get('task_label')),
+                "Remote task #{} was successful, proceeding to download the completed file '{}'".format(remote_task_id,
+                                                                                                        task_label),
                 level='debug')
             # Set the new file out as the extension may have changed
             split_file_name = os.path.splitext(data.get('abspath'))
@@ -1305,6 +1307,7 @@ class RemoteTaskManager(threading.Thread):
                     time.sleep(1)
                     continue
                 # Download the file
+                self._log("Downloading file from remote installation '{}'".format(task_label), level='debug')
                 success = self.links.fetch_remote_task_completed_file(self.installation_info, remote_task_id, task_cache_path)
                 self.links.release_network_transfer_lock(lock_key)
                 if not success:

@@ -118,12 +118,13 @@ class Links(object, metaclass=SingletonType):
             "last_updated":                    config_dict.get('last_updated', time.time()),
         }
 
-    def acquire_network_transfer_lock(self, url, transfer_limit=1):
+    def acquire_network_transfer_lock(self, url, transfer_limit=1, lock_type='send'):
         """
         Limit transfers to each installation to 1 at a time
 
         :param url:
         :param transfer_limit:
+        :param lock_type:
         :return:
         """
         time_now = time.time()
@@ -134,7 +135,7 @@ class Links(object, metaclass=SingletonType):
         # Acquire a lock if one is available
         with lock:
             for tx_lock in range(transfer_limit):
-                lock_key = "[{}]-{}".format(tx_lock, url)
+                lock_key = "[{}-{}]-{}".format(lock_type, tx_lock, url)
                 if self._network_transfer_lock.get(lock_key, {}).get('expires', 0) < time_now:
                     # Create new upload lock that will expire in 1 minute
                     self._network_transfer_lock[lock_key] = {
@@ -1115,7 +1116,7 @@ class RemoteTaskManager(threading.Thread):
             # Larger files benefit from being transferred one at a time.
             if initial_file_size > 100000000:
                 # Check for network transfer lock
-                lock_key = self.links.acquire_network_transfer_lock(address)
+                lock_key = self.links.acquire_network_transfer_lock(address, transfer_limit=1, lock_type='send')
                 if not lock_key:
                     time.sleep(1)
                     continue
@@ -1293,7 +1294,7 @@ class RemoteTaskManager(threading.Thread):
             # Loop until we are able to upload the file to the remote installation
             while not self.redundant_flag.is_set():
                 # Check for network transfer lock
-                lock_key = self.links.acquire_network_transfer_lock(address)
+                lock_key = self.links.acquire_network_transfer_lock(address, transfer_limit=2, lock_type='receive')
                 if not lock_key:
                     time.sleep(1)
                     continue

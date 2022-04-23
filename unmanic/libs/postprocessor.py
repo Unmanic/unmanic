@@ -169,7 +169,7 @@ class PostProcessor(threading.Thread):
             plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('postprocessor.file_move',
                                                                                library_id=library_id)
 
-            # Check if the source file needs to be remove by default (only if it does not match the destination file)
+            # Check if the source file needs to be removed by default (only if it does not match the destination file)
             remove_source_file = False
             if source_data['abspath'] != destination_data['abspath']:
                 remove_source_file = True
@@ -224,10 +224,14 @@ class PostProcessor(threading.Thread):
                 # If that original location is the same file name, it will overwrite the original file.
                 if destination_data.get('abspath') == source_data.get('abspath'):
                     # Only run the final file copy to overwrite the source file if the remove_source_file flag was never set
+                    # The remove_source_file flag will remove the source file in later lines after this copy operation,
+                    #   so if we did copy the file here, it would be a waste of time
                     if not data.get('remove_source_file'):
-                        if not self.__copy_file(cache_path, destination_data.get('abspath'), destination_files, 'DEFAULT'):
+                        if not self.__copy_file(cache_path, destination_data.get('abspath'), destination_files, 'DEFAULT',
+                                                move=True):
                             file_move_processes_success = False
-                elif not self.__copy_file(cache_path, destination_data.get('abspath'), destination_files, 'DEFAULT'):
+                elif not self.__copy_file(cache_path, destination_data.get('abspath'), destination_files, 'DEFAULT',
+                                          move=True):
                     file_move_processes_success = False
 
             # Source file removal process
@@ -296,7 +300,7 @@ class PostProcessor(threading.Thread):
 
         # Copy final cache file to original directory
         if os.path.exists(cache_path):
-            self.__copy_file(cache_path, destination_data.get('abspath'), [], 'DEFAULT')
+            self.__copy_file(cache_path, destination_data.get('abspath'), [], 'DEFAULT', move=True)
         else:
             self._log("Final cache file '{}' does not exist!".format(cache_path), level="warning")
 
@@ -323,24 +327,56 @@ class PostProcessor(threading.Thread):
             except Exception as e:
                 self._log("Exception while clearing cache path '{}'".format(str(e)), level='error')
 
-    def __copy_file(self, file_in, file_out, destination_files, plugin_id):
-        self._log("Copy file triggered by ({}) {} --> {}".format(plugin_id, file_in, file_out))
+    def __copy_file(self, file_in, file_out, destination_files, plugin_id, move=False):
+        if move:
+            self._log("Move file triggered by ({}) {} --> {}".format(plugin_id, file_in, file_out))
+        else:
+            self._log("Copy file triggered by ({}) {} --> {}".format(plugin_id, file_in, file_out))
+
+        # Ensure the src and dst are not the same file
+        if os.path.samefile(file_in, file_out):
+            self._log("The file_in and file_out path are the same file. Nothing will be done! '{}'".format(file_in),
+                      level="warning")
+            return False
+
         try:
+            # Get a checksum prior to copy
             before_checksum = common.get_file_checksum(file_in)
             if not os.path.exists(file_in):
-                self._log("Error - file_in path does not exist! '{}'".format(file_in), level="error")
+                self._log("The file_in path does not exist! '{}'".format(file_in), level="warning")
                 time.sleep(1)
-            shutil.copyfile(file_in, file_out)
-            after_checksum = common.get_file_checksum(file_out)
+
+            # Use a '.part' suffix for the file movement, then rename it after
+            part_file_out = os.path.join("{}.unmanic.part".format(file_out))
+
+            # Carry out the file movement
+            if move:
+                if os.path.exists(part_file_out):
+                    os.remove(part_file_out)
+                shutil.move(file_in, part_file_out)
+            else:
+                shutil.copyfile(file_in, part_file_out)
+
+            # Get a checkup post file movement
+            after_checksum = common.get_file_checksum(part_file_out)
             # Compare the checksums on the copied file to ensure it is still correct
             if before_checksum != after_checksum:
                 # Something went wrong during that file copy
                 self._log("Copy function failed during postprocessor file movement '{}' on file '{}'".format(
                     plugin_id, file_in), level='warning')
-                file_move_processes_success = False
-            else:
-                destination_files.append(file_out)
-                file_move_processes_success = True
+                return False
+
+            # Remove dest file if it already exists (required only for moves)
+            if os.path.exists(file_out):
+                self._log("The file_out path already exists. Removing file '{}'".format(file_out), level="debug")
+                os.remove(file_out)
+
+            # Move file from part to final destination
+            shutil.move(part_file_out, file_out)
+            # Write final path to destination_files list
+            destination_files.append(file_out)
+            # Mark move process a success
+            return True
         except Exception as e:
             self._log("Exception while copying file {} to {}:".format(file_in, file_out),
                       message2=str(e), level="exception")

@@ -333,13 +333,13 @@ class PostProcessor(threading.Thread):
         else:
             self._log("Copy file triggered by ({}) {} --> {}".format(plugin_id, file_in, file_out))
 
-        # Ensure the src and dst are not the same file
-        if os.path.samefile(file_in, file_out):
-            self._log("The file_in and file_out path are the same file. Nothing will be done! '{}'".format(file_in),
-                      level="warning")
-            return False
-
         try:
+            # Ensure the src and dst are not the same file
+            if os.path.exists(file_out) and os.path.samefile(file_in, file_out):
+                self._log("The file_in and file_out path are the same file. Nothing will be done! '{}'".format(file_in),
+                          level="warning")
+                return False
+
             # Get a checksum prior to copy
             before_checksum = common.get_file_checksum(file_in)
             if not os.path.exists(file_in):

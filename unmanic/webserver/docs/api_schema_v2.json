@@ -222,6 +222,20 @@
                         "description": "Filter on the status",
                         "example": "all"
                     },
+                    "after": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Filter entries since datetime",
+                        "example": "2022-04-07 01:45"
+                    },
+                    "before": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Filter entries prior to datetime",
+                        "example": "2022-04-07 01:55"
+                    },
                     "order_by": {
                         "type": "string",
                         "default": "finish_time",
@@ -429,6 +443,20 @@
                         "default": "all",
                         "description": "Filter on the status",
                         "example": "all"
+                    },
+                    "after": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Filter entries since datetime",
+                        "example": "2022-04-07 01:45"
+                    },
+                    "before": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Filter entries prior to datetime",
+                        "example": "2022-04-07 01:55"
                     },
                     "order_by": {
                         "type": "string",
@@ -641,6 +669,20 @@
                         "default": "all",
                         "description": "Filter on the status",
                         "example": "all"
+                    },
+                    "after": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Filter entries since datetime",
+                        "example": "2022-04-07 01:45"
+                    },
+                    "before": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Filter entries prior to datetime",
+                        "example": "2022-04-07 01:55"
                     },
                     "order_by": {
                         "type": "string",

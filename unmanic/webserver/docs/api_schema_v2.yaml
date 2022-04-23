@@ -983,14 +983,17 @@ components:
         auth:
           description: Authentication type
           example: Basic
+          nullable: true
           type: string
         username:
           description: An optional username
           example: foo
+          nullable: true
           type: string
         password:
           description: An optional password
           example: bar
+          nullable: true
           type: string
       required:
       - address

@@ -1074,16 +1074,19 @@ class RequestSettingsRemoteInstallationAddressValidationSchema(BaseSchema):
         required=False,
         description="Authentication type",
         example="Basic",
+        allow_none=True,
     )
     username = fields.Str(
         required=False,
         description="An optional username",
         example="foo",
+        allow_none=True,
     )
     password = fields.Str(
         required=False,
         description="An optional password",
         example="bar",
+        allow_none=True,
     )
 
 

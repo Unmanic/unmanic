@@ -50,8 +50,14 @@ class RequestHandler:
 
     def __init__(self, *args, **kwargs):
         self.auth = kwargs.get('auth', '')
-        self.username = kwargs.get('username')
-        self.password = kwargs.get('password')
+        # Set username (could be passed in as None)
+        self.username = ''
+        if kwargs.get('username'):
+            self.username = kwargs.get('username')
+        # Set password (could be passed in as None)
+        self.password = ''
+        if kwargs.get('password'):
+            self.password = kwargs.get('password')
 
     def __get_request_auth(self):
         request_auth = None

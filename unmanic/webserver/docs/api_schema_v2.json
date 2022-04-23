@@ -1364,16 +1364,19 @@
                     },
                     "auth": {
                         "type": "string",
+                        "nullable": true,
                         "description": "Authentication type",
                         "example": "Basic"
                     },
                     "username": {
                         "type": "string",
+                        "nullable": true,
                         "description": "An optional username",
                         "example": "foo"
                     },
                     "password": {
                         "type": "string",
+                        "nullable": true,
                         "description": "An optional password",
                         "example": "bar"
                     }

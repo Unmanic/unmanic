@@ -130,6 +130,12 @@ class RequestTableDataSchema(BaseSchema):
         example="items with this text in the value",
         load_default="",
     )
+    status = fields.Str(
+        required=False,
+        description="Filter on the status",
+        example="all",
+        load_default="all",
+    )
     order_by = fields.Str(
         required=False,
         description="Column to order results by",

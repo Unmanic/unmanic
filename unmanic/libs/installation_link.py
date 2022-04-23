@@ -360,6 +360,8 @@ class Links(object, metaclass=SingletonType):
         distributed_worker_count_target = self.settings.get_distributed_worker_count_target()
         for local_config in self.settings.get_remote_installations():
             # Ensure address is not added twice by comparing installation IDs
+            # Items matching these checks will be skipped over and will not be added to the installation list
+            #   that will be re-saved
             if local_config.get('uuid') in installation_id_list and local_config.get('uuid', '???') != '???':
                 # Do not update this installation. By doing this it will be removed from the list
                 save_settings = True
@@ -409,23 +411,25 @@ class Links(object, metaclass=SingletonType):
                 except requests.exceptions.Timeout:
                     self._log("Request to fetch remote installation config timed out", level='warning')
                     updated_config["available"] = False
-                    save_settings = True
                 except requests.exceptions.RequestException as e:
                     self._log("Request to fetch remote installation config failed", message2=str(e), level='warning')
                     updated_config["available"] = False
-                    save_settings = True
                 except Exception as e:
                     self._log("Failed to fetch remote installation config", message2=str(e), level='error')
                     updated_config["available"] = False
-                    save_settings = True
 
                 # If the remote configuration is newer than this one, use those values
                 # The remote installation will do the same and this will synchronise
                 remote_link_config = remote_config.get('link_config', {})
                 if local_config.get('last_updated', 1) < remote_link_config.get('last_updated', 1):
                     # Note that the configuration options are reversed when reading from the remote installation config
-                    updated_config["enable_receiving_tasks"] = remote_link_config.get('enable_sending_tasks')
-                    updated_config["enable_sending_tasks"] = remote_link_config.get('enable_receiving_tasks')
+                    # The enable_task_preloading config is not synced here
+                    if updated_config["enable_receiving_tasks"] != remote_link_config.get('enable_sending_tasks'):
+                        updated_config["enable_receiving_tasks"] = remote_link_config.get('enable_sending_tasks')
+                        save_settings = True
+                    if updated_config["enable_sending_tasks"] != remote_link_config.get('enable_receiving_tasks'):
+                        updated_config["enable_sending_tasks"] = remote_link_config.get('enable_receiving_tasks')
+                        save_settings = True
                     # Update the distributed_worker_count_target
                     distributed_worker_count_target = remote_config.get('distributed_worker_count_target', 0)
                     # Also sync the last_updated flag
@@ -439,20 +443,15 @@ class Links(object, metaclass=SingletonType):
                     except requests.exceptions.Timeout:
                         self._log("Request to push link config to remote installation timed out", level='warning')
                         updated_config["available"] = False
-                        save_settings = True
                     except requests.exceptions.RequestException as e:
                         self._log("Request to push link config to remote installation failed", message2=str(e),
                                   level='warning')
                         updated_config["available"] = False
-                        save_settings = True
                     except Exception as e:
                         self._log("Failed to push link config to remote installation", message2=str(e), level='error')
                         updated_config["available"] = False
-                        save_settings = True
 
             # Only save to file if the settings have been updated
-            if updated_config.get('last_updated') == local_config.get('last_updated'):
-                save_settings = True
             remote_installations.append(updated_config)
 
             # Add UUID to list for next loop

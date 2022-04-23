@@ -100,19 +100,37 @@ class PostProcessor(threading.Thread):
                     except Exception as e:
                         self._log("Exception in fetching task absolute path", message2=str(e), level="exception")
                     if self.current_task.get_task_type() == 'local':
-                        # Post process the converted file (return it to original directory etc.)
-                        self.post_process_file()
-                        # Write source and destination data to historic log
-                        self.write_history_log()
-                        # Remove file from task queue
-                        self.current_task.delete()
+                        try:
+                            # Post processes the converted file (return it to original directory etc.)
+                            self.post_process_file()
+                        except Exception as e:
+                            self._log("Exception in post-processing local task file", message2=str(e), level="exception")
+                        try:
+                            # Write source and destination data to historic log
+                            self.write_history_log()
+                        except Exception as e:
+                            self._log("Exception in writing history log", message2=str(e), level="exception")
+                        try:
+                            # Remove file from task queue
+                            self.current_task.delete()
+                        except Exception as e:
+                            self._log("Exception in removing task from task list", message2=str(e), level="exception")
                     else:
-                        # Post process the remote converted file (return it to original directory etc.)
-                        self.post_process_remote_file()
-                        # Write source and destination data to historic log
-                        self.dump_history_log()
-                        # Update the task status to 'complete'
-                        self.current_task.set_status('complete')
+                        try:
+                            # Post processes the remote converted file (return it to original directory etc.)
+                            self.post_process_remote_file()
+                        except Exception as e:
+                            self._log("Exception in post-processing remote task file", message2=str(e), level="exception")
+                        try:
+                            # Write source and destination data to historic log
+                            self.dump_history_log()
+                        except Exception as e:
+                            self._log("Exception in dumping history log for remote task", message2=str(e), level="exception")
+                        try:
+                            # Update the task status to 'complete'
+                            self.current_task.set_status('complete')
+                        except Exception as e:
+                            self._log("Exception in marking remote task as complete", message2=str(e), level="exception")
 
         self._log("Leaving PostProcessor Monitor loop...")
 

@@ -32,6 +32,7 @@
 import random
 import threading
 import time
+from datetime import datetime, timedelta
 
 import schedule
 
@@ -79,6 +80,9 @@ class ScheduledTasksManager(threading.Thread):
         self.scheduler.every(10).seconds.do(self.update_remote_installation_links)
         # Run the remote installation distributed worker counter sync every minute
         self.scheduler.every(1).minutes.do(self.set_worker_count_based_on_remote_installation_links)
+        # Run a completed task cleanup every 60 minutes and on startup
+        self.scheduler.every(12).hours.do(self.manage_completed_tasks)
+        self.manage_completed_tasks()
 
         # Loop every 2 seconds to check if a task is due to be run
         while not self.abort_flag.is_set():
@@ -164,3 +168,40 @@ class ScheduledTasksManager(threading.Thread):
 
         self._log("Configuring worker count as {} for this installation".format(target_workers_for_this_installation))
         settings.set_config_item('number_of_workers', target_workers_for_this_installation, save_settings=True)
+
+    def manage_completed_tasks(self):
+        settings = config.Config()
+        # Only run if configured to auto manage completed tasks
+        if not settings.get_auto_manage_completed_tasks():
+            return
+
+        self._log("Running completed task cleanup for this installation")
+        max_age_in_days = settings.get_max_age_of_completed_tasks()
+        date_x_days_ago = datetime.now() - timedelta(days=int(max_age_in_days))
+        before_time = date_x_days_ago.timestamp()
+
+        task_success = True
+        inc_status = 'successfully'
+        if not settings.get_always_keep_failed_tasks():
+            inc_status = 'successfully or failed'
+            task_success = None
+
+        # Fetch completed tasks
+        from unmanic.libs import history
+        history_logging = history.History()
+        count = history_logging.get_historic_task_list_filtered_and_sorted(task_success=task_success,
+                                                                           before_time=before_time).count()
+        results = history_logging.get_historic_task_list_filtered_and_sorted(task_success=task_success,
+                                                                             before_time=before_time)
+
+        if count == 0:
+            self._log("Found no {} completed tasks older than {} days".format(inc_status, max_age_in_days))
+            return
+
+        self._log(
+            "Found {} {} completed tasks older than {} days that should be removed".format(count, inc_status, max_age_in_days))
+        if not history_logging.delete_historic_tasks_recursively(results):
+            self._log("Failed to delete {} {} completed tasks".format(count, inc_status), level='error')
+            return
+
+        self._log("Deleted {} {} completed tasks".format(count, inc_status))

@@ -70,6 +70,9 @@ class Config(object, metaclass=SingletonType):
         self.concurrent_file_testers = 2
         self.run_full_scan_on_start = False
         self.clear_pending_tasks_on_restart = True
+        self.auto_manage_completed_tasks = False
+        self.max_age_of_completed_tasks = 91
+        self.always_keep_failed_tasks = True
 
         # Worker settings
         self.cache_path = common.get_default_cache_path()
@@ -363,6 +366,30 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.clear_pending_tasks_on_restart
+
+    def get_auto_manage_completed_tasks(self):
+        """
+        Get setting - auto_manage_completed_tasks
+
+        :return:
+        """
+        return self.auto_manage_completed_tasks
+
+    def get_max_age_of_completed_tasks(self):
+        """
+        Get setting - max_age_of_completed_tasks
+
+        :return:
+        """
+        return self.max_age_of_completed_tasks
+
+    def get_always_keep_failed_tasks(self):
+        """
+        Get setting - always_keep_failed_tasks
+
+        :return:
+        """
+        return self.always_keep_failed_tasks
 
     def get_log_path(self):
         """

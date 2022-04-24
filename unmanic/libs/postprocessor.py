@@ -341,30 +341,37 @@ class PostProcessor(threading.Thread):
                 return False
 
             # Get a checksum prior to copy
-            before_checksum = common.get_file_checksum(file_in)
             if not os.path.exists(file_in):
                 self._log("The file_in path does not exist! '{}'".format(file_in), level="warning")
                 time.sleep(1)
+            self._log("Fetching checksum of source file '{}'.".format(file_in), level='debug')
+            before_checksum = common.get_file_checksum(file_in)
 
             # Use a '.part' suffix for the file movement, then rename it after
             part_file_out = os.path.join("{}.unmanic.part".format(file_out))
 
             # Carry out the file movement
             if move:
+                self._log("Moving file '{}' --> '{}'.".format(file_in, part_file_out), level='debug')
                 if os.path.exists(part_file_out):
                     os.remove(part_file_out)
                 shutil.move(file_in, part_file_out)
             else:
+                self._log("Copying file '{}' --> '{}'.".format(file_in, part_file_out), level='debug')
                 shutil.copyfile(file_in, part_file_out)
 
-            # Get a checkup post file movement
+            # Get a checksum post file movement
+            self._log("Fetching checksum of destination file '{}'.".format(part_file_out), level='debug')
             after_checksum = common.get_file_checksum(part_file_out)
+
             # Compare the checksums on the copied file to ensure it is still correct
+            self._log("Comparing checksum of destination file with source file.", level='debug')
             if before_checksum != after_checksum:
                 # Something went wrong during that file copy
-                self._log("Copy function failed during postprocessor file movement '{}' on file '{}'".format(
-                    plugin_id, file_in), level='warning')
+                self._log("Checksum mismatch during postprocessor file movement '{}' on file '{}'".format(plugin_id, file_in),
+                          level='warning')
                 return False
+            self._log("Checksum matched.", level='debug')
 
             # Remove dest file if it already exists (required only for moves)
             if os.path.exists(file_out):
@@ -372,6 +379,7 @@ class PostProcessor(threading.Thread):
                 os.remove(file_out)
 
             # Move file from part to final destination
+            self._log("Renaming file '{}' --> '{}'.".format(part_file_out, file_out), level='debug')
             shutil.move(part_file_out, file_out)
             # Write final path to destination_files list
             destination_files.append(file_out)

@@ -62,6 +62,12 @@ class Config(object, metaclass=SingletonType):
         # Configure debugging
         self.debugging = False
 
+        # Configure first run (future feature)
+        self.first_run = False
+
+        # Configure first run (future feature)
+        self.release_notes_viewed = None
+
         # Library Settings:
         self.library_path = common.get_default_library_path()
         self.enable_library_scanner = False
@@ -350,6 +356,22 @@ class Config(object, metaclass=SingletonType):
         else:
             unmanic_logging.disable_debugging()
         self.debugging = value
+
+    def get_first_run(self):
+        """
+        Get setting - first_run
+
+        :return:
+        """
+        return self.first_run
+
+    def get_release_notes_viewed(self):
+        """
+        Get setting - release_notes_viewed
+
+        :return:
+        """
+        return self.release_notes_viewed
 
     def get_library_path(self):
         """

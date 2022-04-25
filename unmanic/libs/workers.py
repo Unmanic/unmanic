@@ -37,7 +37,7 @@ import subprocess
 import threading
 import time
 
-import psutil as psutil
+import psutil
 
 from unmanic.libs import common, unlogger
 from unmanic.libs.plugins import PluginsHandler
@@ -597,8 +597,20 @@ class Worker(threading.Thread):
                 raise Exception(
                     "Plugin's returned 'exec_command' object must be either a list or a string. Received type {}.".format(
                         type(exec_command)))
+
             # Fetch process using psutil for control (sending SIGSTOP on windows will not work)
             proc = psutil.Process(pid=sub_proc.pid)
+
+            # Set process priority on posix systems
+            # TODO: Test how this will work on Windows
+            if os.name == "posix":
+                try:
+                    parent_proc = psutil.Process(os.getpid())
+                    parent_proc_nice = parent_proc.nice()
+                    proc.nice(parent_proc_nice + 1)
+                except Exception as e:
+                    self._log("Unable to lower priority of subprocess. Subprocess should continue to run at normal priority",
+                              str(e), level='warning')
 
             # Record PID and PROC
             self.worker_subprocess = sub_proc

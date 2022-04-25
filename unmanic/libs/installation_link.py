@@ -1147,7 +1147,11 @@ class RemoteTaskManager(threading.Thread):
 
         # Set the library of the remote task using the library's name
         library_id = self.current_task.get_task_library_id()
-        library = Library(library_id)
+        try:
+            library = Library(library_id)
+        except Exception as e:
+            self._log("Unable to fetch library config for ID {}".format(library_id), level='exception')
+            return False
         library_name = library.get_name()
         while not self.redundant_flag.is_set():
             result = self.links.set_the_remote_task_library(self.installation_info, remote_task_id, library_name)

@@ -161,7 +161,11 @@ class EventMonitorManager(threading.Thread):
             # Check if monitor is enabled for at least one library
             enable_inotify = False
             for lib_info in Library.get_all_libraries():
-                library = Library(lib_info['id'])
+                try:
+                    library = Library(lib_info['id'])
+                except Exception as e:
+                    self._log("Unable to fetch library config for ID {}".format(lib_info['id']), level='exception')
+                    continue
                 # Check if library scanner is enabled on any library
                 if library.get_enable_inotify():
                     enable_inotify = True
@@ -205,7 +209,11 @@ class EventMonitorManager(threading.Thread):
             monitoring_path = False
             self.event_observer_thread = Observer()
             for lib_info in Library.get_all_libraries():
-                library = Library(lib_info['id'])
+                try:
+                    library = Library(lib_info['id'])
+                except Exception as e:
+                    self._log("Unable to fetch library config for ID {}".format(lib_info['id']), level='exception')
+                    continue
                 # Check if library scanner is enabled on any library
                 if library.get_enable_inotify():
                     library_path = library.get_path()

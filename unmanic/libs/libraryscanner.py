@@ -158,7 +158,11 @@ class LibraryScannerManager(threading.Thread):
         no_libraries_configured = True
         for lib_info in Library.get_all_libraries():
             no_libraries_configured = False
-            library = Library(lib_info['id'])
+            try:
+                library = Library(lib_info['id'])
+            except Exception as e:
+                self._log("Unable to fetch library config for ID {}".format(lib_info['id']), level='exception')
+                continue
             # Check if library scanner is enabled on any library
             if library.get_enable_scanner():
                 # Run library scan
@@ -183,8 +187,8 @@ class LibraryScannerManager(threading.Thread):
 
     def add_path_to_queue(self, pathname, library_id, priority_score):
         self.scheduledtasks.put({
-            'pathname':   pathname,
-            'library_id': library_id,
+            'pathname':       pathname,
+            'library_id':     library_id,
             'priority_score': priority_score,
         })
 

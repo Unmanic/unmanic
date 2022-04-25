@@ -103,12 +103,15 @@ class Foreman(threading.Thread):
             self.current_config['settings_hash'] = settings_hash
         self._log('Updated config. If this is modified, all workers will be paused', level='debug')
 
-    @staticmethod
-    def get_current_library_configuration():
+    def get_current_library_configuration(self):
         # Fetch all libraries
         all_plugin_settings = {}
         for library in Library.get_all_libraries():
-            library_config = Library(library.get('id'))
+            try:
+                library_config = Library(library.get('id'))
+            except Exception as e:
+                self._log("Unable to fetch library config for ID {}".format(library.get('id')), level='exception')
+                continue
             # Get list of enabled plugins with their settings
             enabled_plugins = []
             for enabled_plugin in library_config.get_enabled_plugins(include_settings=True):
@@ -721,11 +724,16 @@ class Foreman(threading.Thread):
 
                     if next_item_to_process:
                         try:
-                            self._log("Processing item - {}".format(next_item_to_process.get_source_abspath()))
+                            source_abspath = next_item_to_process.get_source_abspath()
+                            task_library_name = next_item_to_process.get_task_library_name()
                         except Exception as e:
-                            self._log("Exception in fetching task absolute path", message2=str(e), level="exception")
+                            self._log("Exception in fetching task details", message2=str(e), level="exception")
+                            time.sleep(3)
+                            continue
+
+                        self._log("Processing item - {}".format(source_abspath))
                         success = self.hand_task_to_workers(next_item_to_process, local=process_local,
-                                                            library_name=next_item_to_process.get_task_library_name(),
+                                                            library_name=task_library_name,
                                                             worker_id=available_worker_id)
                         if not success:
                             self._log("Re-queueing tasks. Unable to find worker capable of processing task '{}'".format(

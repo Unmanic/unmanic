@@ -29,7 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
+import datetime
 import uuid
 from peewee import *
 
@@ -43,3 +43,9 @@ class Installation(BaseModel):
     All application installation data
     """
     uuid = UUIDField(null=False, default=uuid.uuid4, unique=True)
+    # Store session data here to persist restarts
+    level = IntegerField(null=False, default=0)
+    picture_uri = TextField(null=True)
+    name = TextField(null=True)
+    email = TextField(null=True)
+    created = DateTimeField(null=True, default=datetime.datetime.now)

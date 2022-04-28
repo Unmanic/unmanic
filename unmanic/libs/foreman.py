@@ -490,12 +490,13 @@ class Foreman(threading.Thread):
         :return:
         :rtype:
         """
-        self._log("Asked to pause Worker ID '{}'".format(worker_id), level='debug')
         if worker_id not in self.worker_threads:
             self._log("Asked to pause Worker ID '{}', but this was not found.".format(worker_id), level='warning')
             return False
 
-        self.worker_threads[worker_id].paused_flag.set()
+        if not self.worker_threads[worker_id].paused_flag.is_set():
+            self._log("Asked to pause Worker ID '{}'".format(worker_id), level='debug')
+            self.worker_threads[worker_id].paused_flag.set()
         return True
 
     def pause_all_worker_threads(self, worker_group_id=None):

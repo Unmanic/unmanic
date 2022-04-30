@@ -355,7 +355,7 @@ class PostProcessor(threading.Thread):
                 self._log("Moving file '{}' --> '{}'.".format(file_in, part_file_out), level='debug')
                 if os.path.exists(part_file_out):
                     os.remove(part_file_out)
-                shutil.move(file_in, part_file_out)
+                shutil.move(file_in, part_file_out, copy_function=shutil.copyfile)
             else:
                 self._log("Copying file '{}' --> '{}'.".format(file_in, part_file_out), level='debug')
                 shutil.copyfile(file_in, part_file_out)
@@ -380,7 +380,7 @@ class PostProcessor(threading.Thread):
 
             # Move file from part to final destination
             self._log("Renaming file '{}' --> '{}'.".format(part_file_out, file_out), level='debug')
-            shutil.move(part_file_out, file_out)
+            shutil.move(part_file_out, file_out, copy_function=shutil.copyfile)
             # Write final path to destination_files list
             destination_files.append(file_out)
             # Mark move process a success

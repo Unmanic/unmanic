@@ -29,6 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import random
 import time
 import requests
 
@@ -142,9 +143,16 @@ class Session(object, metaclass=SingletonType):
 
         :return:
         """
-        self.created = time.time()
+        # Get the time now in seconds
+        seconds = time.time()
+        # Create a seconds offset of some random number between 300 (5 mins) and 900 (15 mins)
+        seconds_offset = random.randint(300, 900 - 1)
+        # Set the created flag with the seconds variable plus a random offset to avoid people joining
+        #   together to register if the site goes down
+        self.created = (seconds + seconds_offset)
+        # Print only the accurate update time in debug log
         from datetime import datetime
-        created = datetime.fromtimestamp(self.created)
+        created = datetime.fromtimestamp(seconds)
         self._log("Updated session at ", str(created), level="debug")
 
     def __fetch_installation_data(self):

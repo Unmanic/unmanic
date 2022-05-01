@@ -55,8 +55,11 @@ def save_library_config(library_id, library_config=None, plugin_config=None):
         # Fetch existing library by ID
         library = Library(library_id)
     else:
-        # Create a new library
-        library = Library.create()
+        # Create a new library with required data
+        library = Library.create({
+            'name': library_config.get('name'),
+            'path': library_config.get('path'),
+        })
         library_id = library.get_id()
 
     # Update library config (if the data was given)

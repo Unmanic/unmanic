@@ -256,6 +256,7 @@ class Foreman(threading.Thread):
 
         # Check that we have enough workers running. Spawn new ones as required.
         worker_group_ids = []
+        worker_group_names = []
         for worker_group in WorkerGroup.get_all_worker_groups():
             worker_group_ids.append(worker_group.get('id'))
 
@@ -263,6 +264,8 @@ class Foreman(threading.Thread):
             for i in range(worker_group.get('number_of_workers')):
                 worker_id = "{}-{}".format(worker_group.get('name'), i)
                 worker_name = "{}-Worker-{}".format(worker_group.get('name'), (i + 1))
+                # Add this name to a list. If the name changes, we can remove old incorrectly named workers
+                worker_group_names.append(worker_name)
                 if worker_id not in self.worker_threads:
                     # This worker does not yet exist, create it
                     self.start_worker_thread(worker_id, worker_name, worker_group.get('id'))
@@ -277,7 +280,9 @@ class Foreman(threading.Thread):
 
         # Remove workers for groups that no longer exist
         for thread in self.worker_threads:
-            if self.worker_threads[thread].worker_group_id not in worker_group_ids:
+            worker_group_id = self.worker_threads[thread].worker_group_id
+            worker_name = self.worker_threads[thread].name
+            if worker_group_id not in worker_group_ids or worker_name not in worker_group_names:
                 # Only remove threads that are idle (never terminate a task just to reduce worker count)
                 if self.worker_threads[thread].idle:
                     self.mark_worker_thread_as_redundant(thread)

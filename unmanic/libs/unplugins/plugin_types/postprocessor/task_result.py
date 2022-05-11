@@ -40,7 +40,8 @@ class TaskResult(PluginType):
     Runner function - provides a means for additional postprocessor functions based on the task success.
 
     The 'data' object argument includes:
-        library_id                      - The library that the current task is associated with
+        final_cache_path                - The path to the final cache file that was then used as the source for all destination files.
+        library_id                      - The library that the current task is associated with.
         task_processing_success         - Boolean, did all task processes complete successfully.
         file_move_processes_success     - Boolean, did all postprocessor movement tasks complete successfully.
         destination_files               - List containing all file paths created by postprocessor file movements.
@@ -50,6 +51,14 @@ class TaskResult(PluginType):
     :return:
     """
     data_schema = {
+        'final_cache_path':            {
+            "required": False,
+            "type":     str,
+        },
+        'library_id':                  {
+            "required": False,
+            "type":     int,
+        },
         "task_processing_success":     {
             "required": False,
             "type":     bool,
@@ -58,59 +67,25 @@ class TaskResult(PluginType):
             "required": False,
             "type":     bool,
         },
-        "destination_files": {
+        "destination_files":           {
             "required": False,
             "type":     list,
         },
-        "source_data": {
+        "source_data":                 {
             "required": False,
             "type":     dict,
         },
     }
     test_data = {
+        'final_cache_path':            '/tmp/unmanic/unmanic_file_conversion-diqxq-1651476950/TEST_FILE-UNMANIC-WORKING-2-1.mkv',
+        'library_id':                  1,
         'task_processing_success':     True,
         'file_move_processes_success': True,
         'destination_files':           [
             '/library/complete/library/TEST_FILE-UNMANIC.mkv',
         ],
         'source_data':                 {
-            'abspath':          '/library/TEST_FILE.mkv',
-            'basename':         'TEST_FILE.mp4',
-            'bit_rate':         '2753870',
-            'duration':         '81.951667',
-            'format_long_name': '',
-            'format_name':      'mov,mp4,m4a,3gp,3g2,mj2',
-            'id':               1,
-            'size':             '28210534',
-            'streams':          [
-                {
-                    'avg_frame_rate':  '2997/100',
-                    'bit_rate':        '2533754',
-                    'channel_layout':  '',
-                    'channels':        '',
-                    'codec_long_name': 'unknown',
-                    'codec_type':      'video',
-                    'coded_height':    '720',
-                    'coded_width':     '1280',
-                    'duration':        '81.748415',
-                    'height':          '720',
-                    'id':              1,
-                    'width':           '1280'
-                },
-                {
-                    'avg_frame_rate':  '0/0',
-                    'bit_rate':        '224000',
-                    'channel_layout':  '5.1(side)',
-                    'channels':        '6',
-                    'codec_long_name': 'unknown',
-                    'codec_type':      'audio',
-                    'coded_height':    '',
-                    'coded_width':     '',
-                    'duration':        '81.952000',
-                    'height':          '',
-                    'id':              2,
-                    'width':           ''
-                }
-            ]
+            'abspath':  '/library/TEST_FILE.mkv',
+            'basename': 'TEST_FILE.mp4',
         },
     }

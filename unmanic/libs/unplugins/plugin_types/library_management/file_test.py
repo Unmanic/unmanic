@@ -51,6 +51,10 @@ class FileTest(PluginType):
     :return:
     """
     data_schema = {
+        "library_id":                {
+            "required": True,
+            "type":     int,
+        },
         "path":                      {
             "required": True,
             "type":     str,
@@ -73,6 +77,7 @@ class FileTest(PluginType):
         },
     }
     test_data = {
+        'library_id':                1,
         'path':                      '/library/TEST_FILE.mkv',
         'issues':                    [
             {

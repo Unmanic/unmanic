@@ -262,6 +262,7 @@ class PostProcessor(threading.Thread):
 
         for plugin_module in plugin_modules:
             data = {
+                'final_cache_path':            cache_path,
                 'library_id':                  library_id,
                 'source_data':                 source_data,
                 'task_processing_success':     self.current_task.task.success,

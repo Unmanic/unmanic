@@ -27,7 +27,6 @@ RUN \
             libxcb1=1.14-2 \
             libxext6=2:1.3.4-0ubuntu1 \
             libxml2=2.9.10+dfsg-5ubuntu0.20.04.2 \
-            vainfo=2.6.0+ds1-1 \
     && \
     echo "**** Install arch specific packages for $(uname -m) ****" \
         && sleep 2 \
@@ -42,20 +41,20 @@ RUN \
             echo "**** Install Intel Media Drivers  ****" \
                 && apt-get update \
                 && apt-get install -y \
-                    i965-va-driver=2.4.0-0ubuntu1 \
-                    intel-igc-cm=1.0.40+i593~u20.04 \
-                    intel-level-zero-gpu=1.1.20389+i593~u20.04 \
-                    intel-media-va-driver-non-free=21.1.2+i526~u20.04 \
-                    intel-opencl-icd=21.29.20389+i593~u20.04 \
-                    level-zero=1.4.1+i593~u20.04 \
-                    libigc1=1.0.7862+i593~u20.04 \
-                    libigdfcl1=1.0.7862+i593~u20.04 \
-                    libigdgmm11=21.2.1+i611~u20.04 \
-                    libmfx1=21.2.2+i593~u20.04 \
-                    libva-drm2=2.12.0+i611~u20.04 \
-                    libva-wayland2=2.12.0+i611~u20.04 \
-                    libva-x11-2=2.12.0+i611~u20.04 \
-                    libva2=2.12.0+i611~u20.04 \
+                    intel-igc-cm=1.0.128+i699~u20.04 \
+                    intel-level-zero-gpu=1.3.22597+i699~u20.04 \
+                    intel-media-va-driver-non-free=22.2.2+i699~u20.04 \
+                    intel-opencl-icd=22.10.22597+i699~u20.04 \
+                    level-zero=1.7.9+i699~u20.04 \
+                    libigc1=1.0.10409+i699~u20.04 \
+                    libigdfcl1=1.0.10409+i699~u20.04 \
+                    libigdgmm11=21.3.3+i643~u20.04 \
+                    libmfx1=22.2.2+i699~u20.04 \
+                    libva-drm2=2.14.0.2-23 \
+                    libva-wayland2=2.14.0.2-23 \
+                    libva-x11-2=2.14.0.2-23 \
+                    libva2=2.14.0.2-23 \
+                    vainfo=2.14.0.2-1 \
             && \
             echo "**** Install MESA Media Drivers for AMD VAAPI ****" \
                 && apt-get install -y \

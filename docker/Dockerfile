@@ -76,18 +76,17 @@ RUN \
             /tmp/*
 
 
-# Install ffmpeg
+# Install commonly used command line tools
 ARG JELLYFIN_FFMPEG_VERSION="4.4.1-4"
+ARG NODEJS_VERSION="16.x"
 RUN \
     echo "**** Install FFmpeg for $(uname -m) ****" \
         && sleep 2 \
+        && apt-get update \
         && \
         if uname -m | grep -q x86; then \
             echo "**** Add Jellyfin repository ****" \
-                && apt-get update \
-                && apt-get install -y \
-                    gnupg \
-                    curl \
+                && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates gnupg \
                 && curl -ks https://repo.jellyfin.org/jellyfin_team.gpg.key | apt-key add - \
                 && echo "deb [arch=$( dpkg --print-architecture )] https://repo.jellyfin.org/ubuntu focal main" | tee /etc/apt/sources.list.d/jellyfin.list \
             && \
@@ -105,16 +104,13 @@ RUN \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
             && \
             echo "**** Remove build packages ****" \
-                && apt-get remove -y \
-                    curl \
-                    gnupg \
+                && apt-get remove -y gnupg \
             && \
             echo ; \
         fi \
         && \
         if uname -m | grep -q aarch64; then \
             echo "**** Install ffmpeg and linked 3rd party libs ****" \
-                && apt-get update \
                 && apt-get install --no-install-recommends --no-install-suggests -y \
                     ffmpeg \
                     libssl-dev \
@@ -130,11 +126,7 @@ RUN \
         && \
         if uname -m | grep -q armv7l; then \
             echo "**** Add Jellyfin repository ****" \
-                && apt-get update \
-                && apt-get install --no-install-recommends --no-install-suggests -y \
-                    ca-certificates \
-                    curl \
-                    gnupg \
+                && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates gnupg \
                 && curl -ks https://repo.jellyfin.org/jellyfin_team.gpg.key | apt-key add - \
                 && curl -ks https://keyserver.ubuntu.com/pks/lookup?op=get\&search=0x6587ffd6536b8826e88a62547876ae518cbcf2f2 | apt-key add - \
                 && echo 'deb [arch=armhf] https://repo.jellyfin.org/ubuntu focal main' > /etc/apt/sources.list.d/jellyfin.list \
@@ -157,12 +149,22 @@ RUN \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
             && \
             echo "**** Remove build packages ****" \
-                && apt-get remove -y \
-                    curl \
-                    gnupg \
+                && apt-get remove -y gnupg \
             && \
             echo ; \
         fi \
+    && \
+    echo "**** Install startup script requirements ****" \
+        && apt-get install -y \
+            curl \
+            nano \
+            sqlite3 \
+            wget \
+    && \
+    echo "**** Install NodeJS for $(uname -m) ****" \
+        && curl -fsSL https://deb.nodesource.com/setup_${NODEJS_VERSION} | bash - \
+        && apt-get install -y \
+            nodejs \
     && \
     echo "**** Section cleanup ****" \
         && apt-get clean autoclean -y \
@@ -223,23 +225,6 @@ RUN \
             /tmp/*
 
 
-# Install container startup script requirements
-RUN \
-    echo "**** Install startup script requirements ****" \
-        && apt-get update \
-        && apt-get install -y \
-            curl \
-            sqlite3 \
-    && \
-    echo "**** Section cleanup ****" \
-        && apt-get clean autoclean -y \
-        && apt-get autoremove -y \
-        && rm -rf \
-            /var/lib/apt/lists/* \
-            /var/tmp/* \
-            /tmp/*
-
-
 # Install pre-built Unmanic wheel
 # Must first run `python3 ./setup.py bdist_wheel` on host to build package
 COPY /dist/ /src/
@@ -260,6 +245,7 @@ RUN \
 
 # Add local files
 COPY /docker/root /
+
 
 # Unmanic runs on port 8888
 EXPOSE 8888/tcp

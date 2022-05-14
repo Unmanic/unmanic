@@ -166,6 +166,10 @@ RUN \
         && apt-get install -y \
             nodejs \
     && \
+    echo "**** Install exiftool for $(uname -m) ****" \
+        && apt-get install -y \
+            libimage-exiftool-perl \
+    && \
     echo "**** Section cleanup ****" \
         && apt-get clean autoclean -y \
         && apt-get autoremove -y \

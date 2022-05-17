@@ -55,9 +55,9 @@ def init_db(config_path):
 
     # Set database connection settings
     database_settings = {
-        "TYPE": "SQLITE",
-        "FILE": os.path.join(config_path, 'unmanic.db'),
-        "MIGRATIONS_DIR": os.path.join(app_dir, 'migrations_v1'),
+        "TYPE":                       "SQLITE",
+        "FILE":                       os.path.join(config_path, 'unmanic.db'),
+        "MIGRATIONS_DIR":             os.path.join(app_dir, 'migrations_v1'),
         "MIGRATIONS_HISTORY_VERSION": 'v1',
     }
 
@@ -92,7 +92,7 @@ class Service:
         handler.daemon = True
         handler.start()
         self.threads.append({
-            'name': 'TaskHandler',
+            'name':   'TaskHandler',
             'thread': handler
         })
         return handler
@@ -103,7 +103,7 @@ class Service:
         postprocessor.daemon = True
         postprocessor.start()
         self.threads.append({
-            'name': 'PostProcessor',
+            'name':   'PostProcessor',
             'thread': postprocessor
         })
         return postprocessor
@@ -114,7 +114,7 @@ class Service:
         foreman.daemon = True
         foreman.start()
         self.threads.append({
-            'name': 'Foreman',
+            'name':   'Foreman',
             'thread': foreman
         })
         return foreman
@@ -125,7 +125,7 @@ class Service:
         library_scanner_manager.daemon = True
         library_scanner_manager.start()
         self.threads.append({
-            'name': 'LibraryScannerManager',
+            'name':   'LibraryScannerManager',
             'thread': library_scanner_manager
         })
         return library_scanner_manager
@@ -137,7 +137,7 @@ class Service:
             event_monitor_manager.daemon = True
             event_monitor_manager.start()
             self.threads.append({
-                'name': 'EventMonitorManager',
+                'name':   'EventMonitorManager',
                 'thread': event_monitor_manager
             })
             return event_monitor_manager
@@ -150,7 +150,7 @@ class Service:
         uiserver.daemon = True
         uiserver.start()
         self.threads.append({
-            'name': 'UIServer',
+            'name':   'UIServer',
             'thread': uiserver
         })
         return uiserver
@@ -161,7 +161,7 @@ class Service:
         scheduled_tasks_manager.daemon = True
         scheduled_tasks_manager.start()
         self.threads.append({
-            'name': 'ScheduledTasksManager',
+            'name':   'ScheduledTasksManager',
             'thread': scheduled_tasks_manager
         })
         return scheduled_tasks_manager
@@ -176,11 +176,11 @@ class Service:
         # Create our data queues
         data_queues = {
             "library_scanner_triggers": queue.Queue(maxsize=1),
-            "scheduledtasks": queue.Queue(),
-            "inotifytasks": queue.Queue(),
-            "progress_reports": queue.Queue(),
-            "frontend_messages": FrontendPushMessages(),
-            "logging": unmanic_logging
+            "scheduledtasks":           queue.Queue(),
+            "inotifytasks":             queue.Queue(),
+            "progress_reports":         queue.Queue(),
+            "frontend_messages":        FrontendPushMessages(),
+            "logging":                  unmanic_logging
         }
 
         # Clear cache directory
@@ -277,14 +277,14 @@ def main():
                         help='Enable developer mode')
     parser.add_argument('--port', nargs='?',
                         help='Specify the port to run the webserver on')
-    #parser.add_argument('--unmanic_path', nargs='?',
+    # parser.add_argument('--unmanic_path', nargs='?',
     #                    help='Specify the unmanic configuration path instead of ~/.unmanic')
     args = parser.parse_args()
 
     # Configure application from args
     settings = config.Config(
         port=args.port,
-        unmanic_path=args.unmanic_path
+        unmanic_path=None
     )
 
     if args.manage_plugins:

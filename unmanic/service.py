@@ -277,8 +277,8 @@ def main():
                         help='Enable developer mode')
     parser.add_argument('--port', nargs='?',
                         help='Specify the port to run the webserver on')
-    parser.add_argument('--unmanic_path', nargs='?',
-                        help='Specify the unmanic configuration path instead of ~/.unmanic')
+    #parser.add_argument('--unmanic_path', nargs='?',
+    #                    help='Specify the unmanic configuration path instead of ~/.unmanic')
     args = parser.parse_args()
 
     # Configure application from args

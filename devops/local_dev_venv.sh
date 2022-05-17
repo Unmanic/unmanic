@@ -5,14 +5,15 @@
 # File Created: Tuesday, 17th May 2022 6:55:32 pm
 # Author: Josh.5 (jsunnex@gmail.com)
 # -----
-# Last Modified: Tuesday, 17th May 2022 7:10:09 pm
+# Last Modified: Tuesday, 17th May 2022 8:05:25 pm
 # Modified By: Josh.5 (jsunnex@gmail.com)
 ###
 #
 # After running this script you can run unmanic with the following commands:
 #
 #   source venv/bin/activate
-#   unmanic --unmanic_path=config
+#   export HOME_DIR="${PWD}/config"
+#   unmanic
 #
 
 script_path=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -36,7 +37,7 @@ python3 -m pip install -r requirements.txt
 python3 -m pip install -r requirements-dev.txt
 
 # Install the project to the venv
-python3 setup.py build
+devops/frontend_install.sh
 python3 setup.py develop
 
 popd || exit 1

@@ -55,6 +55,10 @@ echo
 for package in ${intel_media_driver_packages[@]}; do
     update_version=$(cat /tmp/apt-updates.txt | grep "${package}/" | awk '{print $2}');
     if [[ -z ${update_version} ]]; then
+        if [[ ${1:-X} == 'all' ]]; then
+            current_version=$(dpkg -s "${package}" | grep Version | awk '{print $2}')
+            echo "${package}=${current_version} \\"
+        fi
         continue
     fi
     echo "${package}=${update_version} \\"

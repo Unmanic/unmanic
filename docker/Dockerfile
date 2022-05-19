@@ -26,7 +26,7 @@ RUN \
             libx11-6=2:1.6.9-2ubuntu1.2 \
             libxcb1=1.14-2 \
             libxext6=2:1.3.4-0ubuntu1 \
-            libxml2=2.9.10+dfsg-5ubuntu0.20.04.2 \
+            libxml2=2.9.10+dfsg-5ubuntu0.20.04.3 \
     && \
     echo "**** Install arch specific packages for $(uname -m) ****" \
         && sleep 2 \
@@ -41,15 +41,16 @@ RUN \
             echo "**** Install Intel Media Drivers  ****" \
                 && apt-get update \
                 && apt-get install -y \
-                    intel-igc-cm=1.0.128+i699~u20.04 \
-                    intel-level-zero-gpu=1.3.22597+i699~u20.04 \
-                    intel-media-va-driver-non-free=22.2.2+i699~u20.04 \
-                    intel-opencl-icd=22.10.22597+i699~u20.04 \
-                    level-zero=1.7.9+i699~u20.04 \
-                    libigc1=1.0.10409+i699~u20.04 \
-                    libigdfcl1=1.0.10409+i699~u20.04 \
+                    i965-va-driver=2.4.0-0ubuntu1 \
+                    intel-igc-cm=1.0.128+i699.3~u20.04 \
+                    intel-level-zero-gpu=1.3.22597+i699.3~u20.04 \
+                    intel-media-va-driver-non-free=22.2.2+i699.3~u20.04 \
+                    intel-opencl-icd=22.10.22597+i699.3~u20.04 \
+                    level-zero=1.7.9+i699.3~u20.04 \
+                    libigc1=1.0.10409+i699.3~u20.04 \
+                    libigdfcl1=1.0.10409+i699.3~u20.04 \
                     libigdgmm11=21.3.3+i643~u20.04 \
-                    libmfx1=22.2.2+i699~u20.04 \
+                    libmfx1=22.2.2+i699.3~u20.04 \
                     libva-drm2=2.14.0.2-23 \
                     libva-wayland2=2.14.0.2-23 \
                     libva-x11-2=2.14.0.2-23 \

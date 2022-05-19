@@ -558,11 +558,8 @@ class ApiSettingsHandler(BaseApiHandler):
             json_request = self.read_json_request(SettingsWorkerGroupConfigSchema())
 
             # Write config for this worker group
-            if not json_request.get('id'):
-                WorkerGroup.create(json_request)
-            else:
-                from unmanic.webserver.helpers import settings
-                settings.save_worker_group_config(json_request)
+            from unmanic.webserver.helpers import settings
+            settings.save_worker_group_config(json_request)
 
             self.write_success()
             return

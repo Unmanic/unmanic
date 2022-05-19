@@ -6,6 +6,7 @@ runtime_packages=(
     "libglib2.0-0"
     "libgomp1"
     "libharfbuzz0b"
+    "libmediainfo0v5"
     "libv4l-0"
     "libx11-6"
     "libxcb1"
@@ -41,11 +42,11 @@ for package in ${runtime_packages[@]}; do
     if [[ -z ${update_version} ]]; then
         if [[ ${1:-X} == 'all' ]]; then
             current_version=$(dpkg -s "${package}" | grep Version | awk '{print $2}')
-            echo "${package}=${current_version} \\"
+            echo "            ${package}=${current_version} \\"
         fi
         continue
     fi
-    echo "${package}=${update_version} \\"
+    echo "            ${package}=${update_version} \\"
 done
 echo
 
@@ -57,10 +58,10 @@ for package in ${intel_media_driver_packages[@]}; do
     if [[ -z ${update_version} ]]; then
         if [[ ${1:-X} == 'all' ]]; then
             current_version=$(dpkg -s "${package}" | grep Version | awk '{print $2}')
-            echo "${package}=${current_version} \\"
+            echo "                    ${package}=${current_version} \\"
         fi
         continue
     fi
-    echo "${package}=${update_version} \\"
+    echo "                    ${package}=${update_version} \\"
 done
 echo

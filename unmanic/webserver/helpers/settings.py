@@ -110,10 +110,22 @@ def save_worker_group_config(data):
     """
     Save a complete worker group configuration
 
+    NOTE: 
+        If the worker group is updated in the future with new options, then be sure to apply the save logic to 
+        both the create and update methods
+
     :param data:
     :return:
     """
     from unmanic.libs.worker_group import WorkerGroup
+
+    # Create new worker group
+    if not data.get('id'):
+        WorkerGroup.create(data)
+        return
+
+    # Update existing worker group
+    # NOTE: If this is updated in the future with new options, then be sure to apply the same save logic to the create method
     worker_group = WorkerGroup(data.get('id'))
     # Store locked status
     worker_group.set_locked(data.get('locked', worker_group.get_locked()))

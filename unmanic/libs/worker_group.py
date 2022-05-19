@@ -151,8 +151,13 @@ class WorkerGroup(object):
             'number_of_workers': data.get('number_of_workers'),
         }
         worker_group_id = WorkerGroups.create(**worker_group_data)
-        if data.get('worker_event_schedules'):
-            WorkerGroup.create_schedules(worker_group_id, data.get('worker_event_schedules', []))
+
+        # Fetch worker group
+        worker_group = WorkerGroup(int(worker_group_id.id))
+
+        # Set lists
+        worker_group.set_tags(data.get('tags', []))
+        worker_group.set_worker_event_schedules(data.get('worker_event_schedules', []))
 
     @staticmethod
     def create_schedules(worker_group_id: int, worker_event_schedules: list):

@@ -166,7 +166,11 @@ class EventMonitorManager(threading.Thread):
                 except Exception as e:
                     self._log("Unable to fetch library config for ID {}".format(lib_info['id']), level='exception')
                     continue
-                # Check if library scanner is enabled on any library
+                # Check if the library is configured for remote files only
+                if library.get_enable_remote_only():
+                    # This library is configured to receive remote files only... Never enable the file monitor
+                    continue
+                # Check if file monitor is enabled on any library
                 if library.get_enable_inotify():
                     enable_inotify = True
 
@@ -213,6 +217,10 @@ class EventMonitorManager(threading.Thread):
                     library = Library(lib_info['id'])
                 except Exception as e:
                     self._log("Unable to fetch library config for ID {}".format(lib_info['id']), level='exception')
+                    continue
+                # Check if the library is configured for remote files only
+                if library.get_enable_remote_only():
+                    # This library is configured to receive remote files only... Never enable the file monitor
                     continue
                 # Check if library scanner is enabled on any library
                 if library.get_enable_inotify():

@@ -296,10 +296,6 @@ def create_task(abspath, library_id=1, library_name=None, task_type='local', pri
         # Do not carry on.
         return False
 
-    # Create checksum for response
-    from unmanic.libs import common
-    checksum = common.get_file_checksum(abspath)
-
     # Return task info (same as the data returned in a file upload
     task_info = new_task.get_task_data()
     return {
@@ -309,5 +305,4 @@ def create_task(abspath, library_id=1, library_name=None, task_type='local', pri
         "type":       task_info.get('type'),
         "status":     task_info.get('status'),
         "library_id": task_info.get('library_id'),
-        "checksum":   checksum,
     }

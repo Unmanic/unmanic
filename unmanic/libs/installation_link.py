@@ -728,6 +728,46 @@ class Links(object, metaclass=SingletonType):
             return False
         return True
 
+    def new_pending_task_create_on_remote_installation(self, remote_config: dict, abspath: str, library_id: int):
+        """
+        Create a new pending task on a remote installation.
+        The remote installation will return the ID of a generated task.
+
+        :param remote_config:
+        :param abspath:
+        :param library_id:
+        :return:
+        """
+        try:
+            request_handler = RequestHandler(
+                auth=remote_config.get('auth'),
+                username=remote_config.get('username'),
+                password=remote_config.get('password'),
+            )
+            address = self.__format_address(remote_config.get('address'))
+            url = "{}/unmanic/api/v2/pending/create".format(address)
+            data = {
+                "path":       abspath,
+                "library_id": library_id,
+            }
+            res = request_handler.post(url, json=data, timeout=2)
+            if res.status_code in [200, 400]:
+                return res.json()
+            elif res.status_code in [404, 405, 500]:
+                json_data = res.json()
+                self._log("Error while creating new remote pending task. Message: '{}'".format(json_data.get('error')),
+                          message2=json_data.get('traceback', []), level='error')
+            return {}
+        except requests.exceptions.Timeout:
+            self._log("Request to create remote pending task timed out '{}'".format(abspath), level='warning')
+            return None
+        except requests.exceptions.RequestException as e:
+            self._log("Request to create remote pending task failed '{}'".format(abspath), message2=str(e), level='warning')
+            return None
+        except Exception as e:
+            self._log("Failed to create remote pending task '{}'".format(abspath), message2=str(e), level='error')
+        return {}
+
     def send_file_to_remote_installation(self, remote_config: dict, path: str):
         """
         Send a file to a remote installation.
@@ -766,6 +806,30 @@ class Links(object, metaclass=SingletonType):
             return None
         except Exception as e:
             self._log("Failed to remove remote pending task", message2=str(e), level='error')
+        return {}
+
+    def get_the_remote_library_config_by_name(self, remote_config: dict, library_name: str):
+        """
+        Fetch a remote library's configuration by its name
+
+        :param remote_config:
+        :param library_name:
+        :return:
+        """
+        try:
+            # Fetch remote installation libraries
+            results = self.remote_api_get(remote_config, '/unmanic/api/v2/settings/libraries', timeout=4)
+            for library in results.get('libraries', []):
+                if library.get('name') == library_name:
+                    return library
+        except requests.exceptions.Timeout:
+            self._log("Request to set remote task library timed out", level='warning')
+            return None
+        except requests.exceptions.RequestException as e:
+            self._log("Request to set remote task library failed", message2=str(e), level='warning')
+            return None
+        except Exception as e:
+            self._log("Failed to set remote task library", message2=str(e), level='error')
         return {}
 
     def set_the_remote_task_library(self, remote_config: dict, remote_task_id: int, library_name: str):
@@ -1110,42 +1174,7 @@ class RemoteTaskManager(threading.Thread):
 
         lock_key = None
 
-        # Get source file checksum
-        initial_checksum = common.get_file_checksum(original_abspath)
-        initial_file_size = os.path.getsize(original_abspath)
-
-        # Loop until we are able to upload the file to the remote installation
-        info = {}
-        while not self.redundant_flag.is_set():
-            # For files smaller than 100MB, just transfer them in parallel
-            # Smaller files add a lot of time overhead with the waiting in line and it slows the whole process down
-            # Larger files benefit from being transferred one at a time.
-            if initial_file_size > 100000000:
-                # Check for network transfer lock
-                lock_key = self.links.acquire_network_transfer_lock(address, transfer_limit=1, lock_type='send')
-                if not lock_key:
-                    time.sleep(1)
-                    continue
-
-            # Send a file to a remote installation.
-            self._log("Uploading file to remote installation '{}'".format(original_abspath), level='debug')
-            info = self.links.send_file_to_remote_installation(self.installation_info, original_abspath)
-            self.links.release_network_transfer_lock(lock_key)
-            if not info:
-                self._log("Failed to upload the file '{}'".format(original_abspath), level='error')
-                return False
-            break
-
-        remote_task_id = info.get('id')
-
-        # Compare uploaded file md5checksum
-        if info.get('checksum') != initial_checksum:
-            self._log("The uploaded file did not return a correct checksum '{}'".format(original_abspath), level='error')
-            # Send request to terminate the remote worker then return
-            self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
-            return False
-
-        # Set the library of the remote task using the library's name
+        # Fetch the library name and path this task is for
         library_id = self.current_task.get_task_library_id()
         try:
             library = Library(library_id)
@@ -1153,6 +1182,80 @@ class RemoteTaskManager(threading.Thread):
             self._log("Unable to fetch library config for ID {}".format(library_id), level='exception')
             return False
         library_name = library.get_name()
+        library_path = library.get_path()
+
+        # Check if we can create the remote task with just a relative path
+        #   only create checksum and send file if the remote library path cannot accept relative paths or
+        #   it is configured for only receiving remote files
+        send_file = False
+        library_config = self.links.get_the_remote_library_config_by_name(self.installation_info, library_name)
+
+        # Check if remote library is configured only for receiving remote files
+        if library_config.get('enable_remote_only'):
+            send_file = True
+
+        # First attempt to create a task with an abspath on the remote installation
+        if not send_file:
+            remote_library_id = library_config.get('id')
+
+            # Remove library path from file abspath to create a relative path
+            original_relpath = os.path.relpath(original_abspath, library_path)
+            # Join remote library path to the relative path to form a remote library abspath to the file
+            remote_original_abspath = os.path.join(library_config.get('path'), original_relpath)
+            # Post the task creation. This will error if the file does not exist
+            info = self.links.new_pending_task_create_on_remote_installation(self.installation_info,
+                                                                             remote_original_abspath,
+                                                                             remote_library_id)
+            if not info:
+                self._log("Unable to create remote pending task for path '{}'. Fallback to sending file.".format(
+                    remote_original_abspath), level='debug')
+                send_file = True
+            elif 'path does not exist' in info.get('error', '').lower():
+                self._log("Unable to find file in remote library's path '{}'. Fallback to sending file.".format(
+                    remote_original_abspath), level='debug')
+                send_file = True
+            elif 'task already exists' in info.get('error', '').lower():
+                self._log("A remote task already exists with the path '{}'. Fallback to sending file.".format(
+                    remote_original_abspath), level='error')
+                return False
+
+        if send_file:
+            # Get source file checksum
+            initial_checksum = common.get_file_checksum(original_abspath)
+            initial_file_size = os.path.getsize(original_abspath)
+
+            # Loop until we are able to upload the file to the remote installation
+            info = {}
+            while not self.redundant_flag.is_set():
+                # For files smaller than 100MB, just transfer them in parallel
+                # Smaller files add a lot of time overhead with the waiting in line and it slows the whole process down
+                # Larger files benefit from being transferred one at a time.
+                if initial_file_size > 100000000:
+                    # Check for network transfer lock
+                    lock_key = self.links.acquire_network_transfer_lock(address, transfer_limit=1, lock_type='send')
+                    if not lock_key:
+                        time.sleep(1)
+                        continue
+
+                # Send a file to a remote installation.
+                self._log("Uploading file to remote installation '{}'".format(original_abspath), level='debug')
+                info = self.links.send_file_to_remote_installation(self.installation_info, original_abspath)
+                self.links.release_network_transfer_lock(lock_key)
+                if not info:
+                    self._log("Failed to upload the file '{}'".format(original_abspath), level='error')
+                    return False
+                break
+
+            remote_task_id = info.get('id')
+
+            # Compare uploaded file md5checksum
+            if info.get('checksum') != initial_checksum:
+                self._log("The uploaded file did not return a correct checksum '{}'".format(original_abspath), level='error')
+                # Send request to terminate the remote worker then return
+                self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
+                return False
+
+        # Set the library of the remote task using the library's name
         while not self.redundant_flag.is_set():
             result = self.links.set_the_remote_task_library(self.installation_info, remote_task_id, library_name)
             if result is None:

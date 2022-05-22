@@ -12,7 +12,7 @@
 # After running this script you can run unmanic with the following commands:
 #
 #   source venv/bin/activate
-#   export HOME_DIR="${PWD}/config"
+#   export HOME_DIR="${PWD}/dev_environment"
 #   unmanic
 #
 

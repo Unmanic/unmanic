@@ -880,12 +880,13 @@ class ApiSettingsHandler(BaseApiHandler):
 
             library_settings = {
                 "library_config": {
-                    "id":             0,
-                    "name":           '',
-                    "path":           '/',
-                    "enable_scanner": False,
-                    "enable_inotify": False,
-                    "priority_score": 0,
+                    "id":                 0,
+                    "name":               '',
+                    "path":               '/',
+                    "enable_remote_only": False,
+                    "enable_scanner":     False,
+                    "enable_inotify":     False,
+                    "priority_score":     0,
                 },
                 "plugins":        {
                     "enabled_plugins": [],
@@ -896,14 +897,15 @@ class ApiSettingsHandler(BaseApiHandler):
                 library_config = Library(json_request.get('id'))
                 library_settings = {
                     "library_config": {
-                        "id":             library_config.get_id(),
-                        "name":           library_config.get_name(),
-                        "path":           library_config.get_path(),
-                        "locked":         library_config.get_locked(),
-                        "enable_scanner": library_config.get_enable_scanner(),
-                        "enable_inotify": library_config.get_enable_inotify(),
-                        "priority_score": library_config.get_priority_score(),
-                        "tags":           library_config.get_tags(),
+                        "id":                 library_config.get_id(),
+                        "name":               library_config.get_name(),
+                        "path":               library_config.get_path(),
+                        "locked":             library_config.get_locked(),
+                        "enable_remote_only": library_config.get_enable_remote_only(),
+                        "enable_scanner":     library_config.get_enable_scanner(),
+                        "enable_inotify":     library_config.get_enable_inotify(),
+                        "priority_score":     library_config.get_priority_score(),
+                        "tags":               library_config.get_tags(),
                     },
                     "plugins":        {
                         "enabled_plugins": library_config.get_enabled_plugins(),

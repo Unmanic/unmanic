@@ -230,6 +230,12 @@ class Library(object):
     def set_locked(self, value):
         self.model.locked = value
 
+    def get_enable_remote_only(self):
+        return self.model.enable_remote_only
+
+    def set_enable_remote_only(self, value):
+        self.model.enable_remote_only = value
+
     def get_enable_scanner(self):
         return self.model.enable_scanner
 

@@ -86,7 +86,7 @@ class ScheduledTasksManager(threading.Thread):
 
         # Loop every 2 seconds to check if a task is due to be run
         while not self.abort_flag.is_set():
-            time.sleep(2)
+            time.sleep(1)
             # Check if scheduled task is due
             self.scheduler.run_pending()
 

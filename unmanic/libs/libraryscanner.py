@@ -163,6 +163,10 @@ class LibraryScannerManager(threading.Thread):
             except Exception as e:
                 self._log("Unable to fetch library config for ID {}".format(lib_info['id']), level='exception')
                 continue
+            # Check if the library is configured for remote files only
+            if library.get_enable_remote_only():
+                # This library is configured to receive remote files only... Never run a library scan on it
+                continue
             # Check if library scanner is enabled on any library
             if library.get_enable_scanner():
                 # Run library scan

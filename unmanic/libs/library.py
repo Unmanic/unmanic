@@ -101,11 +101,14 @@ class Library(object):
         # If the libraries path is empty, then we should add the default path
         if not configured_libraries:
             default_library = {
-                'id':     1,
-                'name':   generate_random_library_name(),
-                'path':   default_library_path,
-                'tags':   [],
-                'locked': False,
+                'id':                 1,
+                'name':               generate_random_library_name(),
+                'path':               default_library_path,
+                'locked':             False,
+                "enable_remote_only": False,
+                "enable_scanner":     False,
+                "enable_inotify":     False,
+                'tags':               [],
             }
             Libraries.create(**default_library)
             return [default_library]
@@ -119,11 +122,14 @@ class Library(object):
                 lib.save()
             # Create library config dictionary
             library_config = {
-                'id':     lib.id,
-                'name':   lib.name,
-                'path':   lib.path,
-                'tags':   [],
-                'locked': lib.locked,
+                'id':                 lib.id,
+                'name':               lib.name,
+                'path':               lib.path,
+                'locked':             lib.locked,
+                'enable_remote_only': lib.enable_remote_only,
+                'enable_scanner':     lib.enable_scanner,
+                'enable_inotify':     lib.enable_inotify,
+                'tags':               [],
             }
             # Append tags
             for tag in lib.tags.order_by(Tags.name):

@@ -479,6 +479,11 @@ class RequestPendingTaskCreateSchema(BaseSchema):
         description="The name of the library to append this task to",
         example='Default',
     )
+    type = fields.Str(
+        required=False,
+        description="The type of pending task to create (local/remote)",
+        example='local',
+    )
     priority_score = fields.Int(
         required=False,
         description="Apply a priority score to the created task to either increase or decrease its position in the queue",

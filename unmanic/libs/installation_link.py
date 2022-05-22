@@ -528,7 +528,8 @@ class Links(object, metaclass=SingletonType):
         """
         for remote_installation in self.settings.get_remote_installations():
             if remote_installation.get('uuid') == uuid:
-                return remote_installation
+                # If not yet configured, set default values before returning
+                return self.__generate_default_config(remote_installation)
 
         # Ensure we have settings data from the remote installation
         raise Exception("Unable to read installation link configuration.")

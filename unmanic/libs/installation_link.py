@@ -1203,6 +1203,17 @@ class RemoteTaskManager(threading.Thread):
         # Set the finish time in the statistics data
         self.current_task.task.finish_time = self.finish_time
 
+    def __write_failure_to_worker_log(self):
+        # Append long entry to say the worker was terminated
+        self.worker_log.append("\n\nREMOTE TASK FAILED!")
+        self.worker_log.append("\nAn error occurred during one of these stages:")
+        self.worker_log.append("\n    - while sending task to remote installation")
+        self.worker_log.append("\n    - during the remote task processing")
+        self.worker_log.append("\n    - while attempting to retrieve the completed task from the remote installation")
+        self.worker_log.append("\nCheck Unmanic logs for more information.")
+        self.worker_log.append("\nRelevant logs will be prefixed with 'ERROR:Unmanic.{}'".format(self.name))
+        self.current_task.save_command_log(self.worker_log)
+
     def __send_task_to_remote_worker_and_monitor(self):
         """
         Sends the task file to the remote installation to process.
@@ -1223,6 +1234,7 @@ class RemoteTaskManager(threading.Thread):
         # Ensure file exists
         if not os.path.exists(original_abspath):
             self._log("File no longer exists '{}'. Was it removed?".format(original_abspath), level='warning')
+            self.__write_failure_to_worker_log()
             return False
 
         # Set the remote worker address
@@ -1236,6 +1248,7 @@ class RemoteTaskManager(threading.Thread):
             library = Library(library_id)
         except Exception as e:
             self._log("Unable to fetch library config for ID {}".format(library_id), level='exception')
+            self.__write_failure_to_worker_log()
             return False
         library_name = library.get_name()
         library_path = library.get_path()
@@ -1274,6 +1287,7 @@ class RemoteTaskManager(threading.Thread):
             elif 'task already exists' in info.get('error', '').lower():
                 self._log("A remote task already exists with the path '{}'. Fallback to sending file.".format(
                     remote_original_abspath), level='error')
+                self.__write_failure_to_worker_log()
                 return False
 
             # Set the remote task ID
@@ -1303,6 +1317,7 @@ class RemoteTaskManager(threading.Thread):
                 self.links.release_network_transfer_lock(lock_key)
                 if not info:
                     self._log("Failed to upload the file '{}'".format(original_abspath), level='error')
+                    self.__write_failure_to_worker_log()
                     return False
                 break
 
@@ -1314,11 +1329,13 @@ class RemoteTaskManager(threading.Thread):
                 self._log("The uploaded file did not return a correct checksum '{}'".format(original_abspath), level='error')
                 # Send request to terminate the remote worker then return
                 self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
+                self.__write_failure_to_worker_log()
                 return False
 
         # Ensure at this point we have set the remote_task_id
         if remote_task_id is None:
             self._log("Failed to create remote task. Var remote_task_id is still None", level='error')
+            self.__write_failure_to_worker_log()
             return False
 
         # Set the library of the remote task using the library's name
@@ -1348,6 +1365,7 @@ class RemoteTaskManager(threading.Thread):
                 self._log("Failed to set initial remote pending task to status '{}'".format(original_abspath), level='error')
                 # Send request to terminate the remote worker then return
                 self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
+                self.__write_failure_to_worker_log()
                 return False
             if result.get('success'):
                 break
@@ -1393,6 +1411,7 @@ class RemoteTaskManager(threading.Thread):
                 continue
             elif all_task_states.get('results') and task_status == '':
                 self._log("Task has been removed by remote installation '{}'".format(original_abspath), level='error')
+                self.__write_failure_to_worker_log()
                 return False
             elif task_status != 'in_progress':
                 # Mark this as the last time run
@@ -1432,7 +1451,8 @@ class RemoteTaskManager(threading.Thread):
 
         # If the previous loop was broken because this tread needs to terminate, return False here (did not complete)
         if self.redundant_flag.is_set():
-            self.current_task.save_command_log(["\n\nREMOTE LINK MANAGER TERMINATED!"])
+            self.worker_log += ["\n\nREMOTE LINK MANAGER TERMINATED!"]
+            self.current_task.save_command_log(self.worker_log)
             return False
 
         self._log("Remote task completed '{}'".format(original_abspath), level='info')
@@ -1452,6 +1472,7 @@ class RemoteTaskManager(threading.Thread):
             self._log(
                 "Failed to retrieve remote task data for '{}'. NOTE: The cached files have not been removed from the remote host.".format(
                     original_abspath), level='error')
+            self.__write_failure_to_worker_log()
             return False
         self.worker_log = data.get('log')
 
@@ -1487,12 +1508,14 @@ class RemoteTaskManager(threading.Thread):
                     self._log("Failed to download file '{}'".format(os.path.basename(data.get('abspath'))), level='error')
                     # Send request to terminate the remote worker then return
                     self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
+                    self.__write_failure_to_worker_log()
                     return False
                 break
 
             # If the previous loop was broken because this tread needs to terminate, return False here (did not complete)
             if self.redundant_flag.is_set():
-                self.current_task.save_command_log(["\n\nREMOTE LINK MANAGER TERMINATED!"])
+                self.worker_log += ["\n\nREMOTE LINK MANAGER TERMINATED!"]
+                self.current_task.save_command_log(self.worker_log)
                 return False
 
             # Match checksum from task result data with downloaded file
@@ -1502,6 +1525,7 @@ class RemoteTaskManager(threading.Thread):
                           level='error')
                 # Send request to terminate the remote worker then return
                 self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
+                self.__write_failure_to_worker_log()
                 return False
 
             # Send request to terminate the remote worker then return
@@ -1509,4 +1533,5 @@ class RemoteTaskManager(threading.Thread):
 
             return True
 
+        self.__write_failure_to_worker_log()
         return False

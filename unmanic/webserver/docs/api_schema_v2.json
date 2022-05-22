@@ -1637,6 +1637,21 @@
                         "description": "If the library is locked and cannot be deleted",
                         "example": false
                     },
+                    "enable_remote_only": {
+                        "type": "boolean",
+                        "description": "If the library is configured for remote files only",
+                        "example": false
+                    },
+                    "enable_scanner": {
+                        "type": "boolean",
+                        "description": "If the library is configured to execute library scans",
+                        "example": false
+                    },
+                    "enable_inotify": {
+                        "type": "boolean",
+                        "description": "If the library is configured to monitor for file changes",
+                        "example": false
+                    },
                     "tags": {
                         "type": "array",
                         "description": "A list of tags associated with this library",
@@ -1650,6 +1665,9 @@
                     }
                 },
                 "required": [
+                    "enable_inotify",
+                    "enable_remote_only",
+                    "enable_scanner",
                     "id",
                     "locked",
                     "name",

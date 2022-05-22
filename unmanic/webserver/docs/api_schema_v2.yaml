@@ -230,6 +230,18 @@ components:
           description: If the library is locked and cannot be deleted
           example: false
           type: boolean
+        enable_remote_only:
+          description: If the library is configured for remote files only
+          example: false
+          type: boolean
+        enable_scanner:
+          description: If the library is configured to execute library scans
+          example: false
+          type: boolean
+        enable_inotify:
+          description: If the library is configured to monitor for file changes
+          example: false
+          type: boolean
         tags:
           description: A list of tags associated with this library
           example:
@@ -239,6 +251,9 @@ components:
             type: string
           type: array
       required:
+      - enable_inotify
+      - enable_remote_only
+      - enable_scanner
       - id
       - locked
       - name

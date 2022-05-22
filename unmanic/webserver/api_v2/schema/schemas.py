@@ -1179,6 +1179,21 @@ class LibraryResultsSchema(BaseSchema):
         description="If the library is locked and cannot be deleted",
         example=False,
     )
+    enable_remote_only = fields.Boolean(
+        required=True,
+        description="If the library is configured for remote files only",
+        example=False,
+    )
+    enable_scanner = fields.Boolean(
+        required=True,
+        description="If the library is configured to execute library scans",
+        example=False,
+    )
+    enable_inotify = fields.Boolean(
+        required=True,
+        description="If the library is configured to monitor for file changes",
+        example=False,
+    )
     tags = fields.List(
         cls_or_instance=fields.Str,
         required=True,

@@ -165,12 +165,13 @@ class Links(object, metaclass=SingletonType):
             self._network_transfer_lock[lock_key] = {}
             return True
 
-    def remote_api_get(self, remote_config: dict, endpoint: str):
+    def remote_api_get(self, remote_config: dict, endpoint: str, timeout=2):
         """
         GET to remote installation API
 
         :param remote_config:
         :param endpoint:
+        :param timeout:
         :return:
         """
         request_handler = RequestHandler(
@@ -180,10 +181,16 @@ class Links(object, metaclass=SingletonType):
         )
         address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
-        res = request_handler.get(url, timeout=2)
-        if res.status_code != 200:
-            return {}
-        return res.json()
+        res = request_handler.get(url, timeout=timeout)
+        if res.status_code == 200:
+            return res.json()
+        elif res.status_code in [400, 404, 405, 500]:
+            json_data = res.json()
+            self._log("Error while executing GET on remote installation API - {}. Message: '{}'".format(
+                endpoint,
+                json_data.get('error')),
+                message2=json_data.get('traceback', []), level='error')
+        return {}
 
     def remote_api_post(self, remote_config: dict, endpoint: str, data: dict, timeout=2):
         """
@@ -205,6 +212,12 @@ class Links(object, metaclass=SingletonType):
         res = request_handler.post(url, json=data, timeout=timeout)
         if res.status_code == 200:
             return res.json()
+        elif res.status_code in [400, 404, 405, 500]:
+            json_data = res.json()
+            self._log("Error while executing POST on remote installation API - {}. Message: '{}'".format(
+                endpoint,
+                json_data.get('error')),
+                message2=json_data.get('traceback', []), level='error')
         return {}
 
     def remote_api_post_file(self, remote_config: dict, endpoint: str, path: str):
@@ -236,6 +249,12 @@ class Links(object, metaclass=SingletonType):
         res = request_handler.post(url, data=m, headers={'Content-Type': m.content_type})
         if res.status_code == 200:
             return res.json()
+        elif res.status_code in [400, 404, 405, 500]:
+            json_data = res.json()
+            self._log("Error while uploading file to remote installation API - {}. Message: '{}'".format(
+                endpoint,
+                json_data.get('error')),
+                message2=json_data.get('traceback', []), level='error')
         return {}
 
     def remote_api_delete(self, remote_config: dict, endpoint: str, data: dict, timeout=2):
@@ -258,6 +277,12 @@ class Links(object, metaclass=SingletonType):
         res = request_handler.delete(url, json=data, timeout=timeout)
         if res.status_code == 200:
             return res.json()
+        elif res.status_code in [400, 404, 405, 500]:
+            json_data = res.json()
+            self._log("Error while executing DELETE on remote installation API - {}. Message: '{}'".format(
+                endpoint,
+                json_data.get('error')),
+                message2=json_data.get('traceback', []), level='error')
         return {}
 
     def remote_api_get_download(self, remote_config: dict, endpoint: str, path: str):
@@ -306,6 +331,10 @@ class Links(object, metaclass=SingletonType):
         url = "{}/unmanic/api/v2/settings/configuration".format(address)
         res = request_handler.get(url, timeout=2)
         if res.status_code != 200:
+            if res.status_code in [400, 404, 405, 500]:
+                json_data = res.json()
+                self._log("Error while fetching remote installation config. Message: '{}'".format(json_data.get('error')),
+                          message2=json_data.get('traceback', []), level='error')
             return {}
         system_configuration_data = res.json()
 
@@ -313,6 +342,10 @@ class Links(object, metaclass=SingletonType):
         url = "{}/unmanic/api/v2/settings/read".format(address)
         res = request_handler.get(url, timeout=2)
         if res.status_code != 200:
+            if res.status_code in [400, 404, 405, 500]:
+                json_data = res.json()
+                self._log("Error while fetching remote installation settings. Message: '{}'".format(json_data.get('error')),
+                          message2=json_data.get('traceback', []), level='error')
             return {}
         settings_data = res.json()
 
@@ -320,6 +353,10 @@ class Links(object, metaclass=SingletonType):
         url = "{}/unmanic/api/v2/version/read".format(address)
         res = request_handler.get(url, timeout=2)
         if res.status_code != 200:
+            if res.status_code in [400, 404, 405, 500]:
+                json_data = res.json()
+                self._log("Error while fetching remote installation version. Message: '{}'".format(json_data.get('error')),
+                          message2=json_data.get('traceback', []), level='error')
             return {}
         version_data = res.json()
 
@@ -327,6 +364,11 @@ class Links(object, metaclass=SingletonType):
         url = "{}/unmanic/api/v2/session/state".format(address)
         res = request_handler.get(url, timeout=2)
         if res.status_code != 200:
+            if res.status_code in [400, 404, 405, 500]:
+                json_data = res.json()
+                self._log(
+                    "Error while fetching remote installation session state. Message: '{}'".format(json_data.get('error')),
+                    message2=json_data.get('traceback', []), level='error')
             return {}
         session_data = res.json()
 
@@ -338,6 +380,11 @@ class Links(object, metaclass=SingletonType):
         url = "{}/unmanic/api/v2/pending/tasks".format(address)
         res = request_handler.post(url, json=data, timeout=2)
         if res.status_code != 200:
+            if res.status_code in [400, 404, 405, 500]:
+                json_data = res.json()
+                self._log(
+                    "Error while fetching remote installation pending task list. Message: '{}'".format(json_data.get('error')),
+                    message2=json_data.get('traceback', []), level='error')
             return {}
         tasks_data = res.json()
 
@@ -551,6 +598,10 @@ class Links(object, metaclass=SingletonType):
         res = request_handler.post(url, json=data, timeout=2)
         if res.status_code == 200:
             return res.json()
+        elif res.status_code in [400, 404, 405, 500]:
+            json_data = res.json()
+            self._log("Error while fetching remote installation link config. Message: '{}'".format(json_data.get('error')),
+                      message2=json_data.get('traceback', []), level='error')
         return {}
 
     def push_remote_installation_link_config(self, configuration: dict):
@@ -598,6 +649,10 @@ class Links(object, metaclass=SingletonType):
         res = request_handler.post(url, json=data, timeout=2)
         if res.status_code == 200:
             return True
+        elif res.status_code in [400, 404, 405, 500]:
+            json_data = res.json()
+            self._log("Error while pushing remote installation link config. Message: '{}'".format(json_data.get('error')),
+                      message2=json_data.get('traceback', []), level='error')
         return False
 
     def check_remote_installation_for_available_workers(self):

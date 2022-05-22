@@ -804,6 +804,7 @@ class Links(object, metaclass=SingletonType):
             data = {
                 "path":       abspath,
                 "library_id": library_id,
+                "type":       'remote',
             }
             res = request_handler.post(url, json=data, timeout=2)
             if res.status_code in [200, 400]:
@@ -1250,6 +1251,7 @@ class RemoteTaskManager(threading.Thread):
             send_file = True
 
         # First attempt to create a task with an abspath on the remote installation
+        remote_task_id = None
         if not send_file:
             remote_library_id = library_config.get('id')
 
@@ -1273,6 +1275,9 @@ class RemoteTaskManager(threading.Thread):
                 self._log("A remote task already exists with the path '{}'. Fallback to sending file.".format(
                     remote_original_abspath), level='error')
                 return False
+
+            # Set the remote task ID
+            remote_task_id = info.get('id')
 
         if send_file:
             # Get source file checksum
@@ -1301,6 +1306,7 @@ class RemoteTaskManager(threading.Thread):
                     return False
                 break
 
+            # Set the remote task ID
             remote_task_id = info.get('id')
 
             # Compare uploaded file md5checksum
@@ -1309,6 +1315,11 @@ class RemoteTaskManager(threading.Thread):
                 # Send request to terminate the remote worker then return
                 self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
                 return False
+
+        # Ensure at this point we have set the remote_task_id
+        if remote_task_id is None:
+            self._log("Failed to create remote task. Var remote_task_id is still None", level='error')
+            return False
 
         # Set the library of the remote task using the library's name
         while not self.redundant_flag.is_set():

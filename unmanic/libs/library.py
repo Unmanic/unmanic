@@ -197,8 +197,9 @@ class Library(object):
         enabled_plugins = []
         for enabled_plugin in library_config.get_enabled_plugins(include_settings=True):
             enabled_plugins.append({
-                'plugin_id': enabled_plugin.get('plugin_id'),
-                'settings':  enabled_plugin.get('settings'),
+                'plugin_id':  enabled_plugin.get('plugin_id'),
+                'has_config': enabled_plugin.get('has_config'),
+                'settings':   enabled_plugin.get('settings'),
             })
 
         # Create plugin flow

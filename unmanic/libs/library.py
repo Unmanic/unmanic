@@ -186,6 +186,46 @@ class Library(object):
         new_library = Libraries.create(**data)
         return Library(new_library.id)
 
+    @staticmethod
+    def export(library_id):
+        from unmanic.libs.plugins import PluginsHandler
+
+        # Read the library
+        library_config = Library(library_id)
+
+        # Get list of enabled plugins with their settings
+        enabled_plugins = []
+        for enabled_plugin in library_config.get_enabled_plugins(include_settings=True):
+            enabled_plugins.append({
+                'plugin_id': enabled_plugin.get('plugin_id'),
+                'settings':  enabled_plugin.get('settings'),
+            })
+
+        # Create plugin flow
+        plugin_flow = {}
+
+        plugin_handler = PluginsHandler()
+        for plugin_type in plugin_handler.get_plugin_types_with_flows():
+            plugin_flow[plugin_type] = []
+            flow = plugin_handler.get_enabled_plugin_flows_for_plugin_type(plugin_type, library_id)
+            for f in flow:
+                plugin_flow[plugin_type].append(f.get('plugin_id'))
+
+        return {
+            "plugins":        {
+                "enabled_plugins": enabled_plugins,
+                "plugin_flow":     plugin_flow,
+            },
+            "library_config": {
+                "name":               library_config.get_name(),
+                "path":               library_config.get_path(),
+                'enable_remote_only': library_config.get_enable_remote_only(),
+                'enable_scanner':     library_config.get_enable_scanner(),
+                'enable_inotify':     library_config.get_enable_inotify(),
+                'tags':               library_config.get_tags(),
+            },
+        }
+
     def __remove_enabled_plugins(self):
         """
         Remove all enabled plugins

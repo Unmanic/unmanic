@@ -115,6 +115,7 @@ class Links(object, metaclass=SingletonType):
             "enable_receiving_tasks":          config_dict.get('enable_receiving_tasks', False),
             "enable_sending_tasks":            config_dict.get('enable_sending_tasks', False),
             "enable_task_preloading":          config_dict.get('enable_task_preloading', True),
+            "enable_config_missing_libraries": config_dict.get('enable_config_missing_libraries', False),
             "enable_distributed_worker_count": config_dict.get('enable_distributed_worker_count', False),
             "name":                            config_dict.get('name', '???'),
             "version":                         config_dict.get('version', '???'),
@@ -477,7 +478,9 @@ class Links(object, metaclass=SingletonType):
                 remote_link_config = remote_config.get('link_config', {})
                 if local_config.get('last_updated', 1) < remote_link_config.get('last_updated', 1):
                     # Note that the configuration options are reversed when reading from the remote installation config
-                    # The enable_task_preloading config is not synced here
+                    # These items are not synced here:
+                    #   - enable_task_preloading
+                    #   - enable_config_missing_libraries
                     if updated_config["enable_receiving_tasks"] != remote_link_config.get('enable_sending_tasks'):
                         updated_config["enable_receiving_tasks"] = remote_link_config.get('enable_sending_tasks')
                         save_settings = True
@@ -504,6 +507,34 @@ class Links(object, metaclass=SingletonType):
                     except Exception as e:
                         self._log("Failed to push link config to remote installation", message2=str(e), level='error')
                         updated_config["available"] = False
+
+                # Push library configurations for missing remote libraries (if configured to do so)
+                if local_config.get('enable_config_missing_libraries', False):
+                    # Fetch remote installation library name list
+                    results = self.remote_api_get(local_config, '/unmanic/api/v2/settings/libraries')
+                    existing_library_names = []
+                    for library in results.get('libraries', []):
+                        existing_library_names.append(library.get('name'))
+                    # Loop over local libraries and create an import object for each one that is missing
+                    for library in Library.get_all_libraries():
+                        # For each of the missing libraries, create a new remote library with that config.
+                        if library.get('name') not in existing_library_names:
+                            # Export library config
+                            import_data = Library.export(library.get('id'))
+                            # Set library ID to 0 to generate new library from this import
+                            import_data['library_id'] = 0
+                            # Configure remote library to be fore remote files only
+                            import_data['library_config']['enable_remote_only'] = True
+                            # Import library on remote installation
+                            self._log("Importing remote library config '{}'".format(library.get('name')), message2=import_data,
+                                      level='debug')
+                            result = self.remote_api_post(local_config, '/unmanic/api/v2/settings/library/import', import_data,
+                                                          timeout=60)
+                            if result.get('success'):
+                                self._log("Successfully imported library '{}'".format(library.get('name')), level='debug')
+                                continue
+                            self._log("Failed to import library config '{}'".format(library.get('name')),
+                                      message2=result.get('error'), level='error')
 
             # Only save to file if the settings have been updated
             remote_installations.append(updated_config)

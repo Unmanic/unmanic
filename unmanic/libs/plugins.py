@@ -730,3 +730,41 @@ class PluginsHandler(object, metaclass=SingletonType):
                 add_frontend_message(record.get('plugin_id'), record.get('name'))
 
         return incompatible_list
+
+    @staticmethod
+    def get_plugin_types_with_flows():
+        """
+        Returns a list of all available plugin types
+
+        :return:
+        """
+        return_plugin_types = []
+        plugin_ex = PluginExecutor()
+        types_list = plugin_ex.get_all_plugin_types()
+        # Filter out the types without flows
+        for plugin_type in types_list:
+            if plugin_type.get('has_flow'):
+                return_plugin_types.append(plugin_type.get('id'))
+        return return_plugin_types
+
+    def get_enabled_plugin_flows_for_plugin_type(self, plugin_type, library_id):
+        """
+        Fetch all enabled plugin flows for a plugin type
+
+        :param plugin_type:
+        :param library_id:
+        :return:
+        """
+        return_plugin_flow = []
+        for plugin_module in self.get_enabled_plugin_modules_by_type(plugin_type, library_id=library_id):
+            return_plugin_flow.append(
+                {
+                    "plugin_id":   plugin_module.get("plugin_id"),
+                    "name":        plugin_module.get("name", ""),
+                    "author":      plugin_module.get("author", ""),
+                    "description": plugin_module.get("description", ""),
+                    "version":     plugin_module.get("version", ""),
+                    "icon":        plugin_module.get("icon", ""),
+                }
+            )
+        return return_plugin_flow

@@ -702,6 +702,7 @@ class ApiSettingsHandler(BaseApiHandler):
                         "enable_receiving_tasks":          data.get('enable_receiving_tasks'),
                         "enable_sending_tasks":            data.get('enable_sending_tasks'),
                         "enable_task_preloading":          data.get('enable_task_preloading'),
+                        "enable_config_missing_libraries": data.get('enable_config_missing_libraries'),
                         "enable_distributed_worker_count": data.get('enable_distributed_worker_count', False),
                     },
                     "distributed_worker_count_target": data.get('distributed_worker_count_target', 0),
@@ -1101,41 +1102,12 @@ class ApiSettingsHandler(BaseApiHandler):
         try:
             json_request = self.read_json_request(RequestLibraryByIdSchema())
 
-            # Read the library
-            library_config = Library(json_request.get('id'))
-
-            # Get list of enabled plugins with their settings
-            enabled_plugins = []
-            for enabled_plugin in library_config.get_enabled_plugins(include_settings=True):
-                enabled_plugins.append({
-                    'plugin_id': enabled_plugin.get('plugin_id'),
-                    'settings':  enabled_plugin.get('settings'),
-                })
-
-            # Create plugin flow
-            plugin_flow = {}
-            for plugin_type in plugins.get_plugin_types_with_flows():
-                plugin_flow[plugin_type] = []
-                flow = plugins.get_enabled_plugin_flows_for_plugin_type(plugin_type, json_request.get('id'))
-                for f in flow:
-                    plugin_flow[plugin_type].append(f.get('plugin_id'))
-
-            plugin_settings = {
-                "plugins":        {
-                    "enabled_plugins": enabled_plugins,
-                    "plugin_flow":     plugin_flow,
-                },
-                "library_config": {
-                    "name":           library_config.get_name(),
-                    "path":           library_config.get_path(),
-                    "enable_scanner": library_config.get_enable_scanner(),
-                    "enable_inotify": library_config.get_enable_inotify(),
-                },
-            }
+            # Fetch library config
+            library_config = Library.export(json_request.get('id'))
 
             response = self.build_response(
                 SettingsLibraryPluginConfigExportSchema(),
-                plugin_settings
+                library_config
             )
 
             self.write_success(response)

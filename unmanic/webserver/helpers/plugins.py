@@ -111,14 +111,7 @@ def get_plugin_types_with_flows():
 
     :return:
     """
-    return_plugin_types = []
-    plugin_ex = PluginExecutor()
-    types_list = plugin_ex.get_all_plugin_types()
-    # Filter out the types without flows
-    for plugin_type in types_list:
-        if plugin_type.get('has_flow'):
-            return_plugin_types.append(plugin_type.get('id'))
-    return return_plugin_types
+    return PluginsHandler.get_plugin_types_with_flows()
 
 
 def get_enabled_plugin_flows_for_plugin_type(plugin_type, library_id):
@@ -130,23 +123,7 @@ def get_enabled_plugin_flows_for_plugin_type(plugin_type, library_id):
     :return:
     """
     plugin_handler = PluginsHandler()
-    plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type(plugin_type, library_id=library_id)
-
-    # Only return the data that we need
-    return_plugin_flow = []
-    for plugin_module in plugin_modules:
-        return_plugin_flow.append(
-            {
-                "plugin_id":   plugin_module.get("plugin_id"),
-                "name":        plugin_module.get("name", ""),
-                "author":      plugin_module.get("author", ""),
-                "description": plugin_module.get("description", ""),
-                "version":     plugin_module.get("version", ""),
-                "icon":        plugin_module.get("icon", ""),
-            }
-        )
-
-    return return_plugin_flow
+    return plugin_handler.get_enabled_plugin_flows_for_plugin_type(plugin_type, library_id)
 
 
 def get_enabled_plugin_data_panels():

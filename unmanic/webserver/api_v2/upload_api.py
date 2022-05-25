@@ -209,6 +209,7 @@ class ApiUploadHandler(BaseApiHandler):
             if not task_info:
                 self.write_error()
 
+            # TODO: Make this optional
             checksum = common.get_file_checksum(task_info.get('abspath'))
 
             # Return the details of the generated task

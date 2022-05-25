@@ -346,7 +346,6 @@ class PostProcessor(threading.Thread):
                 self._log("The file_in path does not exist! '{}'".format(file_in), level="warning")
                 time.sleep(1)
             self._log("Fetching checksum of source file '{}'.".format(file_in), level='debug')
-            before_checksum = common.get_file_checksum(file_in)
 
             # Use a '.part' suffix for the file movement, then rename it after
             part_file_out = os.path.join("{}.unmanic.part".format(file_out))
@@ -360,19 +359,6 @@ class PostProcessor(threading.Thread):
             else:
                 self._log("Copying file '{}' --> '{}'.".format(file_in, part_file_out), level='debug')
                 shutil.copyfile(file_in, part_file_out)
-
-            # Get a checksum post file movement
-            self._log("Fetching checksum of destination file '{}'.".format(part_file_out), level='debug')
-            after_checksum = common.get_file_checksum(part_file_out)
-
-            # Compare the checksums on the copied file to ensure it is still correct
-            self._log("Comparing checksum of destination file with source file.", level='debug')
-            if before_checksum != after_checksum:
-                # Something went wrong during that file copy
-                self._log("Checksum mismatch during postprocessor file movement '{}' on file '{}'".format(plugin_id, file_in),
-                          level='warning')
-                return False
-            self._log("Checksum matched.", level='debug')
 
             # Remove dest file if it already exists (required only for moves)
             if os.path.exists(file_out):
@@ -420,11 +406,6 @@ class PostProcessor(threading.Thread):
         task_dump = self.current_task.task_dump()
         destination_data = self.current_task.get_destination_data()
 
-        # Generate checksum
-        checksum = 'UNKNOWN'
-        if os.path.exists(task_dump.get('abspath')):
-            checksum = common.get_file_checksum(task_dump.get('abspath'))
-
         # Dump history log as metadata in the file's path
         tasks_data_file = os.path.join(os.path.dirname(destination_data.get('abspath')), 'data.json')
         result = common.json_dump_to_file(
@@ -436,7 +417,7 @@ class PostProcessor(threading.Thread):
                 'finish_time':         task_dump.get('finish_time', ''),
                 'processed_by_worker': task_dump.get('processed_by_worker', ''),
                 'log':                 task_dump.get('log', ''),
-                'checksum':            checksum,
+                'checksum':            'UNKNOWN',
             }
             , tasks_data_file)
         if not result['success']:

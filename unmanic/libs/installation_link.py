@@ -520,6 +520,9 @@ class Links(object, metaclass=SingletonType):
                         existing_library_names.append(library.get('name'))
                     # Loop over local libraries and create an import object for each one that is missing
                     for library in Library.get_all_libraries():
+                        # Ignore local libraries that are configured for remote only
+                        if library.get('enable_remote_only'):
+                            continue
                         # For each of the missing libraries, create a new remote library with that config.
                         if library.get('name') not in existing_library_names:
                             # Export library config

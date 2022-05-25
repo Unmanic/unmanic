@@ -991,7 +991,10 @@ class ApiSettingsHandler(BaseApiHandler):
             library_config = json_request['library_config']
             plugin_config = json_request.get('plugins', {})
             library_id = library_config.get('id', 0)
-            settings.save_library_config(library_id, library_config=library_config, plugin_config=plugin_config)
+            if not settings.save_library_config(library_id, library_config=library_config, plugin_config=plugin_config):
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to write library config")
+                self.write_error()
+                return
 
             self.write_success()
             return
@@ -1183,7 +1186,10 @@ class ApiSettingsHandler(BaseApiHandler):
             library_config = json_request.get('library_config')
             plugin_config = json_request.get('plugins', {})
             library_id = json_request.get('library_id')
-            settings.save_library_config(library_id, library_config=library_config, plugin_config=plugin_config)
+            if not settings.save_library_config(library_id, library_config=library_config, plugin_config=plugin_config):
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to import library config")
+                self.write_error()
+                return
 
             self.write_success()
             return

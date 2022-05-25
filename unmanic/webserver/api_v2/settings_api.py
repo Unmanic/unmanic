@@ -713,6 +713,7 @@ class ApiSettingsHandler(BaseApiHandler):
                         "enable_receiving_tasks":          data.get('enable_receiving_tasks'),
                         "enable_sending_tasks":            data.get('enable_sending_tasks'),
                         "enable_task_preloading":          data.get('enable_task_preloading'),
+                        "enable_checksum_validation":      data.get('enable_checksum_validation'),
                         "enable_config_missing_libraries": data.get('enable_config_missing_libraries'),
                         "enable_distributed_worker_count": data.get('enable_distributed_worker_count', False),
                     },

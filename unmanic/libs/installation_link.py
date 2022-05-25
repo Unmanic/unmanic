@@ -220,6 +220,7 @@ class Links(object, metaclass=SingletonType):
                 endpoint,
                 json_data.get('error')),
                 message2=json_data.get('traceback', []), level='error')
+            return json_data
         return {}
 
     def remote_api_post_file(self, remote_config: dict, endpoint: str, path: str):
@@ -530,8 +531,10 @@ class Links(object, metaclass=SingletonType):
                             # Import library on remote installation
                             self._log("Importing remote library config '{}'".format(library.get('name')), message2=import_data,
                                       level='debug')
-                            result = self.remote_api_post(local_config, '/unmanic/api/v2/settings/library/import', import_data,
-                                                          timeout=60)
+                            result = self.import_remote_library_config(local_config, import_data)
+                            if result is None:
+                                # There was a connection issue of some kind. This was already logged.
+                                continue
                             if result.get('success'):
                                 self._log("Successfully imported library '{}'".format(library.get('name')), level='debug')
                                 continue
@@ -553,10 +556,11 @@ class Links(object, metaclass=SingletonType):
 
         return remote_installations
 
-    def read_remote_installation_link_config(self, uuid):
+    def read_remote_installation_link_config(self, uuid: str):
         """
         Returns the configuration of the remote installation
 
+        :param uuid:
         :return:
         """
         for remote_installation in self.settings.get_remote_installations():
@@ -731,6 +735,8 @@ class Links(object, metaclass=SingletonType):
                     "start":  0,
                     "length": 1
                 })
+                if results.get('error'):
+                    continue
                 current_pending_tasks = int(results.get('recordsFiltered', 0))
                 if local_config.get('enable_task_preloading') and current_pending_tasks >= max_pending_tasks:
                     self._log("Remote installation has exceeded the max remote pending task count ({})".format(
@@ -776,7 +782,8 @@ class Links(object, metaclass=SingletonType):
                         current_pending_tasks += 1
 
             except Exception as e:
-                self._log("Failed to contact remote installation '{}'".format(local_config.get('address')), level='warning')
+                self._log("Failed to contact remote installation '{}'".format(local_config.get('address')), message2=str(e),
+                          level='warning')
                 continue
 
         return installations_with_info
@@ -868,7 +875,10 @@ class Links(object, metaclass=SingletonType):
         :return:
         """
         try:
-            return self.remote_api_post_file(remote_config, '/unmanic/api/v2/upload/pending/file', path)
+            results = self.remote_api_post_file(remote_config, '/unmanic/api/v2/upload/pending/file', path)
+            if results.get('error'):
+                results = {}
+            return results
         except requests.exceptions.RequestException as e:
             self._log("Request to upload to remote installation failed", message2=str(e), level='warning')
         except Exception as e:
@@ -937,7 +947,10 @@ class Links(object, metaclass=SingletonType):
                 "id_list":      [remote_task_id],
                 "library_name": library_name,
             }
-            return self.remote_api_post(remote_config, '/unmanic/api/v2/pending/library/update', data, timeout=7)
+            results = self.remote_api_post(remote_config, '/unmanic/api/v2/pending/library/update', data, timeout=7)
+            if results.get('error'):
+                results = {}
+            return results
         except requests.exceptions.Timeout:
             self._log("Request to set remote task library timed out", level='warning')
             return None
@@ -960,7 +973,8 @@ class Links(object, metaclass=SingletonType):
             data = {
                 "id_list": [remote_task_id]
             }
-            return self.remote_api_post(remote_config, '/unmanic/api/v2/pending/status/get', data, timeout=7)
+            results = self.remote_api_post(remote_config, '/unmanic/api/v2/pending/status/get', data, timeout=7)
+            return results
         except requests.exceptions.Timeout:
             self._log("Request to get status of remote task timed out", level='warning')
         except requests.exceptions.RequestException as e:
@@ -981,7 +995,10 @@ class Links(object, metaclass=SingletonType):
             data = {
                 "id_list": [remote_task_id]
             }
-            return self.remote_api_post(remote_config, '/unmanic/api/v2/pending/status/set/ready', data, timeout=7)
+            results = self.remote_api_post(remote_config, '/unmanic/api/v2/pending/status/set/ready', data, timeout=7)
+            if results.get('error'):
+                results = {}
+            return results
         except requests.exceptions.Timeout:
             self._log("Request to start remote task timed out", level='warning')
             return None
@@ -1100,6 +1117,29 @@ class Links(object, metaclass=SingletonType):
         except Exception as e:
             self._log("Failed to fetch remote task completed file", message2=str(e), level='error')
         return False
+
+    def import_remote_library_config(self, remote_config: dict, import_data: dict):
+        """
+        Import a library config on a remote installation
+
+        :param remote_config:
+        :param import_data:
+        :return:
+        """
+        try:
+            results = self.remote_api_post(remote_config, '/unmanic/api/v2/settings/library/import', import_data, timeout=60)
+            if results.get('error'):
+                results = {}
+            return results
+        except requests.exceptions.Timeout:
+            self._log("Request to import remote library timed out", level='warning')
+            return None
+        except requests.exceptions.RequestException as e:
+            self._log("Request to import remote library failed", message2=str(e), level='warning')
+            return None
+        except Exception as e:
+            self._log("Failed to import remote library", message2=str(e), level='error')
+        return {}
 
 
 class RemoteTaskManager(threading.Thread):

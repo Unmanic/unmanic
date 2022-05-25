@@ -243,6 +243,17 @@ class ApiSettingsHandler(BaseApiHandler):
         try:
             json_request = self.read_json_request(SettingsReadAndWriteSchema())
 
+            # Get settings dict from request
+            settings_dict = json_request.get('settings', {})
+
+            # Remove config items that should not be saved through this API endpoint
+            remove_settings = [
+                'remote_installations'
+            ]
+            for remove_setting in remove_settings:
+                if settings_dict.get(remove_setting):
+                    del settings_dict[remove_setting]
+
             # Save settings - writing to file.
             # Throws exception if settings fail to save
             self.config.set_bulk_config_items(json_request.get('settings', {}))

@@ -1479,6 +1479,12 @@ class RemoteTaskManager(threading.Thread):
                         # Task is complete. Exit loop but do not set redundant flag on link manager
                         task_status = ts.get('status')
                         break
+                if not all_task_states.get('results', []):
+                    # Remote task list is empty
+                    task_status = 'removed'
+                elif all_task_states.get('results') and task_status == '':
+                    # Remote task list did not contain this task
+                    task_status = 'removed'
 
             # If the task status is 'complete', break the loop here and move onto the result retrieval
             # If all_task_states returned no results (we are unable to connect to the remote installation)
@@ -1490,7 +1496,7 @@ class RemoteTaskManager(threading.Thread):
                 polling_delay = 10
                 last_status_fetch = time_now
                 continue
-            elif all_task_states.get('results') and task_status == '':
+            elif task_status == 'removed':
                 self._log("Task has been removed by remote installation '{}'".format(original_abspath), level='error')
                 self.__write_failure_to_worker_log()
                 return False

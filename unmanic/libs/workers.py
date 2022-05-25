@@ -493,8 +493,6 @@ class Worker(threading.Thread):
                 if not os.path.exists(cache_directory):
                     os.makedirs(cache_directory)
 
-                # Create final cache file for post-processing
-                before_sum = common.get_file_checksum(current_file_out)
                 # Check that the current file out is not the original source file
                 if os.path.abspath(current_file_out) == os.path.abspath(original_abspath):
                     # The current file out is not a cache file, the file must have never been modified.
@@ -506,10 +504,6 @@ class Worker(threading.Thread):
                 else:
                     # Use shutil module to move the file to the final task cache location
                     shutil.move(current_file_out, task_cache_path)
-                after_sum = common.get_file_checksum(task_cache_path)
-                # Ensure the checksums match
-                if before_sum != after_sum:
-                    raise Exception("Checksum does not match after file movement: '{}' != '{}'".format(before_sum, after_sum))
             except Exception as e:
                 self._log("Exception in final move operation of file {} to {}:".format(current_file_out, task_cache_path),
                           message2=str(e), level="exception")

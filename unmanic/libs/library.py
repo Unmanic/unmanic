@@ -471,12 +471,14 @@ class Library(object):
         :return:
         """
         # Save changes made to model
-        self.model.save()
+        save_result = self.model.save()
 
         # If this is the default library path, save to config.library_path object also
         if self.get_id() == 1:
             config = Config()
             config.set_config_item('library_path', self.get_path())
+
+        return save_result
 
     def delete(self):
         """

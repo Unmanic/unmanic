@@ -53,9 +53,11 @@ def save_library_config(library_id, library_config=None, plugin_config=None):
     # Check if this save requires a new library entry
     if int(library_id) > 0:
         # Fetch existing library by ID
+        new_library = False
         library = Library(library_id)
     else:
         # Create a new library with required data
+        new_library = True
         library = Library.create({
             'name': library_config.get('name'),
             'path': library_config.get('path'),
@@ -85,7 +87,10 @@ def save_library_config(library_id, library_config=None, plugin_config=None):
                     plugins.reload_plugin_repos_data()
                     repo_refreshed = True
                 # Install the plugin
-                plugins.install_plugin_by_id(ep.get('plugin_id'))
+                if not plugins.install_plugin_by_id(ep.get('plugin_id')):
+                    if new_library:
+                        library.delete()
+                    raise Exception("Failed to install plugin by plugin ID '{}'".format(ep.get('plugin_id')))
         # Enable the plugins against this library
         library.set_enabled_plugins(enabled_plugins)
         # Import settings

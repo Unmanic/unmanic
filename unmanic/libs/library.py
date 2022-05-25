@@ -114,6 +114,7 @@ class Library(object):
             return [default_library]
 
         # Loop over results
+        default_library = []
         libraries = []
         for lib in configured_libraries:
             # Always update the default library path
@@ -135,10 +136,14 @@ class Library(object):
             for tag in lib.tags.order_by(Tags.name):
                 library_config['tags'].append(tag.name)
 
+            # Keep the default library separate
+            if lib.id == 1:
+                default_library.append(library_config)
+                continue
             libraries.append(library_config)
 
-        # Return the list of libraries
-        return libraries
+        # Return the list of libraries sorted by name
+        return default_library + sorted(libraries, key=lambda d: d['name'])
 
     @staticmethod
     def within_library_count_limits(frontend_messages=None):

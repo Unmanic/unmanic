@@ -511,7 +511,7 @@ class Links(object, metaclass=SingletonType):
                         updated_config["available"] = False
 
                 # Push library configurations for missing remote libraries (if configured to do so)
-                if local_config.get('enable_config_missing_libraries', False):
+                if local_config.get('enable_sending_tasks') and local_config.get('enable_config_missing_libraries'):
                     # Fetch remote installation library name list
                     results = self.remote_api_get(local_config, '/unmanic/api/v2/settings/libraries')
                     existing_library_names = []

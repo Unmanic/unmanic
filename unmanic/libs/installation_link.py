@@ -115,6 +115,7 @@ class Links(object, metaclass=SingletonType):
             "enable_receiving_tasks":          config_dict.get('enable_receiving_tasks', False),
             "enable_sending_tasks":            config_dict.get('enable_sending_tasks', False),
             "enable_task_preloading":          config_dict.get('enable_task_preloading', True),
+            "enable_checksum_validation":      config_dict.get('enable_checksum_validation', False),
             "enable_config_missing_libraries": config_dict.get('enable_config_missing_libraries', False),
             "enable_distributed_worker_count": config_dict.get('enable_distributed_worker_count', False),
             "name":                            config_dict.get('name', '???'),
@@ -480,6 +481,7 @@ class Links(object, metaclass=SingletonType):
                     # Note that the configuration options are reversed when reading from the remote installation config
                     # These items are not synced here:
                     #   - enable_task_preloading
+                    #   - enable_checksum_validation
                     #   - enable_config_missing_libraries
                     if updated_config["enable_receiving_tasks"] != remote_link_config.get('enable_sending_tasks'):
                         updated_config["enable_receiving_tasks"] = remote_link_config.get('enable_sending_tasks')
@@ -1326,8 +1328,10 @@ class RemoteTaskManager(threading.Thread):
             remote_task_id = info.get('id')
 
         if send_file:
-            # Get source file checksum
-            initial_checksum = common.get_file_checksum(original_abspath)
+            initial_checksum = None
+            if self.installation_info.get('enable_checksum_validation', False):
+                # Get source file checksum
+                initial_checksum = common.get_file_checksum(original_abspath)
             initial_file_size = os.path.getsize(original_abspath)
 
             # Loop until we are able to upload the file to the remote installation
@@ -1357,7 +1361,7 @@ class RemoteTaskManager(threading.Thread):
             remote_task_id = info.get('id')
 
             # Compare uploaded file md5checksum
-            if info.get('checksum') != initial_checksum:
+            if initial_checksum and info.get('checksum') != initial_checksum:
                 self._log("The uploaded file did not return a correct checksum '{}'".format(original_abspath), level='error')
                 # Send request to terminate the remote worker then return
                 self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
@@ -1551,14 +1555,15 @@ class RemoteTaskManager(threading.Thread):
                 return False
 
             # Match checksum from task result data with downloaded file
-            downloaded_checksum = common.get_file_checksum(task_cache_path)
-            if downloaded_checksum != data.get('checksum'):
-                self._log("The downloaded file did not produce a correct checksum '{}'".format(task_cache_path),
-                          level='error')
-                # Send request to terminate the remote worker then return
-                self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
-                self.__write_failure_to_worker_log()
-                return False
+            if self.installation_info.get('enable_checksum_validation', False):
+                downloaded_checksum = common.get_file_checksum(task_cache_path)
+                if downloaded_checksum != data.get('checksum'):
+                    self._log("The downloaded file did not produce a correct checksum '{}'".format(task_cache_path),
+                              level='error')
+                    # Send request to terminate the remote worker then return
+                    self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
+                    self.__write_failure_to_worker_log()
+                    return False
 
             # Send request to terminate the remote worker then return
             self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)

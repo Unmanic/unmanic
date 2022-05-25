@@ -528,6 +528,8 @@ class Links(object, metaclass=SingletonType):
                             import_data['library_id'] = 0
                             # Configure remote library to be fore remote files only
                             import_data['library_config']['enable_remote_only'] = True
+                            import_data['library_config']['enable_scanner'] = False
+                            import_data['library_config']['enable_inotify'] = False
                             # Import library on remote installation
                             self._log("Importing remote library config '{}'".format(library.get('name')), message2=import_data,
                                       level='debug')

@@ -621,6 +621,31 @@ class Links(object, metaclass=SingletonType):
         }
         self.settings.set_bulk_config_items(settings_dict, save_settings=True)
 
+    def delete_remote_installation_link_config(self, uuid: str):
+        """
+        Removes a link configuration for a remote installation given its uuid
+        If no uuid match is found, returns False
+
+        :param uuid:
+        :return:
+        """
+        removed = False
+        updated_list = []
+        for remote_installation in self.settings.get_remote_installations():
+            if remote_installation.get('uuid') == uuid:
+                # Mark the task as having successfully remoted the installation
+                removed = True
+                continue
+            # Only add remote installations that do not match
+            updated_list.append(remote_installation)
+
+        # Update installation data and save the config to disk
+        settings_dict = {
+            'remote_installations': updated_list,
+        }
+        self.settings.set_bulk_config_items(settings_dict, save_settings=True)
+        return removed
+
     def fetch_remote_installation_link_config_for_this(self, remote_config: dict):
         """
         Fetches and returns the corresponding link configuration from a remote installation

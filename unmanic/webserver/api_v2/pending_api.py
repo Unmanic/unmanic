@@ -678,7 +678,7 @@ class ApiPendingHandler(BaseApiHandler):
         try:
             status_results = pending_tasks.fetch_tasks_status([task_id])
             if not status_results:
-                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to fetch pending tasks status")
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to fetch pending tasks status for download link")
                 self.write_error()
                 return
 
@@ -749,7 +749,7 @@ class ApiPendingHandler(BaseApiHandler):
         try:
             status_results = pending_tasks.fetch_tasks_status([task_id])
             if not status_results:
-                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to fetch pending tasks status")
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to fetch pending tasks status for task data")
                 self.write_error()
                 return
 

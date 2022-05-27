@@ -1152,6 +1152,9 @@ class SettingsRemoteInstallationLinkConfigSchema(BaseSchema):
             "enable_sending_tasks":            False,
             "enable_task_preloading":          True,
             "enable_distributed_worker_count": False,
+            "preloading_count":                2,
+            "enable_checksum_validation":      False,
+            "enable_config_missing_libraries": False,
         },
     )
     distributed_worker_count_target = fields.Int(

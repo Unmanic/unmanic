@@ -115,6 +115,7 @@ class Links(object, metaclass=SingletonType):
             "enable_receiving_tasks":          config_dict.get('enable_receiving_tasks', False),
             "enable_sending_tasks":            config_dict.get('enable_sending_tasks', False),
             "enable_task_preloading":          config_dict.get('enable_task_preloading', True),
+            "preloading_count":                config_dict.get('preloading_count', 2),
             "enable_checksum_validation":      config_dict.get('enable_checksum_validation', False),
             "enable_config_missing_libraries": config_dict.get('enable_config_missing_libraries', False),
             "enable_distributed_worker_count": config_dict.get('enable_distributed_worker_count', False),

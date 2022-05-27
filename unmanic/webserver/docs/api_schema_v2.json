@@ -1606,7 +1606,10 @@
                             "enable_receiving_tasks": false,
                             "enable_sending_tasks": false,
                             "enable_task_preloading": true,
-                            "enable_distributed_worker_count": false
+                            "enable_distributed_worker_count": false,
+                            "preloading_count": 2,
+                            "enable_checksum_validation": false,
+                            "enable_config_missing_libraries": false
                         }
                     },
                     "distributed_worker_count_target": {

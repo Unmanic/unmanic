@@ -735,7 +735,8 @@ class Links(object, metaclass=SingletonType):
         :return:
         """
         installations_with_info = {}
-        for local_config in self.settings.get_remote_installations():
+        for lc in self.settings.get_remote_installations():
+            local_config = self.__generate_default_config(lc)
 
             # Only installations that are available
             if not local_config.get('available'):
@@ -760,7 +761,7 @@ class Links(object, metaclass=SingletonType):
                 if local_config.get('enable_task_preloading'):
                     # Preload with the number of workers (regardless of the worker status) plus an additional one to account
                     # for delays in the downloads
-                    max_pending_tasks = len(worker_list) + 1
+                    max_pending_tasks = local_config.get('preloading_count')
                 results = self.remote_api_post(local_config, '/unmanic/api/v2/pending/tasks', {
                     "start":  0,
                     "length": 1
@@ -787,6 +788,7 @@ class Links(object, metaclass=SingletonType):
                         "username":               local_config.get('username'),
                         "password":               local_config.get('password'),
                         "enable_task_preloading": local_config.get('enable_task_preloading'),
+                        "preloading_count":       local_config.get('preloading_count'),
                         "library_names":          library_names,
                         "available_slots":        0,
                     }

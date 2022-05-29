@@ -37,11 +37,13 @@ import sys
 import glob
 from setuptools import setup, find_packages, Command
 import setuptools.command.build_py
-import versioninfo
 
 if sys.version_info[0] < 3:
     print("This module version requires Python 3.")
     sys.exit(1)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+import versioninfo
 
 project_root_dir = os.path.dirname(os.path.realpath(__file__))
 src_dir = 'unmanic'

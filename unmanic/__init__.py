@@ -32,8 +32,6 @@
 
 import warnings
 
-from .service import Service
-
 from .metadata import __author__
 from .metadata import __version__
 from .metadata import __description__
@@ -42,7 +40,3 @@ from .metadata import __forum__
 from .metadata import __video__
 from .metadata import __website__
 from .metadata import __copyright__
-
-__all__ = (
-    'Service',
-)

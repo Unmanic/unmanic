@@ -1589,7 +1589,7 @@ class RemoteTaskManager(threading.Thread):
                     original_abspath), level='error')
             self.__write_failure_to_worker_log()
             return False
-        self.worker_log = data.get('log')
+        self.worker_log = [data.get('log')]
 
         # Save the completed command log
         self.current_task.save_command_log(self.worker_log)

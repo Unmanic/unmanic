@@ -669,6 +669,18 @@ class PluginsConfigInputItemSchema(BaseSchema):
         description="The label used to define this config input",
         example="Downmix DTS-HD Master Audio (max 5.1 channels)?",
     )
+    description = fields.Str(
+        required=True,
+        description="Description of input field",
+        example="Will automatically downmix DTS-HD Master Audio to 5.1 channels ",
+        allow_none=True,
+    )
+    tooltip = fields.Str(
+        required=True,
+        description="Description of input field",
+        example="Will automatically downmix DTS-HD Master Audio to 5.1 channels ",
+        allow_none=True,
+    )
     select_options = fields.List(
         cls_or_instance=fields.Dict,
         required=True,
@@ -697,6 +709,11 @@ class PluginsConfigInputItemSchema(BaseSchema):
         required=True,
         description="Should the setting input be displayed (visible, hidden)",
         example="visible",
+    )
+    sub_setting = fields.Boolean(
+        required=True,
+        description="Should the setting be a nested sub-setting field",
+        example=False,
     )
 
 

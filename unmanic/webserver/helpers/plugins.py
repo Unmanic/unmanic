@@ -226,9 +226,12 @@ def get_plugin_settings(plugin_id: str, library_id=None):
                 "value":          plugin_settings.get(key),
                 "input_type":     None,
                 "label":          None,
+                "description":    None,
+                "tooltip":        None,
                 "select_options": [],
                 "slider_options": {},
                 "display":        "visible",
+                "sub_setting":    False,
             }
 
             plugin_setting_meta = plugin_settings_meta.get(key, {})
@@ -254,11 +257,18 @@ def get_plugin_settings(plugin_id: str, library_id=None):
 
             # Set input display options
             form_input['display'] = plugin_setting_meta.get('display', 'visible')
+            form_input['sub_setting'] = plugin_setting_meta.get('sub_setting', False)
 
             # Set input label text
             form_input['label'] = plugin_setting_meta.get('label', None)
             if not form_input['label']:
                 form_input['label'] = key
+
+            # Set input description text
+            form_input['description'] = plugin_setting_meta.get('description', '')
+
+            # Set input tooltip text
+            form_input['tooltip'] = plugin_setting_meta.get('tooltip', '')
 
             # Set options if form input is select
             if form_input['input_type'] == 'select':

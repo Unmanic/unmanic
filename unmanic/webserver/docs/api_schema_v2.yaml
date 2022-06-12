@@ -439,6 +439,16 @@ components:
           description: The label used to define this config input
           example: Downmix DTS-HD Master Audio (max 5.1 channels)?
           type: string
+        description:
+          description: Description of input field
+          example: 'Will automatically downmix DTS-HD Master Audio to 5.1 channels '
+          nullable: true
+          type: string
+        tooltip:
+          description: Description of input field
+          example: 'Will automatically downmix DTS-HD Master Audio to 5.1 channels '
+          nullable: true
+          type: string
         select_options:
           description: Additional options if the input_type is set to 'select'
           example:
@@ -460,7 +470,12 @@ components:
           description: Should the setting input be displayed (visible, hidden)
           example: visible
           type: string
+        sub_setting:
+          description: Should the setting be a nested sub-setting field
+          example: false
+          type: boolean
       required:
+      - description
       - display
       - input_type
       - key
@@ -468,6 +483,8 @@ components:
       - label
       - select_options
       - slider_options
+      - sub_setting
+      - tooltip
       - value
       type: object
     PluginsData:

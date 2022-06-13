@@ -17,17 +17,17 @@ RUN \
     echo "**** Install runtime packages ****" \
         && apt-get update \
         && apt-get install -y \
-            libexpat1=2.2.9-1build1 \
-            libgl1-mesa-dri=21.0.3-0ubuntu0.3~20.04.5 \
-            libglib2.0-0=2.64.6-1~ubuntu20.04.4 \
-            libgomp1=10.3.0-1ubuntu1~20.04 \
-            libharfbuzz0b=2.6.4-1ubuntu4 \
-            libv4l-0=1.18.0-2build1 \
-            libx11-6=2:1.6.9-2ubuntu1.2 \
-            libxcb1=1.14-2 \
-            libxext6=2:1.3.4-0ubuntu1 \
-            libxml2=2.9.10+dfsg-5ubuntu0.20.04.1 \
-            vainfo=2.6.0+ds1-1 \
+            libexpat1 \
+            libgl1-mesa-dri \
+            libglib2.0-0 \
+            libgomp1 \
+            libharfbuzz0b \
+            libv4l-0 \
+            libx11-6 \
+            libxcb1 \
+            libxext6 \
+            libxml2 \
+            vainfo \
     && \
     echo "**** Install arch specific packages for $(uname -m) ****" \
         && sleep 2 \
@@ -42,24 +42,24 @@ RUN \
             echo "**** Install Intel Media Drivers  ****" \
                 && apt-get update \
                 && apt-get install -y \
-                    i965-va-driver=2.4.0-0ubuntu1 \
-                    intel-igc-cm=1.0.40+i593~u20.04 \
-                    intel-level-zero-gpu=1.1.20389+i593~u20.04 \
-                    intel-media-va-driver-non-free=21.1.2+i526~u20.04 \
-                    intel-opencl-icd=21.29.20389+i593~u20.04 \
-                    level-zero=1.4.1+i593~u20.04 \
-                    libigc1=1.0.7862+i593~u20.04 \
-                    libigdfcl1=1.0.7862+i593~u20.04 \
-                    libigdgmm11=21.2.1+i611~u20.04 \
-                    libmfx1=21.2.2+i593~u20.04 \
-                    libva-drm2=2.12.0+i611~u20.04 \
-                    libva-wayland2=2.12.0+i611~u20.04 \
-                    libva-x11-2=2.12.0+i611~u20.04 \
-                    libva2=2.12.0+i611~u20.04 \
+                    i965-va-driver \
+                    intel-igc-cm \
+                    intel-level-zero-gpu \
+                    intel-media-va-driver-non-free \
+                    intel-opencl-icd \
+                    level-zero \
+                    libigc1 \
+                    libigdfcl1 \
+                    libigdgmm11 \
+                    libmfx1 \
+                    libva-drm2 \
+                    libva-wayland2 \
+                    libva-x11-2 \
+                    libva2 \
             && \
             echo "**** Install MESA Media Drivers for AMD VAAPI ****" \
                 && apt-get install -y \
-                    mesa-va-drivers=21.0.3-0ubuntu0.3~20.04.5 \
+                    mesa-va-drivers \
             && \
             echo "**** Remove build packages ****" \
                 && apt-get remove -y \

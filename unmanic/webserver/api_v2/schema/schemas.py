@@ -174,6 +174,18 @@ class RequestTableUpdateByIdList(BaseSchema):
     )
 
 
+class RequestTableUpdateByUuidList(BaseSchema):
+    """Schema for updating tables by UUID"""
+
+    uuid_list = fields.List(
+        cls_or_instance=fields.Str,
+        required=True,
+        description="List of table UUIDs",
+        example=[],
+        validate=validate.Length(min=1),
+    )
+
+
 class TableRecordsSuccessSchema(BaseSchema):
     """Schema for table results"""
 
@@ -378,6 +390,56 @@ class RequestAddCompletedToPendingTasksSchema(RequestTableUpdateByIdList):
         required=False,
         load_default=0,
         example=1,
+    )
+
+
+# NOTIFICATIONS
+# =============
+
+class NotificationDataSchema(BaseSchema):
+    """Schema for notification data"""
+
+    uuid = fields.Str(
+        required=True,
+        description="Unique ID for this notification",
+        example="updateAvailable",
+    )
+    type = fields.Str(
+        required=True,
+        description="The type of notification",
+        example="info",
+    )
+    icon = fields.Str(
+        required=True,
+        description="The icon to display with the notification",
+        example="update",
+    )
+    label = fields.Str(
+        required=True,
+        description="The label of the notification. Can be a I18n key or a string",
+        example="updateAvailableLabel",
+    )
+    message = fields.Str(
+        required=True,
+        description="The message of the notification. Can be a I18n key or a string",
+        example="updateAvailableMessage",
+    )
+    navigation = fields.Dict(
+        required=True,
+        description="The navigation links of the notification",
+        example={'url': "https://docs.unmanic.app"},
+    )
+
+
+class RequestNotificationsDataSchema(BaseSchema):
+    """Schema for returning the current list of notifications"""
+
+    notifications = fields.Nested(
+        NotificationDataSchema,
+        required=True,
+        description="List of notifications",
+        many=True,
+        validate=validate.Length(min=0),
     )
 
 

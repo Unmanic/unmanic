@@ -260,6 +260,41 @@ components:
       - path
       - tags
       type: object
+    NotificationData:
+      properties:
+        uuid:
+          description: Unique ID for this notification
+          example: updateAvailable
+          type: string
+        type:
+          description: The type of notification
+          example: info
+          type: string
+        icon:
+          description: The icon to display with the notification
+          example: update
+          type: string
+        label:
+          description: The label of the notification. Can be a I18n key or a string
+          example: updateAvailableLabel
+          type: string
+        message:
+          description: The message of the notification. Can be a I18n key or a string
+          example: updateAvailableMessage
+          type: string
+        navigation:
+          description: The navigation links of the notification
+          example:
+            url: https://docs.unmanic.app
+          type: object
+      required:
+      - icon
+      - label
+      - message
+      - navigation
+      - type
+      - uuid
+      type: object
     PendingTasks:
       properties:
         recordsTotal:
@@ -805,6 +840,17 @@ components:
       required:
       - id
       type: object
+    RequestNotificationsData:
+      properties:
+        notifications:
+          description: List of notifications
+          items:
+            $ref: '#/components/schemas/NotificationData'
+          minItems: 0
+          type: array
+      required:
+      - notifications
+      type: object
     RequestPendingTableData:
       properties:
         start:
@@ -1096,6 +1142,18 @@ components:
           type: array
       required:
       - id_list
+      type: object
+    RequestTableUpdateByUuidList:
+      properties:
+        uuid_list:
+          description: List of table UUIDs
+          example: []
+          items:
+            type: string
+          minItems: 1
+          type: array
+      required:
+      - uuid_list
       type: object
     RequestUpdatePluginReposList:
       properties:
@@ -1758,6 +1816,82 @@ paths:
               schema:
                 $ref: '#/components/schemas/CompletedTasksLog'
           description: 'Success: The details of a requested completed task.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /notifications/read:
+    get:
+      description: Returns a list of notifications in reverse chronological order.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestNotificationsData'
+          description: 'Sample response: A list of notifications in reverse chronological
+            order.'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+          description: Bad request; Check `messages` for any validation errors
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+          description: Bad request; Requested endpoint not found
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+          description: Bad request; Requested method is not allowed
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal error; Check `error` for exception
+  /notifications/remove:
+    delete:
+      description: Delete one or all notifications.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestTableUpdateByUuidList'
+        description: Requested list of items to delete.
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+          description: Successful request; Returns success status
         '400':
           content:
             application/json:

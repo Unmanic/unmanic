@@ -67,7 +67,7 @@ class FrontendPushMessages(Queue, metaclass=SingletonType):
     Handles messages passed to the frontend.
 
     Messages are sent as objects. These objects require the following fields:
-        - 'id'          : A unique ID of the message. Prevents messages duplication
+        - 'id'          : A unique ID of the message. Prevent messages duplication
         - 'type'        : The type of message - 'error', 'warning', 'success', or 'info'
         - 'code'        : A code to represent an I18n string for the frontend to display
         - 'message'     : Additional message string that can be appended to the I18n string displayed on the frontend.

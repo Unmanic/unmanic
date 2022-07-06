@@ -37,6 +37,7 @@ import time
 from unmanic import config
 from unmanic.libs import common, history
 from unmanic.libs.library import Library
+from unmanic.libs.notifications import Notifications
 from unmanic.libs.plugins import PluginsHandler
 
 """
@@ -388,6 +389,24 @@ class PostProcessor(threading.Thread):
         self._log("Writing task history log.", level='debug')
         history_logging = history.History()
         task_dump = self.current_task.task_dump()
+
+        # If task fails, the add a notification that a task has failed
+        if not self.current_task.task.success:
+            notifications = Notifications()
+            notifications.add(
+                {
+                    'uuid':       'newFailedTask',
+                    'type':       'error',
+                    'icon':       'report',
+                    'label':      'failedTaskLabel',
+                    'message':    'You have a new failed task in your completed tasks list',
+                    'navigation': {
+                        'push':   '/ui/dashboard',
+                        'events': [
+                            'completedTasksShowFailed',
+                        ],
+                    },
+                })
 
         history_logging.save_task_history(
             {

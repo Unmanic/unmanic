@@ -417,6 +417,84 @@
                     "command_log_lines"
                 ]
             },
+            "NotificationData": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string",
+                        "description": "Unique ID for this notification",
+                        "example": "updateAvailable"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "The type of notification",
+                        "example": "info"
+                    },
+                    "icon": {
+                        "type": "string",
+                        "description": "The icon to display with the notification",
+                        "example": "update"
+                    },
+                    "label": {
+                        "type": "string",
+                        "description": "The label of the notification. Can be a I18n key or a string",
+                        "example": "updateAvailableLabel"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "The message of the notification. Can be a I18n key or a string",
+                        "example": "updateAvailableMessage"
+                    },
+                    "navigation": {
+                        "type": "object",
+                        "description": "The navigation links of the notification",
+                        "example": {
+                            "url": "https://docs.unmanic.app"
+                        }
+                    }
+                },
+                "required": [
+                    "icon",
+                    "label",
+                    "message",
+                    "navigation",
+                    "type",
+                    "uuid"
+                ]
+            },
+            "RequestNotificationsData": {
+                "type": "object",
+                "properties": {
+                    "notifications": {
+                        "minItems": 0,
+                        "description": "List of notifications",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/NotificationData"
+                        }
+                    }
+                },
+                "required": [
+                    "notifications"
+                ]
+            },
+            "RequestTableUpdateByUuidList": {
+                "type": "object",
+                "properties": {
+                    "uuid_list": {
+                        "type": "array",
+                        "minItems": 1,
+                        "description": "List of table UUIDs",
+                        "example": [],
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "uuid_list"
+                ]
+            },
             "RequestPendingTableData": {
                 "type": "object",
                 "properties": {
@@ -2441,6 +2519,131 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/CompletedTasksLog"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/read": {
+            "get": {
+                "description": "Returns a list of notifications in reverse chronological order.",
+                "responses": {
+                    "200": {
+                        "description": "Sample response: A list of notifications in reverse chronological order.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RequestNotificationsData"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/remove": {
+            "delete": {
+                "description": "Delete one or all notifications.",
+                "requestBody": {
+                    "description": "Requested list of items to delete.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestTableUpdateByUuidList"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful request; Returns success status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BaseSuccess"
                                 }
                             }
                         }

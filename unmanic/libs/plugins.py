@@ -343,10 +343,11 @@ class PluginsHandler(object, metaclass=SingletonType):
         plugin_list = self.get_installable_plugins_list(filter_repo_id=repo_id)
         for plugin in plugin_list:
             if plugin.get('plugin_id') == plugin_id:
-                success = self.install_plugin(plugin)
+                success = self.download_and_install_plugin(plugin)
 
                 if success:
                     try:
+                        # Write the plugin info to the DB
                         plugin_directory = self.get_plugin_path(plugin.get("plugin_id"))
                         result = self.write_plugin_data_to_db(plugin, plugin_directory)
                         if result:
@@ -362,7 +363,42 @@ class PluginsHandler(object, metaclass=SingletonType):
 
         return False
 
-    def install_plugin(self, plugin):
+    def install_plugin_from_path_on_disk(self, abspath):
+        """
+        Install a plugin from a ZIP file on disk
+
+        :param abspath:
+        :return:
+        """
+        # TODO: Ensure that this is a zip file
+        try:
+            plugin_info = self.install_plugin(abspath)
+
+            # Set the plugin_id variable used when writing data to DB.
+            # The returned 'plugin_info' is just a readout of the info.json file which has this set to 'id'
+            plugin_info['plugin_id'] = plugin_info.get('id')
+
+            # Cleanup zip file
+            if os.path.isfile(abspath):
+                os.remove(abspath)
+
+            # Write the plugin info to the DB
+            plugin_directory = self.get_plugin_path(plugin_info.get("plugin_id"))
+            result = self.write_plugin_data_to_db(plugin_info, plugin_directory)
+            if result:
+                self._log("Installed plugin '{}'".format(plugin_info.get("plugin_id")), level="info")
+
+            # Ensure the plugin module is reloaded (if it was previously loaded)
+            plugin_executor = PluginExecutor()
+            plugin_executor.reload_plugin_module(plugin_info.get('plugin_id'))
+
+            return result
+        except Exception as e:
+            self._log("Exception while installing plugin from zip '{}'.".format(abspath), str(e), level="exception")
+
+        return False
+
+    def download_and_install_plugin(self, plugin):
         """
         Download and install a given plugin
 
@@ -373,19 +409,10 @@ class PluginsHandler(object, metaclass=SingletonType):
         # Try to fetch URL
         try:
             # Fetch remote zip file
-            destination = self.get_plugin_download_cache_path(plugin.get("plugin_id"), plugin.get("version"))
-            self._log("Downloading plugin '{}' to '{}'".format(plugin.get("package_url"), destination), level='debug')
-            with requests.get(plugin.get("package_url"), stream=True, allow_redirects=True) as r:
-                r.raise_for_status()
-                with open(destination, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=128):
-                        f.write(chunk)
+            destination = self.download_plugin(plugin)
 
-            # Extract zip file contents
-            plugin_directory = self.get_plugin_path(plugin.get("plugin_id"))
-            self._log("Extracting plugin to '{}'".format(plugin_directory), level='debug')
-            with zipfile.ZipFile(destination, "r") as zip_ref:
-                zip_ref.extractall(plugin_directory)
+            # Install downloaded plugin
+            self.install_plugin(destination, plugin.get("plugin_id"))
 
             # Cleanup zip file
             if os.path.isfile(destination):
@@ -400,6 +427,45 @@ class PluginsHandler(object, metaclass=SingletonType):
             self._log("Exception while installing plugin '{}'.".format(plugin), str(e), level="exception")
 
         return False
+
+    def download_plugin(self, plugin):
+        """
+        Download a given plugin to a temp directory
+
+        :param plugin:
+        :return:
+        """
+        # Fetch remote zip file
+        destination = self.get_plugin_download_cache_path(plugin.get("plugin_id"), plugin.get("version"))
+        self._log("Downloading plugin '{}' to '{}'".format(plugin.get("package_url"), destination), level='debug')
+        with requests.get(plugin.get("package_url"), stream=True, allow_redirects=True) as r:
+            r.raise_for_status()
+            with open(destination, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=128):
+                    f.write(chunk)
+        return destination
+
+    def install_plugin(self, zip_file, plugin_id=None):
+        """
+        Install a given plugin from a zip file
+
+        :param zip_file:
+        :param plugin_id:
+        :return:
+        """
+        # Read plugin ID from zip contents info.json if no plugin_id was provided
+        if not plugin_id:
+            with zipfile.ZipFile(zip_file, "r") as zip_ref:
+                plugin_info = json.loads(zip_ref.read('info.json'))
+            plugin_id = plugin_info.get('id')
+        # Create plugin destination directory based on plugin ID
+        plugin_directory = self.get_plugin_path(plugin_id)
+        # Extract zip file contents
+        self._log("Extracting plugin to '{}'".format(plugin_directory), level='debug')
+        with zipfile.ZipFile(zip_file, "r") as zip_ref:
+            zip_ref.extractall(plugin_directory)
+        # Return installed plugin info
+        return self.get_plugin_info(plugin_id)
 
     @staticmethod
     def write_plugin_data_to_db(plugin, plugin_directory):

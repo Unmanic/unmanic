@@ -30,6 +30,7 @@
 
 """
 import inspect
+from copy import deepcopy
 
 
 class PluginType(object):
@@ -178,7 +179,7 @@ class PluginType(object):
         # Get test data
         if not test_data:
             test_data = self.get_test_data()
-        test_data_copy = test_data.copy()
+        test_data_copy = deepcopy(test_data)
 
         # Get data schema
         data_schema = self.get_data_schema()

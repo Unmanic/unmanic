@@ -33,6 +33,7 @@ import os
 import queue
 import threading
 import time
+from copy import deepcopy
 
 from unmanic import config
 from unmanic.libs import history, common, unlogger
@@ -144,7 +145,7 @@ class FileTest(object):
             for plugin_module in self.plugin_modules:
                 data['library_id'] = self.library_id
                 data['path'] = path
-                data['issues'] = file_issues.copy()
+                data['issues'] = deepcopy(file_issues)
                 data['add_file_to_pending_tasks'] = None
 
                 # Run plugin to update data

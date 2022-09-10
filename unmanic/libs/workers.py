@@ -430,7 +430,7 @@ class Worker(threading.Thread):
                     # Ensure the new 'file_in' is set to the previous runner's 'file_in' for the next loop
                     file_in = data.get("file_in")
                     # Log that this plugin did not request to execute anything
-                    self.worker_log.append("\nRunner did not request to execute a command")
+                    self.worker_log.append("\nRunner did not request for Unmanic to execute a command")
                     self._log(
                         "Worker process '{}' did not request to execute a command.".format(plugin_module.get('plugin_id')),
                         level='debug')
@@ -455,8 +455,8 @@ class Worker(threading.Thread):
         # Log if no command was run by any Plugins
         if no_exec_command_run:
             # If no jobs were carried out on this task
-            self._log("No Plugin requested to run commands for this file '{}'".format(original_abspath), level='warning')
-            self.worker_log.append("\n\nNo Plugin requested to run commands for this file '{}'".format(original_abspath))
+            self._log("No Plugin requested for Unmanic to run commands for this file '{}'".format(original_abspath), level='warning')
+            self.worker_log.append("\n\nNo Plugin requested for Unmanic to run commands for this file '{}'".format(original_abspath))
 
         # Save the completed command log
         self.current_task.save_command_log(self.worker_log)

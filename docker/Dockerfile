@@ -27,7 +27,7 @@ RUN \
             libx11-6=2:1.6.9-2ubuntu1.2 \
             libxcb1=1.14-2 \
             libxext6=2:1.3.4-0ubuntu1 \
-            libxml2=2.9.10+dfsg-5ubuntu0.20.04.3 \
+            libxml2=2.9.10+dfsg-5ubuntu0.20.04.4 \
     && \
     echo "**** Install arch specific packages for $(uname -m) ****" \
         && sleep 2 \

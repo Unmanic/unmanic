@@ -56,7 +56,7 @@ def generate_random_library_name():
         "awesome", "adorable", "abounding", "aspiring", "beloved", "blue", "blissful", "creamy", "cavernous", "content",
         "droopy", "excited", "enchanted", "enormous", "extroverted", "exciting", "gullible", "gaseous", "grumpy", "giant",
         "handsome", "hefty", "harmless", "happy", "hairy", "humdrum", "invincible", "illiterate", "inexperienced", "impolite",
-        "illustrious", "impartial", "innocent""jovial", "juvenile", "joyful", "jumpy", "jagged", "joyous", "kooky", "large",
+        "illustrious", "impartial", "innocent", "jovial", "juvenile", "joyful", "jumpy", "jagged", "joyous", "kooky", "large",
         "likeable", "mountainous", "momentous", "minty", "nocturnal", "nautical", "organic", "overcooked", "productive",
         "plush", "polished", "queasy", "quirky", "quintessential", "reminiscent", "remarkable", "ragged", "rowdy", "soggy",
         "sudden", "scandalous", "secretive", "spry", "squiggly", "smooth", "sulky", "scented", "spicy", "sticky", "slushy",

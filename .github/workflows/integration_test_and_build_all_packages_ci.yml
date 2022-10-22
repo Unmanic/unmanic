@@ -35,7 +35,7 @@ jobs:
         bash -c "tests/scripts_/download_test_files.sh"
 
     # Setup python environment
-    - name: Set up Python 3.6
+    - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
@@ -108,10 +108,10 @@ jobs:
         git tag --list
 
     # Setup python environment
-    - name: Set up Python 3.6
+    - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
-        python-version: 3.6
+        python-version: 3.7
 
     # Restore the python cache if it exists
     - name: Restore python cache

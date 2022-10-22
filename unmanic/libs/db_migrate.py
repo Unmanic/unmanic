@@ -32,12 +32,12 @@
 import importlib
 import inspect
 import os
+import sys
 
 from peewee import Model, SqliteDatabase, Field
-from peewee_migrate import Router
+from peewee_migrate import Migrator, Router
 
 from unmanic.libs import unlogger
-from unmanic.libs.unmodels import list_all_models
 from unmanic.libs.unmodels.lib import BaseModel
 
 
@@ -68,6 +68,8 @@ class Migrations(object):
                                  migrate_dir=config.get('MIGRATIONS_DIR'),
                                  logger=self.logger)
 
+            self.migrator = Migrator(self.database)
+
     def __log(self, message, level='info'):
         if self.logger:
             getattr(self.logger, level)(message)
@@ -96,28 +98,16 @@ class Migrations(object):
         :return:
         """
         # Fetch all model classes
-        all_models = []
-        all_base_models = []
-        for model in list_all_models():
-            imported_model = getattr(importlib.import_module("unmanic.libs.unmodels"), model)
-            if inspect.isclass(imported_model) and issubclass(imported_model, BaseModel):
-                # Add this model to both the 'all_models' list and our list of base models
-                all_models.append(imported_model)
-                all_base_models.append(imported_model)
-            elif inspect.isclass(imported_model) and issubclass(imported_model, Model):
-                # If the model is not one of the base models, it is an in-build model from peewee.
-                # For, this list of models we will not run a migration, but we will still ensure that the
-                #   table is created in the DB
-                all_models.append(imported_model)
-                pass
+        discovered_models = inspect.getmembers(sys.modules["unmanic.libs.unmodels"], inspect.isclass)
+        all_models = [tup[1] for tup in discovered_models]
 
         # Start by creating all models
         self.__log("Initialising database tables")
         try:
             with self.database.transaction():
                 for model in all_models:
-                    self.router.migrator.create_table(model)
-                self.router.migrator.run()
+                    self.migrator.create_table(model)
+                self.migrator.run()
         except Exception:
             self.database.rollback()
             self.__log("Initialising tables failed", level='exception')
@@ -129,23 +119,24 @@ class Migrations(object):
         # Newly added fields can be auto added with this function... no need for a migration script
         # Ensure all files are also present for each of the model classes
         self.__log("Updating database fields")
-        for model in all_base_models:
-            # Fetch all peewee fields for the model class
-            # https://stackoverflow.com/questions/22573558/peewee-determining-meta-data-about-model-at-run-time
-            fields = model._meta.fields
-            # loop over the fields and ensure each on exists in the table
-            field_keys = [f for f in fields]
-            for fk in field_keys:
-                field = fields.get(fk)
-                if isinstance(field, Field):
-                    if not any(f for f in self.database.get_columns(model._meta.name) if f.name == field.name):
-                        # Field does not exist in DB table
-                        self.__log("Adding missing column")
-                        try:
-                            with self.database.transaction():
-                                self.router.migrator.add_columns(model, **{field.name: field})
-                                self.router.migrator.run()
-                        except Exception:
-                            self.database.rollback()
-                            self.__log("Update failed", level='exception')
-                            raise
+        for model in all_models:
+            if issubclass(model, BaseModel):
+                # Fetch all peewee fields for the model class
+                # https://stackoverflow.com/questions/22573558/peewee-determining-meta-data-about-model-at-run-time
+                fields = model._meta.fields
+                # loop over the fields and ensure each on exists in the table
+                field_keys = [f for f in fields]
+                for fk in field_keys:
+                    field = fields.get(fk)
+                    if isinstance(field, Field):
+                        if not any(f for f in self.database.get_columns(model._meta.name) if f.name == field.name):
+                            # Field does not exist in DB table
+                            self.__log("Adding missing column")
+                            try:
+                                with self.database.transaction():
+                                    self.router.migrator.add_columns(model, **{field.name: field})
+                                    self.router.migrator.run()
+                            except Exception:
+                                self.database.rollback()
+                                self.__log("Update failed", level='exception')
+                                raise

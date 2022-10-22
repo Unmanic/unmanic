@@ -46,24 +46,3 @@ from .workergroups import WorkerGroupTags, WorkerGroups
 from .workerschedules import WorkerSchedules
 
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'CompletedTasks',
-    'CompletedTasksCommandLogs',
-    'EnabledPlugins',
-    'Installation',
-    'Libraries',
-    'LibraryTags',
-    'LibraryPluginFlow',
-    'PluginRepos',
-    'Plugins',
-    'Tags',
-    'Tasks',
-    'WorkerGroups',
-    'WorkerGroupTags',
-    'WorkerSchedules',
-)
-
-
-def list_all_models():
-    return __all__

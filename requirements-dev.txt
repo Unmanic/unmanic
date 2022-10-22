@@ -1,7 +1,6 @@
 flake8>=3.7.9
 pycodestyle>=2.5.0
 pytest>=5.4.1
-teamcity-messages==1.25
 wheel==0.33.6
 setuptools>=39.0.1
 

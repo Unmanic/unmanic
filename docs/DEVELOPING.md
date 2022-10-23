@@ -44,18 +44,22 @@ The following folders are generated in the Docker environment:
 
 You can also just install the module natively in your home directory in "develop" mode.
 
-Start by installing the dependencies.
+Start by creating a venv.
+```
+python3 -m venv venv
+source ./venv/bin/activate
+```
 
+Then install the dependencies into that venv
 ```
 python3 -m pip install --upgrade pip
-python3 -m pip install --user --upgrade -r ./requirements-dev.txt
-python3 -m pip install --user --upgrade -r ./requirements.txt
+python3 -m pip install --upgrade -r ./requirements.txt -r ./requirements-dev.txt
 ```
 
 Then install the module:
 
 ```
-python3 ./setup.py develop --user
+python3 ./setup.py develop
 ```
 
 This creates an egg symlink to the project directory for development.
@@ -63,7 +67,7 @@ This creates an egg symlink to the project directory for development.
 To later uninstall the development symlink:
 
 ```
-python3 ./setup.py develop --user --uninstall
+python3 ./setup.py develop --uninstall
 ```
 
 You should now be able to run unmanic from the commandline:

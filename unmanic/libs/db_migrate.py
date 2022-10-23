@@ -134,8 +134,8 @@ class Migrations(object):
                             self.__log("Adding missing column")
                             try:
                                 with self.database.transaction():
-                                    self.router.migrator.add_columns(model, **{field.name: field})
-                                    self.router.migrator.run()
+                                    self.migrator.add_columns(model, **{field.name: field})
+                                    self.migrator.run()
                             except Exception:
                                 self.database.rollback()
                                 self.__log("Update failed", level='exception')

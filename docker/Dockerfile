@@ -17,7 +17,7 @@ RUN \
     echo "**** Install runtime packages ****" \
         && apt-get update \
         && apt-get install -y \
-            libexpat1=2.2.9-1ubuntu0.4 \
+            libexpat1=2.2.9-1ubuntu0.6 \
             libgl1-mesa-dri=21.2.6-0ubuntu0.1~20.04.2 \
             libglib2.0-0=2.64.6-1~ubuntu20.04.4 \
             libgomp1=10.3.0-1ubuntu1~20.04 \

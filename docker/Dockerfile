@@ -18,16 +18,16 @@ RUN \
         && apt-get update \
         && apt-get install -y \
             libexpat1=2.2.9-1ubuntu0.6 \
-            libgl1-mesa-dri=21.2.6-0ubuntu0.1~20.04.2 \
+            libgl1-mesa-dri=22.2.0.20220625.1+3091 \
             libglib2.0-0=2.64.6-1~ubuntu20.04.4 \
             libgomp1=10.3.0-1ubuntu1~20.04 \
-            libharfbuzz0b=2.6.4-1ubuntu4 \
+            libharfbuzz0b=2.6.4-1ubuntu4.2 \
             libmediainfo0v5=19.09+dfsg-2build1 \
             libv4l-0=1.18.0-2build1 \
             libx11-6=2:1.6.9-2ubuntu1.2 \
             libxcb1=1.14-2 \
             libxext6=2:1.3.4-0ubuntu1 \
-            libxml2=2.9.10+dfsg-5ubuntu0.20.04.4 \
+            libxml2=2.9.10+dfsg-5ubuntu0.20.04.5 \
     && \
     echo "**** Install arch specific packages for $(uname -m) ****" \
         && sleep 2 \
@@ -43,20 +43,20 @@ RUN \
                 && apt-get update \
                 && apt-get install -y \
                     i965-va-driver=2.4.0-0ubuntu1 \
-                    intel-igc-cm=1.0.128+i699.3~u20.04 \
-                    intel-level-zero-gpu=1.3.22597+i699.3~u20.04 \
-                    intel-media-va-driver-non-free=22.2.2+i699.3~u20.04 \
-                    intel-opencl-icd=22.10.22597+i699.3~u20.04 \
-                    level-zero=1.7.9+i699.3~u20.04 \
-                    libigc1=1.0.10409+i699.3~u20.04 \
-                    libigdfcl1=1.0.10409+i699.3~u20.04 \
+                    intel-igc-cm=1.0.160+i755~u20.04 \
+                    intel-level-zero-gpu=1.3.23726.1+i419~u20.04 \
+                    intel-media-va-driver-non-free=22.5.0+i419~u20.04 \
+                    intel-opencl-icd=22.28.23726.1+i419~u20.04 \
+                    level-zero=1.8.1+i755~u20.04 \
+                    libigc1=1.0.11485+i419~u20.04 \
+                    libigdfcl1=1.0.11485+i419~u20.04 \
                     libigdgmm11=21.3.3+i643~u20.04 \
-                    libmfx1=22.2.2+i699.3~u20.04 \
-                    libva-drm2=2.14.0.2-23 \
-                    libva-wayland2=2.14.0.2-23 \
-                    libva-x11-2=2.14.0.2-23 \
-                    libva2=2.14.0.2-23 \
-                    vainfo=2.14.0.2-1 \
+                    libmfx1=22.5.0+i419~u20.04 \
+                    libva-drm2=2.15.0.2-36 \
+                    libva-wayland2=2.15.0.2-36 \
+                    libva-x11-2=2.15.0.2-36 \
+                    libva2=2.15.0.2-36 \
+                    vainfo=2.15.0.2-1 \
             && \
             echo "**** Install MESA Media Drivers for AMD VAAPI ****" \
                 && apt-get install -y \

@@ -146,6 +146,7 @@ class EventMonitorManager(threading.Thread):
         # Otherwise close this thread now.
         self._log("Starting EventMonitorManager loop")
         while not self.abort_flag.is_set():
+            time.sleep(.5)
 
             if not self.system_configuration_is_valid():
                 time.sleep(2)
@@ -184,7 +185,7 @@ class EventMonitorManager(threading.Thread):
                 if self.event_observer_thread:
                     self.stop_event_processor()
             # Add delay
-            time.sleep(.5)
+            time.sleep(2)
 
         self.stop_event_processor()
         self._log("Leaving EventMonitorManager loop...")
@@ -213,6 +214,7 @@ class EventMonitorManager(threading.Thread):
             monitoring_path = False
             self.event_observer_thread = Observer()
             for lib_info in Library.get_all_libraries():
+                time.sleep(.2)
                 try:
                     library = Library(lib_info['id'])
                 except Exception as e:
@@ -226,7 +228,6 @@ class EventMonitorManager(threading.Thread):
                 if library.get_enable_inotify():
                     library_path = library.get_path()
                     if not os.path.exists(library_path):
-                        time.sleep(.1)
                         continue
                     self._log("Adding library path to monitor '{}'".format(library_path))
                     event_handler = EventHandler(self.files_to_test, library.get_id())

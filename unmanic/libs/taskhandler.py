@@ -77,14 +77,15 @@ class TaskHandler(threading.Thread):
     def run(self):
         self._log("Starting TaskHandler Monitor loop")
         while not self.abort_flag.is_set():
+            time.sleep(2)
             self.process_scheduledtasks_queue()
             self.process_inotifytasks_queue()
-            time.sleep(.2)
 
         self._log("Leaving TaskHandler Monitor loop...")
 
     def process_scheduledtasks_queue(self):
         while not self.abort_flag.is_set() and not self.scheduledtasks.empty():
+            # Do not sleep at all here. Process this loop as quick as possible
             try:
                 item = self.scheduledtasks.get_nowait()
                 pathname = item['pathname']
@@ -101,6 +102,7 @@ class TaskHandler(threading.Thread):
 
     def process_inotifytasks_queue(self):
         while not self.abort_flag.is_set() and not self.inotifytasks.empty():
+            # Do not sleep at all here. Process this loop as quick as possible
             try:
                 item = self.inotifytasks.get_nowait()
                 pathname = item['pathname']

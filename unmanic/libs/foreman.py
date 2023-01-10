@@ -626,12 +626,12 @@ class Foreman(threading.Thread):
         allow_local_idle_worker_check = True
 
         while not self.abort_flag.is_set():
-            time.sleep(1)
+            time.sleep(2)
 
             try:
                 # Fetch all completed tasks from workers
                 while not self.abort_flag.is_set() and not self.complete_queue.empty():
-                    time.sleep(.2)
+                    time.sleep(.5)
                     try:
                         task_item = self.complete_queue.get_nowait()
                         task_item.set_status('processed')

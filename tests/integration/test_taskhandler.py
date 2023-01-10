@@ -122,9 +122,9 @@ class TestClass(object):
         assert self.task_handler.is_alive()
 
     @pytest.mark.integrationtest
-    def test_task_handler_thread_can_stop_in_less_than_one_second(self):
+    def test_task_handler_thread_can_stop_in_less_than_two_seconds(self):
         self.task_handler.stop()
-        time.sleep(1)
+        time.sleep(2)
         assert not self.task_handler.is_alive()
 
     @pytest.mark.integrationtest

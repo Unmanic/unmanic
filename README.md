@@ -84,7 +84,7 @@ For up-to-date installation instructions, follow the [Unmanic documentation](htt
 
 To run from source:
 
-1) Install the Python dependencies listed above hen run:
+1) Install the Python dependencies listed above then run:
 2) Run:
     ```
     # Ensure the submodules are checked out

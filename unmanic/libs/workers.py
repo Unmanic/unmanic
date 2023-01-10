@@ -100,7 +100,7 @@ class Worker(threading.Thread):
     def run(self):
         self._log("Starting worker")
         while not self.redundant_flag.is_set():
-            time.sleep(.2)  # Add delay for preventing loop maxing compute resources
+            time.sleep(1)  # Add delay for preventing loop maxing compute resources
 
             # If the Foreman has paused this worker, then don't do anything
             if self.paused_flag.is_set():
@@ -115,7 +115,7 @@ class Worker(threading.Thread):
 
             # Wait for task
             while not self.redundant_flag.is_set() and self.current_task:
-                time.sleep(.2)  # Add delay for preventing loop maxing compute resources
+                time.sleep(.5)  # Add delay for preventing loop maxing compute resources
 
                 try:
                     # Process the set task

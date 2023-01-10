@@ -196,6 +196,7 @@ class FileTesterThread(threading.Thread):
         self._log("Starting {}".format(self.name))
         file_test = FileTest(self.library_id)
         while not self.abort_flag.is_set():
+            time.sleep(.5)
             try:
                 # Pending task queue has an item available. Fetch it.
                 next_file = self.files_to_test.get_nowait()
@@ -223,7 +224,7 @@ class FileTesterThread(threading.Thread):
                     self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e),
                               level="exception")
             except queue.Empty:
-                time.sleep(.1)
+                time.sleep(2)
                 continue
             except Exception as e:
                 self._log("Exception in checking library scan results with {}:".format(self.name), message2=str(e),

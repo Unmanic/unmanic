@@ -91,7 +91,7 @@ class LibraryScannerManager(threading.Thread):
         # Otherwise close this thread now.
         self._log("Starting LibraryScanner Monitor loop")
         while not self.abort_is_set():
-            time.sleep(.2)
+            time.sleep(1)
 
             # Main loop to configure the scheduler
             if int(self.settings.get_schedule_full_scan_minutes()) != self.interval:

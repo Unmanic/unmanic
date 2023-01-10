@@ -256,12 +256,13 @@ class Service:
             signal.signal(signal.SIGTERM, self.sig_handle)
             while self.run_threads:
                 signal.pause()
+                time.sleep(.5)
 
         # Received term signal. Stop everything
         self.stop_threads()
         self.db_connection.stop()
         while not self.db_connection.is_stopped():
-            time.sleep(0.1)
+            time.sleep(.5)
             continue
         main_logger.info("Exit Unmanic")
 
@@ -299,7 +300,7 @@ def main():
         # Stop the DB connection
         db_connection.stop()
         while not db_connection.is_stopped():
-            time.sleep(0.1)
+            time.sleep(.2)
             continue
     else:
         # Run the main Unmanic service

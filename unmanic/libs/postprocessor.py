@@ -65,9 +65,10 @@ class PostProcessor(threading.Thread):
 
     """
 
-    def __init__(self, data_queues, task_queue):
+    def __init__(self, data_queues, task_queue, event):
         super(PostProcessor, self).__init__(name='PostProcessor')
         self.logger = data_queues["logging"].get_logger(self.name)
+        self.event = event
         self.data_queues = data_queues
         self.settings = config.Config()
         self.task_queue = task_queue
@@ -86,14 +87,14 @@ class PostProcessor(threading.Thread):
     def run(self):
         self._log("Starting PostProcessor Monitor loop...")
         while not self.abort_flag.is_set():
-            time.sleep(1)
+            self.event.wait(1)
 
             if not self.system_configuration_is_valid():
-                time.sleep(2)
+                self.event.wait(2)
                 continue
 
             while not self.abort_flag.is_set() and not self.task_queue.task_list_processed_is_empty():
-                time.sleep(.2)
+                self.event.wait(.2)
                 self.current_task = self.task_queue.get_next_processed_tasks()
                 if self.current_task:
                     try:
@@ -345,7 +346,7 @@ class PostProcessor(threading.Thread):
             # Get a checksum prior to copy
             if not os.path.exists(file_in):
                 self._log("The file_in path does not exist! '{}'".format(file_in), level="warning")
-                time.sleep(1)
+                self.event.wait(1)
             self._log("Fetching checksum of source file '{}'.".format(file_in), level='debug')
 
             # Use a '.part' suffix for the file movement, then rename it after

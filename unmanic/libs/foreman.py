@@ -44,9 +44,10 @@ from unmanic.libs.workers import Worker
 
 
 class Foreman(threading.Thread):
-    def __init__(self, data_queues, settings, task_queue):
+    def __init__(self, data_queues, settings, task_queue, event):
         super(Foreman, self).__init__(name='Foreman')
         self.settings = settings
+        self.event = event
         self.task_queue = task_queue
         self.data_queues = data_queues
         self.logger = data_queues["logging"].get_logger(self.name)
@@ -317,7 +318,8 @@ class Foreman(threading.Thread):
                                                      "RemoteTaskManager-{}".format(installation_id),
                                                      installation_info,
                                                      self.remote_workers_pending_task_queue,
-                                                     self.complete_queue)
+                                                     self.complete_queue,
+                                                     self.event)
         thread.daemon = True
         thread.start()
         self.remote_task_manager_threads[installation_id] = thread
@@ -415,7 +417,7 @@ class Foreman(threading.Thread):
 
     def start_worker_thread(self, worker_id, worker_name, worker_group):
         thread = Worker(worker_id, worker_name, worker_group, self.workers_pending_task_queue,
-                        self.complete_queue)
+                        self.complete_queue, self.event)
         thread.daemon = True
         thread.start()
         self.worker_threads[worker_id] = thread
@@ -626,12 +628,12 @@ class Foreman(threading.Thread):
         allow_local_idle_worker_check = True
 
         while not self.abort_flag.is_set():
-            time.sleep(2)
+            self.event.wait(2)
 
             try:
                 # Fetch all completed tasks from workers
                 while not self.abort_flag.is_set() and not self.complete_queue.empty():
-                    time.sleep(.5)
+                    self.event.wait(.5)
                     try:
                         task_item = self.complete_queue.get_nowait()
                         task_item.set_status('processed')
@@ -690,12 +692,12 @@ class Foreman(threading.Thread):
                     else:
                         allow_local_idle_worker_check = True
                         # All workers are currently busy
-                        time.sleep(1)
+                        self.event.wait(1)
                         continue
 
                     # Check if postprocessor task queue is full
                     if self.postprocessor_queue_full():
-                        time.sleep(3)
+                        self.event.wait(5)
                         continue
 
                     # Fetch the next item in the queue
@@ -720,7 +722,7 @@ class Foreman(threading.Thread):
                         # If no local worker ID was assigned to the given item, then try again in 2 seconds
                         if not available_worker_id:
                             allow_local_idle_worker_check = False
-                            time.sleep(1)
+                            self.event.wait(1)
                             continue
                     else:
                         # For remote items, run a search matching an available remote installation library
@@ -734,7 +736,7 @@ class Foreman(threading.Thread):
                             task_library_name = next_item_to_process.get_task_library_name()
                         except Exception as e:
                             self._log("Exception in fetching task details", message2=str(e), level="exception")
-                            time.sleep(3)
+                            self.event.wait(3)
                             continue
 
                         self._log("Processing item - {}".format(source_abspath))

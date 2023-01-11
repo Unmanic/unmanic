@@ -1188,10 +1188,11 @@ class RemoteTaskManager(threading.Thread):
 
     worker_runners_info = {}
 
-    def __init__(self, thread_id, name, installation_info, pending_queue, complete_queue):
+    def __init__(self, thread_id, name, installation_info, pending_queue, complete_queue, event):
         super(RemoteTaskManager, self).__init__(name=name)
         self.thread_id = thread_id
         self.name = name
+        self.event = event
         self.installation_info = installation_info
         self.pending_queue = pending_queue
         self.complete_queue = complete_queue
@@ -1417,7 +1418,7 @@ class RemoteTaskManager(threading.Thread):
                     # Check for network transfer lock
                     lock_key = self.links.acquire_network_transfer_lock(address, transfer_limit=1, lock_type='send')
                     if not lock_key:
-                        time.sleep(1)
+                        self.event.wait(1)
                         continue
 
                 # Send a file to a remote installation.
@@ -1452,7 +1453,7 @@ class RemoteTaskManager(threading.Thread):
             result = self.links.set_the_remote_task_library(self.installation_info, remote_task_id, library_name)
             if result is None:
                 # Unable to reach remote installation
-                time.sleep(2)
+                self.event.wait(2)
                 continue
             if not result.get('success'):
                 self._log(
@@ -1468,7 +1469,7 @@ class RemoteTaskManager(threading.Thread):
             result = self.links.start_the_remote_task_by_id(self.installation_info, remote_task_id)
             if not result:
                 # Unable to reach remote installation
-                time.sleep(2)
+                self.event.wait(2)
                 continue
             if not result.get('success'):
                 self._log("Failed to set initial remote pending task to status '{}'".format(original_abspath), level='error')
@@ -1485,7 +1486,7 @@ class RemoteTaskManager(threading.Thread):
         last_status_fetch = 0
         polling_delay = 5
         while task_status != 'complete':
-            time.sleep(1)
+            self.event.wait(1)
             if self.redundant_flag.is_set():
                 # Send request to terminate the remote worker then exit
                 if worker_id:
@@ -1613,7 +1614,7 @@ class RemoteTaskManager(threading.Thread):
                 # Check for network transfer lock
                 lock_key = self.links.acquire_network_transfer_lock(address, transfer_limit=2, lock_type='receive')
                 if not lock_key:
-                    time.sleep(1)
+                    self.event.wait(1)
                     continue
                 # Download the file
                 self._log("Downloading file from remote installation '{}'".format(task_label), level='debug')

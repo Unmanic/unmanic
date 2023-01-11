@@ -115,12 +115,13 @@ class EventMonitorManager(threading.Thread):
 
     """
 
-    def __init__(self, data_queues):
+    def __init__(self, data_queues, event):
         super(EventMonitorManager, self).__init__(name='EventMonitorManager')
         self.name = "EventMonitorManager"
         self.data_queues = data_queues
         self.settings = config.Config()
         self.logger = None
+        self.event = event
 
         # Create an event queue
         self.files_to_test = queue.Queue()
@@ -142,14 +143,12 @@ class EventMonitorManager(threading.Thread):
         self.abort_flag.set()
 
     def run(self):
-        # If we have a config set to run a schedule, then start the process.
-        # Otherwise close this thread now.
         self._log("Starting EventMonitorManager loop")
         while not self.abort_flag.is_set():
-            time.sleep(.5)
+            self.event.wait(.5)
 
             if not self.system_configuration_is_valid():
-                time.sleep(2)
+                self.event.wait(2)
                 continue
 
             if not self.files_to_test.empty():
@@ -185,7 +184,7 @@ class EventMonitorManager(threading.Thread):
                 if self.event_observer_thread:
                     self.stop_event_processor()
             # Add delay
-            time.sleep(2)
+            self.event.wait(2)
 
         self.stop_event_processor()
         self._log("Leaving EventMonitorManager loop...")
@@ -214,7 +213,7 @@ class EventMonitorManager(threading.Thread):
             monitoring_path = False
             self.event_observer_thread = Observer()
             for lib_info in Library.get_all_libraries():
-                time.sleep(.2)
+                self.event.wait(.2)
                 try:
                     library = Library(lib_info['id'])
                 except Exception as e:

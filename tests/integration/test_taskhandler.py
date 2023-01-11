@@ -33,6 +33,7 @@ import os
 import pytest
 import time
 import tempfile
+import threading
 
 from tests.support_.test_data import data_queues, mock_jobqueue_class
 from unmanic.libs.taskhandler import TaskHandler
@@ -61,6 +62,7 @@ class TestClass(object):
         self.inotifytasks = self.data_queues["inotifytasks"]
         self.progress_reports = self.data_queues["progress_reports"]
         self.task_queue = mock_jobqueue_class.MockJobQueue()
+        self.event = None
         self.task_handler = None
 
         # Create temp config path
@@ -102,7 +104,8 @@ class TestClass(object):
 
         :return:
         """
-        self.task_handler = TaskHandler(self.data_queues, self.task_queue)
+        self.event = threading.Event()
+        self.task_handler = TaskHandler(self.data_queues, self.task_queue, self.event)
         self.task_handler.daemon = True
         self.task_handler.start()
         self.task_queue.added_item = None
@@ -123,6 +126,7 @@ class TestClass(object):
 
     @pytest.mark.integrationtest
     def test_task_handler_thread_can_stop_in_less_than_two_seconds(self):
+        self.event.set()
         self.task_handler.stop()
         time.sleep(2)
         assert not self.task_handler.is_alive()

@@ -48,9 +48,10 @@ class ScheduledTasksManager(threading.Thread):
     Manage any tasks that Unmanic needs to execute at regular intervals
     """
 
-    def __init__(self):
+    def __init__(self, event):
         super(ScheduledTasksManager, self).__init__(name='ScheduledTasksManager')
         self.logger = None
+        self.event = event
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
         self.scheduler = schedule.Scheduler()
@@ -67,8 +68,6 @@ class ScheduledTasksManager(threading.Thread):
         self.abort_flag.set()
 
     def run(self):
-        # If we have a config set to run a schedule, then start the process.
-        # Otherwise close this thread now.
         self._log("Starting ScheduledTasks Monitor loop")
 
         # Create scheduled tasks
@@ -86,7 +85,7 @@ class ScheduledTasksManager(threading.Thread):
 
         # Loop every 2 seconds to check if a task is due to be run
         while not self.abort_flag.is_set():
-            time.sleep(1)
+            self.event.wait(2)
             # Check if scheduled task is due
             self.scheduler.run_pending()
 

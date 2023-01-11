@@ -1,7 +1,7 @@
 flake8>=3.7.9
 pycodestyle>=2.5.0
 pytest>=5.4.1
-wheel==0.33.6
+wheel==0.38.4
 setuptools>=39.0.1
 
 # API schema exporting

@@ -47,13 +47,14 @@ from unmanic.libs.plugins import PluginsHandler
 
 
 class LibraryScannerManager(threading.Thread):
-    def __init__(self, data_queues):
+    def __init__(self, data_queues, event):
         super(LibraryScannerManager, self).__init__(name='LibraryScannerManager')
         self.interval = 0
         self.firstrun = True
         self.data_queues = data_queues
         self.settings = config.Config()
         self.logger = None
+        self.event = event
         self.scheduledtasks = data_queues["scheduledtasks"]
         self.library_scanner_triggers = data_queues["library_scanner_triggers"]
         self.abort_flag = threading.Event()
@@ -82,16 +83,14 @@ class LibraryScannerManager(threading.Thread):
             # Return True straight away if it is
             return True
         # Sleep for a fraction of a second to prevent CPU pinning
-        time.sleep(.1)
+        self.event.wait(.1)
         # Return False
         return False
 
     def run(self):
-        # If we have a config set to run a schedule, then start the process.
-        # Otherwise close this thread now.
         self._log("Starting LibraryScanner Monitor loop")
         while not self.abort_is_set():
-            time.sleep(1)
+            self.event.wait(1)
 
             # Main loop to configure the scheduler
             if int(self.settings.get_schedule_full_scan_minutes()) != self.interval:
@@ -112,7 +111,7 @@ class LibraryScannerManager(threading.Thread):
                 # Then loop and wait for the schedule
                 while not self.abort_is_set():
                     # Delay for 1 second before checking again.
-                    time.sleep(1)
+                    self.event.wait(1)
 
                     # Check if a manual library scan was triggered
                     try:
@@ -198,7 +197,7 @@ class LibraryScannerManager(threading.Thread):
 
     def start_results_manager_thread(self, manager_id, status_updates, library_id):
         manager = FileTesterThread("FileTesterThread-{}".format(manager_id), self.files_to_test,
-                                   self.files_to_process, status_updates, library_id)
+                                   self.files_to_process, status_updates, library_id, self.event)
         manager.daemon = True
         manager.start()
         self.file_test_managers[manager_id] = manager
@@ -298,7 +297,7 @@ class LibraryScannerManager(threading.Thread):
                     # There are not more files to test. Mark manager threads as completed
                     self.stop_all_file_test_managers()
                     break
-                time.sleep(1)
+                self.event.wait(1)
                 continue
 
             # Calculate percent of files tested
@@ -320,7 +319,7 @@ class LibraryScannerManager(threading.Thread):
                 self.add_path_to_queue(item.get('path'), library_id, item.get('priority_score'))
                 continue
             else:
-                time.sleep(.1)
+                self.event.wait(.1)
 
         # Wait for threads to finish
         for manager_id in self.file_test_managers:

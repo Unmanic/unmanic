@@ -54,9 +54,10 @@ class TaskHandler(threading.Thread):
             -
     """
 
-    def __init__(self, data_queues, task_queue):
+    def __init__(self, data_queues, task_queue, event):
         super(TaskHandler, self).__init__(name='TaskHandler')
         self.settings = config.Config()
+        self.event = event
         self.data_queues = data_queues
         self.logger = data_queues["logging"].get_logger(self.name)
         self.task_queue = task_queue
@@ -77,7 +78,7 @@ class TaskHandler(threading.Thread):
     def run(self):
         self._log("Starting TaskHandler Monitor loop")
         while not self.abort_flag.is_set():
-            time.sleep(2)
+            self.event.wait(2)
             self.process_scheduledtasks_queue()
             self.process_inotifytasks_queue()
 

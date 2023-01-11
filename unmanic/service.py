@@ -34,6 +34,7 @@ import os
 import time
 import queue
 import signal
+import threading
 
 from unmanic import config, metadata
 from unmanic.libs import libraryscanner, unlogger, common, eventmonitor
@@ -86,9 +87,11 @@ class Service:
 
         self.developer = None
 
+        self.event = threading.Event()
+
     def start_handler(self, data_queues, task_queue):
         main_logger.info("Starting TaskHandler")
-        handler = TaskHandler(data_queues, task_queue)
+        handler = TaskHandler(data_queues, task_queue, self.event)
         handler.daemon = True
         handler.start()
         self.threads.append({
@@ -99,7 +102,7 @@ class Service:
 
     def start_post_processor(self, data_queues, task_queue):
         main_logger.info("Starting PostProcessor")
-        postprocessor = PostProcessor(data_queues, task_queue)
+        postprocessor = PostProcessor(data_queues, task_queue, self.event)
         postprocessor.daemon = True
         postprocessor.start()
         self.threads.append({
@@ -110,7 +113,7 @@ class Service:
 
     def start_foreman(self, data_queues, settings, task_queue):
         main_logger.info("Starting Foreman")
-        foreman = Foreman(data_queues, settings, task_queue)
+        foreman = Foreman(data_queues, settings, task_queue, self.event)
         foreman.daemon = True
         foreman.start()
         self.threads.append({
@@ -121,7 +124,7 @@ class Service:
 
     def start_library_scanner_manager(self, data_queues):
         main_logger.info("Starting LibraryScannerManager")
-        library_scanner_manager = libraryscanner.LibraryScannerManager(data_queues)
+        library_scanner_manager = libraryscanner.LibraryScannerManager(data_queues, self.event)
         library_scanner_manager.daemon = True
         library_scanner_manager.start()
         self.threads.append({
@@ -133,7 +136,7 @@ class Service:
     def start_inotify_watch_manager(self, data_queues, settings):
         if eventmonitor.event_monitor_module:
             main_logger.info("Starting EventMonitorManager")
-            event_monitor_manager = eventmonitor.EventMonitorManager(data_queues)
+            event_monitor_manager = eventmonitor.EventMonitorManager(data_queues, self.event)
             event_monitor_manager.daemon = True
             event_monitor_manager.start()
             self.threads.append({
@@ -157,7 +160,7 @@ class Service:
 
     def start_scheduled_tasks_manager(self):
         main_logger.info("Starting ScheduledTasksManager")
-        scheduled_tasks_manager = ScheduledTasksManager()
+        scheduled_tasks_manager = ScheduledTasksManager(self.event)
         scheduled_tasks_manager.daemon = True
         scheduled_tasks_manager.start()
         self.threads.append({
@@ -218,6 +221,7 @@ class Service:
 
     def stop_threads(self):
         main_logger.info("Stopping all threads")
+        self.event.set()
         for thread in self.threads:
             main_logger.info("Sending thread {} abort signal".format(thread['name']))
             thread['thread'].stop()

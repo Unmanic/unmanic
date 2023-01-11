@@ -71,11 +71,12 @@ class Worker(threading.Thread):
 
     worker_runners_info = {}
 
-    def __init__(self, thread_id, name, worker_group_id, pending_queue, complete_queue):
+    def __init__(self, thread_id, name, worker_group_id, pending_queue, complete_queue, event):
         super(Worker, self).__init__(name=name)
         self.thread_id = thread_id
         self.name = name
         self.worker_group_id = worker_group_id
+        self.event = event
 
         self.current_task = None
         self.pending_queue = pending_queue
@@ -100,13 +101,13 @@ class Worker(threading.Thread):
     def run(self):
         self._log("Starting worker")
         while not self.redundant_flag.is_set():
-            time.sleep(1)  # Add delay for preventing loop maxing compute resources
+            self.event.wait(1)  # Add delay for preventing loop maxing compute resources
 
             # If the Foreman has paused this worker, then don't do anything
             if self.paused_flag.is_set():
                 self.paused = True
                 # If the worker is paused, wait for 5 seconds before continuing the loop
-                time.sleep(5)
+                self.event.wait(5)
                 continue
             self.paused = False
 
@@ -115,7 +116,7 @@ class Worker(threading.Thread):
 
             # Wait for task
             while not self.redundant_flag.is_set() and self.current_task:
-                time.sleep(.5)  # Add delay for preventing loop maxing compute resources
+                self.event.wait(.5)  # Add delay for preventing loop maxing compute resources
 
                 try:
                     # Process the set task
@@ -349,7 +350,7 @@ class Worker(threading.Thread):
                 data['original_file_path'] = original_abspath
                 data['repeat'] = False
 
-                time.sleep(.2)  # Add delay for preventing loop maxing compute resources
+                self.event.wait(.2)  # Add delay for preventing loop maxing compute resources
                 self.worker_log.append("\n\nRUNNER: \n{} [Pass #{}]\n\n".format(plugin_module.get('name'), runner_pass_count))
                 self.worker_log.append("\nExecuting plugin runner... Please wait\n")
 
@@ -487,7 +488,7 @@ class Worker(threading.Thread):
                 # I have not yet figured out a solution as this is difficult to reproduce.
                 if not os.path.exists(current_file_out):
                     self._log("Error - current_file_out path does not exist! '{}'".format(file_in), level="error")
-                    time.sleep(1)
+                    self.event.wait(1)
 
                 # Ensure the cache directory exists
                 if not os.path.exists(cache_directory):
@@ -640,7 +641,7 @@ class Worker(threading.Thread):
                     self.paused = True
                     start_pause = time.time()
                     while not self.redundant_flag.is_set():
-                        time.sleep(1)
+                        self.event.wait(1)
                         if not self.paused_flag.is_set():
                             self._log("Resuming PID {}".format(sub_proc.pid), level='debug')
                             proc.resume()

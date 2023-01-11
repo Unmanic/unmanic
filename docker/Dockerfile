@@ -18,7 +18,6 @@ RUN \
         && apt-get update \
         && apt-get install -y \
             libexpat1=2.2.9-1ubuntu0.6 \
-            libgl1-mesa-dri=22.2.0.20220625.1+3091 \
             libglib2.0-0=2.64.6-1~ubuntu20.04.4 \
             libgomp1=10.3.0-1ubuntu1~20.04 \
             libharfbuzz0b=2.6.4-1ubuntu4.2 \
@@ -48,6 +47,7 @@ RUN \
                     intel-media-va-driver-non-free=22.5.0+i419~u20.04 \
                     intel-opencl-icd=22.28.23726.1+i419~u20.04 \
                     level-zero=1.8.1+i755~u20.04 \
+                    libgl1-mesa-dri=22.2.0.20220625.1+3091 \
                     libigc1=1.0.11485+i419~u20.04 \
                     libigdfcl1=1.0.11485+i419~u20.04 \
                     libigdgmm11=21.3.3+i643~u20.04 \

@@ -47,6 +47,7 @@ You can also just install the module natively in your home directory in "develop
 Start by creating a venv.
 ```
 python3 -m venv venv
+echo 'export HOME_DIR=$(readlink -e ${VIRTUAL_ENV}/../)/dev_environment' >> ./venv/bin/activate
 source ./venv/bin/activate
 ```
 

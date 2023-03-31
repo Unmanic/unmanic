@@ -462,7 +462,11 @@ class PluginExecutor(object):
 
         return description
 
-    def test_plugin_runner(self, plugin_id, plugin_type, test_data=None):
+    def test_plugin_runner(self, plugin_id, plugin_type, test_data=None, test_data_modifiers=None):
+        if test_data is None:
+            test_data = {}
+        if test_data_modifiers is None:
+            test_data_modifiers = {}
         try:
             # Get the path for this plugin
             plugin_path = self.__get_plugin_directory(plugin_id)
@@ -472,6 +476,9 @@ class PluginExecutor(object):
 
             # Get the called runner function for the given plugin type
             plugin_type_meta = self.get_plugin_type_meta(plugin_type)
+            if not test_data:
+                test_data = plugin_type_meta.get_test_data()
+                test_data = plugin_type_meta.modify_test_data(test_data, test_data_modifiers)
             errors = plugin_type_meta.run_data_schema_tests(plugin_id, plugin_module, test_data=test_data)
         except Exception as e:
             self._log("Exception while testing plugin runner for plugin '{}'".format(plugin_id), message2=str(e),

@@ -90,7 +90,7 @@ class ProcessItem(PluginType):
         'worker_log':              [],
         'library_id':              1,
         'exec_command':            [],
-        'command_progress_parser': exec,
+        'command_progress_parser': None,
         'file_in':                 '{library_path}/{test_file_in}',
         'file_out':                '{cache_path}/{test_file_out}',
         'original_file_path':      '{library_path}/{test_file_in}',

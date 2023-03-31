@@ -67,7 +67,7 @@ class ProcessItem(PluginType):
         },
         "command_progress_parser": {
             "required": True,
-            "type":     'callable',
+            "type":     ['callable', None],
         },
         "file_in":                 {
             "required": True,

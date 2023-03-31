@@ -114,9 +114,12 @@ class PluginType(object):
         """
 
         def test_data_type(provided_data, expected_data_type):
+            # Test for NoneType
             # Callable functions are best tested with the callable function
             # Everything else should be tested with the isinstance function
-            if expected_data_type == 'callable':
+            if provided_data is None and expected_data_type is None:
+                return True
+            elif expected_data_type == 'callable':
                 if callable(provided_data):
                     return True
             elif isinstance(provided_data, expected_data_type):

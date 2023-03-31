@@ -30,6 +30,7 @@
 
 """
 import inspect
+import json
 from copy import deepcopy
 
 
@@ -92,6 +93,13 @@ class PluginType(object):
         :return:
         """
         return self.test_data
+
+    @staticmethod
+    def modify_test_data(d: dict, v: dict):
+        dict_str = json.dumps(d)
+        for a, b in v.items():
+            dict_str = dict_str.replace(a, b)
+        return json.loads(dict_str)
 
     def __data_schema_test_data(self, plugin_id, plugin_runner, result_data, data_schema, data_tree="/"):
         """
@@ -165,12 +173,14 @@ class PluginType(object):
 
         return errors
 
-    def run_data_schema_tests(self, plugin_id, plugin_module, test_data=None):
+    def run_data_schema_tests(self, plugin_id, plugin_module, test_data):
         """
         With a given set of test data, this method tests the provided
         plugin module's data output against the schema dictionary.
 
+        :param plugin_id:
         :param plugin_module:
+        :param test_data:
         :return:
         """
         plugin_runner = self.plugin_runner()

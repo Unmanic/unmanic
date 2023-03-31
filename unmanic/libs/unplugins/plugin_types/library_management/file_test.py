@@ -78,11 +78,11 @@ class FileTest(PluginType):
     }
     test_data = {
         'library_id':                1,
-        'path':                      '/library/TEST_FILE.mkv',
+        'path':                      '{library_path}/{test_file_in}',
         'issues':                    [
             {
                 'id':      'format',
-                'message': "File is already in target format - '/library/TEST_FILE.mkv'"
+                'message': "File is already in target format - '{library_path}/{test_file_in}'"
             }
         ],
         'add_file_to_pending_tasks': True,

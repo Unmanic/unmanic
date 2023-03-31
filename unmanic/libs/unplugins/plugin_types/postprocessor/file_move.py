@@ -84,12 +84,12 @@ class FileMove(PluginType):
     test_data = {
         'library_id':            1,
         'copy_file':             True,
-        'file_in':               '/tmp/unmanic/unmanic_file_conversion-diqxq-1651476950/TEST_FILE-UNMANIC-WORKING-2-1.mkv',
-        'file_out':              '/library/TEST_FILE.mkv',
+        'file_in':               '{cache_path}/{test_file_out}',
+        'file_out':              '{library_path}/{test_file_in}',
         'remove_source_file':    True,
         'run_default_file_copy': True,
         'source_data':           {
-            'abspath':  '/library/TEST_FILE.mkv',
-            'basename': 'TEST_FILE.mp4',
+            'abspath':  '{library_path}/{test_file_in}',
+            'basename': '{test_file_in}',
         }
     }

@@ -77,15 +77,15 @@ class TaskResult(PluginType):
         },
     }
     test_data = {
-        'final_cache_path':            '/tmp/unmanic/unmanic_file_conversion-diqxq-1651476950/TEST_FILE-UNMANIC-WORKING-2-1.mkv',
+        'final_cache_path':            '{cache_path}/{test_file_out}',
         'library_id':                  1,
         'task_processing_success':     True,
         'file_move_processes_success': True,
         'destination_files':           [
-            '/library/complete/library/TEST_FILE-UNMANIC.mkv',
+            '{library_path}/complete/library/{test_file_in}',
         ],
         'source_data':                 {
-            'abspath':  '/library/TEST_FILE.mkv',
-            'basename': 'TEST_FILE.mp4',
+            'abspath':  '{library_path}/{test_file_in}',
+            'basename': '{test_file_in}',
         },
     }

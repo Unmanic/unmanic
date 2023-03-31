@@ -33,9 +33,11 @@ import json
 import logging
 import os
 import re
+import shutil
 import subprocess
 
 import inquirer
+import requests
 
 from . import plugin_types
 
@@ -43,6 +45,10 @@ from unmanic import config
 from unmanic.libs import unlogger, common
 from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.unplugins import PluginExecutor
+
+home_directory = common.get_home_dir()
+dev_cache_directory = os.path.join(home_directory, '.unmanic', 'dev', 'cache')
+dev_library_directory = os.path.join(home_directory, '.unmanic', 'dev', 'library')
 
 menus = {
     "main":          [
@@ -55,6 +61,7 @@ menus = {
                 'Create new plugin',
                 'Reload all plugins from disk',
                 'Remove plugin',
+                'Install test data',
                 'Exit',
             ],
         ),
@@ -151,6 +158,13 @@ class PluginsCLI(object):
         )
         unmanic_logging.enable_debugging()
         self.logger = unmanic_logging.get_logger(__class__.__name__)
+
+        self.test_data_modifiers = {
+            "{cache_path}":    dev_cache_directory,
+            "{library_path}":  dev_library_directory,
+            "{test_file_in}":  "Big_Buck_Bunny_1080_10s_30MB_h264.mkv",
+            "{test_file_out}": "Big_Buck_Bunny_1080_10s_30MB_h264-1616571944.7296877-WORKING-1.mkv"
+        }
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -394,7 +408,8 @@ class PluginsCLI(object):
             else:
                 for plugin_type_in_plugin in plugin_types_in_plugin:
                     print("    {1}{0}{2}".format(plugin_type_in_plugin, BColours.SECTION, BColours.ENDC))
-                    errors = plugin_executor.test_plugin_runner(plugin_id, plugin_type_in_plugin)
+                    errors = plugin_executor.test_plugin_runner(plugin_id, plugin_type_in_plugin,
+                                                                test_data_modifiers=self.test_data_modifiers)
                     if errors:
                         for error in errors:
                             print("        -- {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
@@ -422,7 +437,7 @@ class PluginsCLI(object):
 
         # Generate menu choices
         all_plugin_details = {}
-        choices = ["Test All Plugins"]
+        choices = ["Configure Testdata", "Test All Plugins"]
         for plugin_details in plugin_results:
             choices.append(plugin_details.get('plugin_id'))
             all_plugin_details[plugin_details.get('plugin_id')] = plugin_details
@@ -443,9 +458,15 @@ class PluginsCLI(object):
             if not selection or selection.get('selected_plugin') == "Go Back":
                 return
 
+            # Configure test file
+            if selection.get('selected_plugin') == "Configure Testdata":
+                self.configure_test_data()
+                continue
+
             # If 'Test All Plugins' was selected, then run tests against all plugins
             if selection.get('selected_plugin') == "Test All Plugins":
                 self.test_installed_plugins()
+                continue
 
             # Get the details for the selected plugin
             selected_plugin_details = all_plugin_details[selection.get('selected_plugin')]
@@ -454,6 +475,57 @@ class PluginsCLI(object):
             # Test that plugin
             self.test_installed_plugins(plugin_id=selected_plugin_details.get('plugin_id'))
 
+    def configure_test_data(self):
+
+        test_files = []
+        for (dir_path, dir_names, file_names) in os.walk(dev_library_directory):
+            test_files.extend(file_names)
+        print(test_files)
+
+        # Update test file
+        print()
+        print()
+        test_files_inquirer = inquirer.List(
+            'selected_file',
+            message="Which Plugin runner will be used?",
+            choices=test_files,
+        )
+        runner_selection = {}
+        runner_selection = {
+            **inquirer.prompt([test_files_inquirer]),
+            **runner_selection
+        }
+        self.test_data_modifiers['{test_file_in}'] = runner_selection.get('selected_file')
+        split_file_in = os.path.splitext(runner_selection.get('selected_file'))
+        self.test_data_modifiers['{test_file_out}'] = "{}-{}{}".format(split_file_in[0], "WORKING-1", split_file_in[1])
+
+    def install_test_data(self):
+        sample_files = {
+            "Big_Buck_Bunny_1080_10s_30MB_h264.mkv": "https://test-videos.co.uk/vids/bigbuckbunny/mkv/1080/Big_Buck_Bunny_1080_10s_30MB.mkv",
+            "Big_Buck_Bunny_1080_10s_30MB_h264.mp4": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_30MB.mp4",
+            "Big_Buck_Bunny_1080_10s_30MB_av1.mp4":  "https://test-videos.co.uk/vids/bigbuckbunny/mp4/av1/1080/Big_Buck_Bunny_1080_10s_30MB.mp4",
+            "sample-12s.mp3":                        "https://download.samplelib.com/mp3/sample-12s.mp3",
+        }
+        if not os.path.exists(dev_cache_directory):
+            os.makedirs(dev_cache_directory)
+        if not os.path.exists(dev_library_directory):
+            os.makedirs(dev_library_directory)
+        for key in sample_files:
+            library_file = os.path.join(dev_library_directory, key)
+            file_url = sample_files.get(key)
+            print()
+            print("Downloading sample file: '{}'".format(file_url))
+            with requests.get(file_url, stream=True) as r:
+                r.raise_for_status()
+                with open(library_file, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=None):
+                        if chunk:
+                            f.write(chunk)
+
+            split_file_in = os.path.splitext(key)
+            cache_file = os.path.join(dev_cache_directory, "{}-{}{}".format(split_file_in[0], "WORKING-1", split_file_in[1]))
+            shutil.copyfile(library_file, cache_file)
+
     def main(self, arg):
         switcher = {
             'List all installed plugins':   'list_installed_plugins',
@@ -461,6 +533,7 @@ class PluginsCLI(object):
             'Create new plugin':            'create_new_plugins',
             'Reload all plugins from disk': 'reload_plugin_from_disk',
             'Remove plugin':                'remove_plugin',
+            'Install test data':            'install_test_data',
         }
         function = switcher.get(arg, None)
         if function:

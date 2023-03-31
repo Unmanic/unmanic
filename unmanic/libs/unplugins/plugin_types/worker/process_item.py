@@ -91,8 +91,8 @@ class ProcessItem(PluginType):
         'library_id':              1,
         'exec_command':            [],
         'command_progress_parser': exec,
-        'file_in':                 '/library/TEST_FILE.mkv',
-        'file_out':                '/tmp/unmanic/unmanic_file_conversion-1616571944.7296784/TEST_FILE-1616571944.7296877-WORKING-1.mkv',
-        'original_file_path':      '/library/TEST_FILE.mkv',
+        'file_in':                 '{library_path}/{test_file_in}',
+        'file_out':                '{cache_path}/{test_file_out}',
+        'original_file_path':      '{library_path}/{test_file_in}',
         'repeat':                  False,
     }

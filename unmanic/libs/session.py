@@ -57,12 +57,12 @@ class Session(object, metaclass=SingletonType):
     """
     non supporter library count
     """
-    library_count = 2
+    library_count = 999
 
     """
     non supporter linked installations count
     """
-    link_count = 5
+    link_count = 999
 
     """
     picture_uri - The user avatar
@@ -341,7 +341,7 @@ class Session(object, metaclass=SingletonType):
             # Allow an extension for the session for 7 days without an internet connection
             if self.__created_older_than_x_days(days=7):
                 # Reset the session - Unmanic should phone home once every 7 days
-                self._reset_session_installation_data()
+                # self._reset_session_installation_data() Or you can just not, you know?
             return False
         except Exception as e:
             self._log("Exception while registering Unmanic.", str(e), level="debug")

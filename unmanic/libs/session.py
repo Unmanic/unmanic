@@ -342,7 +342,8 @@ class Session(object, metaclass=SingletonType):
             if self.__created_older_than_x_days(days=7):
                 # Reset the session - Unmanic should phone home once every 7 days
                 # self._reset_session_installation_data() Or you can just not, you know?
-            return False
+                pass
+            return True
         except Exception as e:
             self._log("Exception while registering Unmanic.", str(e), level="debug")
             if self.__check_session_valid():

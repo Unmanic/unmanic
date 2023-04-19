@@ -52,7 +52,7 @@ class Session(object, metaclass=SingletonType):
     level - The user auth level
     Set level to 0 by default
     """
-    level = 0
+    level = 5
 
     """
     non supporter library count
@@ -276,80 +276,7 @@ class Session(object, metaclass=SingletonType):
         :param force:
         :return:
         """
-        # First check if the current session is still valid
-        if not force and self.__check_session_valid():
-            return True
-
-        # Set now as the last time this was run (before it was actually run
-        self.last_check = time.time()
-
-        # Update the session
-        settings = config.Config()
-        try:
-            # Fetch the installation data prior to running a session update
-            self.__fetch_installation_data()
-
-            # Build post data
-            from unmanic.libs.system import System
-            system = System()
-            system_info = system.info()
-            platform_info = system_info.get("platform", None)
-            if platform_info:
-                platform_info = " * ".join(platform_info)
-            post_data = {
-                "uuid":           self.get_installation_uuid(),
-                "version":        settings.read_version(),
-                "python_version": system_info.get("python", ''),
-                "system":         {
-                    "platform": platform_info,
-                    "devices":  system_info.get("devices", {}),
-                }
-            }
-
-            # Register Unmanic
-            registration_response = self.api_post(1, 'unmanic-register', post_data)
-
-            # Save data
-            if registration_response and registration_response.get("success"):
-                registration_data = registration_response.get("data")
-
-                # Set level from response data (default back to 0)
-                self.level = int(registration_data.get("level", 0))
-
-                # Get user data from response data
-                user_data = registration_data.get('user')
-                if user_data:
-                    # Set name from user data
-                    name = user_data.get("name")
-                    self.name = name if name else 'Valued Supporter'
-
-                    # Set avatar from user data
-                    picture_uri = user_data.get("picture_uri")
-                    self.picture_uri = picture_uri if picture_uri else '/assets/global/img/avatar/avatar_placeholder.png'
-
-                    # Set email from user data
-                    email = user_data.get("email")
-                    self.email = email if email else ''
-
-                self.__update_created_timestamp()
-
-                # Persist session in DB
-                self.__store_installation_data()
-
-                return True
-
-            # Allow an extension for the session for 7 days without an internet connection
-            if self.__created_older_than_x_days(days=7):
-                # Reset the session - Unmanic should phone home once every 7 days
-                # self._reset_session_installation_data() Or you can just not, you know?
-                pass
-            return True
-        except Exception as e:
-            self._log("Exception while registering Unmanic.", str(e), level="debug")
-            if self.__check_session_valid():
-                # If the session is still valid, just return true. Perhaps the internet is down and it timed out?
-                return True
-            return False
+        return True
 
     def get_sign_out_url(self):
         """

@@ -4,63 +4,37 @@ LABEL maintainer="Josh.5 <jsunnex@gmail.com>"
 
 # Env variables
 ENV \
-    LIBVA_DRIVERS_PATH="/usr/lib/x86_64-linux-gnu/dri" \
     NVIDIA_DRIVER_CAPABILITIES="compute,video,utility" \
     NVIDIA_VISIBLE_DEVICES="all"
 
 
 # Install the runtime dependencies
-# TODO: Remove intel-opencl-icd and replace with suggested build by Jellyfin
-#   https://jellyfin.org/docs/general/administration/hardware-acceleration.html
-#   https://github.com/jellyfin/jellyfin/blob/master/Dockerfile
+# jellyfin-ffmpeg5 comes with all VA-API drivers required by Intel and AMD, except the OpenCL runtime.
 RUN \
     echo "**** Install runtime packages ****" \
         && apt-get update \
         && apt-get install -y \
-            libexpat1=2.2.9-1ubuntu0.6 \
-            libglib2.0-0=2.64.6-1~ubuntu20.04.4 \
-            libgomp1=10.3.0-1ubuntu1~20.04 \
-            libharfbuzz0b=2.6.4-1ubuntu4.2 \
             libmediainfo0v5=19.09+dfsg-2build1 \
-            libv4l-0=1.18.0-2build1 \
-            libx11-6=2:1.6.9-2ubuntu1.2 \
-            libxcb1=1.14-2 \
-            libxext6=2:1.3.4-0ubuntu1 \
-            libxml2=2.9.10+dfsg-5ubuntu0.20.04.5 \
     && \
     echo "**** Install arch specific packages for $(uname -m) ****" \
         && sleep 2 \
         && \
-        if uname -m | grep -q x86; then \
-            echo "**** Add Intel Graphics repository  ****" \
+        if uname -m | grep -q x86_64; then \
+            echo "**** Add Intel Graphics repository ****" \
                 && apt-get install -y \
                     gnupg \
                 && echo "deb [arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main" > /etc/apt/sources.list.d/intel-graphics.list \
                 && apt-key adv --fetch-keys https://repositories.intel.com/graphics/intel-graphics.key \
             && \
-            echo "**** Install Intel Media Drivers  ****" \
+            echo "**** Install Intel Compute Runtime ****" \
                 && apt-get update \
                 && apt-get install -y \
-                    i965-va-driver=2.4.0-0ubuntu1 \
-                    intel-igc-cm=1.0.160+i755~u20.04 \
-                    intel-level-zero-gpu=1.3.23726.1+i419~u20.04 \
-                    intel-media-va-driver-non-free=22.5.0+i419~u20.04 \
-                    intel-opencl-icd=22.28.23726.1+i419~u20.04 \
-                    level-zero=1.8.1+i755~u20.04 \
-                    libgl1-mesa-dri=22.2.0.20220625.1+3091 \
-                    libigc1=1.0.11485+i419~u20.04 \
+                    libigdgmm12=22.1.7+i419~u20.04 \
                     libigdfcl1=1.0.11485+i419~u20.04 \
-                    libigdgmm11=21.3.3+i643~u20.04 \
-                    libmfx1=22.5.0+i419~u20.04 \
-                    libva-drm2=2.15.0.2-36 \
-                    libva-wayland2=2.15.0.2-36 \
-                    libva-x11-2=2.15.0.2-36 \
-                    libva2=2.15.0.2-36 \
-                    vainfo=2.15.0.2-1 \
-            && \
-            echo "**** Install MESA Media Drivers for AMD VAAPI ****" \
-                && apt-get install -y \
-                    mesa-va-drivers=21.2.6-0ubuntu0.1~20.04.2 \
+                    libigc1=1.0.11485+i419~u20.04 \
+                    intel-igc-cm=1.0.160+i755~u20.04 \
+                    intel-opencl-icd=22.28.23726.1+i419~u20.04 \
+                    intel-level-zero-gpu=1.3.23726.1+i419~u20.04 \
             && \
             echo "**** Remove build packages ****" \
                 && apt-get remove -y \
@@ -79,29 +53,24 @@ RUN \
 
 
 # Install commonly used command line tools
-ARG JELLYFIN_FFMPEG_VERSION="4.4.1-4"
 ARG NODEJS_VERSION="16.x"
 RUN \
     echo "**** Install FFmpeg for $(uname -m) ****" \
         && sleep 2 \
         && apt-get update \
         && \
-        if uname -m | grep -q x86; then \
+        if uname -m | grep -q 'x86_64\|aarch64\|armv7l' ; then \
             echo "**** Add Jellyfin repository ****" \
                 && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates gnupg \
                 && curl -ks https://repo.jellyfin.org/jellyfin_team.gpg.key | apt-key add - \
                 && echo "deb [arch=$( dpkg --print-architecture )] https://repo.jellyfin.org/ubuntu focal main" | tee /etc/apt/sources.list.d/jellyfin.list \
             && \
-            echo "**** Install jellyfin-ffmpeg and linked 3rd party libs ****" \
+            echo "**** Install and link jellyfin-ffmpeg5 to ffmpeg ****" \
                 && apt-get update \
                 && apt-get install --no-install-recommends --no-install-suggests -y \
+                    jellyfin-ffmpeg5 \
+                    locales \
                     openssl \
-                    locales \
-                &&  curl -ksL \
-                    -o /tmp/jellyfin-ffmpeg_${JELLYFIN_FFMPEG_VERSION}-focal_amd64.deb \
-                    "https://repo.jellyfin.org/releases/server/ubuntu/versions/jellyfin-ffmpeg/${JELLYFIN_FFMPEG_VERSION}/jellyfin-ffmpeg_${JELLYFIN_FFMPEG_VERSION}-focal_amd64.deb" \
-                && apt-get install -y \
-                    /tmp/jellyfin-ffmpeg_${JELLYFIN_FFMPEG_VERSION}-focal_amd64.deb \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
             && \
@@ -111,49 +80,11 @@ RUN \
             echo ; \
         fi \
         && \
-        if uname -m | grep -q aarch64; then \
-            echo "**** Install ffmpeg and linked 3rd party libs ****" \
-                && apt-get install --no-install-recommends --no-install-suggests -y \
-                    ffmpeg \
-                    libssl-dev \
-                    ca-certificates \
-                    libfontconfig1 \
-                    libfreetype6 \
-                    libomxil-bellagio0 \
-                    libomxil-bellagio-bin \
-                    locales \
+        if uname -m | grep -q x86_64 ; then \
+            echo "**** Link vainfo for x86_64 ****" \
+                && ln -s /usr/lib/jellyfin-ffmpeg/vainfo /usr/local/bin/vainfo \
             && \
-            echo ; \
-        fi \
-        && \
-        if uname -m | grep -q armv7l; then \
-            echo "**** Add Jellyfin repository ****" \
-                && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates gnupg \
-                && curl -ks https://repo.jellyfin.org/jellyfin_team.gpg.key | apt-key add - \
-                && curl -ks https://keyserver.ubuntu.com/pks/lookup?op=get\&search=0x6587ffd6536b8826e88a62547876ae518cbcf2f2 | apt-key add - \
-                && echo 'deb [arch=armhf] https://repo.jellyfin.org/ubuntu focal main' > /etc/apt/sources.list.d/jellyfin.list \
-                && echo "deb http://ppa.launchpad.net/ubuntu-raspi2/ppa/ubuntu bionic main">> /etc/apt/sources.list.d/raspbins.list \
-            && \
-            echo "**** Install jellyfin-ffmpeg and linked 3rd party libs ****" \
-                && apt-get update \
-                && apt-get install --no-install-recommends --no-install-suggests -y \
-                    jellyfin-ffmpeg \
-                    libssl-dev \
-                    libfontconfig1 \
-                    libfreetype6 \
-                    libomxil-bellagio0 \
-                    libomxil-bellagio-bin \
-                    libraspberrypi0 \
-                    vainfo \
-                    libva2 \
-                    locales \
-                && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
-                && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
-            && \
-            echo "**** Remove build packages ****" \
-                && apt-get remove -y gnupg \
-            && \
-            echo ; \
+            echo ; \				
         fi \
     && \
     echo "**** Install startup script requirements ****" \
@@ -195,32 +126,21 @@ RUN \
         && \
         echo "**** Install python ****" \
             && apt-get install -y --no-install-recommends \
+                gcc \
                 grc \
                 python3 \
+                python3-dev \
                 python3-pip \
                 python3-setuptools \
                 unzip \
         && \
-        if uname -m | grep -q armv7l; then \
-            echo "**** Install python package build dependencies ****" \
-                && apt-get install --no-install-recommends --no-install-suggests -y \
-                    gcc \
-                    python3-dev \
-            && \
-            echo ; \
-        fi \
-        && \
-        if uname -m | grep -q aarch64; then \
-            echo "**** Install python package build dependencies ****" \
-                && apt-get install --no-install-recommends --no-install-suggests -y \
-                    gcc \
-                    python3-dev \
-            && \
-            echo ; \
-        fi \
-        && \
         echo "**** Install pip packages ****" \
             && python3 -m pip install --no-cache-dir -r /tmp/requirements.txt \
+        && \
+        echo "**** Remove build packages ****" \
+            && apt-get remove -y \
+                gcc \
+                python3-dev \
     && \
     echo "**** Section cleanup ****" \
         && apt-get clean autoclean -y \

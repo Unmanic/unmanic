@@ -16,34 +16,15 @@ function docker_env {
 
 function print_updated_packages {
     runtime_packages=(
-        "libexpat1"
-        "libglib2.0-0"
-        "libgomp1"
-        "libharfbuzz0b"
         "libmediainfo0v5"
-        "libv4l-0"
-        "libx11-6"
-        "libxcb1"
-        "libxext6"
-        "libxml2"
     )
-    intel_media_driver_packages=(
-        "i965-va-driver"
+    intel_compute_runtime_packages=(
+        "libigdgmm12"
+        "libigdfcl1"
+        "libigc1"
+        "intel-opencl-icd"
         "intel-igc-cm"
         "intel-level-zero-gpu"
-        "intel-media-va-driver-non-free"
-        "intel-opencl-icd"
-        "level-zero"
-        "libgl1-mesa-dri"
-        "libigc1"
-        "libigdfcl1"
-        "libigdgmm11"
-        "libmfx1"
-        "libva-drm2"
-        "libva-wayland2"
-        "libva-x11-2"
-        "libva2"
-        "vainfo"
     )
 
     apt-get update
@@ -66,9 +47,9 @@ function print_updated_packages {
     echo
 
     echo
-    echo "Intel media driver package updates"
+    echo "Intel Compute Runtime package updates"
     echo
-    for package in ${intel_media_driver_packages[@]}; do
+    for package in ${intel_compute_runtime_packages[@]}; do
         update_version=$(cat /tmp/apt-updates.txt | grep "${package}/" | awk '{print $2}');
         if [[ -z ${update_version} ]]; then
             if [[ ${1:-X} == 'all' ]]; then

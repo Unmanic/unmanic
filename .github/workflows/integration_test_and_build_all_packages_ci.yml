@@ -19,11 +19,11 @@ jobs:
 
     steps:
     # Fetch shallow git repository
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     # Restore test video's cache
     - name: Restore test videos cache
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       id: test_videos_cache
       with:
         path: tests/support_/videos
@@ -39,13 +39,13 @@ jobs:
 
     # Setup python environment
     - name: Set up Python 3.7
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v5
       with:
         python-version: 3.7
 
     # Restore the python cache if it exists
     - name: Restore python cache
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -56,7 +56,7 @@ jobs:
     # TODO: Fix this cache. Its not really working at all. It would be nice to have tho.
     - name: Restore python cache
       id: apt-cache
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: /var/cache/apt/archives
         key: ${{ runner.os }}-apt-cache
@@ -99,7 +99,7 @@ jobs:
     steps:
     # Fetch full git repository and all submodules
     - name: Checkout project
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: 'recursive'
 
@@ -112,13 +112,13 @@ jobs:
 
     # Setup python environment
     - name: Set up Python 3.7
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v5
       with:
         python-version: 3.7
 
     # Restore the python cache if it exists
     - name: Restore python cache
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -133,7 +133,7 @@ jobs:
         if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 
     # Setup node environment for building unmanic's webui
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v4
       with:
         node-version: '16'
 
@@ -160,7 +160,7 @@ jobs:
         echo ${PY_VERSION} > dist/VERSION.txt
 
     # Upload python package distribution data artifact
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: unmanic-py-dist-data-${{ steps.py_build_data.outputs.py_version }}
         path: dist/
@@ -174,11 +174,11 @@ jobs:
     steps:
     # Fetch shallow git repository
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     # Fetch all artifacts
     - name: Download Artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         path: ./artifacts/
 
@@ -259,7 +259,7 @@ jobs:
 
     # Cache the build
     - name: Cache Docker layers
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       id: cache
       with:
         path: /tmp/.buildx-cache
@@ -311,11 +311,11 @@ jobs:
     steps:
     # Fetch shallow git repository
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     # Fetch all artifacts
     - name: Download Artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         path: ./artifacts/
 

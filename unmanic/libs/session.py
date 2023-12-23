@@ -98,6 +98,7 @@ class Session(object, metaclass=SingletonType):
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         self.logger = unmanic_logging.get_logger(__class__.__name__)
         self.timeout = 5
+        self.dev_local_api = kwargs.get('dev_local_api', False)
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -225,6 +226,9 @@ class Session(object, metaclass=SingletonType):
         """
         api_proto = "https"
         api_domain = "api.unmanic.app"
+        if self.dev_local_api:
+            api_proto = "http"
+            api_domain = "api.unmanic.localhost"
         return "{0}://{1}".format(api_proto, api_domain)
 
     def set_full_api_url(self, api_version, api_path):

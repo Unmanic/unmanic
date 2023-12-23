@@ -36,10 +36,6 @@ RUN \
             libxml2=2.9.13+dfsg-1ubuntu0.3 \
     && \
     echo "**** Install all available media acceleration packages ****" \
-        # libmfx1:
-        #   This is a library for Intel Media SDK runtime. It is necessary for applications that use Intel Quick Sync Video technology.
-        # libvpl2:
-        #   This is the successor to the Media SDK and provides a library for video processing.
         # va-driver-all: 
         #   A meta-package for installing all available Video Acceleration API (VAAPI) drivers. Includes packages like:
         #       - i965-va-driver
@@ -48,8 +44,6 @@ RUN \
         #       - libdrm2
         #       - etc
         && apt-get install -y \
-            libmfx1 \
-            libvpl2 \
             va-driver-all \
     && \
     echo "**** Install arch specific packages for $(uname -m) ****" \
@@ -66,16 +60,22 @@ RUN \
                 #   This is the primary driver for Intel's Video Acceleration API on Linux, which provides support for video encoding and decoding on Intel graphics hardware.
                 # libigdgmm12:
                 #   A part of the Intel Graphics Memory Management Library, which is used for managing graphics memory in an efficient and optimized way on Intel GPUs.
+                # libmfx1:
+                #   This is a library for Intel Media SDK runtime. It is necessary for applications that use Intel Quick Sync Video technology.
                 # libmfxgen1:
                 #   Similar to libmfx1, it's a part of the Intel Media SDK.
                 # libva-drm2 and libva2:
                 #   These are additional libraries needed for VAAPI to interface with the Direct Rendering Manager (DRM) and to provide the main API for VAAPI.
+                # libvpl2:
+                #   This is the successor to the Media SDK and provides a library for video processing.
                 && apt-get install -y \
                     intel-media-va-driver-non-free \
                     libigdgmm12 \
+                    libmfx1 \
                     libmfxgen1 \
                     libva-drm2 \
                     libva2 \
+                    libvpl2 \
             && \
             echo ; \
         fi \

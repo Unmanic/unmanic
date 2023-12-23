@@ -157,7 +157,9 @@ class Library(object):
         # Fetch all enabled plugins
         library_count = Libraries.select().count()
 
-        def add_frontend_message():
+        # Ensure enabled plugins are within limits
+        # Function was returned above if the user was logged in and able to use infinite
+        if library_count > s.library_count:
             # If the frontend messages queue was included in request, append a message
             if frontend_messages:
                 frontend_messages.put(
@@ -169,12 +171,10 @@ class Library(object):
                         'timeout': 0
                     }
                 )
-
-        # Ensure enabled plugins are within limits
-        # Function was returned above if the user was logged in and able to use infinite
-        if library_count > s.library_count:
-            add_frontend_message()
             return False
+        # If the frontend messages queue was included in request, remove the notification as we are currently within limits
+        if frontend_messages:
+            frontend_messages.remove_item('libraryEnabledLimits')
         return True
 
     @staticmethod

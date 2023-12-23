@@ -283,6 +283,7 @@ jobs:
         context: .
         file: docker/Dockerfile
         platforms: ${{ steps.prepare.outputs.docker_platforms }}
+        pull: true
         push: ${{ steps.prepare.outputs.docker_push }}
         tags: |
           ${{ steps.prepare.outputs.docker_tags }}

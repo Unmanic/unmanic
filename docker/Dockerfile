@@ -151,33 +151,6 @@ RUN \
             && \
             echo ; \
         fi \
-        && \
-        if uname -m | grep -q armv7l; then \
-            echo "**** Add Jellyfin repository ****" \
-                && wget -qO - https://repo.jellyfin.org/jellyfin_team.gpg.key | gpg --dearmor --output /usr/share/keyrings/jellyfin_team.gpg \
-                && echo "deb [arch=armhf signed-by=/usr/share/keyrings/jellyfin_team.gpg] https://repo.jellyfin.org/ubuntu jammy main" | tee /etc/apt/sources.list.d/jellyfin.list \
-            && \
-            echo "**** Install jellyfin-ffmpeg and linked 3rd party libs ****" \
-                && apt-get update \
-                && apt-get install --no-install-recommends --no-install-suggests -y \
-                    jellyfin-ffmpeg \
-                    libssl-dev \
-                    libfontconfig1 \
-                    libfreetype6 \
-                    libomxil-bellagio0 \
-                    libomxil-bellagio-bin \
-                    libraspberrypi0 \
-                    vainfo \
-                    libva2 \
-                    locales \
-                && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
-                && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
-            && \
-            echo "**** Remove build packages ****" \
-                && apt-get remove -y gnupg \
-            && \
-            echo ; \
-        fi \
     && \
     echo "**** Install startup script requirements ****" \
         && apt-get install -y \

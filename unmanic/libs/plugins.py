@@ -460,10 +460,14 @@ class PluginsHandler(object, metaclass=SingletonType):
             plugin_id = plugin_info.get('id')
         # Create plugin destination directory based on plugin ID
         plugin_directory = self.get_plugin_path(plugin_id)
+        # Prevent installation if destination has a git repository. This plugin is probably under development
+        self._log(os.path.join(str(plugin_directory), '.git'))
+        if os.path.exists(os.path.join(str(plugin_directory), '.git')):
+            raise Exception("Plugin directory contains a git repository. Uninstall this source version before installing.")
         # Extract zip file contents
         self._log("Extracting plugin to '{}'".format(plugin_directory), level='debug')
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
-            zip_ref.extractall(plugin_directory)
+            zip_ref.extractall(str(plugin_directory))
         # Return installed plugin info
         return self.get_plugin_info(plugin_id)
 

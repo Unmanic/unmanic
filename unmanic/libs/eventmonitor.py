@@ -77,7 +77,8 @@ class EventHandler(FileSystemEventHandler):
     From this, the only event we really need to monitor is the "created" and "closed" events.
     """
 
-    def __init__(self, files_to_test, library_id):
+    def __init__(self, files_to_test, library_id, active_files):
+        self.active_files = active_files  # This is a shared set
         self.name = "EventProcessor"
         self.files_to_test = files_to_test
         self.library_id = library_id
@@ -93,12 +94,20 @@ class EventHandler(FileSystemEventHandler):
         getattr(self.logger, level)(message)
 
     def on_any_event(self, event):
-        if event.event_type == "created":
+        # Check and update the active_files set
+        with threading.Lock():  # Ensure thread safety
+            if event.src_path in self.active_files:
+                # File is already being processed, so ignore this event
+                return
+            self.active_files.add(event.src_path)
+
+        if event.event_type in ["created", "modified"]:
             # Ensure event was not for a directory
             if event.is_directory:
                 self._log("Detected event is for a directory. Ignoring...", level="debug")
             else:
                 self._log("Detected '{}' event on file path '{}'".format(event.event_type, event.src_path))
+                # Wait for file to be fully written to disk
                 self._wait_for_file_stabilization(event.src_path)
                 self.files_to_test.put({
                     'src_path':   event.src_path,
@@ -154,6 +163,7 @@ class EventMonitorManager(threading.Thread):
         # Create an event queue
         self.files_to_test = queue.Queue()
 
+        self.active_files = set()
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
 
@@ -257,7 +267,7 @@ class EventMonitorManager(threading.Thread):
                     if not os.path.exists(library_path):
                         continue
                     self._log("Adding library path to monitor '{}'".format(library_path))
-                    event_handler = EventHandler(self.files_to_test, library.get_id())
+                    event_handler = EventHandler(self.files_to_test, library.get_id(), self.active_files)
                     self.event_observer_thread.schedule(event_handler, library_path, recursive=True)
                     monitoring_path = True
             # Only start observer if a path was added to be monitored
@@ -315,6 +325,9 @@ class EventMonitorManager(threading.Thread):
             self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
         except Exception as e:
             self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e), level="exception")
+        finally:
+            with threading.Lock():
+                self.active_files.discard(pathname)  # Remove the file from the set after processing
 
     def __add_path_to_queue(self, pathname, library_id, priority_score):
         """

@@ -93,16 +93,44 @@ class EventHandler(FileSystemEventHandler):
         getattr(self.logger, level)(message)
 
     def on_any_event(self, event):
-        if event.event_type == "closed":
+        if event.event_type == "created":
             # Ensure event was not for a directory
             if event.is_directory:
                 self._log("Detected event is for a directory. Ignoring...", level="debug")
             else:
                 self._log("Detected '{}' event on file path '{}'".format(event.event_type, event.src_path))
+                self._wait_for_file_stabilization(event.src_path)
                 self.files_to_test.put({
                     'src_path':   event.src_path,
                     'library_id': self.library_id,
                 })
+
+    def _wait_for_file_stabilization(self, file_path, check_interval=1, timeout=30):
+        """
+        Wait for the file to be fully written to disk (i.e., file size becomes stable).
+        
+        :param file_path: Path to the file to check.
+        :param check_interval: Interval in seconds to check the file size.
+        :param timeout: Timeout in seconds to give up waiting for file stabilization.
+        :return: True if file is stable, False if timed out.
+        """
+        start_time = time.time()
+        last_size = -1
+
+        while time.time() - start_time < timeout:
+            try:
+                current_size = os.path.getsize(file_path)
+            except OSError:
+                break  # The file might have been moved or deleted
+
+            if last_size == current_size:
+                return True  # File size is stable
+
+            last_size = current_size
+            self._log("File still being written to, waiting.", level="debug")
+            time.sleep(check_interval)
+
+        return False  # Timeout reached
 
 
 class EventMonitorManager(threading.Thread):

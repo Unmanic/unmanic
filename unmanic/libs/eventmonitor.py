@@ -94,25 +94,27 @@ class EventHandler(FileSystemEventHandler):
         getattr(self.logger, level)(message)
 
     def on_any_event(self, event):
-        # Check and update the active_files set
-        with threading.Lock():  # Ensure thread safety
-            if event.src_path in self.active_files:
-                # File is already being processed, so ignore this event
-                return
-            self.active_files.add(event.src_path)
-
         if event.event_type in ["created", "modified"]:
             # Ensure event was not for a directory
             if event.is_directory:
                 self._log("Detected event is for a directory. Ignoring...", level="debug")
-            else:
-                self._log("Detected '{}' event on file path '{}'".format(event.event_type, event.src_path))
-                # Wait for file to be fully written to disk
-                self._wait_for_file_stabilization(event.src_path)
-                self.files_to_test.put({
-                    'src_path':   event.src_path,
-                    'library_id': self.library_id,
-                })
+                return
+
+            # Check and update the active_files set
+            with threading.Lock():  # Ensure thread safety
+                if event.src_path in self.active_files:
+                    # File is already being processed, so ignore this event
+                    self._log("Ignoring '{}' event on file path '{}' due to other events".format(event.event_type, event.src_path), level="debug")
+                    return
+                self.active_files.add(event.src_path)
+
+            self._log("Detected '{}' event on file path '{}'".format(event.event_type, event.src_path))
+            # Wait for file to be fully written to disk
+            self._wait_for_file_stabilization(event.src_path)
+            self.files_to_test.put({
+                'src_path':   event.src_path,
+                'library_id': self.library_id,
+            })
 
     def _wait_for_file_stabilization(self, file_path):
         """

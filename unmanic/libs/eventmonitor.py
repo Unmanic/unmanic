@@ -127,7 +127,7 @@ class EventHandler(FileSystemEventHandler):
                 return True  # File size is stable
 
             last_size = current_size
-            self._log("File still being written to, waiting.", level="debug")
+            self._log("File path '{}' still being written to, waiting.".format(file_path), level="debug")
             time.sleep(check_interval)
 
         return False  # Timeout reached

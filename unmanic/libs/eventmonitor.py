@@ -109,37 +109,40 @@ class EventHandler(FileSystemEventHandler):
                 self.active_files.add(event.src_path)
 
             self._log("Detected '{}' event on file path '{}'".format(event.event_type, event.src_path))
-            # Wait for file to be fully written to disk
-            self._wait_for_file_stabilization(event.src_path)
+
+            try:
+                # Wait for file to be fully written to disk
+                self._wait_for_file_stabilization(event.src_path)
+            except Exception as e:
+                self._log("An error occurred while waiting for file stabilization: {}".format(str(e)), level="error")
+                return
+
             self.files_to_test.put({
                 'src_path':   event.src_path,
                 'library_id': self.library_id,
             })
 
-    def _wait_for_file_stabilization(self, file_path):
+    def _wait_for_file_stabilization(self, file_path, timeout=180):
         """
         Wait for the file to be fully written to disk (i.e., file size becomes stable).
         
         :param file_path: Path to the file to check.
-        :return: True if file is stable, False if timed out.
+        :raises: TimeoutError if file stabilization times out.
         """
         start_time = time.time()
         last_size = -1
 
-        while time.time() - start_time < 180:
-            try:
-                current_size = os.path.getsize(file_path)
-            except OSError:
-                break  # The file might have been moved or deleted
+        while time.time() - start_time < timeout:
+            current_size = os.path.getsize(file_path)
 
             if last_size == current_size:
                 return True  # File size is stable
 
             last_size = current_size
-            self._log("File path '{}' still being written to, waiting.".format(file_path), level="debug")
+            self._log("Monitoring file path '{}' for changes, waiting.".format(file_path), level="debug")
             time.sleep(1)
 
-        return False  # Timeout reached
+        raise TimeoutError("Timeout reached while waiting for file stabilization.")
 
 
 class EventMonitorManager(threading.Thread):

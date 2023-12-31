@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.{{FILE_NAME}}
+    unmanic.test_eventmonitor.py
  
     Written by:               Josh.5 <jsunnex@gmail.com>
     Date:                     30 Dec 2023, (6:59 PM)

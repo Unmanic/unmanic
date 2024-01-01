@@ -33,6 +33,7 @@ import pytest
 from unittest.mock import patch
 from unmanic.libs.eventmonitor import EventHandler
 
+@pytest.mark.unittest
 class TestEventMonitor(object):
     def test_wait_for_file_stabilization_file_stable(self):
         """

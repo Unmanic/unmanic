@@ -115,6 +115,8 @@ class EventHandler(FileSystemEventHandler):
                 self._wait_for_file_stabilization(event.src_path)
             except Exception as e:
                 self._log("An error occurred while waiting for file stabilization: {}".format(str(e)), level="error")
+                with threading.Lock():
+                    self.active_files.discard(event.src_path)  # Remove the file from the set
                 return
 
             self.files_to_test.put({

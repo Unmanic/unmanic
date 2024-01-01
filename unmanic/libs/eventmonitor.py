@@ -122,7 +122,7 @@ class EventHandler(FileSystemEventHandler):
                 'library_id': self.library_id,
             })
 
-    def _wait_for_file_stabilization(self, file_path, timeout_seconds=180):
+    def _wait_for_file_stabilization(self, file_path, timeout_seconds=600):
         """
         Wait for the file to be fully written to disk (i.e., file size becomes stable).
         

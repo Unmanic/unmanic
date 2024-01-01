@@ -114,7 +114,7 @@ class EventHandler(FileSystemEventHandler):
                 # Wait for file to be fully written to disk
                 self._wait_for_file_stabilization(event.src_path)
             except Exception as e:
-                self._log("An error occurred while waiting for file stabilization: {}".format(str(e)), level="error")
+                self._log(str(e), level="error")
                 with threading.Lock():
                     self.active_files.discard(event.src_path)  # Remove the file from the set
                 return
@@ -127,7 +127,7 @@ class EventHandler(FileSystemEventHandler):
     def _wait_for_file_stabilization(self, file_path, timeout_seconds=600):
         """
         Wait for the file to be fully written to disk (i.e., file size becomes stable).
-        
+
         :param file_path: Path to the file to check.
         :param timeout_seconds: Timeout in seconds.
         :raises: TimeoutError if file stabilization times out.

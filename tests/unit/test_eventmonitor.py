@@ -101,7 +101,7 @@ class TestEventMonitor(object):
             mock_getsize.side_effect = [100, 200, 300, 400]
 
             with pytest.raises(TimeoutError):
-                event_monitor._wait_for_file_stabilization(file_path, timeout=0.5)
+                event_monitor._wait_for_file_stabilization(file_path, timeout_seconds=0.1)
 
             mock_getsize.assert_called_with(file_path)
             assert mock_getsize.call_count == 1

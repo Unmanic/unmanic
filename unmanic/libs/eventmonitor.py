@@ -122,17 +122,18 @@ class EventHandler(FileSystemEventHandler):
                 'library_id': self.library_id,
             })
 
-    def _wait_for_file_stabilization(self, file_path, timeout=180):
+    def _wait_for_file_stabilization(self, file_path, timeout_seconds=180):
         """
         Wait for the file to be fully written to disk (i.e., file size becomes stable).
         
         :param file_path: Path to the file to check.
+        :param timeout_seconds: Timeout in seconds.
         :raises: TimeoutError if file stabilization times out.
         """
         start_time = time.time()
         last_size = -1
 
-        while time.time() - start_time < timeout:
+        while time.time() - start_time < timeout_seconds:
             current_size = os.path.getsize(file_path)
 
             if last_size == current_size:

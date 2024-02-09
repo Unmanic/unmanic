@@ -29,6 +29,8 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import base64
+import pickle
 import random
 import time
 import requests
@@ -94,11 +96,22 @@ class Session(object, metaclass=SingletonType):
     """
     uuid = None
 
+    """
+    user_access_token - The access token to authenticate requests with the Unmanic API
+    """
+    user_access_token = None
+
+    """
+    session_cookies - A stored copy of the session cookies to persist between restarts
+    """
+    session_cookies = None
+
     def __init__(self, *args, **kwargs):
         unmanic_logging = unlogger.UnmanicLogger.__call__()
         self.logger = unmanic_logging.get_logger(__class__.__name__)
-        self.timeout = 5
+        self.timeout = 30
         self.dev_local_api = kwargs.get('dev_local_api', False)
+        self.requests_session = requests.Session()
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -125,14 +138,15 @@ class Session(object, metaclass=SingletonType):
         """
         # Last checked less than a min ago... just keep the current session.
         # This check is only to prevent spamming requests when the site API is unreachable
-        # Only check in every 10 mins (600s) minimum. Never ignore a checkin for more than 15 mins (900s)
-        if self.last_check and 900 > (time.time() - self.last_check) < 600:
+        # Only check in every 40 mins (2400s) minimum. Never ignore a checkin for more than 45 mins (2700s)
+        ### if self.last_check and 2700 > (time.time() - self.last_check) < 2400:
+        if self.last_check and 45 > (time.time() - self.last_check) < 40:
             return True
         # If the session has never been created, return false
         if not self.created:
             return False
         # Check if the time the session was created is less than 1 day old
-        if not self.__created_older_than_x_days(days=1):
+        if not self.__created_older_than_x_days(days=2):
             # Only try to recreate the session once a day
             return True
         self._log("Session no longer valid ", level="debug")
@@ -180,6 +194,9 @@ class Session(object, metaclass=SingletonType):
         self.email = str(current_installation.email)
         self.created = current_installation.created
 
+        self.__update_session_auth(access_token=current_installation.user_access_token,
+                                   session_cookies=current_installation.session_cookies)
+
     def __store_installation_data(self):
         """
         Store installation data in DB to persist reboot
@@ -193,9 +210,11 @@ class Session(object, metaclass=SingletonType):
             db_installation.name = self.name
             db_installation.email = self.email
             db_installation.created = self.created
+            db_installation.user_access_token = self.user_access_token
+            db_installation.session_cookies = self.session_cookies
             db_installation.save()
 
-    def _reset_session_installation_data(self):
+    def __reset_session_installation_data(self):
         """
         Reset stored session data
 
@@ -206,7 +225,22 @@ class Session(object, metaclass=SingletonType):
         self.name = ''
         self.email = ''
         self.created = time.time()
+        self.user_access_token = None
         self.__store_installation_data()
+
+    def __update_session_auth(self, access_token=None, session_cookies=None):
+        # Update session headers
+        if access_token:
+            self.user_access_token = access_token
+            self.requests_session.headers.update({'Authorization': self.user_access_token})
+        # Update session cookies
+        if session_cookies:
+            self.session_cookies = session_cookies
+            try:
+                self.requests_session.cookies = pickle.loads(base64.b64decode(session_cookies))
+            except Exception as e:
+                self._log("Error trying to reload session cookies", level="error")
+                self._log(str(e), level="error")
 
     def get_installation_uuid(self):
         """
@@ -231,41 +265,103 @@ class Session(object, metaclass=SingletonType):
             api_domain = "api.unmanic.localhost"
         return "{0}://{1}".format(api_proto, api_domain)
 
-    def set_full_api_url(self, api_version, api_path):
+    def set_full_api_url(self, api_prefix, api_version, api_path):
         """
         Set the API path URL
 
+        :param api_prefix:
         :param api_version:
         :param api_path:
         :return:
         """
-        api_versioned_path = "api/v{}".format(api_version)
+        api_versioned_path = "{}/v{}".format(api_prefix, api_version)
         return "{0}/{1}/{2}".format(self.get_site_url(), api_versioned_path, api_path)
 
-    def api_get(self, api_version, api_path):
+    def api_get(self, api_prefix, api_version, api_path):
         """
         Generate and execute a GET API call.
 
+        :param api_prefix:
         :param api_version:
         :param api_path:
         :return:
         """
-        u = self.set_full_api_url(api_version, api_path)
-        r = requests.get(u, timeout=self.timeout)
+        u = self.set_full_api_url(api_prefix, api_version, api_path)
+        r = self.requests_session.get(u, timeout=self.timeout)
         return r.json()
 
-    def api_post(self, api_version, api_path, data):
+    def api_post(self, api_prefix, api_version, api_path, data):
         """
         Generate and execute a POST API call.
 
+        :param api_prefix:
         :param api_version:
         :param api_path:
         :param data:
         :return:
         """
-        u = self.set_full_api_url(api_version, api_path)
-        r = requests.post(u, json=data, timeout=self.timeout)
+        u = self.set_full_api_url(api_prefix, api_version, api_path)
+        r = self.requests_session.post(u, json=data, timeout=self.timeout)
         return r.json()
+
+    def verify_token(self):
+        if not self.user_access_token:
+            # No valid tokens exist
+            return False
+        # Check if access token is valid
+        response = self.api_get('support-auth-api', 1, 'user_auth/verify_token')
+        if not response.get('success'):
+            response = self.api_get('support-auth-api', 1, 'user_auth/refresh_token')
+            if not response.get('success'):
+                # Just blank the class attribute.
+                # It is fine for requests to be sent with further requests.
+                # User will appear to be logged out.
+                self.user_access_token = None
+                return False
+        # Check if we received a new access token
+        access_token = response.get('data', {}).get('accessToken')
+        if access_token:
+            self.__update_session_auth(access_token=access_token)
+        self.session_cookies = base64.b64encode(pickle.dumps(self.requests_session.cookies)).decode('utf-8')
+        self.__update_session_auth()
+        return True
+
+    def auth_user_account(self, force_checkin=False):
+        # Don't bother if the user has never logged in
+        if not self.user_access_token and not force_checkin:
+            self._log("The user access token is not set add we are not being forced to refresh for one.", level="debug")
+            return
+        # Start by verifying the token
+        token_verified = self.verify_token()
+        if not token_verified:
+            # Try to fetch token if this was the initial login
+            post_data = {"uuid": self.get_installation_uuid()}
+            response = self.api_post('support-auth-api', 1, 'app_auth/retrieve_app_token', post_data)
+            if response.get('success'):
+                access_token = response.get('data', {}).get('accessToken')
+                self.__update_session_auth(access_token=access_token)
+                token_verified = self.verify_token()
+        # Set default level to 0
+        updated_level = 0
+        # Finally, fetch user info if the token was successfully verified
+        if token_verified:
+            response = self.api_get('support-auth-api', 1, 'user_auth/user_info')
+            if response.get('success'):
+                # Get user data from response data
+                user_data = response.get('data', {}).get('user')
+                if user_data:
+                    # Set name from user data
+                    self.name = user_data.get("name", "Valued Supporter")
+
+                    # Set avatar from user data
+                    self.picture_uri = user_data.get("picture_uri", "/assets/global/img/avatar/avatar_placeholder.png")
+
+                    # Set email from user data
+                    self.email = user_data.get("email", "")
+
+                    # Update level from response data (default back to 0)
+                    updated_level = int(user_data.get("supporter_level", 0))
+        self.level = updated_level
 
     def register_unmanic(self, force=False):
         """
@@ -310,42 +406,23 @@ class Session(object, metaclass=SingletonType):
                 }
             }
 
+            # Refresh user auth
+            self.auth_user_account(force_checkin=force)
+
             # Register Unmanic
-            registration_response = self.api_post(1, 'unmanic-register', post_data)
+            registration_response = self.api_post('unmanic-api', 1, 'installation_auth/register', post_data)
 
             # Save data
             if registration_response and registration_response.get("success"):
-                registration_data = registration_response.get("data")
-
-                # Set level from response data (default back to 0)
-                self.level = int(registration_data.get("level", 0))
-
-                # Get user data from response data
-                user_data = registration_data.get('user')
-                if user_data:
-                    # Set name from user data
-                    name = user_data.get("name")
-                    self.name = name if name else 'Valued Supporter'
-
-                    # Set avatar from user data
-                    picture_uri = user_data.get("picture_uri")
-                    self.picture_uri = picture_uri if picture_uri else '/assets/global/img/avatar/avatar_placeholder.png'
-
-                    # Set email from user data
-                    email = user_data.get("email")
-                    self.email = email if email else ''
-
                 self.__update_created_timestamp()
-
                 # Persist session in DB
                 self.__store_installation_data()
-
                 return True
 
             # Allow an extension for the session for 7 days without an internet connection
             if self.__created_older_than_x_days(days=7):
                 # Reset the session - Unmanic should phone home once every 7 days
-                self._reset_session_installation_data()
+                self.__reset_session_installation_data()
             return False
         except Exception as e:
             self._log("Exception while registering Unmanic.", str(e), level="debug")
@@ -354,13 +431,31 @@ class Session(object, metaclass=SingletonType):
                 return True
             return False
 
+    def sign_out(self):
+        """
+        Remove any user auth
+
+        :return:
+        """
+        post_data = {
+            "uuid": self.get_installation_uuid(),
+        }
+        registration_response = self.api_post('unmanic-api', 1,
+                                              'installation_auth/remove-installation-registration',
+                                              post_data)
+        # Save data
+        if registration_response and registration_response.get("success"):
+            self.__reset_session_installation_data()
+            return True
+        return False
+
     def get_sign_out_url(self):
         """
         Fetch the application sign out client ID
 
         :return:
         """
-        return "{0}/unmanic-logout".format(self.get_site_url())
+        return "{0}/unmanic-api/v1/installation_auth/logout".format(self.get_site_url())
 
     def get_patreon_login_url(self):
         """
@@ -384,7 +479,7 @@ class Session(object, metaclass=SingletonType):
 
         :return:
         """
-        return "{0}/discord-login".format(self.get_site_url())
+        return "{0}/support-auth-api/v1/login_discord/login".format(self.get_site_url())
 
     def get_patreon_sponsor_page(self):
         """
@@ -394,7 +489,7 @@ class Session(object, metaclass=SingletonType):
         """
         try:
             # Fetch Patreon client ID from Unmanic site API
-            response = self.api_get(1, 'unmanic-patreon-sponsor-page')
+            response = self.api_get('unmanic-api', 1, 'links/unmanic-patreon-sponsor-page')
 
             if response and response.get("success"):
                 response_data = response.get("data")

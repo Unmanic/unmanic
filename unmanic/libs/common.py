@@ -39,9 +39,17 @@ import shutil
 
 
 def get_home_dir():
+    # Attempt to get the HOME_DIR environment variable
     home_dir = os.environ.get('HOME_DIR')
-    if home_dir is None:
+    # If HOME_DIR is unset, empty, or specifically set to use the home directory
+    if not home_dir:
+        # Expand the tilde to the user's home directory
         home_dir = os.path.expanduser("~")
+    else:
+        # For any value of HOME_DIR, ensure tilde and relative paths are correctly handled
+        # os.path.expanduser will handle tilde but won't affect absolute paths
+        # os.path.abspath will convert a relative path to an absolute path
+        home_dir = os.path.abspath(os.path.expanduser(home_dir))
     return home_dir
 
 

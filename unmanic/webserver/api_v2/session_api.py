@@ -54,6 +54,11 @@ class ApiSessionHandler(BaseApiHandler):
             "supported_methods": ["POST"],
             "call_method":       "session_reload",
         },
+        {
+            "path_pattern":      r"/session/logout",
+            "supported_methods": ["GET"],
+            "call_method":       "session_logout",
+        },
     ]
 
     def initialize(self, **kwargs):
@@ -165,6 +170,58 @@ class ApiSessionHandler(BaseApiHandler):
         try:
             if not self.session.register_unmanic(force=True):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to reload session")
+                self.write_error()
+                return
+            else:
+                self.write_success()
+                return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    def session_logout(self):
+        """
+        Session - log out of session
+        ---
+        description: Log out of the current session. Remove all session cookies and unlink installation from user account.
+        responses:
+            200:
+                description: 'Successful request; Returns success status'
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            if not self.session.sign_out():
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to log out of session")
                 self.write_error()
                 return
             else:

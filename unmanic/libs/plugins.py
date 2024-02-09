@@ -142,7 +142,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             "uuid":     uuid,
             "repo_url": repo_path
         }
-        return session.api_post(1, 'unmanic-plugin-repo/uuid/{}'.format(uuid), post_data)
+        return session.api_post('unmanic-api', 1, 'unmanic-plugin-repo/uuid/{}'.format(uuid), post_data)
 
     def update_plugin_repos(self):
         """
@@ -323,7 +323,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             "version":   plugin.get("version"),
         }
         try:
-            repo_data = session.api_post(1, 'unmanic-plugin/install', post_data)
+            repo_data = session.api_post('unmanic-api', 1, 'unmanic-plugin/install', post_data)
             if not repo_data.get('success'):
                 session.register_unmanic()
         except Exception as e:

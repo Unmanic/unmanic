@@ -4,7 +4,7 @@ __script_path=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd );
 __project_root=$(realpath ${__script_path}/..);
 
 function docker_env {
-    docker pull lsiobase/ubuntu:focal
+    docker pull josh5/unmanic:latest
     docker run --rm -ti \
         --workdir=/app \
         --entrypoint='' \

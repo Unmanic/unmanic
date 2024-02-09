@@ -54,10 +54,11 @@ class Config(object, metaclass=SingletonType):
         self.ui_port = 8888
 
         # Set default directories
-        self.config_path = os.path.join(common.get_home_dir(), '.unmanic', 'config')
-        self.log_path = os.path.join(common.get_home_dir(), '.unmanic', 'logs')
-        self.plugins_path = os.path.join(common.get_home_dir(), '.unmanic', 'plugins')
-        self.userdata_path = os.path.join(common.get_home_dir(), '.unmanic', 'userdata')
+        home_directory = common.get_home_dir()
+        self.config_path = os.path.join(home_directory, '.unmanic', 'config')
+        self.log_path = os.path.join(home_directory, '.unmanic', 'logs')
+        self.plugins_path = os.path.join(home_directory, '.unmanic', 'plugins')
+        self.userdata_path = os.path.join(home_directory, '.unmanic', 'userdata')
 
         # Configure debugging
         self.debugging = False

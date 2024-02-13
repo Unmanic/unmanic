@@ -29,6 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import base64
 import hashlib
 import json
 import os
@@ -53,11 +54,6 @@ class PluginsHandler(object, metaclass=SingletonType):
     Plugins must be compatible with this version to be installed.
     """
     version: int = 2
-
-    """
-    Set the default repo to main repo
-    """
-    default_repo = 'https://api.unmanic.app/api/v1/unmanic-plugin-repo/uuid'
 
     def __init__(self, *args, **kwargs):
         self.settings = config.Config()
@@ -88,8 +84,9 @@ class PluginsHandler(object, metaclass=SingletonType):
         plugin_directory = self.settings.get_plugins_path()
         return os.path.join(plugin_directory, "{}-{}.zip".format(plugin_id, plugin_version))
 
-    def get_default_repo(self):
-        return self.default_repo
+    @staticmethod
+    def get_default_repo():
+        return "default"
 
     def get_plugin_repos(self):
         """
@@ -97,19 +94,17 @@ class PluginsHandler(object, metaclass=SingletonType):
 
         :return:
         """
-        session = Session()
-        uuid = session.get_installation_uuid()
         default_repo = self.get_default_repo()
         repo_list = [
             {
-                "path": "{}/{}".format(default_repo, uuid)
+                "path": default_repo
             }
         ]
 
         repos = PluginRepos.select().order_by(PluginRepos.id.asc())
         for repo in repos:
             repo_dict = repo.model_to_dict()
-            if repo_dict.get('path') == "{}/{}".format(default_repo, uuid):
+            if repo_dict.get('path') == default_repo:
                 continue
             repo_list.append(repo_dict)
 
@@ -138,11 +133,17 @@ class PluginsHandler(object, metaclass=SingletonType):
         # Fetch remote JSON file
         session = Session()
         uuid = session.get_installation_uuid()
-        post_data = {
-            "uuid":     uuid,
-            "repo_url": repo_path
-        }
-        return session.api_post('unmanic-api', 1, 'unmanic-plugin-repo/uuid/{}'.format(uuid), post_data)
+        level = session.get_supporter_level()
+        repo = base64.b64encode(repo_path.encode('utf-8')).decode('utf-8')
+        api_path = f'plugin_repos/get_repo_data/uuid/{uuid}/level/{level}/repo/{repo}'
+        data, status_code = session.api_get(
+            'unmanic-api',
+            1,
+            api_path,
+        )
+        if status_code in [401, 403]:
+            self._log(f"Failed to fetch plugin repo from '{api_path}'. Code:{status_code}", level="debug")
+        return data
 
     def update_plugin_repos(self):
         """
@@ -169,7 +170,6 @@ class PluginsHandler(object, metaclass=SingletonType):
                     json.dump(repo_data, f, indent=4)
             except json.JSONDecodeError as e:
                 self._log("Unable to update plugin repo '{}'.".format(repo_path), str(e), level="error")
-
         return True
 
     def get_settings_of_all_installed_plugins(self):
@@ -307,7 +307,7 @@ class PluginsHandler(object, metaclass=SingletonType):
 
     def notify_site_of_plugin_install(self, plugin):
         """
-        Notify the unmanic.app site API of the install.
+        Notify the unmanic.app site API of the installation.
         This is used for metric stats so that we can get a count of plugin downloads.
 
         :param plugin:
@@ -316,14 +316,16 @@ class PluginsHandler(object, metaclass=SingletonType):
         # Post
         session = Session()
         uuid = session.get_installation_uuid()
+        level = session.get_supporter_level()
         post_data = {
             "uuid":      uuid,
+            "level":     level,
             "plugin_id": plugin.get("plugin_id"),
             "author":    plugin.get("author"),
             "version":   plugin.get("version"),
         }
         try:
-            repo_data = session.api_post('unmanic-api', 1, 'unmanic-plugin/install', post_data)
+            repo_data = session.api_post('unmanic-api', 1, 'plugin_repos/record_install', post_data)
             if not repo_data.get('success'):
                 session.register_unmanic()
         except Exception as e:

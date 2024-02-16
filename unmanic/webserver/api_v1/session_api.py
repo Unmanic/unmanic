@@ -159,13 +159,12 @@ class ApiSessionHandler(BaseApiHandler):
         if not patreon_sponsor_page_data:
             self.write(json.dumps({"success": False}))
             return
-        else:
-            sponsor_page = patreon_sponsor_page_data.get("sponsor_page")
-            self.write(json.dumps({
-                "success": True,
-                "uuid":    uuid,
-                "data":    {
-                    "sponsor_page": sponsor_page,
-                }
-            }))
-            return
+        sponsor_page = patreon_sponsor_page_data.get("sponsor_page")
+        self.write(json.dumps({
+            "success": True,
+            "uuid":    uuid,
+            "data":    {
+                "sponsor_page": sponsor_page,
+            }
+        }))
+        return

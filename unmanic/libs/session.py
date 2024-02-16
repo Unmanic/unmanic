@@ -30,6 +30,7 @@
 
 """
 import base64
+import json
 import pickle
 import random
 import time
@@ -298,6 +299,9 @@ class Session(object, metaclass=SingletonType):
         """
         u = self.set_full_api_url(api_prefix, api_version, api_path)
         r = self.requests_session.get(u, timeout=self.timeout)
+        if r.status_code >= 500:
+            self.logger.debug("Sorry! There seems to be an issue with the remote servers. Please try again later.")
+            return {}, r.status_code
         if r.status_code == 401:
             # Verify the token. Refresh as required
             token_verified = self.verify_token()
@@ -320,6 +324,9 @@ class Session(object, metaclass=SingletonType):
         """
         u = self.set_full_api_url(api_prefix, api_version, api_path)
         r = self.requests_session.post(u, json=data, timeout=self.timeout)
+        if r.status_code >= 500:
+            self.logger.debug("Sorry! There seems to be an issue with the remote servers. Please try again later.")
+            return {}, r.status_code
         if r.status_code == 401:
             # Verify the token. Refresh as required
             token_verified = self.verify_token()
@@ -337,12 +344,20 @@ class Session(object, metaclass=SingletonType):
         # Check if access token is valid
         u = self.set_full_api_url('support-auth-api', 1, 'user_auth/verify_token')
         r = self.requests_session.get(u, timeout=self.timeout)
+        if r.status_code >= 500:
+            self.logger.debug("Sorry! There seems to be an issue with the token auth servers. Please try again later.")
+            # Return True here to prevent the app from lowering the level
+            return True
         if r.status_code not in [202]:
             self._log("Unable to verify authentication token. Refreshing...", level="debug")
             u = self.set_full_api_url('support-auth-api', 1, 'user_auth/refresh_token')
             r = self.requests_session.get(u, timeout=self.timeout)
-            response, status_code = self.api_get('support-auth-api', 1, 'user_auth/refresh_token')
             if r.status_code not in [202]:
+                if r.status_code >= 500:
+                    self.logger.debug("Sorry! There seems to be an issue with the auth servers. Please try again later.")
+                    # Return True here to prevent the app from lowering the level
+                    return True
+                response = r.json()
                 if r.status_code in [403]:
                     # Log this failure in the debug logs
                     self._log("Failed to refresh access token.", level="debug")
@@ -383,6 +398,9 @@ class Session(object, metaclass=SingletonType):
         # Finally, fetch user info if the token was successfully verified
         if token_verified:
             response, status_code = self.api_get('support-auth-api', 1, 'user_auth/user_info')
+            if status_code >= 500:
+                # Failed to fetch data from server. Ignore this for now. Will try again later.
+                return
             if response.get('success'):
                 # Get user data from response data
                 user_data = response.get('data', {}).get('user')
@@ -462,7 +480,7 @@ class Session(object, metaclass=SingletonType):
                 self.__reset_session_installation_data()
             return False
         except Exception as e:
-            self._log("Exception while registering Unmanic.", str(e), level="debug")
+            self.logger.debug("Exception while registering Unmanic: %s", e, exc_info=True)
             if self.__check_session_valid():
                 # If the session is still valid, just return true. Perhaps the internet is down and it timed out?
                 return True
@@ -488,7 +506,7 @@ class Session(object, metaclass=SingletonType):
 
     def get_sign_out_url(self):
         """
-        Fetch the application sign out client ID
+        Fetch the application sign out URL
 
         :return:
         """
@@ -496,15 +514,15 @@ class Session(object, metaclass=SingletonType):
 
     def get_patreon_login_url(self):
         """
-        Fetch the Patreon client ID
+        Fetch the Patreon Login URL
 
         :return:
         """
-        return "{0}/patreon-login".format(self.get_site_url())
+        return "{0}/support-auth-api/v1/login_patreon/login".format(self.get_site_url())
 
     def get_github_login_url(self):
         """
-        Fetch the GitHub client ID
+        Fetch the GitHub Login URL
 
         :return:
         """
@@ -512,7 +530,7 @@ class Session(object, metaclass=SingletonType):
 
     def get_discord_login_url(self):
         """
-        Fetch the Discord client ID
+        Fetch the Discord Login URL
 
         :return:
         """
@@ -525,13 +543,11 @@ class Session(object, metaclass=SingletonType):
         :return:
         """
         try:
-            # Fetch Patreon client ID from Unmanic site API
+            # Fetch Patreon sponsorship URL from Unmanic site API
             response, status_code = self.api_get('unmanic-api', 1, 'links/unmanic_patreon_sponsor_page')
-
-            if response and response.get("success"):
+            if status_code in [200] and response.get("success"):
                 response_data = response.get("data")
                 return response_data
-
         except Exception as e:
             self._log("Exception while fetching Patreon sponsor page.", str(e), level="debug")
         return False

@@ -141,7 +141,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             1,
             api_path,
         )
-        if status_code in [401, 403]:
+        if status_code >= 500:
             self._log(f"Failed to fetch plugin repo from '{api_path}'. Code:{status_code}", level="debug")
         return data
 

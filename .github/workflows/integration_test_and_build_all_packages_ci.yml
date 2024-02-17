@@ -23,7 +23,7 @@ jobs:
 
     # Restore test video's cache
     - name: Restore test videos cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: test_videos_cache
       with:
         path: tests/support_/videos
@@ -45,7 +45,7 @@ jobs:
 
     # Restore the python cache if it exists
     - name: Restore python cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -56,7 +56,7 @@ jobs:
     # TODO: Fix this cache. Its not really working at all. It would be nice to have tho.
     - name: Restore python cache
       id: apt-cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: /var/cache/apt/archives
         key: ${{ runner.os }}-apt-cache
@@ -118,7 +118,7 @@ jobs:
 
     # Restore the python cache if it exists
     - name: Restore python cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -154,9 +154,9 @@ jobs:
         PY_VERSION=$(python ./setup.py  --quiet --version)
         PY_BDIST_PATH=$(ls  dist/*.whl | head -n1)
         PY_BDIST_FILE=${PY_BDIST_PATH#*/}
-        echo ::set-output name=py_version::${PY_VERSION}
-        echo ::set-output name=py_bdist_file::${PY_BDIST_FILE}
-        echo ::set-output name=py_bdist_path::${PY_BDIST_PATH}
+        echo "py_version=${PY_VERSION}" >> $GITHUB_OUTPUT
+        echo "py_bdist_file=${PY_BDIST_FILE}" >> $GITHUB_OUTPUT
+        echo "py_bdist_path=${PY_BDIST_PATH}" >> $GITHUB_OUTPUT
         echo ${PY_VERSION} > dist/VERSION.txt
 
     # Upload python package distribution data artifact
@@ -191,7 +191,7 @@ jobs:
         find ./artifacts/ -type f -name "VERSION.txt" -exec cp -n {} ./dist/ \;
         ls -l ./dist/
         PY_VERSION=$(cat ./dist/VERSION.txt)
-        echo ::set-output name=py_version::${PY_VERSION}
+        echo "py_version=${PY_VERSION}" >> $GITHUB_OUTPUT
 
     # Use QEMU to build for other arch
     - name: Set up QEMU
@@ -252,14 +252,14 @@ jobs:
           DOCKER_PUSH="false"
         fi
 
-        echo ::set-output name=docker_image::${DOCKER_IMAGE}
-        echo ::set-output name=docker_tags::$(echo ${DOCKER_TAGS} | sed 's/,$//')
-        echo ::set-output name=docker_platforms::linux/amd64,linux/arm64
-        echo ::set-output name=docker_push::${DOCKER_PUSH}
+        echo "docker_image=${DOCKER_IMAGE}" >> $GITHUB_OUTPUT
+        echo "docker_tags=$(echo ${DOCKER_TAGS} | sed 's/,$//')" >> $GITHUB_OUTPUT
+        echo "docker_platforms=linux/amd64,linux/arm64" >> $GITHUB_OUTPUT
+        echo "docker_push=${DOCKER_PUSH}" >> $GITHUB_OUTPUT
 
     # Cache the build
     - name: Cache Docker layers
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: cache
       with:
         path: /tmp/.buildx-cache

@@ -138,11 +138,8 @@ RUN \
                     libfreetype6 \
                     libomxil-bellagio0 \
                     libomxil-bellagio-bin \
-                && wget --no-cookies --quiet \
-                    -O "/tmp/jellyfin-ffmpeg_${JELLYFIN_FFMPEG_VERSION}-jammy_arm64.deb" \
-                    "https://repo.jellyfin.org/releases/server/ubuntu/versions/jellyfin-ffmpeg/${JELLYFIN_FFMPEG_VERSION}/jellyfin-ffmpeg6_${JELLYFIN_FFMPEG_VERSION}-jammy_arm64.deb" \
                 && apt-get install -y \
-                    /tmp/jellyfin-ffmpeg_${JELLYFIN_FFMPEG_VERSION}-jammy_arm64.deb \
+                    jellyfin-ffmpeg${JELLYFIN_FFMPEG_VERSION} \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
             && \

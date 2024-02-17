@@ -100,7 +100,7 @@ RUN \
 
 # Install commonly used command line tools
 ARG JELLYFIN_FFMPEG_VERSION="6"
-ARG NODE_MAJOR="16"
+ARG NODE_MAJOR="20"
 RUN \
     echo "**** Install FFmpeg for $(uname -m) ****" \
         && sleep 2 \

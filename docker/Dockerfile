@@ -99,7 +99,7 @@ RUN \
 
 
 # Install commonly used command line tools
-ARG JELLYFIN_FFMPEG_VERSION="6.0-8"
+ARG JELLYFIN_FFMPEG_VERSION="6"
 ARG NODE_MAJOR="16"
 RUN \
     echo "**** Install FFmpeg for $(uname -m) ****" \
@@ -116,11 +116,8 @@ RUN \
                 && apt-get install --no-install-recommends --no-install-suggests -y \
                     openssl \
                     locales \
-                && wget --no-cookies --quiet \
-                    -O "/tmp/jellyfin-ffmpeg_${JELLYFIN_FFMPEG_VERSION}-jammy_amd64.deb" \
-                    "https://repo.jellyfin.org/releases/server/ubuntu/versions/jellyfin-ffmpeg/${JELLYFIN_FFMPEG_VERSION}/jellyfin-ffmpeg6_${JELLYFIN_FFMPEG_VERSION}-jammy_amd64.deb" \
                 && apt-get install -y \
-                    /tmp/jellyfin-ffmpeg_${JELLYFIN_FFMPEG_VERSION}-jammy_amd64.deb \
+                    jellyfin-ffmpeg${JELLYFIN_FFMPEG_VERSION} \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
             && \

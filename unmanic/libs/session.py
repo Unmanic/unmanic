@@ -299,9 +299,10 @@ class Session(object, metaclass=SingletonType):
         """
         u = self.set_full_api_url(api_prefix, api_version, api_path)
         r = self.requests_session.get(u, timeout=self.timeout)
-        if r.status_code >= 500:
-            self.logger.debug("Sorry! There seems to be an issue with the remote servers. Please try again later.")
-            return {}, r.status_code
+        if r.status_code > 403:
+            self.logger.debug(
+                "Sorry! There seems to be an issue with the remote servers. Please try again later. Status code %s",
+                r.status_code)
         if r.status_code == 401:
             # Verify the token. Refresh as required
             token_verified = self.verify_token()
@@ -324,9 +325,10 @@ class Session(object, metaclass=SingletonType):
         """
         u = self.set_full_api_url(api_prefix, api_version, api_path)
         r = self.requests_session.post(u, json=data, timeout=self.timeout)
-        if r.status_code >= 500:
-            self.logger.debug("Sorry! There seems to be an issue with the remote servers. Please try again later.")
-            return {}, r.status_code
+        if r.status_code > 403:
+            self.logger.debug(
+                "Sorry! There seems to be an issue with the remote servers. Please try again later. Status code %s",
+                r.status_code)
         if r.status_code == 401:
             # Verify the token. Refresh as required
             token_verified = self.verify_token()
@@ -344,8 +346,10 @@ class Session(object, metaclass=SingletonType):
         # Check if access token is valid
         u = self.set_full_api_url('support-auth-api', 1, 'user_auth/verify_token')
         r = self.requests_session.get(u, timeout=self.timeout)
-        if r.status_code >= 500:
-            self.logger.debug("Sorry! There seems to be an issue with the token auth servers. Please try again later.")
+        if r.status_code > 403:
+            self.logger.debug(
+                "Sorry! There seems to be an issue with the token auth servers. Please try again later. Status code %s",
+                r.status_code)
             # Return True here to prevent the app from lowering the level
             return True
         if r.status_code not in [202]:
@@ -353,8 +357,10 @@ class Session(object, metaclass=SingletonType):
             u = self.set_full_api_url('support-auth-api', 1, 'user_auth/refresh_token')
             r = self.requests_session.get(u, timeout=self.timeout)
             if r.status_code not in [202]:
-                if r.status_code >= 500:
-                    self.logger.debug("Sorry! There seems to be an issue with the auth servers. Please try again later.")
+                if r.status_code > 403:
+                    self.logger.debug(
+                        "Sorry! There seems to be an issue with the auth servers. Please try again later. Status code %s",
+                        r.status_code)
                     # Return True here to prevent the app from lowering the level
                     return True
                 response = r.json()

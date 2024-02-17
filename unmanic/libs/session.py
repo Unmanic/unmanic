@@ -526,7 +526,7 @@ class Session(object, metaclass=SingletonType):
 
         :return:
         """
-        return "{0}/github-login".format(self.get_site_url())
+        return "{0}/support-auth-api/v1/login_github/login".format(self.get_site_url())
 
     def get_discord_login_url(self):
         """

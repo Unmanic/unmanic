@@ -93,7 +93,7 @@ class EventHandler(FileSystemEventHandler):
         getattr(self.logger, level)(message)
 
     def on_any_event(self, event):
-        if event.event_type == "closed":
+        if event.event_type in ["created", "closed"]:
             # Ensure event was not for a directory
             if event.is_directory:
                 self._log("Detected event is for a directory. Ignoring...", level="debug")

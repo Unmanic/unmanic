@@ -33,6 +33,7 @@
 import tornado.log
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
+from unmanic.service import unmanic_logging
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
 from unmanic.webserver.api_v2.schema.schemas import SessionStateSuccessSchema
 
@@ -63,6 +64,7 @@ class ApiSessionHandler(BaseApiHandler):
 
     def initialize(self, **kwargs):
         self.session = session.Session()
+        self.logger = unmanic_logging.get_logger(__class__.__name__)
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
@@ -124,7 +126,7 @@ class ApiSessionHandler(BaseApiHandler):
                 self.write_success(response)
                 return
         except BaseApiError as bae:
-            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            self.logger.error("BaseApiError.%s: %s", self.route.get('call_method'), str(bae))
             return
         except Exception as e:
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
@@ -176,7 +178,7 @@ class ApiSessionHandler(BaseApiHandler):
                 self.write_success()
                 return
         except BaseApiError as bae:
-            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            self.logger.error("BaseApiError.%s: %s", self.route.get('call_method'), str(bae))
             return
         except Exception as e:
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
@@ -228,7 +230,7 @@ class ApiSessionHandler(BaseApiHandler):
                 self.write_success()
                 return
         except BaseApiError as bae:
-            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            self.logger.error("BaseApiError.%s: %s", self.route.get('call_method'), str(bae))
             return
         except Exception as e:
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))

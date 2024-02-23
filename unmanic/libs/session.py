@@ -305,6 +305,11 @@ class Session(object, metaclass=SingletonType):
             # If successful, then retry request
             if token_verified:
                 r = self.requests_session.get(u, timeout=self.timeout)
+                if r.status_code > 403:
+                    # There is an issue with the remote API
+                    self.logger.debug(
+                        "Sorry! There seems to be an issue with the remote servers on retry. Please try GET request again later. Status code %s",
+                        r.status_code)
             else:
                 self.logger.debug('Failed to verify auth (api_get)')
         return r.json(), r.status_code
@@ -331,10 +336,15 @@ class Session(object, metaclass=SingletonType):
             token_verified = self.verify_token()
             # If successful, then retry request
             if token_verified:
-                r = self.requests_session.get(u, timeout=self.timeout)
+                r = self.requests_session.post(u, json=data, timeout=self.timeout)
+                if r.status_code > 403:
+                    # There is an issue with the remote API
+                    self.logger.debug(
+                        "Sorry! There seems to be an issue with the remote servers on retry. Please try POST request again later. Status code %s",
+                        r.status_code)
             else:
                 self.logger.debug('Failed to verify auth (api_post)')
-        return r.json()
+        return r.json(), r.status_code
 
     def verify_token(self):
         if not self.user_access_token:
@@ -396,8 +406,8 @@ class Session(object, metaclass=SingletonType):
         if not token_verified:
             # Try to fetch token if this was the initial login
             post_data = {"uuid": self.get_installation_uuid()}
-            response = self.api_post('support-auth-api', 1, 'app_auth/retrieve_app_token', post_data)
-            if response.get('success'):
+            response, status_code = self.api_post('support-auth-api', 1, 'app_auth/retrieve_app_token', post_data)
+            if status_code in [200, 201, 202] and response.get('success'):
                 self.__update_session_auth(access_token=response.get('data', {}).get('accessToken'))
                 token_verified = self.verify_token()
         # Set default level to 0
@@ -408,7 +418,7 @@ class Session(object, metaclass=SingletonType):
             if status_code >= 500:
                 # Failed to fetch data from server. Ignore this for now. Will try again later.
                 return
-            if response.get('success'):
+            if status_code in [200, 201, 202] and response.get('success'):
                 # Get user data from response data
                 user_data = response.get('data', {}).get('user')
                 if user_data:
@@ -472,10 +482,10 @@ class Session(object, metaclass=SingletonType):
             self.auth_user_account(force_checkin=force)
 
             # Register Unmanic
-            registration_response = self.api_post('unmanic-api', 1, 'installation_auth/register', post_data)
+            registration_response, status_code = self.api_post('unmanic-api', 1, 'installation_auth/register', post_data)
 
             # Save data
-            if registration_response and registration_response.get("success"):
+            if status_code in [200, 201, 202] and registration_response.get("success"):
                 self.__update_created_timestamp()
                 # Persist session in DB
                 self.__store_installation_data()
@@ -502,11 +512,11 @@ class Session(object, metaclass=SingletonType):
         post_data = {
             "uuid": self.get_installation_uuid(),
         }
-        registration_response = self.api_post('unmanic-api', 1,
+        response, status_code = self.api_post('unmanic-api', 1,
                                               'installation_auth/remove_installation_registration',
                                               post_data)
         # Save data
-        if registration_response and registration_response.get("success"):
+        if response and response.get("success"):
             self.__reset_session_installation_data()
             return True
         return False
@@ -552,7 +562,7 @@ class Session(object, metaclass=SingletonType):
         try:
             # Fetch Patreon sponsorship URL from Unmanic site API
             response, status_code = self.api_get('unmanic-api', 1, 'links/unmanic_patreon_sponsor_page')
-            if status_code in [200] and response.get("success"):
+            if status_code in [200, 201, 202] and response.get("success"):
                 response_data = response.get("data")
                 return response_data
         except Exception as e:

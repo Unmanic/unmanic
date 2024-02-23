@@ -300,8 +300,9 @@ class Session(object, metaclass=SingletonType):
         u = self.set_full_api_url(api_prefix, api_version, api_path)
         r = self.requests_session.get(u, timeout=self.timeout)
         if r.status_code > 403:
+            # There is an issue with the remote API
             self.logger.debug(
-                "Sorry! There seems to be an issue with the remote servers. Please try again later. Status code %s",
+                "Sorry! There seems to be an issue with the remote servers. Please try GET request again later. Status code %s",
                 r.status_code)
         if r.status_code == 401:
             # Verify the token. Refresh as required
@@ -326,8 +327,9 @@ class Session(object, metaclass=SingletonType):
         u = self.set_full_api_url(api_prefix, api_version, api_path)
         r = self.requests_session.post(u, json=data, timeout=self.timeout)
         if r.status_code > 403:
+            # There is an issue with the remote API
             self.logger.debug(
-                "Sorry! There seems to be an issue with the remote servers. Please try again later. Status code %s",
+                "Sorry! There seems to be an issue with the remote servers. Please try POST request again later. Status code %s",
                 r.status_code)
         if r.status_code == 401:
             # Verify the token. Refresh as required
@@ -346,43 +348,48 @@ class Session(object, metaclass=SingletonType):
         # Check if access token is valid
         u = self.set_full_api_url('support-auth-api', 1, 'user_auth/verify_token')
         r = self.requests_session.get(u, timeout=self.timeout)
-        if r.status_code > 403:
+        if r.status_code in [202]:
+            # Token is valid
+            return True
+        elif r.status_code > 403:
+            # Issue with server... Just carry on with current access token can't fix that here.
             self.logger.debug(
                 "Sorry! There seems to be an issue with the token auth servers. Please try again later. Status code %s",
                 r.status_code)
             # Return True here to prevent the app from lowering the level
             return True
-        if r.status_code not in [202]:
-            self._log("Unable to verify authentication token. Refreshing...", level="debug")
-            u = self.set_full_api_url('support-auth-api', 1, 'user_auth/refresh_token')
-            r = self.requests_session.get(u, timeout=self.timeout)
-            if r.status_code not in [202]:
-                if r.status_code > 403:
-                    self.logger.debug(
-                        "Sorry! There seems to be an issue with the auth servers. Please try again later. Status code %s",
-                        r.status_code)
-                    # Return True here to prevent the app from lowering the level
-                    return True
-                response = r.json()
-                if r.status_code in [403]:
-                    # Log this failure in the debug logs
-                    self._log("Failed to refresh access token.", level="debug")
-                    for message in response.get('messages', []):
-                        self._log(message, level="debug")
-                # Just blank the class attribute.
-                # It is fine for requests to be sent with further requests.
-                # User will appear to be logged out.
-                self.user_access_token = None
-                return False
-        # Decode JSON response
-        response = r.json()
-        # Check if we received a new access token
-        access_token = response.get('data', {}).get('accessToken')
-        if access_token:
-            self.__update_session_auth(access_token=access_token)
-        self.session_cookies = base64.b64encode(pickle.dumps(self.requests_session.cookies)).decode('utf-8')
-        self.__update_session_auth()
-        return True
+
+        # Access token is not valid. Refresh it.
+        self._log("Unable to verify authentication token. Refreshing...", level="debug")
+        u = self.set_full_api_url('support-auth-api', 1, 'user_auth/refresh_token')
+        r = self.requests_session.get(u, timeout=self.timeout)
+        if r.status_code in [202]:
+            # Token refreshed
+            # Store the updated access token
+            response = r.json()
+            self.__update_session_auth(access_token=response.get('data', {}).get('accessToken'))
+            # Store the updated session cookies
+            self.session_cookies = base64.b64encode(pickle.dumps(self.requests_session.cookies)).decode('utf-8')
+            self.__store_installation_data()
+            return True
+        elif r.status_code > 403:
+            # Issue was with server... Just carry on with current access token can't fix that here.
+            self.logger.debug(
+                "Sorry! There seems to be an issue with the auth servers. Please try again later. Status code %s",
+                r.status_code)
+            # Return True here to prevent the app from lowering the level
+            return True
+        elif r.status_code in [403]:
+            # Log this failure in the debug logs
+            self._log("Failed to refresh access token.", level="debug")
+            response = r.json()
+            for message in response.get('messages', []):
+                self._log(message, level="debug")
+        # Just blank the class attribute.
+        # It is fine for requests to be sent with further requests.
+        # User will appear to be logged out.
+        self.user_access_token = None
+        return False
 
     def auth_user_account(self, force_checkin=False):
         # Don't bother if the user has never logged in
@@ -396,8 +403,7 @@ class Session(object, metaclass=SingletonType):
             post_data = {"uuid": self.get_installation_uuid()}
             response = self.api_post('support-auth-api', 1, 'app_auth/retrieve_app_token', post_data)
             if response.get('success'):
-                access_token = response.get('data', {}).get('accessToken')
-                self.__update_session_auth(access_token=access_token)
+                self.__update_session_auth(access_token=response.get('data', {}).get('accessToken'))
                 token_verified = self.verify_token()
         # Set default level to 0
         updated_level = 0

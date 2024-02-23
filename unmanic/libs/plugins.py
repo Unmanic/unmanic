@@ -325,7 +325,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             "version":   plugin.get("version"),
         }
         try:
-            repo_data = session.api_post('unmanic-api', 1, 'plugin_repos/record_install', post_data)
+            repo_data, status_code = session.api_post('unmanic-api', 1, 'plugin_repos/record_install', post_data)
             if not repo_data.get('success'):
                 session.register_unmanic()
         except Exception as e:

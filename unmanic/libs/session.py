@@ -30,7 +30,6 @@
 
 """
 import base64
-import json
 import pickle
 import random
 import time
@@ -113,10 +112,7 @@ class Session(object, metaclass=SingletonType):
         self.timeout = 30
         self.dev_local_api = kwargs.get('dev_local_api', False)
         self.requests_session = requests.Session()
-
-    def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
+        self.logger.info('Initialising new session object')
 
     def __created_older_than_x_days(self, days=1):
         # (86400 = 24 hours)
@@ -150,7 +146,7 @@ class Session(object, metaclass=SingletonType):
         if not self.__created_older_than_x_days(days=2):
             # Only try to recreate the session once a day
             return True
-        self._log("Session no longer valid ", level="debug")
+        self.logger.debug('Session no longer valid')
         return False
 
     def __update_created_timestamp(self):
@@ -169,7 +165,7 @@ class Session(object, metaclass=SingletonType):
         # Print only the accurate update time in debug log
         from datetime import datetime
         created = datetime.fromtimestamp(seconds)
-        self._log("Updated session at ", str(created), level="debug")
+        self.logger.debug('Updated session at %s', str(created))
 
     def __fetch_installation_data(self):
         """
@@ -184,7 +180,7 @@ class Session(object, metaclass=SingletonType):
             current_installation = db_installation.select().order_by(Installation.id.asc()).limit(1).get()
         except Exception as e:
             # Create settings (defaults will be applied)
-            self._log("Unmanic session does not yet exist... Creating.", level="debug")
+            self.logger.debug('Unmanic session does not yet exist... Creating.')
             db_installation.delete().execute()
             current_installation = db_installation.create()
 
@@ -240,8 +236,7 @@ class Session(object, metaclass=SingletonType):
             try:
                 self.requests_session.cookies = pickle.loads(base64.b64decode(session_cookies))
             except Exception as e:
-                self._log("Error trying to reload session cookies", level="error")
-                self._log(str(e), level="error")
+                self.logger.error('Error trying to reload session cookies - %s', str(e))
 
     def get_installation_uuid(self):
         """
@@ -311,7 +306,7 @@ class Session(object, metaclass=SingletonType):
             if token_verified:
                 r = self.requests_session.get(u, timeout=self.timeout)
             else:
-                self._log("Failed to verify auth (api_get)", level="debug")
+                self.logger.debug('Failed to verify auth (api_get)')
         return r.json(), r.status_code
 
     def api_post(self, api_prefix, api_version, api_path, data):
@@ -338,7 +333,7 @@ class Session(object, metaclass=SingletonType):
             if token_verified:
                 r = self.requests_session.get(u, timeout=self.timeout)
             else:
-                self._log("Failed to verify auth (api_post)", level="debug")
+                self.logger.debug('Failed to verify auth (api_post)')
         return r.json()
 
     def verify_token(self):
@@ -360,7 +355,7 @@ class Session(object, metaclass=SingletonType):
             return True
 
         # Access token is not valid. Refresh it.
-        self._log("Unable to verify authentication token. Refreshing...", level="debug")
+        self.logger.debug('Unable to verify authentication token. Refreshing...')
         u = self.set_full_api_url('support-auth-api', 1, 'user_auth/refresh_token')
         r = self.requests_session.get(u, timeout=self.timeout)
         if r.status_code in [202]:
@@ -381,10 +376,10 @@ class Session(object, metaclass=SingletonType):
             return True
         elif r.status_code in [403]:
             # Log this failure in the debug logs
-            self._log("Failed to refresh access token.", level="debug")
+            self.logger.debug('Failed to refresh access token.')
             response = r.json()
             for message in response.get('messages', []):
-                self._log(message, level="debug")
+                self.logger.debug(message)
         # Just blank the class attribute.
         # It is fine for requests to be sent with further requests.
         # User will appear to be logged out.
@@ -394,7 +389,7 @@ class Session(object, metaclass=SingletonType):
     def auth_user_account(self, force_checkin=False):
         # Don't bother if the user has never logged in
         if not self.user_access_token and not force_checkin:
-            self._log("The user access token is not set add we are not being forced to refresh for one.", level="debug")
+            self.logger.debug('The user access token is not set add we are not being forced to refresh for one.')
             return
         # Start by verifying the token
         token_verified = self.verify_token()
@@ -561,5 +556,5 @@ class Session(object, metaclass=SingletonType):
                 response_data = response.get("data")
                 return response_data
         except Exception as e:
-            self._log("Exception while fetching Patreon sponsor page.", str(e), level="debug")
+            self.logger.debug('Exception while fetching Patreon sponsor page - %s', e)
         return False

@@ -1,8 +1,9 @@
-flake8>=3.7.9
-pycodestyle>=2.5.0
-pytest>=5.4.1
-wheel==0.38.4
-setuptools>=39.0.1
+flake8>=7.0.0
+pycodestyle>=2.11.1
+pytest>=8.0.2
+wheel>=0.42.0
+setuptools>=69.1.1
+build>=1.0.3
 
 # API schema exporting
 apispec

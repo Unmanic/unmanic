@@ -111,10 +111,10 @@ jobs:
         git tag --list
 
     # Setup python environment
-    - name: Set up Python 3.7
+    - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
-        python-version: 3.7
+        python-version: 3.11
 
     # Restore the python cache if it exists
     - name: Restore python cache
@@ -145,7 +145,8 @@ jobs:
         python ./setup.py  --quiet --version
         echo "Long version:"
         python ./setup.py  --quiet fullversion
-        python ./setup.py sdist bdist_wheel
+        python -m build --no-isolation --skip-dependency-check --wheel
+        python -m build --no-isolation --skip-dependency-check --sdist
 
     # Read the python package distribution data (save version to file)
     - name: Read python package distribution data

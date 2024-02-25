@@ -1,11 +1,11 @@
-flake8>=7.0.0
-pycodestyle>=2.11.1
-pytest>=8.0.2
+flake8>=5.0.4           # Note: Highest supporting Py 3.7
+pycodestyle>=2.9.1      # Note: Highest supporting Py 3.7
+pytest>=7.4.3           # Note: Highest supporting Py 3.7
 wheel>=0.42.0
-setuptools>=69.1.1
-build>=1.0.3
+setuptools>=68.0.0      # Note: Highest supporting Py 3.7
+build>=0.10.0           # Note: Highest supporting Py 3.7
 
 # API schema exporting
-apispec
-apispec_webframeworks
-pyyaml
+apispec>=6.3.1
+apispec_webframeworks>=0.5.2
+pyyaml>=6.0.1

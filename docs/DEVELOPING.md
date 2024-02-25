@@ -60,7 +60,7 @@ python3 -m pip install --upgrade -r ./requirements.txt -r ./requirements-dev.txt
 Then install the module:
 
 ```
-python3 ./setup.py develop
+python3 -m pip install --editable .
 ```
 
 This creates an egg symlink to the project directory for development.
@@ -68,7 +68,7 @@ This creates an egg symlink to the project directory for development.
 To later uninstall the development symlink:
 
 ```
-python3 ./setup.py develop --uninstall
+python3 -m pip uninstall unmanic
 ```
 
 You should now be able to run unmanic from the commandline:

@@ -1,37 +1,49 @@
+# Include docs
 include README.md
 include LICENSE
+# Include some images
 include logo.png
+# Include requirements files
 include requirements.txt
+include requirements-dev.txt
 
-recursive-include unmanic *
+# Include module files
+recursive-include unmanic **
+include versioninfo.py
+
+# Exclude compiled files
 global-exclude *.py[cod]
 
-# Frontend development files
+# Exclude frontend development files
 recursive-exclude unmanic/webserver/frontend **/*.git*
 recursive-exclude unmanic/webserver/frontend **/dist/**
 recursive-exclude unmanic/webserver/frontend **/node_modules/**
 recursive-exclude unmanic/webserver/frontend **/.quasar/**
-# Cordova related directories and files
+# Exclude cordova related directories and files
 recursive-exclude unmanic/webserver/frontend **/src-cordova/node_modules/**
 recursive-exclude unmanic/webserver/frontend **/src-cordova/platforms/**
 recursive-exclude unmanic/webserver/frontend **/src-cordova/plugins/**
 recursive-exclude unmanic/webserver/frontend **/src-cordova/www/**
-# Capacitor related directories and files
+# Exclude capacitor related directories and files
 recursive-exclude unmanic/webserver/frontend **/src-capacitor/www/**
 recursive-exclude unmanic/webserver/frontend **/src-capacitor/node_modules/**
-# BEX related directories and files
+# Exclude BEX related directories and files
 recursive-exclude unmanic/webserver/frontend **/src-bex/www/**
 recursive-exclude unmanic/webserver/frontend **/src-bex/js/core/**
-# Log files
+# Exclude any log files
 recursive-exclude unmanic/webserver/frontend **/npm-debug.log*
 recursive-exclude unmanic/webserver/frontend **/yarn-debug.log*
 recursive-exclude unmanic/webserver/frontend **/yarn-error.log*
-# Editor directories and files
+# Exclude editor directories and files
 recursive-exclude unmanic/webserver/frontend **/*.suo
 recursive-exclude unmanic/webserver/frontend **/*.ntvs*
 recursive-exclude unmanic/webserver/frontend **/*.njsproj
 recursive-exclude unmanic/webserver/frontend **/*.sln
 recursive-exclude unmanic/webserver/frontend **/.idea/**
+# Exclude tests
+recursive-exclude tests **
+# Exclude virtual env
+recursive-exclude venv **
 
-# Frontend compiled assets
+# Remove all frontend compiled assets
 prune unmanic/webserver/public

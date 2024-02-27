@@ -403,7 +403,7 @@ class Session(object, metaclass=SingletonType):
             return
         # Start by verifying the token
         token_verified = self.verify_token()
-        if not token_verified:
+        if not token_verified and force_checkin:
             # Try to fetch token if this was the initial login
             post_data = {"uuid": self.get_installation_uuid()}
             response, status_code = self.api_post('support-auth-api', 1, 'app_auth/retrieve_app_token', post_data)

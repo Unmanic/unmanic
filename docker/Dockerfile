@@ -33,7 +33,7 @@ RUN \
             libx11-6=2:1.7.5-1ubuntu0.3 \
             libxcb1=1.14-3ubuntu3 \
             libxext6=2:1.3.4-1build1 \
-            libxml2=2.9.13+dfsg-1ubuntu0.3 \
+            libxml2=2.9.13+dfsg-1ubuntu0.4 \
     && \
     echo "**** Install all available media acceleration packages ****" \
         # va-driver-all: 

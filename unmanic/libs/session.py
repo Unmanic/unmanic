@@ -207,8 +207,10 @@ class Session(object, metaclass=SingletonType):
             db_installation.name = self.name
             db_installation.email = self.email
             db_installation.created = self.created
-            db_installation.user_access_token = self.user_access_token
-            db_installation.session_cookies = self.session_cookies
+            if self.user_access_token:
+                db_installation.user_access_token = self.user_access_token
+            if self.session_cookies:
+                db_installation.session_cookies = self.session_cookies
             db_installation.save()
 
     def __reset_session_installation_data(self):
@@ -217,6 +219,7 @@ class Session(object, metaclass=SingletonType):
 
         :return:
         """
+        self.logger.debug('Resetting session installation data.')
         self.level = 0
         self.picture_uri = ''
         self.name = ''

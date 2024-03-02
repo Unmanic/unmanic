@@ -516,10 +516,7 @@ class Session(object, metaclass=SingletonType):
                                               'installation_auth/remove_installation_registration',
                                               post_data)
         # Save data
-        if response and response.get("success"):
-            self.logger.debug(
-                "Failed to report the logout to the remote registry. This is fine, we will just logout here also - ",
-                response.get("messages"))
+        self.logger.debug("Remote registry logout response - Code: %s, Body: %s", status_code, response)
         self.__reset_session_installation_data()
         return True
 

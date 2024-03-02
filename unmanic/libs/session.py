@@ -517,9 +517,11 @@ class Session(object, metaclass=SingletonType):
                                               post_data)
         # Save data
         if response and response.get("success"):
-            self.__reset_session_installation_data()
-            return True
-        return False
+            self.logger.debug(
+                "Failed to report the logout to the remote registry. This is fine, we will just logout here also - ",
+                response.get("messages"))
+        self.__reset_session_installation_data()
+        return True
 
     def get_sign_out_url(self):
         """

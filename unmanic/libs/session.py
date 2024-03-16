@@ -194,7 +194,7 @@ class Session(object, metaclass=SingletonType):
         self.__update_session_auth(access_token=current_installation.user_access_token,
                                    session_cookies=current_installation.session_cookies)
 
-    def __store_installation_data(self):
+    def __store_installation_data(self, force_save_access_token=False):
         """
         Store installation data in DB to persist reboot
 
@@ -207,9 +207,9 @@ class Session(object, metaclass=SingletonType):
             db_installation.name = self.name
             db_installation.email = self.email
             db_installation.created = self.created
-            if self.user_access_token:
+            if self.user_access_token or force_save_access_token:
                 db_installation.user_access_token = self.user_access_token
-            if self.session_cookies:
+            if self.session_cookies or force_save_access_token:
                 db_installation.session_cookies = self.session_cookies
             db_installation.save()
 
@@ -226,7 +226,8 @@ class Session(object, metaclass=SingletonType):
         self.email = ''
         self.created = time.time()
         self.user_access_token = None
-        self.__store_installation_data()
+        self.__store_installation_data(force_save_access_token=True)
+        self.__clear_session_auth()
 
     def __update_session_auth(self, access_token=None, session_cookies=None):
         # Update session headers
@@ -240,6 +241,10 @@ class Session(object, metaclass=SingletonType):
                 self.requests_session.cookies = pickle.loads(base64.b64decode(session_cookies))
             except Exception as e:
                 self.logger.error('Error trying to reload session cookies - %s', str(e))
+
+    def __clear_session_auth(self):
+        self.requests_session.cookies.clear()
+        self.requests_session.headers.update({'Authorization': ''})
 
     def get_installation_uuid(self):
         """

@@ -189,7 +189,7 @@ class Session(object, metaclass=SingletonType):
         self.picture_uri = str(current_installation.picture_uri)
         self.name = str(current_installation.name)
         self.email = str(current_installation.email)
-        self.created = current_installation.created
+        self.created = current_installation.created.timestamp() if current_installation.created else None
 
         self.__update_session_auth(access_token=current_installation.user_access_token,
                                    session_cookies=current_installation.session_cookies)

@@ -24,7 +24,7 @@ RUN \
     && \
     echo "**** Install runtime packages ****" \
         && apt-get install -y \
-            libexpat1=2.4.7-1ubuntu0.2 \
+            libexpat1=2.4.7-1ubuntu0.3 \
             libglib2.0-0=2.72.4-0ubuntu2.2 \
             libgomp1=12.3.0-1ubuntu1~22.04 \
             libharfbuzz0b=2.7.4-1ubuntu3.1 \

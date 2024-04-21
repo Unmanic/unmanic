@@ -86,7 +86,7 @@ class Service:
         self.db_connection = None
 
         self.developer = None
-        self.dev_local_api = None
+        self.dev_api = None
 
         self.event = threading.Event()
 
@@ -170,10 +170,9 @@ class Service:
         })
         return scheduled_tasks_manager
 
-    @staticmethod
-    def initial_register_unmanic(dev_local_api):
+    def initial_register_unmanic(self):
         from unmanic.libs import session
-        s = session.Session(dev_local_api=dev_local_api)
+        s = session.Session(dev_api=self.dev_api)
         s.register_unmanic(s.get_installation_uuid())
 
     def start_threads(self, settings):
@@ -194,7 +193,7 @@ class Service:
         main_logger.info("Starting all threads")
 
         # Register installation
-        self.initial_register_unmanic(self.dev_local_api)
+        self.initial_register_unmanic()
 
         # Setup job queue
         task_queue = TaskQueue(data_queues)
@@ -281,9 +280,8 @@ def main():
     parser.add_argument('--dev',
                         action='store_true',
                         help='Enable developer mode')
-    parser.add_argument('--dev-local-api',
-                        action='store_true',
-                        help='Enable development against local unmanic support api')
+    parser.add_argument('--dev-api', nargs='?',
+                        help='Enable development against another unmanic support api')
     parser.add_argument('--port', nargs='?',
                         help='Specify the port to run the webserver on')
     # parser.add_argument('--unmanic_path', nargs='?',
@@ -314,7 +312,7 @@ def main():
         # Run the main Unmanic service
         service = Service()
         service.developer = args.dev
-        service.dev_local_api = args.dev_local_api
+        service.dev_api = args.dev_api
         service.run()
 
 

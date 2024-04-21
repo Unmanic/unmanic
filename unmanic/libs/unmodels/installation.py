@@ -52,4 +52,5 @@ class Installation(BaseModel):
 
     # Store session tokens
     user_access_token = TextField(null=True)
+    user_refresh_token = TextField(null=True)
     session_cookies = TextField(null=True)

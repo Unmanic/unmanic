@@ -1,0 +1,24 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Building unmanic python package
+      run: |
+        rm -rfv ./build && rm -fv ./dist/unmanic-*
+        git submodule update --init --recursive
+        python3 ./setup.py sdist bdist_wheel
+      
+    - name: Build the Docker image
+      run: docker build -f ./docker/Dockerfile -t josh5/unmanic:latest .

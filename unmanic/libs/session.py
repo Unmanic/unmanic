@@ -369,7 +369,7 @@ class Session(object, metaclass=SingletonType):
             return True
         elif r.status_code > 403:
             # Issue with server... Just carry on with current access token can't fix that here.
-            self.logger.debug(
+            self.logger.warning(
                 "Sorry! There seems to be an issue with the token auth servers. Please try again later. Status code %s",
                 r.status_code)
             # Return True here to prevent the app from lowering the level
@@ -390,17 +390,17 @@ class Session(object, metaclass=SingletonType):
             return True
         elif r.status_code > 403:
             # Issue was with server... Just carry on with current access token can't fix that here.
-            self.logger.debug(
+            self.logger.warning(
                 "Sorry! There seems to be an issue with the auth servers. Please try again later. Status code %s",
                 r.status_code)
             # Return True here to prevent the app from lowering the level
             return True
         elif r.status_code in [403]:
             # Log this failure in the debug logs
-            self.logger.debug('Failed to refresh access token.')
+            self.logger.info('Failed to refresh access token.')
             response = r.json()
             for message in response.get('messages', []):
-                self.logger.debug(message)
+                self.logger.info('Remote Message: %s', message)
         # Just blank the class attribute.
         # It is fine for requests to be sent with further requests.
         # User will appear to be logged out.
@@ -421,13 +421,23 @@ class Session(object, metaclass=SingletonType):
             if status_code in [200, 201, 202] and response.get('success'):
                 self.__update_session_auth(access_token=response.get('data', {}).get('accessToken'))
                 token_verified = self.verify_token()
+            elif status_code > 403:
+                self.logger.warning(
+                    "Failed to check in with Unmanic support auth API. Remote server error. Please try again later on.")
+                return
+            else:
+                self.logger.info('Failed to check in with Unmanic support auth API.')
+                for message in response.get('messages', []):
+                    self.logger.info('Remote Message: %s', message)
         # Set default level to 0
         updated_level = 0
         # Finally, fetch user info if the token was successfully verified
         if token_verified:
             response, status_code = self.api_get('support-auth-api', 1, 'user_auth/user_info')
-            if status_code >= 500:
+            if status_code > 403:
                 # Failed to fetch data from server. Ignore this for now. Will try again later.
+                self.logger.warning(
+                    "Failed to check in with Unmanic user info API. Remote server error. Please try again later on.")
                 return
             if status_code in [200, 201, 202] and response.get('success'):
                 # Get user data from response data
@@ -468,10 +478,10 @@ class Session(object, metaclass=SingletonType):
 
         # Update the session
         settings = config.Config()
-        try:
-            # Fetch the installation data prior to running a session update
-            self.__fetch_installation_data()
+        # Fetch the installation data prior to running a session update
+        self.__fetch_installation_data()
 
+        try:
             # Build post data
             from unmanic.libs.system import System
             system = System()
@@ -500,6 +510,10 @@ class Session(object, metaclass=SingletonType):
                 self.__update_created_timestamp()
                 # Persist session in DB
                 self.__store_installation_data()
+                return True
+            elif status_code > 403:
+                self.logger.warning(
+                    "Failed to check in with Unmanic installation register API. Remote server error. Please try again later on.")
                 return True
 
             # Allow an extension for the session for 7 days without an internet connection

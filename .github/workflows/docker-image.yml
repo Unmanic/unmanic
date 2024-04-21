@@ -21,4 +21,4 @@ jobs:
         python3 ./setup.py sdist bdist_wheel
       
     - name: Build the Docker image
-      run: docker build -f ./docker/Dockerfile -t josh5/unmanic:latest .
+      run: docker build -f ./docker/Dockerfile -t 17hoehbr/unmanic:latest .

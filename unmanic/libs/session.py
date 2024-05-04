@@ -413,11 +413,32 @@ class Session(object, metaclass=SingletonType):
         self.user_access_token = None
         return False
 
+    def fetch_user_data(self):
+        # Set default level to 0
+        updated_level = 0
+        response, status_code = self.api_get('support-auth-api', 1, 'user_auth/user_info')
+        if status_code > 403:
+            # Failed to fetch data from server. Ignore this for now. Will try again later.
+            raise RemoteApiException("Failed to fetch user info from user_auth/user_info", status_code)
+        if status_code in [200, 201, 202] and response.get('success'):
+            # Get user data from response data
+            user_data = response.get('data', {}).get('user')
+            if user_data:
+                # Set name from user data
+                self.name = user_data.get("name", "Valued Supporter")
+                # Set avatar from user data
+                self.picture_uri = user_data.get("picture_uri", "/assets/global/img/avatar/avatar_placeholder.png")
+                # Set email from user data
+                self.email = user_data.get("email", "")
+                # Update level from response data (default back to 0)
+                updated_level = int(user_data.get("supporter_level", 0))
+        return updated_level
+
     def auth_user_account(self, force_checkin=False):
         # Don't bother if the user has never logged in
         if not self.user_access_token and not force_checkin:
             self.logger.debug('The user access token is not set add we are not being forced to refresh for one.')
-            return
+            return False
         # Start by verifying the token
         token_verified = self.verify_token()
         if not token_verified and force_checkin:
@@ -436,30 +457,33 @@ class Session(object, metaclass=SingletonType):
                 self.logger.info('Failed to check in with Unmanic support auth API.')
                 for message in response.get('messages', []):
                     self.logger.info('Remote Message: %s', message)
-        # Set default level to 0
-        updated_level = 0
         # Finally, fetch user info if the token was successfully verified
         if token_verified:
-            response, status_code = self.api_get('support-auth-api', 1, 'user_auth/user_info')
-            if status_code > 403:
-                # Failed to fetch data from server. Ignore this for now. Will try again later.
-                raise RemoteApiException("Failed to fetch user info from user_auth/user_info", status_code)
-            if status_code in [200, 201, 202] and response.get('success'):
-                # Get user data from response data
-                user_data = response.get('data', {}).get('user')
-                if user_data:
-                    # Set name from user data
-                    self.name = user_data.get("name", "Valued Supporter")
+            self.level = self.fetch_user_data()
+            return True
+        else:
+            # Set default level to 0
+            self.level = 0
+        return False
 
-                    # Set avatar from user data
-                    self.picture_uri = user_data.get("picture_uri", "/assets/global/img/avatar/avatar_placeholder.png")
-
-                    # Set email from user data
-                    self.email = user_data.get("email", "")
-
-                    # Update level from response data (default back to 0)
-                    updated_level = int(user_data.get("supporter_level", 0))
-        self.level = updated_level
+    def auth_trial_account(self):
+        # Check if access token is valid
+        d = {"uuid": self.get_installation_uuid()}
+        u = self.set_full_api_url('support-auth-api', 1, 'user_auth/trial_token')
+        r = self.requests_session.post(u, json=d, timeout=self.timeout)
+        if r.status_code in [202]:
+            # Token refreshed
+            # Store the updated access token
+            response = r.json()
+            self.__update_session_auth(access_token=response.get('data', {}).get('accessToken'))
+            # Fetch user data
+            self.level = self.fetch_user_data()
+            # Store the updated session cookies
+            self.__store_installation_data()
+            return True
+        elif r.status_code > 403:
+            # Issue with server... Just carry on with current access token can't fix that here.
+            raise RemoteApiException(f"Trial token verification request failed for {u}", r.status_code)
 
     def register_unmanic(self, force=False):
         """
@@ -506,6 +530,9 @@ class Session(object, metaclass=SingletonType):
 
             # Refresh user auth
             result = self.auth_user_account(force_checkin=force)
+            if not result:
+                # Fetch trial token
+                result = self.auth_trial_account()
 
             # Register Unmanic
             registration_response, status_code = self.api_post('unmanic-api', 1, 'installation_auth/register', post_data)

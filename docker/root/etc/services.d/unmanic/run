@@ -16,6 +16,9 @@ unmanic_params=''
 if [[ "${DEBUGGING}" == 'true' ]]; then
     unmanic_params="--dev ${unmanic_params}"
 fi
+if [[ "${USE_TEST_SUPPORT_API}" == 'true' ]]; then
+    unmanic_params="--dev-api=https://support-api.test.streamingtech.co.nz ${unmanic_params}"
+fi
 
 chmod +x /usr/bin/unmanic
 exec s6-setuidgid root /usr/bin/unmanic "${unmanic_params}"

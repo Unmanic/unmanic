@@ -19,6 +19,7 @@ services:
       - PUID=1000
       - PGID=1000
       - DEBUGGING=false
+      - USE_TEST_SUPPORT_API=false
       - NUMBER_OF_WORKERS=2
       - SCHEDULE_FULL_SCAN_MINUTES=10
       - RUN_FULL_SCAN_ON_START=false

@@ -32,6 +32,7 @@
 import hashlib
 import os
 import queue
+import shlex
 import shutil
 import subprocess
 import threading
@@ -562,7 +563,7 @@ class Worker(threading.Thread):
         # Log the command for debugging
         command_string = exec_command
         if isinstance(exec_command, list):
-            command_string = ' '.join(exec_command)
+            command_string = shlex.join(exec_command)
         self._log("Executing: {}".format(command_string), level='debug')
 
         # Append start of command to worker subprocess stdout

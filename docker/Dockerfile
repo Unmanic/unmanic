@@ -24,16 +24,16 @@ RUN \
     && \
     echo "**** Install runtime packages ****" \
         && apt-get install -y \
-            libexpat1=2.4.7-1ubuntu0.3 \
-            libglib2.0-0=2.72.4-0ubuntu2.2 \
-            libgomp1=12.3.0-1ubuntu1~22.04 \
-            libharfbuzz0b=2.7.4-1ubuntu3.1 \
-            libmediainfo0v5=21.09+dfsg-4 \
-            libv4l-0=1.22.1-2build1 \
-            libx11-6=2:1.7.5-1ubuntu0.3 \
-            libxcb1=1.14-3ubuntu3 \
-            libxext6=2:1.3.4-1build1 \
-            libxml2=2.9.13+dfsg-1ubuntu0.4 \
+            libexpat1 \
+            libglib2.0-0 \
+            libgomp1 \
+            libharfbuzz0b \
+            libmediainfo0v5 \
+            libv4l-0 \
+            libx11-6 \
+            libxcb1 \
+            libxext6 \
+            libxml2 \
     && \
     echo "**** Install all available media acceleration packages ****" \
         # va-driver-all: 

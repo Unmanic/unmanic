@@ -394,29 +394,36 @@ class Worker(threading.Thread):
                         # Don't continue
                         break
 
-                    # Run command. Check if command exited successfully.
+                    # Check if command exited successfully.
                     if success:
                         # If file conversion was successful
                         self._log("Successfully ran worker process '{}' on file '{}'".format(plugin_module.get('plugin_id'),
                                                                                              data.get("file_in")))
+                        # Check if 'file_out' was nulled by the plugin. If it is, then we will assume that the plugin modified the file_in in-place
+                        if not data.get('file_out'):
+                            # The 'file_out' is None. Ensure the new 'file_in' is set to whatever the plugin returned for 'file_in' for the next loop
+                            file_in = data.get("file_in")
                         # Ensure the 'file_out' that was specified by the plugin to be created was actually created.
-                        if os.path.exists(data.get('file_out')):
+                        elif os.path.exists(data.get('file_out')):
                             # The outfile exists...
                             # In order to clean up as we go and avoid unnecessary RAM/disk use in the cache directory,
                             #   we want to removed the 'file_in' file.
                             # We want to ensure that we do not accidentally remove any original files here.
-                            # To avoid this, run x2 tests.
+                            # We also want to ensure that the 'file_out' is not removed if the plugin set it to the same path as the 'file_in'.
+                            # To avoid this, run x3 tests.
                             # First, check current 'file_in' is not the original file.
                             if os.path.abspath(data.get("file_in")) != os.path.abspath(original_abspath):
-                                # Second, check that the 'file_in' is in cache directory.
+                                # Second, check that the 'file_in' is actually in cache directory. If it is not, we did not create it.
                                 if "unmanic_file_conversion" in os.path.abspath(data.get("file_in")):
-                                    # Remove this file
-                                    os.remove(os.path.abspath(data.get("file_in")))
+                                    # Finally, check that the file_out is not the same file as the file_in
+                                    if os.path.abspath(data.get("file_out")) != os.path.abspath(data.get("file_in")):
+                                        # Remove the old file_in file
+                                        os.remove(os.path.abspath(data.get("file_in")))
 
                             # Set the new 'file_in' as the previous runner's 'file_out' for the next loop
                             file_in = data.get("file_out")
                     else:
-                        # If file conversion was successful
+                        # If file conversion was not successful
                         self._log(
                             "Error while running worker process '{}' on file '{}'".format(
                                 plugin_module.get('plugin_id'),
@@ -425,9 +432,6 @@ class Worker(threading.Thread):
                             level="error")
                         self.worker_runners_info[plugin_module.get('plugin_id')]['success'] = False
                         overall_success = False
-
-                        # Ensure the new 'file_in' is set to the previous runner's 'file_in' for the next loop
-                        file_in = data.get("file_in")
                 else:
                     # Ensure the new 'file_in' is set to the previous runner's 'file_in' for the next loop
                     file_in = data.get("file_in")
@@ -437,7 +441,7 @@ class Worker(threading.Thread):
                         "Worker process '{}' did not request to execute a command.".format(plugin_module.get('plugin_id')),
                         level='debug')
 
-                if os.path.exists(data.get('file_out')):
+                if data.get('file_out') and os.path.exists(data.get('file_out')):
                     # Set the current file out to the most recently completed cache file
                     # If the file out does not exist, it is likely never used by the plugin.
                     current_file_out = data.get('file_out')

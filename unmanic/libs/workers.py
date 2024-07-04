@@ -574,8 +574,9 @@ class Worker(threading.Thread):
             'LOG:\n',
         ]
 
-        # Create output path if not exists
-        common.ensure_dir(data.get("file_out"))
+        # Create output path if file_out is present and the path does not exists
+        if data.get("file_out"):
+            common.ensure_dir(data.get("file_out"))
 
         # Convert file
         try:

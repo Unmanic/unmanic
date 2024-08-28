@@ -18,8 +18,8 @@ Unmanic - Library Optimiser
 
 
 
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/unmanic/unmanic/Python%20Lint%20&%20Run%20Unit%20Tests/master?label=Unit%20Tests&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/unmanic/unmanic/actions?query=workflow%3A%22Python+Lint+%26+Run+Unit+Tests%22+branch%3Amaster)
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/unmanic/unmanic/Build%20All%20Packages%20CI/master?label=Package%20Build&logo=github&logoColor=%23403d3d&style=flat-square)](https://github.com/unmanic/unmanic/actions?query=workflow%3A%22Build+All+Packages+CI%22+branch%3Amaster)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Unmanic/unmanic/python_lint_and_run_unit_tests.yml?branch=master&style=flat-square&logo=github&logoColor=403d3d&label=Unit%20Tests)](https://github.com/Unmanic/unmanic/actions/workflows/python_lint_and_run_unit_tests.yml?query=branch%3Amaster)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Unmanic/unmanic/integration_test_and_build_all_packages_ci.yml?branch=master&style=flat-square&logo=github&logoColor=403d3d&label=Package%20Build)](https://github.com/Unmanic/unmanic/actions/workflows/integration_test_and_build_all_packages_ci.yml?query=branch%3Amaster)
 
 [![GitHub license](https://img.shields.io/github/license/unmanic/unmanic?color=009dc7&style=flat-square)]()
 ---
@@ -39,14 +39,12 @@ You choose how you want your library to be.
 
 Some examples of how you may use Unmanic:
 
-- Trans-code video or audio files into a uniform format using FFmpeg.
+- Transcode video or audio files into a uniform format using FFmpeg.
 - Identify (and remove if desired) commercials in DVR recordings shortly after they have completed being recorded.
 - Move files from one location to another after a configured period of time.
 - Automatically execute FileBot rename files in your library as they are added.
 - Compress files older than a specified age.
 - Run any custom command against files matching a certain extension or above a configured file size.
-
-The Docker container is currently based `linuxserver.io` Ubuntu focal image.
 
 ### Table Of Contents
 
@@ -67,7 +65,7 @@ The Docker container is currently based `linuxserver.io` Ubuntu focal image.
  - Python 3.x ([Install](https://www.python.org/downloads/))
  - To install requirements run 'python3 -m pip install -r requirements.txt' from the project root
 
-Unmanic can be used for running many commands. You will need to ensure that the required dependencies for those commands are installed.
+Since Unmanic can be used for running any commands, you will need to ensure that the required dependencies for those commands are also installed on your system.
 
 ## Screen-shots
 
@@ -80,7 +78,7 @@ Unmanic can be used for running many commands. You will need to ensure that the 
 
 ## Install and Run
 
-For up-to-date installation instructions, follow the [Unmanic documentation](https://docs.unmanic.app/docs/)
+For up-to-date installation instructions, follow the [Unmanic documentation](https://docs.unmanic.app/docs/).
 
 To run from source:
 
@@ -96,6 +94,7 @@ To run from source:
     # Run Unmanic
     unmanic
     ```
+3) Open your web browser and navigate to http://localhost:8888/
 
 ## License and Contribution
 
@@ -117,3 +116,5 @@ This project contains libraries imported from external authors.
 Please refer to the source of these libraries for more information on their respective licenses.
 
 See [CONTRIBUTING.md](docs/CONTRIBUTING.md) to learn how to contribute to Unmanic.
+
+---

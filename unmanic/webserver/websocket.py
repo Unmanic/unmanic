@@ -30,7 +30,6 @@
 
 """
 import json
-import queue
 import time
 import uuid
 
@@ -38,10 +37,10 @@ import tornado.web
 import tornado.locks
 import tornado.ioloop
 import tornado.websocket
-from tornado import gen, log
+from tornado import gen
 
 from unmanic import config
-from unmanic.libs import common, history, session
+from unmanic.libs import common, session
 from unmanic.libs.uiserver import UnmanicDataQueues, UnmanicRunningTreads
 from unmanic.webserver.helpers import completed_tasks, pending_tasks
 
@@ -65,7 +64,7 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
         self.data_queues = udq.get_unmanic_data_queues()
         self.foreman = urt.get_unmanic_running_thread('foreman')
         self.session = session.Session()
-        super(UnmanicWebsocketHandler, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def open(self):
         tornado.log.app_log.warning('WS Opened', exc_info=True)
@@ -359,7 +358,7 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
             task_list = completed_tasks.prepare_filtered_completed_tasks(params)
 
             for task_result in task_list.get('results', []):
-                # Set human readable time
+                # Set human-readable time
                 if (int(task_result['finish_time']) + 60) > int(time.time()):
                     human_readable_time = 'Just Now'
                 else:

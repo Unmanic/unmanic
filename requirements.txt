@@ -1,5 +1,5 @@
 # Required
-schedule==0.6.0
+schedule==1.2.2
 tornado==6.2
 marshmallow==3.13.0
 peewee>=3.14.4

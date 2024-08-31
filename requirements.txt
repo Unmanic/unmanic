@@ -1,7 +1,7 @@
 # Required
 schedule==1.2.2
 tornado==6.2
-marshmallow==3.13.0
+marshmallow~=3.22
 peewee>=3.14.4
 peewee_migrate==1.6.1
 psutil==5.8.0

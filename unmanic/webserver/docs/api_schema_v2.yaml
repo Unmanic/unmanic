@@ -165,15 +165,15 @@ components:
         after:
           type: string
           format: date-time
-          nullable: true
           description: Filter entries since datetime
           example: 2022-04-07 01:45
+          nullable: true
         before:
           type: string
           format: date-time
-          nullable: true
           description: Filter entries prior to datetime
           example: 2022-04-07 01:55
+          nullable: true
         order_by:
           type: string
           default: finish_time
@@ -392,15 +392,15 @@ components:
         after:
           type: string
           format: date-time
-          nullable: true
           description: Filter entries since datetime
           example: 2022-04-07 01:45
+          nullable: true
         before:
           type: string
           format: date-time
-          nullable: true
           description: Filter entries prior to datetime
           example: 2022-04-07 01:55
+          nullable: true
         order_by:
           type: string
           default: priority
@@ -570,15 +570,15 @@ components:
         after:
           type: string
           format: date-time
-          nullable: true
           description: Filter entries since datetime
           example: 2022-04-07 01:45
+          nullable: true
         before:
           type: string
           format: date-time
-          nullable: true
           description: Filter entries prior to datetime
           example: 2022-04-07 01:55
+          nullable: true
         order_by:
           type: string
           default: name
@@ -724,14 +724,14 @@ components:
           example: Downmix DTS-HD Master Audio (max 5.1 channels)?
         description:
           type: string
-          nullable: true
           description: Description of input field
           example: 'Will automatically downmix DTS-HD Master Audio to 5.1 channels '
+          nullable: true
         tooltip:
           type: string
-          nullable: true
           description: Description of input field
           example: 'Will automatically downmix DTS-HD Master Audio to 5.1 channels '
+          nullable: true
         select_options:
           type: array
           description: Additional options if the input_type is set to 'select'
@@ -1154,19 +1154,19 @@ components:
           example: 192.168.1.2:8888
         auth:
           type: string
-          nullable: true
           description: Authentication type
           example: Basic
+          nullable: true
         username:
           type: string
-          nullable: true
           description: An optional username
           example: foo
+          nullable: true
         password:
           type: string
-          nullable: true
           description: An optional password
           example: bar
+          nullable: true
       required:
       - address
     SettingsRemoteInstallationData:
@@ -1206,9 +1206,9 @@ components:
       properties:
         id:
           type: integer
-          nullable: true
           description: ''
           example: 1
+          nullable: true
         locked:
           type: boolean
           description: If the worker group is locked and cannot be deleted
@@ -1495,18 +1495,18 @@ components:
           example: false
         start_time:
           type: string
-          nullable: true
           description: The time when this worker started processing a task
           example: '1635746377.0021548'
+          nullable: true
         current_file:
           type: string
           description: The basename of the file currently being processed
           example: file.mp4
         current_task:
           type: integer
-          nullable: true
           description: The Task ID
           example: 1
+          nullable: true
         worker_log_tail:
           type: array
           minItems: 0
@@ -3014,6 +3014,41 @@ paths:
   /session/reload:
     post:
       description: Reload the current session.
+      responses:
+        '200':
+          description: Successful request; Returns success status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+        '400':
+          description: Bad request; Check `messages` for any validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '404':
+          description: Bad request; Requested endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+        '405':
+          description: Bad request; Requested method is not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+        '500':
+          description: Internal error; Check `error` for exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+  /session/logout:
+    get:
+      description: Log out of the current session. Remove all session cookies and
+        unlink installation from user account.
       responses:
         '200':
           description: Successful request; Returns success status

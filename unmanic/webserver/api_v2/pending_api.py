@@ -107,7 +107,7 @@ class ApiPendingHandler(BaseApiHandler):
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
 
-    def get_pending_tasks(self):
+    async def get_pending_tasks(self):
         """
         Pending - list tasks
         ---
@@ -182,7 +182,7 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def delete_pending_tasks(self):
+    async def delete_pending_tasks(self):
         """
         Pending - delete
         ---
@@ -243,7 +243,7 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def trigger_library_rescan(self):
+    async def trigger_library_rescan(self):
         """
         Pending - trigger a library scan
         ---
@@ -300,7 +300,7 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def reorder_pending_tasks(self):
+    async def reorder_pending_tasks(self):
         """
         Pending - reorder
         ---
@@ -361,7 +361,7 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def create_task_from_path(self):
+    async def create_task_from_path(self):
         """
         Pending - create
         ---
@@ -445,7 +445,7 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_pending_status_of_tasks(self):
+    async def get_pending_status_of_tasks(self):
         """
         Pending - get status of tasks
         ---
@@ -513,7 +513,7 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def set_pending_status_as_ready(self):
+    async def set_pending_status_as_ready(self):
         """
         Pending - set status as ready
         ---
@@ -574,7 +574,7 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def set_pending_library_by_name(self):
+    async def set_pending_library_by_name(self):
         """
         Pending - set the library of a list of given tasks
         ---
@@ -638,7 +638,7 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def gen_download_link_pending_task_file(self, task_id=None):
+    async def gen_download_link_pending_task_file(self, task_id=None):
         """
         Pending - request a link for downloading a task file
         ---
@@ -709,7 +709,7 @@ class ApiPendingHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def gen_download_link_pending_task_data(self, task_id=None):
+    async def gen_download_link_pending_task_data(self, task_id=None):
         """
         Pending - request a link for downloading a task data
         ---

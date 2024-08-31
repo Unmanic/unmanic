@@ -87,7 +87,7 @@ class ApiWorkersHandler(BaseApiHandler):
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
         self.foreman = urt.get_unmanic_running_thread('foreman')
 
-    def pause_worker(self):
+    async def pause_worker(self):
         """
         Workers - Pause worker by ID
         ---
@@ -148,7 +148,7 @@ class ApiWorkersHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def pause_all_workers(self):
+    async def pause_all_workers(self):
         """
         Workers - Pause all workers
         ---
@@ -200,7 +200,7 @@ class ApiWorkersHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def resume_worker(self):
+    async def resume_worker(self):
         """
         Workers - Resume worker by ID
         ---
@@ -261,7 +261,7 @@ class ApiWorkersHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def resume_all_workers(self):
+    async def resume_all_workers(self):
         """
         Workers - Resume all workers
         ---
@@ -313,7 +313,7 @@ class ApiWorkersHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def terminate_worker(self):
+    async def terminate_worker(self):
         """
         Workers - Terminate worker by ID
         ---
@@ -374,7 +374,7 @@ class ApiWorkersHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def terminate_all_workers(self):
+    async def terminate_all_workers(self):
         """
         Workers - Terminate all workers
         ---
@@ -426,7 +426,7 @@ class ApiWorkersHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def workers_status(self):
+    async def workers_status(self):
         """
         Workers - Return the status of all workers
         ---

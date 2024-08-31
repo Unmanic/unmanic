@@ -64,7 +64,7 @@ class ApiDocsHandler(BaseApiHandler):
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
 
-    def get_privacy_policy(self):
+    async def get_privacy_policy(self):
         """
         Docs - read privacy policy
         ---
@@ -127,7 +127,7 @@ class ApiDocsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_logs_as_zip(self):
+    async def get_logs_as_zip(self):
         """
         Docs - get log files as zip
         ---

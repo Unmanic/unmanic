@@ -139,7 +139,7 @@ class ApiUploadHandler(BaseApiHandler):
 
         return receiver
 
-    def upload_file_to_pending_tasks(self):
+    async def upload_file_to_pending_tasks(self):
         """
         Upload - upload a new pending task
         ---
@@ -246,7 +246,7 @@ class ApiUploadHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def upload_and_install_plugin(self):
+    async def upload_and_install_plugin(self):
         """
         Upload - upload a plugin and install it
         ---

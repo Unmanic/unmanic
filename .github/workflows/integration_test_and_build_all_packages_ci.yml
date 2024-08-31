@@ -310,6 +310,7 @@ jobs:
     name: Publish package to PyPI
     needs: py_build
     runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
 
     steps:
     # Fetch shallow git repository

@@ -147,7 +147,7 @@ class ApiSettingsHandler(BaseApiHandler):
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
         self.config = config.Config()
 
-    def get_all_settings(self):
+    async def get_all_settings(self):
         """
         Settings - read
         ---
@@ -201,7 +201,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def write_settings(self):
+    async def write_settings(self):
         """
         Settings - save a dictionary of settings
         ---
@@ -272,7 +272,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_system_configuration(self):
+    async def get_system_configuration(self):
         """
         Settings - read the system configuration
         ---
@@ -328,7 +328,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def validate_remote_installation(self):
+    async def validate_remote_installation(self):
         """
         Settings - validate a remote installation address
         ---
@@ -398,7 +398,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_all_worker_groups(self):
+    async def get_all_worker_groups(self):
         """
         Settings - get list of all worker groups
         ---
@@ -452,7 +452,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def read_worker_group_config(self):
+    async def read_worker_group_config(self):
         """
         Settings - read the configuration of a worker group
         ---
@@ -526,7 +526,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def write_worker_group_config(self):
+    async def write_worker_group_config(self):
         """
         Settings - write the configuration of a worker group
         ---
@@ -586,7 +586,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def remove_worker_group(self):
+    async def remove_worker_group(self):
         """
         Settings - remove a worker group
         ---
@@ -651,7 +651,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def read_link_config(self):
+    async def read_link_config(self):
         """
         Settings - read the configuration of a remote installation link
         ---
@@ -735,7 +735,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def write_link_config(self):
+    async def write_link_config(self):
         """
         Settings - write the configuration of a remote installation link
         ---
@@ -796,7 +796,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def remove_link_config(self):
+    async def remove_link_config(self):
         """
         Settings - remove a configuration for a remote installation link
         ---
@@ -859,7 +859,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_all_libraries(self):
+    async def get_all_libraries(self):
         """
         Settings - get list of all libraries
         ---
@@ -913,7 +913,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def read_library_config(self):
+    async def read_library_config(self):
         """
         Settings - read the configuration of one library
         ---
@@ -1008,7 +1008,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def write_library_config(self):
+    async def write_library_config(self):
         """
         Settings - write the configuration of one library
         ---
@@ -1074,7 +1074,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def remove_library(self):
+    async def remove_library(self):
         """
         Settings - remove a library
         ---
@@ -1139,7 +1139,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def export_library_plugin_config(self):
+    async def export_library_plugin_config(self):
         """
         Settings - export the plugin configuration of one library
         ---
@@ -1203,7 +1203,7 @@ class ApiSettingsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def import_library_plugin_config(self):
+    async def import_library_plugin_config(self):
         """
         Settings - import the plugin configuration of one library
         ---

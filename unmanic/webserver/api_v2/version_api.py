@@ -59,7 +59,7 @@ class ApiVersionHandler(BaseApiHandler):
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
         self.config = config.Config()
 
-    def get_unmanic_version(self):
+    async def get_unmanic_version(self):
         """
         Version - read
         ---

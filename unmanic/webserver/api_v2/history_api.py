@@ -79,7 +79,7 @@ class ApiHistoryHandler(BaseApiHandler):
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
         self.config = config.Config()
 
-    def get_completed_tasks(self):
+    async def get_completed_tasks(self):
         """
         History - list tasks
         ---
@@ -159,7 +159,7 @@ class ApiHistoryHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def delete_completed_tasks(self):
+    async def delete_completed_tasks(self):
         """
         History - delete
         ---
@@ -220,7 +220,7 @@ class ApiHistoryHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def add_completed_tasks_to_pending_list(self):
+    async def add_completed_tasks_to_pending_list(self):
         """
         History - reprocess
         ---
@@ -291,7 +291,7 @@ class ApiHistoryHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_completed_task_log(self):
+    async def get_completed_task_log(self):
         """
         History - details
         ---

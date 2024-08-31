@@ -66,7 +66,7 @@ class ApiNotificationsHandler(BaseApiHandler):
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
         self.config = config.Config()
 
-    def get_notifications(self):
+    async def get_notifications(self):
         """
         Notifications - read
         ---
@@ -123,7 +123,7 @@ class ApiNotificationsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def remove_notifications(self):
+    async def remove_notifications(self):
         """
         Notifications - delete
         ---

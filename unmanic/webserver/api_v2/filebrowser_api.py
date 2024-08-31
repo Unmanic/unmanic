@@ -59,7 +59,7 @@ class ApiFilebrowserHandler(BaseApiHandler):
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
 
-    def fetch_directory_listing(self):
+    async def fetch_directory_listing(self):
         """
         Filebrowser - List files and/or subdirectories in a given directory
         ---

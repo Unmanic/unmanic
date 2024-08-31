@@ -143,7 +143,7 @@ class ApiPluginsHandler(BaseApiHandler):
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
 
-    def get_installed_plugins(self):
+    async def get_installed_plugins(self):
         """
         Plugins - list installed plugins
         ---
@@ -218,7 +218,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def enable_plugins(self):
+    async def enable_plugins(self):
         """
         Plugins - enable
         ---
@@ -271,7 +271,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def disable_plugins(self):
+    async def disable_plugins(self):
         """
         Plugins - disable
         ---
@@ -324,7 +324,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def update_plugins(self):
+    async def update_plugins(self):
         """
         Plugins - update
         ---
@@ -385,7 +385,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def remove_plugins(self):
+    async def remove_plugins(self):
         """
         Plugins - remove
         ---
@@ -446,7 +446,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_plugin_info(self):
+    async def get_plugin_info(self):
         """
         Plugins - return a requested plugin's metadata and settings
         ---
@@ -525,7 +525,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def update_plugin_settings(self):
+    async def update_plugin_settings(self):
         """
         Plugins - Save the settings of a single plugin
         ---
@@ -590,7 +590,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def reset_plugin_settings(self):
+    async def reset_plugin_settings(self):
         """
         Plugins - Reset the settings of a single plugin
         ---
@@ -654,7 +654,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_installable_plugin_list(self):
+    async def get_installable_plugin_list(self):
         """
         Plugins - Read all installable plugins
         ---
@@ -709,7 +709,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def install_plugin_by_id(self):
+    async def install_plugin_by_id(self):
         """
         Plugins - Install a single plugin by its Plugin ID
         ---
@@ -770,7 +770,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_plugin_types_with_flows(self):
+    async def get_plugin_types_with_flows(self):
         """
         Plugins - Get a list of all plugin types that have flows
         ---
@@ -824,7 +824,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_enabled_plugins_flow_by_type(self):
+    async def get_enabled_plugins_flow_by_type(self):
         """
         Plugins - Get the plugin flow for a requested plugin type
         ---
@@ -888,7 +888,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def save_enabled_plugin_flow(self):
+    async def save_enabled_plugin_flow(self):
         """
         Plugins - Save the plugin flow for a requested plugin type
         ---
@@ -951,7 +951,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def update_repo_list(self):
+    async def update_repo_list(self):
         """
         Plugins - Update the plugin repo list
         ---
@@ -1012,7 +1012,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_repo_list(self):
+    async def get_repo_list(self):
         """
         Plugins - Read all configured plugin repos
         ---
@@ -1067,7 +1067,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def reload_repo_data(self):
+    async def reload_repo_data(self):
         """
         Plugins - Reload plugin repositories remote data
         ---
@@ -1119,7 +1119,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def get_enabled_panel_plugins_list(self):
+    async def get_enabled_panel_plugins_list(self):
         """
         Plugins - Read all enabled "data panel" type plugins
         ---

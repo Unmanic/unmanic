@@ -244,7 +244,7 @@ class BaseApiHandler(RequestHandler):
                                                                              route.get("call_method"), params["path_args"],
                                                                              params["path_kwargs"]), exc_info=True)
 
-                    getattr(self, route.get("call_method"))(*params["path_args"], **params["path_kwargs"])
+                    await getattr(self, route.get("call_method"))(*params["path_args"], **params["path_kwargs"])
                     return
 
                 # This route matches the current request URI and does not have any params.
@@ -252,7 +252,7 @@ class BaseApiHandler(RequestHandler):
                 tornado.log.app_log.debug("Routing API to {}.{}()".format(self.__class__.__name__, route.get("call_method")),
                                           exc_info=True)
                 self.route = route
-                getattr(self, route.get("call_method"))()
+                await getattr(self, route.get("call_method"))()
                 return
 
         if matched_route_with_unsupported_method:

@@ -69,7 +69,7 @@ class ApiSessionHandler(BaseApiHandler):
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
 
-    def get_session_state(self):
+    async def get_session_state(self):
         """
         Session - state
         ---
@@ -132,7 +132,7 @@ class ApiSessionHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def session_reload(self):
+    async def session_reload(self):
         """
         Session - reload
         ---
@@ -184,7 +184,7 @@ class ApiSessionHandler(BaseApiHandler):
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()
 
-    def session_logout(self):
+    async def session_logout(self):
         """
         Session - log out of session
         ---

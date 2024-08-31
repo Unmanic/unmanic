@@ -38,10 +38,10 @@ jobs:
         bash -c "tests/scripts_/download_test_files.sh"
 
     # Setup python environment
-    - name: Set up Python 3.7
+    - name: Set up Python 3.8
       uses: actions/setup-python@v5
       with:
-        python-version: '3.7'
+        python-version: '3.8'
 
     # Restore the python cache if it exists
     - name: Restore python cache

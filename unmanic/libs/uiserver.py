@@ -29,20 +29,18 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-
+import asyncio
 import os
 import socket
 import threading
-import asyncio
 import logging
 from queue import Queue
 
-from tornado.httpserver import HTTPServer
-from tornado.ioloop import IOLoop
-from tornado.platform.asyncio import AnyThreadEventLoopPolicy
-from tornado.routing import PathMatches
-from tornado.template import Loader
-from tornado.web import Application, StaticFileHandler, RedirectHandler
+import tornado.httpserver
+import tornado.ioloop
+import tornado.routing
+import tornado.template
+import tornado.web
 
 from unmanic import config
 from unmanic.libs import common
@@ -51,7 +49,7 @@ from unmanic.webserver.downloads import DownloadsHandler
 
 public_directory = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "webserver", "public"))
 tornado_settings = {
-    'template_loader': Loader(public_directory),
+    'template_loader': tornado.template.Loader(public_directory),
     'static_css':      os.path.join(public_directory, "css"),
     'static_fonts':    os.path.join(public_directory, "fonts"),
     'static_icons':    os.path.join(public_directory, "icons"),
@@ -229,6 +227,7 @@ class UIServer(threading.Thread):
             self.started = False
         if self.io_loop:
             self.io_loop.add_callback(self.io_loop.stop)
+            self.io_loop.close(True)
 
     def set_logging(self):
         if self.config and self.config.get_log_path():
@@ -276,7 +275,7 @@ class UIServer(threading.Thread):
             tornado_settings['serve_traceback'] = True
 
     def run(self):
-        asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
+        asyncio.set_event_loop(asyncio.new_event_loop())
         self.started = True
 
         # Configure tornado server based on config
@@ -288,7 +287,7 @@ class UIServer(threading.Thread):
         # TODO: add support for HTTPS
 
         # Web Server
-        self.server = HTTPServer(
+        self.server = tornado.httpserver.HTTPServer(
             self.app,
             ssl_options=None,
         )
@@ -300,19 +299,18 @@ class UIServer(threading.Thread):
                       level="warning")
             raise SystemExit
 
-        self.io_loop = IOLoop().current()
+        self.io_loop = tornado.ioloop.IOLoop.current()
         self.io_loop.start()
-        self.io_loop.close(True)
 
         self._log("Leaving UIServer loop...")
 
     def make_web_app(self):
         # Start with web application routes
         from unmanic.webserver.websocket import UnmanicWebsocketHandler
-        app = Application([
+        app = tornado.web.Application([
             (r"/unmanic/websocket", UnmanicWebsocketHandler),
             (r"/unmanic/downloads/(.*)", DownloadsHandler),
-            (r"/(.*)", RedirectHandler, dict(
+            (r"/(.*)", tornado.web.RedirectHandler, dict(
                 url="/unmanic/ui/dashboard/"
             )),
         ], **tornado_settings)
@@ -321,7 +319,7 @@ class UIServer(threading.Thread):
         from unmanic.webserver.api_request_router import APIRequestRouter
         app.add_handlers(r'.*', [
             (
-                PathMatches(r"/unmanic/api/.*"),
+                tornado.routing.PathMatches(r"/unmanic/api/.*"),
                 APIRequestRouter(app)
             ),
         ])
@@ -329,23 +327,23 @@ class UIServer(threading.Thread):
         # Add frontend routes
         from unmanic.webserver.main import MainUIRequestHandler
         app.add_handlers(r'.*', [
-            (r"/unmanic/css/(.*)", StaticFileHandler, dict(
+            (r"/unmanic/css/(.*)", tornado.web.StaticFileHandler, dict(
                 path=tornado_settings['static_css']
             )),
-            (r"/unmanic/fonts/(.*)", StaticFileHandler, dict(
+            (r"/unmanic/fonts/(.*)", tornado.web.StaticFileHandler, dict(
                 path=tornado_settings['static_fonts']
             )),
-            (r"/unmanic/icons/(.*)", StaticFileHandler, dict(
+            (r"/unmanic/icons/(.*)", tornado.web.StaticFileHandler, dict(
                 path=tornado_settings['static_icons']
             )),
-            (r"/unmanic/img/(.*)", StaticFileHandler, dict(
+            (r"/unmanic/img/(.*)", tornado.web.StaticFileHandler, dict(
                 path=tornado_settings['static_img']
             )),
-            (r"/unmanic/js/(.*)", StaticFileHandler, dict(
+            (r"/unmanic/js/(.*)", tornado.web.StaticFileHandler, dict(
                 path=tornado_settings['static_js']
             )),
             (
-                PathMatches(r"/unmanic/ui/(.*)"),
+                tornado.routing.PathMatches(r"/unmanic/ui/(.*)"),
                 MainUIRequestHandler,
             ),
         ])
@@ -356,11 +354,11 @@ class UIServer(threading.Thread):
         from unmanic.webserver.plugins import PluginAPIRequestHandler
         app.add_handlers(r'.*', [
             (
-                PathMatches(r"/unmanic/panel/[^/]+(/(?!static/|assets$).*)?$"),
+                tornado.routing.PathMatches(r"/unmanic/panel/[^/]+(/(?!static/|assets$).*)?$"),
                 DataPanelRequestHandler
             ),
             (
-                PathMatches(r"/unmanic/plugin_api/[^/]+(/(?!static/|assets$).*)?$"),
+                tornado.routing.PathMatches(r"/unmanic/plugin_api/[^/]+(/(?!static/|assets$).*)?$"),
                 PluginAPIRequestHandler
             ),
             (r"/unmanic/panel/.*/static/(.*)", PluginStaticFileHandler, dict(

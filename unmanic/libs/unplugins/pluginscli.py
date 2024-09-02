@@ -35,6 +35,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 
 import inquirer
 import requests
@@ -131,10 +132,19 @@ def install_npm_modules(plugin_path):
 def install_plugin_requirements(plugin_path):
     requirements_file = os.path.join(plugin_path, 'requirements.txt')
     install_target = os.path.join(plugin_path, 'site-packages')
+    # Check if the requirements file exists
     if not os.path.exists(requirements_file):
         return
-    import pip
-    pip.main(['install', '--upgrade', '-r', requirements_file, '--target={}'.format(install_target)])
+    # First, remove the existing site-packages directory if it exists to ensure a clean installation
+    if os.path.exists(install_target):
+        shutil.rmtree(install_target)
+    # Recreate the site-packages directory
+    os.makedirs(install_target, exist_ok=True)
+    subprocess.call([
+        sys.executable, '-m', 'pip', 'install', '--upgrade',
+        '-r', requirements_file,
+        '--target={}'.format(install_target)
+    ])
 
 
 class PluginsCLI(object):

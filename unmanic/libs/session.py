@@ -114,9 +114,9 @@ class Session(object, metaclass=SingletonType):
     user_access_token = None
 
     """
-    user_refresh_token - The refresh token for acquiring an updated access token
+    application_token - The application token for acquiring an updated access token
     """
-    user_refresh_token = None
+    application_token = None
 
     """
     session_cookies - A stored copy of the session cookies to persist between restarts
@@ -227,8 +227,8 @@ class Session(object, metaclass=SingletonType):
             db_installation.created = self.created
             if self.user_access_token or force_save_access_token:
                 db_installation.user_access_token = self.user_access_token
-            if self.user_refresh_token or force_save_access_token:
-                db_installation.user_refresh_token = self.user_refresh_token
+            if self.application_token or force_save_access_token:
+                db_installation.application_token = self.application_token
             if self.session_cookies or force_save_access_token:
                 db_installation.session_cookies = self.session_cookies
             db_installation.save()
@@ -246,7 +246,7 @@ class Session(object, metaclass=SingletonType):
         self.email = ''
         self.created = time.time()
         self.user_access_token = None
-        self.user_refresh_token = None
+        self.application_token = None
         self.__store_installation_data(force_save_access_token=True)
         self.__clear_session_auth()
 
@@ -375,7 +375,7 @@ class Session(object, metaclass=SingletonType):
         # Check if access token is valid
         u = self.set_full_api_url('support-auth-api', 1, 'user_auth/verify_token')
         r = self.requests_session.get(u, timeout=self.timeout)
-        if r.status_code in [202]:
+        if r.status_code in [200, 201, 202]:
             # Token is valid
             return True
         elif r.status_code > 403:
@@ -384,16 +384,14 @@ class Session(object, metaclass=SingletonType):
 
         # Access token is not valid. Refresh it.
         self.logger.debug('Unable to verify authentication token. Refreshing...')
-        d = {"refreshToken": self.user_refresh_token}
-        u = self.set_full_api_url('support-auth-api', 1, 'user_auth/token')
+        d = {"applicationToken": self.application_token}
+        u = self.set_full_api_url('support-auth-api', 1, 'app_auth/get_token')
         r = self.requests_session.post(u, json=d, timeout=self.timeout)
-        if r.status_code in [202]:
+        if r.status_code in [200, 201, 202]:
             # Token refreshed
             # Store the updated access token
             response = r.json()
             self.__update_session_auth(access_token=response.get('data', {}).get('accessToken'))
-            # Store the updated refresh token
-            self.user_refresh_token = response.get('data', {}).get('refreshToken')
             # Store the updated session cookies
             self.session_cookies = base64.b64encode(pickle.dumps(self.requests_session.cookies)).decode('utf-8')
             self.__store_installation_data()
@@ -449,7 +447,7 @@ class Session(object, metaclass=SingletonType):
                 # Store the updated access token
                 self.__update_session_auth(access_token=response.get('data', {}).get('accessToken'))
                 # Store the updated refresh token
-                self.user_refresh_token = response.get('data', {}).get('refreshToken')
+                self.application_token = response.get('data', {}).get('applicationToken')
                 token_verified = self.verify_token()
             elif status_code > 403:
                 raise RemoteApiException("Failed to fetch initial app token frp, app_auth/retrieve_app_token", status_code)
@@ -471,7 +469,7 @@ class Session(object, metaclass=SingletonType):
         d = {"uuid": self.get_installation_uuid()}
         u = self.set_full_api_url('support-auth-api', 1, 'user_auth/trial_token')
         r = self.requests_session.post(u, json=d, timeout=self.timeout)
-        if r.status_code in [202]:
+        if r.status_code in [200, 201, 202]:
             # Token refreshed
             # Store the updated access token
             response = r.json()

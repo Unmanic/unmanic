@@ -1,12 +1,13 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run Unmanic Dev" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="Run Unmanic Dev" type="PythonConfigurationType" factoryName="Python" show_console_on_std_err="true" show_console_on_std_out="true">
+    <log_file alias="$PROJECT_DIR$/dev_environment/.unmanic/logs/*.log" path="$PROJECT_DIR$/dev_environment/.unmanic/logs/*.log" show_all="true" />
     <module name="unmanic" />
     <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
-      <env name="HOME_DIR" value="./dev_environment" />
       <env name="PYTHONUNBUFFERED" value="1" />
+      <env name="HOME_DIR" value="./dev_environment" />
     </envs>
     <option name="SDK_HOME" value="$PROJECT_DIR$/venv/bin/python" />
     <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
@@ -15,7 +16,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="unmanic" />
-    <option name="PARAMETERS" value="--dev --dev-local-api" />
+    <option name="PARAMETERS" value="--dev" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="true" />

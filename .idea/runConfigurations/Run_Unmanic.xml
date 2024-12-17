@@ -1,12 +1,13 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run Unmanic" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="Run Unmanic" type="PythonConfigurationType" factoryName="Python" show_console_on_std_err="true" show_console_on_std_out="true">
+    <log_file alias="$PROJECT_DIR$/dev_environment/.unmanic/logs/*.log" path="$PROJECT_DIR$/dev_environment/.unmanic/logs/*.log" show_all="true" />
     <module name="unmanic" />
     <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
-      <env name="HOME_DIR" value="./dev_environment" />
       <env name="PYTHONUNBUFFERED" value="1" />
+      <env name="HOME_DIR" value="./dev_environment" />
     </envs>
     <option name="SDK_HOME" value="$PROJECT_DIR$/venv/bin/python" />
     <option name="SDK_NAME" value="Python 3.12 (unmanic)" />

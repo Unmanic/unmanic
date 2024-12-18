@@ -29,11 +29,3 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-import sys
-import warnings
-
-from .unlogger import UnmanicLogger
-
-__all__ = (
-    'UnmanicLogger',
-)

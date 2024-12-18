@@ -37,8 +37,9 @@ from datetime import datetime, timedelta
 import schedule
 
 from unmanic import config
-from unmanic.libs import common, task, unlogger
+from unmanic.libs import task
 from unmanic.libs.installation_link import Links
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.session import Session
 
@@ -50,25 +51,18 @@ class ScheduledTasksManager(threading.Thread):
 
     def __init__(self, event):
         super(ScheduledTasksManager, self).__init__(name='ScheduledTasksManager')
-        self.logger = None
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
         self.event = event
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
         self.scheduler = schedule.Scheduler()
         self.force_local_worker_timer = 0
 
-    def _log(self, message, message2='', level="info"):
-        if not self.logger:
-            unmanic_logging = unlogger.UnmanicLogger.__call__()
-            self.logger = unmanic_logging.get_logger(self.name)
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
-
     def stop(self):
         self.abort_flag.set()
 
     def run(self):
-        self._log("Starting ScheduledTasks Monitor loop")
+        self.logger.info("Starting ScheduledTasks Monitor loop")
 
         # Create scheduled tasks
         # Check the session every 60 minutes
@@ -91,15 +85,15 @@ class ScheduledTasksManager(threading.Thread):
 
         # Clear any tasks and exit
         self.scheduler.clear()
-        self._log("Leaving ScheduledTasks Monitor loop...")
+        self.logger.info("Leaving ScheduledTasks Monitor loop...")
 
     def register_unmanic(self):
-        self._log("Updating session data")
+        self.logger.info("Updating session data")
         s = Session()
         s.register_unmanic(force=True)
 
     def plugin_repo_update(self):
-        self._log("Checking for updates to plugin repos")
+        self.logger.info("Checking for updates to plugin repos")
         plugin_handler = PluginsHandler()
         plugin_handler.update_plugin_repos()
 
@@ -131,7 +125,7 @@ class ScheduledTasksManager(threading.Thread):
             return
 
         # There is a link config with distributed worker counts enabled
-        self._log("Syncing distributed worker count for this installation")
+        self.logger.info("Syncing distributed worker count for this installation")
 
         # Get total tasks count of pending tasks across all linked_configs
         total_tasks = local_task_count
@@ -165,7 +159,7 @@ class ScheduledTasksManager(threading.Thread):
                 target_workers_for_this_installation = 1
                 self.force_local_worker_timer = time_now
 
-        self._log("Configuring worker count as {} for this installation".format(target_workers_for_this_installation))
+        self.logger.info("Configuring worker count as %s for this installation", target_workers_for_this_installation)
         settings.set_config_item('number_of_workers', target_workers_for_this_installation, save_settings=True)
 
     def manage_completed_tasks(self):
@@ -174,7 +168,7 @@ class ScheduledTasksManager(threading.Thread):
         if not settings.get_auto_manage_completed_tasks():
             return
 
-        self._log("Running completed task cleanup for this installation")
+        self.logger.info("Running completed task cleanup for this installation")
         max_age_in_days = settings.get_max_age_of_completed_tasks()
         date_x_days_ago = datetime.now() - timedelta(days=int(max_age_in_days))
         before_time = date_x_days_ago.timestamp()
@@ -194,13 +188,13 @@ class ScheduledTasksManager(threading.Thread):
                                                                              before_time=before_time)
 
         if count == 0:
-            self._log("Found no {} completed tasks older than {} days".format(inc_status, max_age_in_days))
+            self.logger.info("Found no %s completed tasks older than %s days", inc_status, max_age_in_days)
             return
 
-        self._log(
-            "Found {} {} completed tasks older than {} days that should be removed".format(count, inc_status, max_age_in_days))
+        self.logger.info("Found %s %s completed tasks older than %s days that should be removed", count, inc_status,
+                         max_age_in_days)
         if not history_logging.delete_historic_tasks_recursively(results):
-            self._log("Failed to delete {} {} completed tasks".format(count, inc_status), level='error')
+            self.logger.error("Failed to delete %s %s completed tasks", count, inc_status)
             return
 
-        self._log("Deleted {} {} completed tasks".format(count, inc_status))
+        self.logger.info("Deleted %s %s completed tasks", count, inc_status)

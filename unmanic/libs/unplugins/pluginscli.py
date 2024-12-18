@@ -43,9 +43,10 @@ import requests
 from . import plugin_types
 
 from unmanic import config
-from unmanic.libs import unlogger, common
+from unmanic.libs import common
 from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.unplugins import PluginExecutor
+from ..logs import UnmanicLogging
 
 home_directory = common.get_home_dir()
 dev_cache_directory = os.path.join(home_directory, '.unmanic', 'dev', 'cache')
@@ -158,16 +159,16 @@ class PluginsCLI(object):
             home_directory = common.get_home_dir()
             plugins_directory = os.path.join(home_directory, '.unmanic', 'plugins')
         self.plugins_directory = plugins_directory
-        unmanic_logging = unlogger.UnmanicLogger.__call__()
-        unmanic_logging.disable_file_handler(debugging=True)
-        unmanic_logging.stream_handler.setFormatter(
+        # Only log to stdout
+        UnmanicLogging.update_stream_formatter(
             logging.Formatter(
                 '        - {}%(asctime)s:%(levelname)s:%(name)s - %(message)s{}'.format(BColours.RESULTS, BColours.ENDC),
                 datefmt='%Y-%m-%dT%H:%M:%S'
             )
         )
-        unmanic_logging.enable_debugging()
-        self.logger = unmanic_logging.get_logger(__class__.__name__)
+        UnmanicLogging.disable_file_handler(debugging=True)
+        UnmanicLogging.enable_debugging()
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
 
         self.test_data_modifiers = {
             "{cache_path}":    dev_cache_directory,
@@ -175,10 +176,6 @@ class PluginsCLI(object):
             "{test_file_in}":  "Big_Buck_Bunny_1080_10s_30MB_h264.mkv",
             "{test_file_out}": "Big_Buck_Bunny_1080_10s_30MB_h264-1616571944.7296877-WORKING-1.mkv"
         }
-
-    def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
 
     def create_new_plugins(self):
         plugin_details = inquirer.prompt(menus.get('create_plugin'))
@@ -549,7 +546,7 @@ class PluginsCLI(object):
         if function:
             getattr(self, function)()
         else:
-            self._log("Invalid selection")
+            self.logger.info("Invalid selection")
             return
 
     def run(self):

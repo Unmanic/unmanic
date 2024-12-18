@@ -36,7 +36,8 @@ import time
 from copy import deepcopy
 
 from unmanic import config
-from unmanic.libs import history, common, unlogger
+from unmanic.libs import history, common
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.plugins import PluginsHandler
 
 
@@ -51,8 +52,7 @@ class FileTest(object):
 
     def __init__(self, library_id: int):
         self.settings = config.Config()
-        unmanic_logging = unlogger.UnmanicLogger.__call__()
-        self.logger = unmanic_logging.get_logger(__class__.__name__)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
 
         # Init plugins
         self.library_id = library_id
@@ -62,10 +62,6 @@ class FileTest(object):
 
         # List of filed tasks
         self.failed_paths = []
-
-    def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
 
     def set_file(self):
         pass
@@ -172,7 +168,7 @@ class FileTesterThread(threading.Thread):
     def __init__(self, name, files_to_test, files_to_process, status_updates, library_id, event):
         super(FileTesterThread, self).__init__(name=name)
         self.settings = config.Config()
-        self.logger = None
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
         self.event = event
         self.files_to_test = files_to_test
         self.files_to_process = files_to_process
@@ -181,18 +177,11 @@ class FileTesterThread(threading.Thread):
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
 
-    def _log(self, message, message2='', level="info"):
-        if not self.logger:
-            unmanic_logging = unlogger.UnmanicLogger.__call__()
-            self.logger = unmanic_logging.get_logger(self.name)
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
-
     def stop(self):
         self.abort_flag.set()
 
     def run(self):
-        self._log("Starting {}".format(self.name))
+        self.logger.info("Starting %s", self.name)
         file_test = FileTest(self.library_id)
         while not self.abort_flag.is_set():
             try:
@@ -203,8 +192,8 @@ class FileTesterThread(threading.Thread):
                 self.event.wait(2)
                 continue
             except Exception as e:
-                self._log("Exception in fetching library scan result for path {}:".format(self.name), message2=str(e),
-                            level="exception")
+                self.logger.exception("Exception in fetching library scan result for path %s:", self.name)
+                continue
 
             # Test file to be added to task list. Add it if required
             try:
@@ -212,9 +201,9 @@ class FileTesterThread(threading.Thread):
                 # Log any error messages
                 for issue in issues:
                     if type(issue) is dict:
-                        self._log(issue.get('message'))
+                        self.logger.info(issue.get('message'))
                     else:
-                        self._log(issue)
+                        self.logger.info(issue)
                 # If file needs to be added, then add it
                 if result:
                     self.add_path_to_queue({
@@ -222,12 +211,11 @@ class FileTesterThread(threading.Thread):
                         'priority_score': priority_score,
                     })
             except UnicodeEncodeError:
-                self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
+                self.logger.warning("File contains Unicode characters that cannot be processed. Ignoring.")
             except Exception as e:
-                self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e),
-                            level="exception")
+                self.logger.exception("Exception testing file path in %s. Ignoring.", self.name)
 
-        self._log("Exiting {}".format(self.name))
+        self.logger.info("Exiting %s", self.name)
 
     def add_path_to_queue(self, item):
         self.files_to_process.put(item)

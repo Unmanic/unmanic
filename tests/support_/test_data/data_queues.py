@@ -31,14 +31,8 @@
 """
 import queue
 
-from unmanic.libs import unlogger
-
-unmanic_logging = unlogger.UnmanicLogger.__call__(False)
-unmanic_logging.get_logger()
-
 data_queues = {
     "scheduledtasks":   queue.Queue(),
     "inotifytasks":     queue.Queue(),
     "progress_reports": queue.Queue(),
-    "logging":          unmanic_logging
 }

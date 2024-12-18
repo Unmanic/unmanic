@@ -35,7 +35,8 @@ import json
 from operator import attrgetter
 
 from unmanic import config
-from unmanic.libs import common, unlogger
+from unmanic.libs import common
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.unmodels import CompletedTasks, CompletedTasksCommandLogs
 
 try:
@@ -52,17 +53,9 @@ class History(object):
     """
 
     def __init__(self):
-        self.name = 'History'
+        self.name = __class__.__name__
         self.settings = config.Config()
-
-    def _log(self, message, message2='', level="info"):
-        unmanic_logging = unlogger.UnmanicLogger.__call__()
-        logger = unmanic_logging.get_logger(self.name)
-        if logger:
-            message = common.format_message(message, message2)
-            getattr(logger, level)(message)
-        else:
-            print("Unmanic.{} - ERROR!!! Failed to find logger".format(self.name))
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
 
     def get_historic_task_list(self, limit=None):
         """
@@ -78,7 +71,7 @@ class History(object):
                 historic_tasks = CompletedTasks.select().order_by(CompletedTasks.id.desc())
         except CompletedTasks.DoesNotExist:
             # No historic entries exist yet
-            self._log("No historic tasks exist yet.", level="warning")
+            self.logger.warning("No historic tasks exist yet.")
             historic_tasks = []
 
         return historic_tasks.dicts()
@@ -121,7 +114,7 @@ class History(object):
 
         except CompletedTasks.DoesNotExist:
             # No historic entries exist yet
-            self._log("No historic tasks exist yet.", level="warning")
+            self.logger.warning("No historic tasks exist yet.")
             query = []
 
         return query.dicts()
@@ -129,12 +122,13 @@ class History(object):
     def get_current_path_of_historic_tasks_by_id(self, id_list=None):
         """
         Returns a list of CompletedTasks filtered by id_list and joined with the current absolute path of that file.
-        For failures this will be the the source path
+        For failures this will be the source path
         For success, this will be the destination path
 
         :param id_list:
         :return:
         """
+        # noinspection SqlDialectInspection
         """
             SELECT
                 t1.*,
@@ -196,7 +190,7 @@ class History(object):
             # Fetch the historic task (get() will raise DoesNotExist exception if no results are found)
             historic_tasks = CompletedTasks.get_by_id(task_id)
         except CompletedTasks.DoesNotExist:
-            self._log("Failed to retrieve historic task from database for id {}.".format(task_id), level="exception")
+            self.logger.exception("Failed to retrieve historic task from database for id %s.", task_id)
             return False
         # Get all saved data for this task and create dictionary of task data
         historic_task = historic_tasks.model_to_dict()
@@ -225,15 +219,14 @@ class History(object):
                     historic_task_id.delete_instance(recursive=True)
                 except Exception as e:
                     # Catch delete exceptions
-                    self._log("An error occurred while deleting historic task ID: {}.".format(historic_task_id), str(e),
-                              level="exception")
+                    self.logger.exception("An error occurred while deleting historic task ID: %s.", historic_task_id)
                     return False
 
             return True
 
         except CompletedTasks.DoesNotExist:
             # No historic entries exist yet
-            self._log("No historic tasks exist yet.", level="warning")
+            self.logger.warning("No historic tasks exist yet.")
 
     def save_task_history(self, task_data):
         """
@@ -248,7 +241,7 @@ class History(object):
             # Create an entry of the data from the source ffprobe
             self.create_historic_task_ffmpeg_log_entry(new_historic_task, task_data.get('log', ''))
         except Exception as error:
-            self._log("Failed to save historic task entry to database.", str(error), level="exception")
+            self.logger.exception("Failed to save historic task entry to database. %s", error)
             return False
         return True
 
@@ -281,7 +274,7 @@ class History(object):
         :return:
         """
         if not task_data:
-            self._log('Task data param empty', json.dumps(task_data), level="debug")
+            self.logger.debug('Task data param empty: %s', json.dumps(task_data))
             raise Exception('Task data param empty. This should not happen - Something has gone really wrong.')
 
         new_historic_task = CompletedTasks.create(task_label=task_data['task_label'],

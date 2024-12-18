@@ -37,6 +37,7 @@ import time
 from unmanic import config
 from unmanic.libs import common, history
 from unmanic.libs.library import Library
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.notifications import Notifications
 from unmanic.libs.plugins import PluginsHandler
 
@@ -67,7 +68,7 @@ class PostProcessor(threading.Thread):
 
     def __init__(self, data_queues, task_queue, event):
         super(PostProcessor, self).__init__(name='PostProcessor')
-        self.logger = data_queues["logging"].get_logger(self.name)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
         self.event = event
         self.data_queues = data_queues
         self.settings = config.Config()

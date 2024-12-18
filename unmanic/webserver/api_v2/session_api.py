@@ -32,8 +32,8 @@
 
 import tornado.log
 from unmanic.libs import session
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.uiserver import UnmanicDataQueues
-from unmanic.service import unmanic_logging
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
 from unmanic.webserver.api_v2.schema.schemas import SessionStateSuccessSchema
 
@@ -41,6 +41,7 @@ from unmanic.webserver.api_v2.schema.schemas import SessionStateSuccessSchema
 class ApiSessionHandler(BaseApiHandler):
     session = None
     config = None
+    logger = None
     params = None
     unmanic_data_queues = None
 
@@ -64,7 +65,7 @@ class ApiSessionHandler(BaseApiHandler):
 
     def initialize(self, **kwargs):
         self.session = session.Session()
-        self.logger = unmanic_logging.get_logger(__class__.__name__)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()

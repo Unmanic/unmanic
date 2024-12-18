@@ -38,6 +38,7 @@ from datetime import datetime, timedelta
 
 from unmanic.libs import common, installation_link
 from unmanic.libs.library import Library
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.worker_group import WorkerGroup
 from unmanic.libs.workers import Worker
@@ -50,7 +51,7 @@ class Foreman(threading.Thread):
         self.event = event
         self.task_queue = task_queue
         self.data_queues = data_queues
-        self.logger = data_queues["logging"].get_logger(self.name)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
         self.workers_pending_task_queue = queue.Queue(maxsize=1)
         self.remote_workers_pending_task_queue = queue.Queue(maxsize=1)
         self.complete_queue = queue.Queue()

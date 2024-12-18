@@ -36,6 +36,7 @@ import time
 
 from unmanic import config
 from unmanic.libs import common, task
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.unmodels.tasks import Tasks
 
 
@@ -59,7 +60,7 @@ class TaskHandler(threading.Thread):
         self.settings = config.Config()
         self.event = event
         self.data_queues = data_queues
-        self.logger = data_queues["logging"].get_logger(self.name)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
         self.task_queue = task_queue
         self.inotifytasks = data_queues["inotifytasks"]
         self.scheduledtasks = data_queues["scheduledtasks"]

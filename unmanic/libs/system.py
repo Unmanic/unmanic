@@ -29,7 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-from unmanic.libs import unlogger, common
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.singleton import SingletonType
 
 
@@ -40,12 +40,7 @@ class System(object, metaclass=SingletonType):
     python_version = {}
 
     def __init__(self, *args, **kwargs):
-        unmanic_logging = unlogger.UnmanicLogger.__call__()
-        self.logger = unmanic_logging.get_logger(__class__.__name__)
-
-    def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
 
     def __get_python_info(self):
         """

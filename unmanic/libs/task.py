@@ -38,8 +38,9 @@ from operator import attrgetter
 from playhouse.shortcuts import model_to_dict
 
 from unmanic import config
-from unmanic.libs import common, unlogger
+from unmanic.libs import common
 from unmanic.libs.library import Library
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.unmodels.tasks import IntegrityError, Tasks
 
 
@@ -73,14 +74,9 @@ class Task(object):
         self.task = None
         self.task_dict = None
         self.settings = config.Config()
-        unmanic_logging = unlogger.UnmanicLogger.__call__()
-        self.logger = unmanic_logging.get_logger(__class__.__name__)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
         self.statistics = {}
         self.errors = []
-
-    def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
 
     def set_cache_path(self, cache_directory=None, file_extension=None):
         if not self.task:
@@ -213,7 +209,7 @@ class Task(object):
         try:
             self.task = Tasks.create(abspath=abspath, status='creating', library_id=library_id)
             self.save()
-            self._log("Created new task with ID: {} for {}".format(self.task, abspath), level="debug")
+            self.logger.debug("Created new task with ID: %s for %s", self.task, abspath)
 
             # Set the cache path to use during the transcoding
             self.set_cache_path()
@@ -239,7 +235,7 @@ class Task(object):
 
             return True
         except IntegrityError as e:
-            self._log("Cancel creating new task for {} - {}".format(abspath, e), level="info")
+            self.logger.info("Cancel creating new task for %s - %s", abspath, e)
             return False
 
     def set_status(self, status):
@@ -350,7 +346,7 @@ class Task(object):
 
         except Tasks.DoesNotExist:
             # No task entries exist yet
-            self._log("No tasks exist yet.", level="warning")
+            self.logger.warning("No tasks exist yet.")
             query = []
 
         return query.dicts()
@@ -378,20 +374,20 @@ class Task(object):
                     if task_id.type == 'remote':
                         remote_task_dirname = task_id.abspath
                         if os.path.exists(task_id.abspath) and "unmanic_remote_pending_library" in remote_task_dirname:
-                            self._log("Removing remote pending library task '{}'.".format(remote_task_dirname))
+                            self.logger.info("Removing remote pending library task '%s'.", remote_task_dirname)
                             shutil.rmtree(os.path.dirname(remote_task_dirname))
 
                     task_id.delete_instance(recursive=True)
                 except Exception as e:
                     # Catch delete exceptions
-                    self._log("An error occurred while deleting task ID: {}.".format(task_id), str(e), level="exception")
+                    self.logger.exception("An error occurred while deleting task ID: %s. %s", task_id, e)
                     return False
 
             return True
 
         except Tasks.DoesNotExist:
             # No task entries exist yet
-            self._log("No tasks currently exist.", level="warning")
+            self.logger.warning("No tasks currently exist.")
 
     def reorder_tasks(self, id_list, direction):
         # Get the task with the highest ID

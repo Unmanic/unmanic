@@ -44,6 +44,7 @@ import tornado.web
 
 from unmanic import config
 from unmanic.libs import common
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.singleton import SingletonType
 from unmanic.webserver.downloads import DownloadsHandler
 
@@ -199,10 +200,10 @@ class UIServer(threading.Thread):
     def __init__(self, unmanic_data_queues, foreman, developer):
         super(UIServer, self).__init__(name='UIServer')
         self.config = config.Config()
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
 
         self.developer = developer
         self.data_queues = unmanic_data_queues
-        self.logger = unmanic_data_queues["logging"].get_logger(self.name)
         self.inotifytasks = unmanic_data_queues["inotifytasks"]
         # TODO: Move all logic out of template calling to foreman.
         #  Create methods here to handle the calls and rename to foreman

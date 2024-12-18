@@ -32,6 +32,7 @@
 
 from unmanic.libs import task
 from unmanic.libs import common
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.unmodels import Libraries, LibraryTags, Tags
 from unmanic.libs.unmodels.tasks import Tasks
 
@@ -166,7 +167,7 @@ class TaskQueue(object):
     def __init__(self, data_queues):
         self.name = 'TaskQueue'
         self.data_queues = data_queues
-        self.logger = data_queues["logging"].get_logger(self.name)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
 
         # Sort fields
         self.sort_by = Tasks.priority

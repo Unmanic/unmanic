@@ -38,7 +38,7 @@ import time
 import requests
 
 from unmanic import config
-from unmanic.libs import common, unlogger
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.singleton import SingletonType
 from unmanic.libs.unmodels import Installation
 
@@ -124,8 +124,7 @@ class Session(object, metaclass=SingletonType):
     session_cookies = None
 
     def __init__(self, *args, **kwargs):
-        unmanic_logging = unlogger.UnmanicLogger.__call__()
-        self.logger = unmanic_logging.get_logger(__class__.__name__)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
         self.timeout = 30
         self.dev_api = kwargs.get('dev_api', None)
         self.requests_session = requests.Session()

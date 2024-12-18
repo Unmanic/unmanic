@@ -37,8 +37,8 @@ import importlib
 import sys
 
 from . import plugin_types
-from unmanic.libs import unlogger, common
-from ..unmodels import LibraryPluginFlow
+from unmanic.libs import common
+from ..logs import UnmanicLogging
 
 
 class PluginExecutor(object):
@@ -77,12 +77,7 @@ class PluginExecutor(object):
                 'has_flow': True,
             },
         ]
-        unmanic_logging = unlogger.UnmanicLogger.__call__()
-        self.logger = unmanic_logging.get_logger(__class__.__name__)
-
-    def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
 
     def __get_plugin_directory(self, plugin_id):
         """
@@ -145,8 +140,7 @@ class PluginExecutor(object):
 
             return plugin_import
         except Exception as e:
-            self._log("Exception encountered while importing module '{}'".format(plugin_id), message2=str(e),
-                      level="exception")
+            self.logger.exception("Exception encountered while importing module '%s'. %s", plugin_id, e)
             return None
 
     def reload_plugin_module(self, plugin_id):
@@ -158,7 +152,7 @@ class PluginExecutor(object):
         """
         # Set the module name
         module_name = '{}.plugin'.format(plugin_id)
-        # self._log("Reloading module '{}'".format(module_name), level="debug")
+        # self.logger.debug("Reloading module '{}'".format(module_name))
 
         if module_name in sys.modules:
             # Get all submodules
@@ -175,8 +169,7 @@ class PluginExecutor(object):
                     # The module's parent was probably not imported.
                     # Delete it from sys.modules and carry on.
                     # This will force it to be reloaded again
-                    self._log("Exception encountered while trying to reload module '{}'".format(module_name),
-                              level="exception")
+                    self.logger.exception("Exception encountered while trying to reload module '%s'", module_name)
                     del sys.modules[module_name]
 
     @staticmethod
@@ -256,8 +249,7 @@ class PluginExecutor(object):
                 runner(data)
                 run_successfully = True
             except Exception:
-                self._log("Exception while carrying out '{}' plugin runner '{}'".format(plugin_type, plugin_id),
-                          level="exception")
+                self.logger.exception("Exception while carrying out '%s' plugin runner '%s'", plugin_type, plugin_id)
 
             del runner
             # gc.collect()
@@ -280,7 +272,7 @@ class PluginExecutor(object):
 
         # Ensure called runner type exists
         if not plugin_type in plugin_types.get_all_plugin_types():
-            self._log("Provided plugin type does not exist!", plugin_type, level="error")
+            self.logger.error("Provided plugin type does not exist! %s", plugin_type)
             return plugin_modules
 
         # Get the called runner function for the given plugin type
@@ -364,7 +356,7 @@ class PluginExecutor(object):
             all_plugin_settings = copy.deepcopy(plugin_settings.get_setting())
             plugin_form_settings = copy.deepcopy(plugin_settings.get_form_settings())
         except Exception as e:
-            self._log("Exception while fetching settings for plugin '{}'".format(plugin_id), str(e), level='exception')
+            self.logger.exception("Exception while fetching settings for plugin '%s' %s", plugin_id, e)
             all_plugin_settings = {}
             plugin_form_settings = {}
 
@@ -403,8 +395,7 @@ class PluginExecutor(object):
 
             return save_result
         except Exception as e:
-            self._log("Exception while saving settings for plugin '{}'".format(plugin_id), str(e), level='exception')
-            self._log(str(e), level='exception')
+            self.logger.exception("Exception while saving settings for plugin '%s' %s", plugin_id, e)
             return False
 
     def reset_plugin_settings(self, plugin_id, library_id=None):
@@ -425,7 +416,7 @@ class PluginExecutor(object):
             plugin_settings = plugin_module.Settings(library_id=library_id)
             return plugin_settings.reset_settings_to_defaults()
         except Exception as e:
-            self._log("Exception while resetting settings for plugin '{}'".format(plugin_id), str(e), level='exception')
+            self.logger.exception("Exception while resetting settings for plugin '%s' %s", plugin_id, e)
             return False
 
     def get_plugin_changelog(self, plugin_id):
@@ -481,8 +472,7 @@ class PluginExecutor(object):
                 test_data = plugin_type_meta.modify_test_data(test_data, test_data_modifiers)
             errors = plugin_type_meta.run_data_schema_tests(plugin_id, plugin_module, test_data=test_data)
         except Exception as e:
-            self._log("Exception while testing plugin runner for plugin '{}'".format(plugin_id), message2=str(e),
-                      level="exception")
+            self.logger.exception("Exception while testing plugin runner for plugin '%s' %s", plugin_id, e)
             errors = ["Exception encountered while testing runner - {}".format(str(e))]
 
         return errors

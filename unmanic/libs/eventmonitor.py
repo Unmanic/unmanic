@@ -36,6 +36,7 @@ import time
 
 from unmanic import config
 from unmanic.libs.library import Library
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.plugins import PluginsHandler
 
 try:
@@ -54,7 +55,6 @@ except ImportError:
 
     event_monitor_module = None
 
-from unmanic.libs import common, unlogger
 from unmanic.libs.filetest import FileTest
 
 
@@ -78,27 +78,20 @@ class EventHandler(FileSystemEventHandler):
     """
 
     def __init__(self, files_to_test, library_id):
-        self.name = "EventProcessor"
+        self.name = __class__.__name__
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
         self.files_to_test = files_to_test
         self.library_id = library_id
-        self.logger = None
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
-
-    def _log(self, message, message2='', level="info"):
-        if not self.logger:
-            unmanic_logging = unlogger.UnmanicLogger.__call__()
-            self.logger = unmanic_logging.get_logger(self.name)
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
 
     def on_any_event(self, event):
         if event.event_type in ["created", "closed"]:
             # Ensure event was not for a directory
             if event.is_directory:
-                self._log("Detected event is for a directory. Ignoring...", level="debug")
+                self.logger.debug("Detected event is for a directory. Ignoring...")
             else:
-                self._log("Detected '{}' event on file path '{}'".format(event.event_type, event.src_path))
+                self.logger.info("Detected '%s' event on file path '%s'", event.event_type, event.src_path)
                 self.files_to_test.put({
                     'src_path':   event.src_path,
                     'library_id': self.library_id,
@@ -117,10 +110,10 @@ class EventMonitorManager(threading.Thread):
 
     def __init__(self, data_queues, event):
         super(EventMonitorManager, self).__init__(name='EventMonitorManager')
-        self.name = "EventMonitorManager"
+        self.name = __class__.__name__
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
         self.data_queues = data_queues
         self.settings = config.Config()
-        self.logger = None
         self.event = event
 
         # Create an event queue
@@ -132,18 +125,11 @@ class EventMonitorManager(threading.Thread):
         self.event_observer_thread = None
         self.event_observer_threads = []
 
-    def _log(self, message, message2='', level="info"):
-        if not self.logger:
-            unmanic_logging = unlogger.UnmanicLogger.__call__()
-            self.logger = unmanic_logging.get_logger(self.name)
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
-
     def stop(self):
         self.abort_flag.set()
 
     def run(self):
-        self._log("Starting EventMonitorManager loop")
+        self.logger.info("Starting EventMonitorManager loop")
         while not self.abort_flag.is_set():
             self.event.wait(.5)
 
@@ -164,7 +150,7 @@ class EventMonitorManager(threading.Thread):
                 try:
                     library = Library(lib_info['id'])
                 except Exception as e:
-                    self._log("Unable to fetch library config for ID {}".format(lib_info['id']), level='exception')
+                    self.logger.exception("Unable to fetch library config for ID %s", lib_info['id'])
                     continue
                 # Check if the library is configured for remote files only
                 if library.get_enable_remote_only():
@@ -187,7 +173,7 @@ class EventMonitorManager(threading.Thread):
             self.event.wait(2)
 
         self.stop_event_processor()
-        self._log("Leaving EventMonitorManager loop...")
+        self.logger.info("Leaving EventMonitorManager loop...")
 
     def system_configuration_is_valid(self):
         """
@@ -217,7 +203,7 @@ class EventMonitorManager(threading.Thread):
                 try:
                     library = Library(lib_info['id'])
                 except Exception as e:
-                    self._log("Unable to fetch library config for ID {}".format(lib_info['id']), level='exception')
+                    self.logger.exception("Unable to fetch library config for ID %s", lib_info['id'])
                     continue
                 # Check if the library is configured for remote files only
                 if library.get_enable_remote_only():
@@ -228,16 +214,16 @@ class EventMonitorManager(threading.Thread):
                     library_path = library.get_path()
                     if not os.path.exists(library_path):
                         continue
-                    self._log("Adding library path to monitor '{}'".format(library_path))
+                    self.logger.info("Adding library path to monitor '%s'", library_path)
                     event_handler = EventHandler(self.files_to_test, library.get_id())
                     self.event_observer_thread.schedule(event_handler, library_path, recursive=True)
                     monitoring_path = True
             # Only start observer if a path was added to be monitored
             if monitoring_path:
-                self._log("EventMonitorManager spawning EventProcessor thread...")
+                self.logger.info("EventMonitorManager spawning EventProcessor thread...")
                 self.event_observer_thread.start()
         else:
-            self._log("Given signal to start the EventProcessor thread, but it is already running....")
+            self.logger.info("Given signal to start the EventProcessor thread, but it is already running....")
 
     def stop_event_processor(self):
         """
@@ -246,16 +232,16 @@ class EventMonitorManager(threading.Thread):
         :return:
         """
         if self.event_observer_thread:
-            self._log("EventMonitorManager stopping EventProcessor thread...")
+            self.logger.info("EventMonitorManager stopping EventProcessor thread...")
 
-            self._log("Sending thread EventProcessor abort signal")
+            self.logger.info("Sending thread EventProcessor abort signal")
             self.event_observer_thread.stop()
 
-            self._log("Waiting for thread EventProcessor to stop")
+            self.logger.info("Waiting for thread EventProcessor to stop")
             self.event_observer_thread.join()
-            self._log("Thread EventProcessor has successfully stopped")
+            self.logger.info("Thread EventProcessor has successfully stopped")
         else:
-            self._log("Given signal to stop the EventProcessor thread, but it is not running...")
+            self.logger.info("Given signal to stop the EventProcessor thread, but it is not running...")
 
         self.event_observer_thread = None
 
@@ -277,16 +263,16 @@ class EventMonitorManager(threading.Thread):
             # Log any error messages
             for issue in issues:
                 if type(issue) is dict:
-                    self._log(issue.get('message'))
+                    self.logger.info(issue.get('message'))
                 else:
-                    self._log(issue)
+                    self.logger.info(issue)
             # If file needs to be added, then add it
             if result:
                 self.__add_path_to_queue(pathname, library_id, priority_score)
         except UnicodeEncodeError:
-            self._log("File contains Unicode characters that cannot be processed. Ignoring.", level="warning")
+            self.logger.warning("File contains Unicode characters that cannot be processed. Ignoring.")
         except Exception as e:
-            self._log("Exception testing file path in {}. Ignoring.".format(self.name), message2=str(e), level="exception")
+            self.logger.exception("Exception testing file path in %s. Ignoring.", self.name)
 
     def __add_path_to_queue(self, pathname, library_id, priority_score):
         """

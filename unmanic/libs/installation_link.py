@@ -40,8 +40,9 @@ from requests.auth import HTTPBasicAuth
 from requests_toolbelt import MultipartEncoder
 
 from unmanic import config
-from unmanic.libs import common, session, task, unlogger
+from unmanic.libs import common, session, task
 from unmanic.libs.library import Library
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.session import Session
 from unmanic.libs.singleton import SingletonType
 
@@ -81,8 +82,7 @@ class Links(object, metaclass=SingletonType):
     def __init__(self, *args, **kwargs):
         self.settings = config.Config()
         self.session = session.Session()
-        unmanic_logging = unlogger.UnmanicLogger.__call__()
-        self.logger = unmanic_logging.get_logger(__class__.__name__)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -1208,8 +1208,7 @@ class RemoteTaskManager(threading.Thread):
         self.paused_flag.clear()
 
         # Create logger for this worker
-        unmanic_logging = unlogger.UnmanicLogger.__call__()
-        self.logger = unmanic_logging.get_logger(self.name)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)

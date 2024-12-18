@@ -37,7 +37,7 @@ import sys
 from peewee import Model, SqliteDatabase, Field
 from peewee_migrate import Migrator, Router
 
-from unmanic.libs import unlogger
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.unmodels.lib import BaseModel
 
 
@@ -48,12 +48,10 @@ class Migrations(object):
     Handle all migrations during application start.
     """
 
-    logger = None
     database = None
 
     def __init__(self, config):
-        unmanic_logging = unlogger.UnmanicLogger.__call__()
-        self.logger = unmanic_logging.get_logger(__class__.__name__)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
 
         # Based on configuration, select database to connect to.
         if config['TYPE'] == 'SQLITE':
@@ -69,12 +67,6 @@ class Migrations(object):
                                  logger=self.logger)
 
             self.migrator = Migrator(self.database)
-
-    def __log(self, message, level='info'):
-        if self.logger:
-            getattr(self.logger, level)(message)
-        else:
-            print(message)
 
     def __run_all_migrations(self):
         """
@@ -102,7 +94,7 @@ class Migrations(object):
         all_models = [tup[1] for tup in discovered_models]
 
         # Start by creating all models
-        self.__log("Initialising database tables")
+        self.logger.info("Initialising database tables")
         try:
             with self.database.transaction():
                 for model in all_models:
@@ -110,7 +102,7 @@ class Migrations(object):
                 self.migrator.run()
         except Exception:
             self.database.rollback()
-            self.__log("Initialising tables failed", level='exception')
+            self.logger.exception("Initialising tables failed")
             raise
 
         # Migrations will only be used for removing obsolete columns
@@ -118,7 +110,7 @@ class Migrations(object):
 
         # Newly added fields can be auto added with this function... no need for a migration script
         # Ensure all files are also present for each of the model classes
-        self.__log("Updating database fields")
+        self.logger.info("Updating database fields")
         for model in all_models:
             if issubclass(model, BaseModel):
                 # Fetch all peewee fields for the model class
@@ -131,12 +123,12 @@ class Migrations(object):
                     if isinstance(field, Field):
                         if not any(f for f in self.database.get_columns(model._meta.name) if f.name == field.name):
                             # Field does not exist in DB table
-                            self.__log("Adding missing column")
+                            self.logger.info("Adding missing column")
                             try:
                                 with self.database.transaction():
                                     self.migrator.add_columns(model, **{field.name: field})
                                     self.migrator.run()
                             except Exception:
                                 self.database.rollback()
-                                self.__log("Update failed", level='exception')
+                                self.logger.exception("Update failed")
                                 raise

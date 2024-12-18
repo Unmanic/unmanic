@@ -29,7 +29,6 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-import hashlib
 import os
 import queue
 import shlex
@@ -40,7 +39,8 @@ import time
 
 import psutil
 
-from unmanic.libs import common, unlogger
+from unmanic.libs import common
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.plugins import PluginsHandler
 
 
@@ -92,8 +92,7 @@ class Worker(threading.Thread):
         self.paused_flag.clear()
 
         # Create logger for this worker
-        unmanic_logging = unlogger.UnmanicLogger.__call__()
-        self.logger = unmanic_logging.get_logger(self.name)
+        self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)
@@ -461,8 +460,10 @@ class Worker(threading.Thread):
         # Log if no command was run by any Plugins
         if no_exec_command_run:
             # If no jobs were carried out on this task
-            self._log("No Plugin requested for Unmanic to run commands for this file '{}'".format(original_abspath), level='warning')
-            self.worker_log.append("\n\nNo Plugin requested for Unmanic to run commands for this file '{}'".format(original_abspath))
+            self._log("No Plugin requested for Unmanic to run commands for this file '{}'".format(original_abspath),
+                      level='warning')
+            self.worker_log.append(
+                "\n\nNo Plugin requested for Unmanic to run commands for this file '{}'".format(original_abspath))
 
         # Save the completed command log
         self.current_task.save_command_log(self.worker_log)

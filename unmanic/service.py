@@ -87,6 +87,7 @@ class RootService:
         self.dev_api = None
 
         self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
+        UnmanicLogging.metric("Started")
 
         self.event = threading.Event()
 

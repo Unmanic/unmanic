@@ -8,6 +8,7 @@ psutil~=6.0.0
 requests>=2.28.2
 requests_toolbelt>=0.9.1
 py-cpuinfo>=7.0.0
+JSON-log-formatter~=0.5.2
 
 # Optional requirements
 watchdog>=2.1.1

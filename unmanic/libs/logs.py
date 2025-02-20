@@ -33,20 +33,356 @@
 import os
 import logging
 import threading
+import json
+import time
+from logging.handlers import RotatingFileHandler
+from queue import Queue, Empty
+import requests
+from datetime import datetime, timedelta
+from json_log_formatter import JSONFormatter
+
+
+class ForwardJSONFormatter(JSONFormatter):
+    """
+    JSON log formatter which adds log record attributes if debugging is enabled.
+    """
+
+    def json_record(self, message, extra, record):
+        # Check the logger's effective level
+        logger = logging.getLogger(record.name)
+        # Always include levelname used for labels
+        extra['levelname'] = record.levelname
+        # If the logger's effective level is DEBUG, add more context
+        if logger.getEffectiveLevel() == logging.DEBUG:
+            extra['filename'] = record.filename
+            extra['funcName'] = record.funcName
+            extra['lineno'] = record.lineno
+            extra['module'] = record.module
+            extra['name'] = record.name
+            extra['pathname'] = record.pathname
+            extra['process'] = record.process
+            extra['processName'] = record.processName
+            if hasattr(record, 'stack_info'):
+                extra['stack_info'] = record.stack_info
+            else:
+                extra['stack_info'] = None
+            extra['thread'] = record.thread
+            extra['threadName'] = record.threadName
+        return super(ForwardJSONFormatter, self).json_record(message, extra, record)
+
+
+class ForwardLogHandler(logging.Handler):
+    """
+    A custom log handler that:
+    - Writes incoming logs to disk in chunk files at intervals or size thresholds.
+    - A separate thread reads these chunk files from disk and forwards them.
+    - On success, chunk files are removed.
+    - On failure, chunk files remain for later retry.
+    """
+
+    def __init__(self, endpoint, buffer_path, app_id, labels=None, flush_interval=5, max_chunk_size=5 * 1024 * 1024):
+        # TODO: Set default flush interval to 10 seconds
+        super().__init__()
+        self.endpoint = endpoint
+        self.buffer_path = buffer_path
+        self.app_id = app_id
+        self.labels = labels if labels is not None else {"job": "unmanic"}
+        self.flush_interval = flush_interval
+        self.max_chunk_size = max_chunk_size
+
+        self.log_queue = Queue()
+        self.stop_event = threading.Event()
+
+        # Thread that processes logs from the queue and writes them to disk
+        self.writer_thread = threading.Thread(target=self._process_logs, daemon=True)
+        self.writer_thread.start()
+
+        # Thread that periodically attempts to send logs from disk
+        self.sender_thread = threading.Thread(target=self._send_from_disk, daemon=True)
+        self.sender_thread.start()
+
+    def emit(self, record):
+        try:
+            log_entry = self.format(record)
+
+            # Set log timestamp in nanoseconds
+            ts = str(int(time.time() * 1e9))
+            if hasattr(record, 'created'):
+                ts = str(int(record.created * 1e9))
+
+            # Set default labels
+            labels = {
+                "job":      "unmanic",
+                "logger":   record.name,
+                "level":    record.levelname,
+                "log_type": "APPLICATION_LOG",
+            }
+
+            # If the record has a log_type attribute, override
+            if hasattr(record, 'log_type') and record.log_type:
+                labels['log_type'] = record.log_type
+
+            self.log_queue.put({
+                "labels": labels,
+                "entry":  [ts, log_entry]
+            })
+        except Exception as e:
+            logging.getLogger("Unmanic.ForwardLogHandler").error("Failed to enqueue log: %s", e)
+
+    def _process_logs(self):
+        """
+        Reads logs from the queue and writes them to disk in chunks.
+        Chunks are created either at flush_interval timeout or if max_chunk_size is reached.
+        """
+        buffer = []
+        buffer_size = 0
+        last_flush_time = time.time()
+
+        while not self.stop_event.is_set():
+
+            try:
+                log_entry = self.log_queue.get(timeout=0.2)
+                if log_entry is None:
+                    # Sentinel received, means shutdown is requested
+                    break
+                # Process the log entry
+                buffer.append(log_entry)
+                buffer_size += len(log_entry)
+
+                # If size exceeds max_chunk_size, flush now
+                if buffer_size >= self.max_chunk_size:
+                    self._flush_to_disk(buffer)
+                    buffer = []
+                    buffer_size = 0
+                    last_flush_time = time.time()
+
+            except Empty:
+                # No logs available right now
+                pass
+
+            current_time = time.time()
+            if current_time - last_flush_time >= 5:
+                # Flush to disk if more than 5 seconds have passed
+                if buffer:
+                    self._flush_to_disk(buffer)
+                    buffer = []
+                    buffer_size = 0
+                    last_flush_time = current_time
+
+        # Outside the loop, if we are shutting down and have pending logs, flush them
+        if buffer:
+            self._flush_to_disk(buffer)
+
+    def _flush_to_disk(self, buffer):
+        """
+        Write the given buffer of logs to a new chunk file on disk.
+        The file name includes a timestamp to ensure ordering by time.
+        """
+        try:
+            if not os.path.exists(self.buffer_path):
+                os.makedirs(self.buffer_path)
+
+            if not buffer:
+                # Nothing in buffer
+                return
+
+            timestamp_str = datetime.utcnow().isoformat()
+            buffer_file = os.path.join(self.buffer_path, f"log_buffer_{timestamp_str}.json.lock")
+
+            with open(buffer_file, "w") as f:
+                for log_entry in buffer:
+                    f.write(json.dumps(log_entry) + "\n")
+
+            # Rename the file to indicate it is ready for processing
+            os.rename(buffer_file, buffer_file.rstrip(".lock"))
+        except Exception as e:
+            logging.getLogger("Unmanic.ForwardLogHandler").error("Failed to save logs to disk: %s", e)
+
+    def _send_from_disk(self):
+        """
+        Periodically attempts to send logs from disk.
+        Processes one file at a time, oldest first.
+        If successful (204), deletes the file.
+        If failed, leaves the file for later retry.
+        """
+        while not self.stop_event.is_set():
+            # Attempt to send the oldest file first
+            buffer_files = self._get_buffer_files()
+            if not buffer_files:
+                # No files to send, sleep
+                self.stop_event.wait(timeout=10)
+                continue
+
+            for buffer_file in buffer_files:
+                if self._buffer_file_older_than_one_week(buffer_file):
+                    os.remove(buffer_file)
+                elif not self._attempt_send_file(buffer_file):
+                    # Add a longer pause here and then retry after the delay
+                    self.stop_event.wait(timeout=60)
+                self.stop_event.wait(timeout=0.2)
+            self.stop_event.wait(timeout=0.2)
+
+    def _get_buffer_files(self):
+        """
+        Returns a sorted list of buffer files based on their timestamp in the filename.
+        """
+        if not os.path.exists(self.buffer_path):
+            return []
+        files = [f for f in os.listdir(self.buffer_path) if f.startswith("log_buffer_") and f.endswith(".json")]
+        files.sort()
+        return [os.path.join(self.buffer_path, f) for f in files]
+
+    def _attempt_send_file(self, buffer_file):
+        """
+        Attempt to send the logs from buffer_file.
+        On success, delete the file.
+        On failure, leave it for next retry.
+        """
+        try:
+            buffer = []
+            with open(buffer_file, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        buffer.append(json.loads(line))
+
+            if not buffer:
+                # Empty file, just remove it
+                os.remove(buffer_file)
+                return True
+
+            payload = self._create_payload(buffer)
+            response = requests.post(self.endpoint, json=payload, headers={"Content-Type": "application/json"})
+
+            if response.status_code == 204:
+                # Success, remove the file
+                os.remove(buffer_file)
+                return True
+            else:
+                logging.getLogger("Unmanic.ForwardLogHandler").error("Failed to forward logs from %s to remote host %s: %s %s",
+                                                                     os.path.basename(buffer_file),
+                                                                     self.endpoint,
+                                                                     response.status_code,
+                                                                     response.text)
+                # Leave the file for later retry
+        except requests.exceptions.ConnectionError as e:
+            # Ignore this. We will try again later
+            logging.getLogger("Unmanic.ForwardLogHandler").warning(
+                "ConnectionError on remote endpoint %s. Ensure this URL is reachable by Unmanic.",
+                self.endpoint)
+        except Exception as e:
+            logging.getLogger("Unmanic.ForwardLogHandler").exception("Exception while trying to forward logs from %s: %s",
+                                                                     buffer_file, e)
+            # Leave the file for later retry
+        return False
+
+    @staticmethod
+    def _buffer_file_older_than_one_week(buffer_file):
+        """
+        Check if the log buffer file is older than one week based on its timestamp in the filename.
+
+        The expected filename format is:
+          log_buffer_YYYY-MM-DDTHH:MM:SS.ffffff.json
+
+        Returns True if the timestamp is older than one week, otherwise False.
+        """
+        basename = os.path.basename(buffer_file)
+        prefix = "log_buffer_"
+        suffix = ".json"
+
+        if not (basename.startswith(prefix) and basename.endswith(suffix)):
+            return False  # Filename doesn't match expected pattern.
+
+        # Extract the timestamp part from the filename.
+        timestamp_str = basename[len(prefix):-len(suffix)]
+
+        try:
+            file_timestamp = datetime.fromisoformat(timestamp_str)
+        except ValueError:
+            # Unable to parse the timestamp.
+            return False
+
+        one_week_ago = datetime.now() - timedelta(weeks=1)
+        return file_timestamp < one_week_ago
+
+    def _create_payload(self, buffer):
+        """
+        Create the payload from the given buffer of logs.
+        {
+          "streams": [
+            {
+              "stream": { "label": "value", ... },
+              "values": [
+                [ "<ts in ns>", "<log line>" ],
+                ...
+              ]
+            }
+          ]
+        }
+        """
+        combined_streams = {}
+        for log_item in buffer:
+            stream_key = frozenset(log_item["labels"].items())
+            if stream_key not in combined_streams:
+                combined_streams[stream_key] = {
+                    "stream": dict(log_item["labels"]),
+                    "values": []
+                }
+            combined_streams[stream_key]["values"].append(log_item["entry"])
+
+        return {
+            "app_id": self.app_id,
+            "data":   {"streams": list(combined_streams.values())}
+        }
+
+    def close(self):
+        """
+        Stop the log handler gracefully.
+        Ensures all logs in the queue are flushed to disk.
+        """
+        # Place Sentinel entry into queue to indicate that no more logs should be processed
+        self.log_queue.put(None)
+
+        # Signal the thread to stop
+        self.stop_event.set()
+
+        # Wait for the threads to finish processing
+        self.writer_thread.join()
+        self.sender_thread.join()
+
+        # Explicitly flush any remaining logs in the queue
+        remaining_logs = []
+        while True:
+            try:
+                log_entry = self.log_queue.get(timeout=1)
+                if log_entry is not None:
+                    remaining_logs.append(log_entry)
+            except Empty:
+                # No logs available right now, break loop
+                break
+
+        if remaining_logs:
+            self._flush_to_disk(remaining_logs)
+
+        super().close()
 
 
 class UnmanicLogging:
+    METRIC = 15
     _instance = None
     _lock = threading.Lock()
     _configured = False
-    stream_handler = None  # Class-level stream handler
-    file_handler = None  # Class-level file handler
+    _log_path = None
+    stream_handler = None  # Stream handler
+    file_handler = None  # File handler
+    remote_handler = None  # Remote log handler
 
     def __new__(cls):
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super(UnmanicLogging, cls).__new__(cls)
                 cls._instance._logger = logging.getLogger("Unmanic")
+                logging.addLevelName(cls._instance.METRIC, "METRIC")
                 cls._instance._logger.setLevel(logging.INFO)
                 cls._instance._logger.propagate = False
             return cls._instance
@@ -72,7 +408,7 @@ class UnmanicLogging:
         """
         with self._lock:
             if self._configured:
-                return  # Prevent reconfiguration
+                return
             # Get logger for this class
             init_logger = logging.getLogger(f"Unmanic.UnmanicLogging")
 
@@ -95,12 +431,14 @@ class UnmanicLogging:
                 self.stream_handler.setLevel(logging.CRITICAL)
 
             # Set up file handler if log path exists
-            log_path = settings.get_log_path()
-            if log_path:
-                if not os.path.exists(log_path):
-                    os.makedirs(log_path)
+            self._log_path = settings.get_log_path()
+            if self._log_path:
+                if not os.path.exists(self._log_path):
+                    os.makedirs(self._log_path)
 
-                self.file_handler = logging.FileHandler(os.path.join(log_path, "unmanic.log"))
+                self.file_handler = RotatingFileHandler(
+                    os.path.join(self._log_path, "unmanic.log"), maxBytes=10 * 1024 * 1024, backupCount=5
+                )
                 self.file_handler.setFormatter(formatter)
                 # Set file handler log level based on debugging setting
                 self.file_handler.setLevel(logging.DEBUG if settings.get_debugging() else logging.INFO)
@@ -109,6 +447,29 @@ class UnmanicLogging:
             # Set root logger level
             self._logger.setLevel(logging.DEBUG if settings.get_debugging() else logging.INFO)
             self._configured = True
+
+    @staticmethod
+    def metric(name: str, timestamp: datetime = None, **kwargs):
+        """
+        Custom log method for the METRIC level.
+        Logs directly to the remote_handler, if enabled.
+        """
+        instance = UnmanicLogging()
+        # Metrics only go to the https handler
+        if instance.remote_handler:
+            if not timestamp:
+                timestamp = datetime.now()
+            log_record = {
+                'log_type':         'METRIC',
+                'metric_name':      name,
+                'metric_timestamp': f"{int(timestamp.timestamp())}.{timestamp.microsecond}",
+                **kwargs
+            }
+            log_message = " ".join(
+                f'{key}="{value}"' if " " in str(value) else f"{key}={value}"
+                for key, value in log_record.items() if value
+            )
+            instance._logger.log(instance.METRIC, log_message, extra=log_record)
 
     @staticmethod
     def enable_debugging():
@@ -161,3 +522,29 @@ class UnmanicLogging:
             instance._logger.info("Stream handler formatter updated.")
         else:
             instance._logger.warning("No stream handler found to update formatter.")
+
+    @staticmethod
+    def enable_remote_logging(endpoint, app_id):
+        instance = UnmanicLogging()
+        if instance.remote_handler:
+            instance._logger.info("Remote logging is already enabled.")
+            return
+
+        json_formatter = ForwardJSONFormatter()
+        buffer_path = os.path.join(instance._log_path, "buffer")
+        instance.remote_handler = ForwardLogHandler(endpoint, buffer_path, app_id)
+        instance.remote_handler.setFormatter(json_formatter)
+        instance._logger.addHandler(instance.remote_handler)
+        instance._logger.info("Remote logging enabled.")
+
+    @staticmethod
+    def disable_remote_logging():
+        instance = UnmanicLogging()
+        if not instance.remote_handler:
+            instance._logger.info("Remote logging is already disabled.")
+            return
+
+        instance._logger.removeHandler(instance.remote_handler)
+        instance.remote_handler.close()
+        instance.remote_handler = None
+        instance._logger.info("Remote logging disabled.")

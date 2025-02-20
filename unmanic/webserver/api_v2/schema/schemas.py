@@ -1056,6 +1056,36 @@ class SessionStateSuccessSchema(BaseSchema):
     )
 
 
+class SessionAuthCodeSchema(BaseSchema):
+    """Schema for returning a verification auth code request"""
+
+    user_code = fields.Str(
+        required=True,
+        description="The user code",
+        example="123456",
+    )
+    device_code = fields.Str(
+        required=True,
+        description="A device code",
+        example="6f6867e0006f7240c9a85703a521f1705873630355f68ebbcf251a07b080172b",
+    )
+    verification_uri = fields.Str(
+        required=True,
+        description="The verification URI to submit the code manually",
+        example="/support-auth-api/link",
+    )
+    verification_uri_complete = fields.Str(
+        required=True,
+        description="User email",
+        example="/support-auth-api/v2/app_auth/link_with_user_code/123456",
+    )
+    expires_in = fields.Number(
+        required=True,
+        description="The time until the user_code expires",
+        example=120,
+    )
+
+
 # SETTINGS
 # ========
 

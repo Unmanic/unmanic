@@ -45,6 +45,7 @@ components:
           example: &id001
             name:
             - The thing that went wrong.
+          additionalProperties: {}
         traceback:
           type: array
           description: Attached exception traceback (if developer mode is enabled)
@@ -91,6 +92,7 @@ components:
           type: object
           description: Attached request body validation errors
           example: *id001
+          additionalProperties: {}
         traceback:
           type: array
           description: Attached exception traceback (if developer mode is enabled)
@@ -125,6 +127,7 @@ components:
             label: /tmp
           items:
             type: object
+            additionalProperties: {}
         files:
           type: array
           minItems: 0
@@ -136,6 +139,7 @@ components:
             label: /file2.txt
           items:
             type: object
+            additionalProperties: {}
       required:
       - directories
       - files
@@ -336,6 +340,7 @@ components:
           description: The navigation links of the notification
           example:
             url: https://docs.unmanic.app
+          additionalProperties: {}
       required:
       - icon
       - label
@@ -742,6 +747,7 @@ components:
             label: Second Option
           items:
             type: object
+            additionalProperties: {}
         slider_options:
           type: object
           description: Additional options if the input_type is set to 'slider'
@@ -749,6 +755,7 @@ components:
             min: 1
             max: 8
             suffix: M
+          additionalProperties: {}
         display:
           type: string
           description: Should the setting input be displayed (visible, hidden)
@@ -1119,6 +1126,35 @@ components:
       required:
       - level
       - uuid
+    SessionAuthCode:
+      type: object
+      properties:
+        user_code:
+          type: string
+          description: The user code
+          example: '123456'
+        device_code:
+          type: string
+          description: A device code
+          example: 6f6867e0006f7240c9a85703a521f1705873630355f68ebbcf251a07b080172b
+        verification_uri:
+          type: string
+          description: The verification URI to submit the code manually
+          example: /support-auth-api/link
+        verification_uri_complete:
+          type: string
+          description: User email
+          example: /support-auth-api/v2/app_auth/link_with_user_code/123456
+        expires_in:
+          type: number
+          description: The time until the user_code expires
+          example: 120
+      required:
+      - device_code
+      - expires_in
+      - user_code
+      - verification_uri
+      - verification_uri_complete
     SettingsReadAndWrite:
       type: object
       properties:
@@ -1134,6 +1170,7 @@ components:
             follow_symlinks: true
             run_full_scan_on_start: false
             cache_path: /tmp/unmanic
+          additionalProperties: {}
       required:
       - settings
     SettingsSystemConfig:
@@ -1143,6 +1180,7 @@ components:
           type: object
           description: The current system configuration
           example: {}
+          additionalProperties: {}
       required:
       - configuration
     RequestSettingsRemoteInstallationAddressValidation:
@@ -1176,6 +1214,7 @@ components:
           type: object
           description: The data from the remote installation
           example: {}
+          additionalProperties: {}
       required:
       - installation
     WorkerEventScheduleResults:
@@ -1293,6 +1332,7 @@ components:
             preloading_count: 2
             enable_checksum_validation: false
             enable_config_missing_libraries: false
+          additionalProperties: {}
         distributed_worker_count_target:
           type: integer
           description: The target count of workers to be distributed across any configured
@@ -1382,6 +1422,7 @@ components:
             enable_inotify: false
             priority_score: 0
             tags: []
+          additionalProperties: {}
         plugins:
           type: object
           description: The library's enabled plugins
@@ -1392,6 +1433,7 @@ components:
               name: Notify Plex
               description: Notify Plex on completion of a task.
               icon: https://raw.githubusercontent.com/Josh5/unmanic.plugin.notify_plex/master/icon.png
+          additionalProperties: {}
       required:
       - library_config
     SettingsLibraryPluginConfigExport:
@@ -1427,6 +1469,7 @@ components:
                 icon: https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png
               postprocessor.file_move: []
               postprocessor.task_result: []
+          additionalProperties: {}
         library_config:
           type: object
           description: The library configuration
@@ -1438,6 +1481,7 @@ components:
             enable_inotify: false
             priority_score: 0
             tags: []
+          additionalProperties: {}
       required:
       - plugins
     SettingsLibraryPluginConfigImport:
@@ -1447,10 +1491,12 @@ components:
           type: object
           description: The library's enabled plugins
           example: *id004
+          additionalProperties: {}
         library_config:
           type: object
           description: The library configuration
           example: *id005
+          additionalProperties: {}
         library_id:
           type: integer
           example: 1
@@ -1538,6 +1584,7 @@ components:
               icon: https://raw.githubusercontent.com/Josh5/unmanic.plugin.video_remuxer/master/icon.png
               description: Remux a video file to the configured container
               success: true
+          additionalProperties: {}
         subprocess:
           type: object
           description: The status of the process currently being executed
@@ -1545,6 +1592,7 @@ components:
             pid: 140408939493120
             percent: None
             elapsed: None
+          additionalProperties: {}
       required:
       - current_file
       - current_task
@@ -3056,6 +3104,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
+        '400':
+          description: Bad request; Check `messages` for any validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '404':
+          description: Bad request; Requested endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+        '405':
+          description: Bad request; Requested method is not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+        '500':
+          description: Internal error; Check `error` for exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+  /session/get_app_auth_code:
+    get:
+      description: Initiates the device authentication flow.
+      responses:
+        '200':
+          description: 'Sample response: Initiates the device authentication flow.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionAuthCode'
         '400':
           description: Bad request; Check `messages` for any validation errors
           content:

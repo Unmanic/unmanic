@@ -364,23 +364,8 @@ class Session(object, metaclass=SingletonType):
                 self.logger.debug('Failed to verify auth (api_post)')
         return r.json(), r.status_code
 
-    def verify_token(self):
-        if not self.user_access_token:
-            # No valid tokens exist
-            return False
-        # Check if access token is valid
-        u = self.set_full_api_url('support-auth-api', 1, 'user_auth/verify_token')
-        r = self.requests_session.get(u, timeout=self.timeout)
-        if r.status_code in [200, 201, 202]:
-            # Token is valid
-            return True
-        elif r.status_code > 403:
-            # Issue with server... Just carry on with current access token can't fix that here.
-            raise RemoteApiException(f"Token verification request failed for {u}", r.status_code)
-
-        # Access token is not valid. Refresh it.
-        self.logger.debug('Unable to verify authentication token. Refreshing...')
-        d = {"applicationToken": self.application_token}
+    def get_access_token(self):
+        d = {"applicationToken": self.application_token, "uuid": self.get_installation_uuid()}
         u = self.set_full_api_url('support-auth-api', 2, 'app_auth/get_token')
         r = self.requests_session.post(u, json=d, timeout=self.timeout)
         if r.status_code in [200, 201, 202]:
@@ -396,15 +381,34 @@ class Session(object, metaclass=SingletonType):
             raise RemoteApiException(f"Token refresh request failed for {u}", r.status_code)
         elif r.status_code in [403]:
             # Log this failure in the debug logs
-            self.logger.info('Failed to refresh access token.')
+            self.logger.info('Failed to get access token.')
             response = r.json()
             for message in response.get('messages', []):
                 self.logger.info('Remote Message: %s', message)
-        # Just blank the class attribute.
-        # It is fine for requests to be sent with further requests.
-        # User will appear to be logged out.
-        self.user_access_token = None
         return False
+
+    def verify_token(self):
+        if not self.user_access_token:
+            # No valid tokens exist
+            return False
+        # Check if access token is valid
+        u = self.set_full_api_url('support-auth-api', 1, 'user_auth/verify_token')
+        r = self.requests_session.get(u, timeout=self.timeout)
+        if r.status_code in [200, 201, 202]:
+            # Token is valid
+            return True
+        elif r.status_code > 403:
+            # Issue with server... Just carry on with current access token can't fix that here.
+            raise RemoteApiException(f"Token verification request failed for {u}", r.status_code)
+
+        # Access token is not valid. Refresh it.
+        self.logger.debug('Unable to verify access token. Refreshing...')
+        if not self.get_access_token():
+            # Blank the class attribute.
+            # It is fine for requests to be sent with further requests.
+            # User will appear to be logged out.
+            self.user_access_token = None
+            return False
 
     def fetch_user_data(self):
         # Set default level to 0
@@ -635,8 +639,8 @@ class Session(object, metaclass=SingletonType):
         It runs for a maximum of "expires_in" seconds.
         """
         start_time = time.time()
+        self.logger.info("Polling for app token")
         while time.time() - start_time < expires_in:
-            self.logger.info("Polling for app token with device_code: %s", device_code)
             time.sleep(interval)
 
             # Try to fetch token if this was the initial login
@@ -645,18 +649,17 @@ class Session(object, metaclass=SingletonType):
                 "device_code": device_code,
             }
             response, status_code = self.api_post('support-auth-api', 2, 'app_auth/retrieve_app_token', post_data)
-            self.logger.info(response)
-            self.logger.info(status_code)
             if status_code > 403:
                 # Issue with server... Just carry on with current access token can't fix that here.
                 raise RemoteApiException("App token retrieval request failed for %s", status_code)
             elif status_code in [200] and response.get('data', {}).get('applicationToken'):
                 # Store the updated access token
-                self.logger.info(response)
-                # self.__update_session_auth(access_token=response.get('data', {}).get('accessToken'))
+                self.logger.info("Application linked to account")
                 # Store the updated refresh token
                 self.application_token = response.get('data', {}).get('applicationToken')
+                self.get_access_token()
                 token_verified = self.verify_token()
+                self.logger.info("Application auth token verified: %s", token_verified)
                 return token_verified
 
         self.logger.info("Polling for app token timed out after %s seconds.", expires_in)

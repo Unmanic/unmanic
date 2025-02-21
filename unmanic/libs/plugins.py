@@ -141,6 +141,15 @@ class PluginsHandler(object, metaclass=SingletonType):
             1,
             api_path,
         )
+        if status_code == 401:
+            # Something is wrong with registration. Let's resend it and try again.
+            self.logger.debug(f"Plugin repo returned a request to register. Code:{status_code}")
+            session.register_unmanic()
+            data, status_code = session.api_get(
+                'unmanic-api',
+                1,
+                api_path,
+            )
         if status_code >= 500:
             self.logger.debug(f"Failed to fetch plugin repo from '{api_path}'. Code:{status_code}")
         return data

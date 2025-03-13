@@ -220,6 +220,8 @@ class ForwardLogHandler(logging.Handler):
                     # Add a longer pause here and then retry after the delay
                     self.stop_event.wait(timeout=60)
                 self.stop_event.wait(timeout=0.2)
+                if self.stop_event.is_set():
+                    break
             self.stop_event.wait(timeout=0.2)
 
     def _get_buffer_files(self):

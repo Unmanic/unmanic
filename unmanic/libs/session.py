@@ -660,6 +660,7 @@ class Session(object, metaclass=SingletonType):
                 self.get_access_token()
                 token_verified = self.verify_token()
                 self.logger.info("Application auth token verified: %s", token_verified)
+                self.register_unmanic(force=True)
                 return token_verified
 
         self.logger.info("Polling for app token timed out after %s seconds.", expires_in)

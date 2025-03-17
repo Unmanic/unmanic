@@ -205,6 +205,7 @@ class Session(object, metaclass=SingletonType):
         if isinstance(self.created, datetime.datetime):
             self.created = self.created.timestamp()
 
+        self.application_token = str(current_installation.application_token)
         self.__update_session_auth(access_token=current_installation.user_access_token)
 
     def __store_installation_data(self, force_save_access_token=False):
@@ -365,6 +366,9 @@ class Session(object, metaclass=SingletonType):
         return r.json(), r.status_code
 
     def get_access_token(self):
+        if not self.application_token:
+            # No application token set
+            return False
         d = {"applicationToken": self.application_token, "uuid": self.get_installation_uuid()}
         u = self.set_full_api_url('support-auth-api', 2, 'app_auth/get_token')
         r = self.requests_session.post(u, json=d, timeout=self.timeout)
@@ -389,6 +393,9 @@ class Session(object, metaclass=SingletonType):
 
     def verify_token(self):
         if not self.user_access_token:
+            if self.get_access_token():
+                # Successfully refreshed access token
+                return True
             # No valid tokens exist
             return False
         # Check if access token is valid
@@ -403,12 +410,10 @@ class Session(object, metaclass=SingletonType):
 
         # Access token is not valid. Refresh it.
         self.logger.debug('Unable to verify access token. Refreshing...')
-        if not self.get_access_token():
-            # Blank the class attribute.
-            # It is fine for requests to be sent with further requests.
-            # User will appear to be logged out.
-            self.user_access_token = None
-            return False
+        if self.get_access_token():
+            # Successfully refreshed access token
+            return True
+        return False
 
     def fetch_user_data(self):
         # Set default level to 0
@@ -451,7 +456,7 @@ class Session(object, metaclass=SingletonType):
             return True
 
         # Finally, if no valid session and no user account (and at this point force_checkin was True), run the sign-out process
-        self.sign_out()
+        self.sign_out(remote=False)
         return False
 
     def auth_trial_account(self):
@@ -463,6 +468,7 @@ class Session(object, metaclass=SingletonType):
             # Token refreshed
             # Store the updated access token
             response = r.json()
+            self.logger.debug("Updating session with trial token")
             self.__update_session_auth(access_token=response.get('data', {}).get('accessToken'))
             # Fetch user data
             self.level = self.fetch_user_data()
@@ -551,20 +557,21 @@ class Session(object, metaclass=SingletonType):
                 return True
             return False
 
-    def sign_out(self):
+    def sign_out(self, remote=True):
         """
         Remove any user auth
 
         :return:
         """
-        post_data = {
-            "uuid": self.get_installation_uuid(),
-        }
-        response, status_code = self.api_post('unmanic-api', 1,
-                                              'installation_auth/remove_installation_registration',
-                                              post_data)
-        # Save data
-        self.logger.debug("Remote registry logout response - Code: %s, Body: %s", status_code, response)
+        if remote:
+            post_data = {
+                "uuid": self.get_installation_uuid(),
+            }
+            response, status_code = self.api_post('unmanic-api', 1,
+                                                  'installation_auth/remove_installation_registration',
+                                                  post_data)
+            # Save data
+            self.logger.debug("Remote registry logout response - Code: %s, Body: %s", status_code, response)
         self.__reset_session_installation_data()
         return True
 

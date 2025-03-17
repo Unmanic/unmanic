@@ -80,12 +80,12 @@ class ForwardLogHandler(logging.Handler):
     - On failure, chunk files remain for later retry.
     """
 
-    def __init__(self, endpoint, buffer_path, app_id, labels=None, flush_interval=5, max_chunk_size=5 * 1024 * 1024):
+    def __init__(self, buffer_path, labels=None, flush_interval=5, max_chunk_size=5 * 1024 * 1024):
         # TODO: Set default flush interval to 10 seconds
         super().__init__()
-        self.endpoint = endpoint
         self.buffer_path = buffer_path
-        self.app_id = app_id
+        self.endpoint = None
+        self.app_id = None
         self.labels = labels if labels is not None else {"job": "unmanic"}
         self.flush_interval = flush_interval
         self.max_chunk_size = max_chunk_size
@@ -100,6 +100,10 @@ class ForwardLogHandler(logging.Handler):
         # Thread that periodically attempts to send logs from disk
         self.sender_thread = threading.Thread(target=self._send_from_disk, daemon=True)
         self.sender_thread.start()
+
+    def configure_endpoint(self, endpoint, app_id):
+        self.endpoint = endpoint
+        self.app_id = app_id
 
     def emit(self, record):
         try:
@@ -206,6 +210,10 @@ class ForwardLogHandler(logging.Handler):
         If failed, leaves the file for later retry.
         """
         while not self.stop_event.is_set():
+            # Just loop if no endpoint is set
+            if not self.endpoint or not self.app_id:
+                self.stop_event.wait(timeout=10)
+                continue
             # Attempt to send the oldest file first
             buffer_files = self._get_buffer_files()
             if not buffer_files:
@@ -214,9 +222,16 @@ class ForwardLogHandler(logging.Handler):
                 continue
 
             for buffer_file in buffer_files:
+                # Ignore files older than one week
                 if self._buffer_file_older_than_one_week(buffer_file):
                     os.remove(buffer_file)
-                elif not self._attempt_send_file(buffer_file):
+                    self.stop_event.wait(timeout=0.2)
+                    continue
+                # Ignore if no endpoint is set
+                if not self.endpoint or not self.app_id:
+                    self.stop_event.wait(timeout=0.2)
+                    continue
+                if not self._attempt_send_file(buffer_file):
                     # Add a longer pause here and then retry after the delay
                     self.stop_event.wait(timeout=60)
                 self.stop_event.wait(timeout=0.2)
@@ -446,6 +461,13 @@ class UnmanicLogging:
                 self.file_handler.setLevel(logging.DEBUG if settings.get_debugging() else logging.INFO)
                 self._logger.addHandler(self.file_handler)
 
+            # Setup ForwardLogHandler
+            json_formatter = ForwardJSONFormatter()
+            buffer_path = os.path.join(self._log_path, "buffer")
+            self.remote_handler = ForwardLogHandler(buffer_path)
+            self.remote_handler.setFormatter(json_formatter)
+            self._logger.addHandler(self.remote_handler)
+
             # Set root logger level
             self._logger.setLevel(logging.DEBUG if settings.get_debugging() else logging.INFO)
             self._configured = True
@@ -457,21 +479,19 @@ class UnmanicLogging:
         Logs directly to the remote_handler, if enabled.
         """
         instance = UnmanicLogging()
-        # Metrics only go to the https handler
-        if instance.remote_handler:
-            if not timestamp:
-                timestamp = datetime.now()
-            log_record = {
-                'log_type':         'METRIC',
-                'metric_name':      name,
-                'metric_timestamp': f"{int(timestamp.timestamp())}.{timestamp.microsecond}",
-                **kwargs
-            }
-            log_message = " ".join(
-                f'{key}="{value}"' if " " in str(value) else f"{key}={value}"
-                for key, value in log_record.items() if value
-            )
-            instance._logger.log(instance.METRIC, log_message, extra=log_record)
+        if not timestamp:
+            timestamp = datetime.now()
+        log_record = {
+            'log_type':         'METRIC',
+            'metric_name':      name,
+            'metric_timestamp': f"{int(timestamp.timestamp())}.{timestamp.microsecond}",
+            **kwargs
+        }
+        log_message = " ".join(
+            f'{key}="{value}"' if " " in str(value) else f"{key}={value}"
+            for key, value in log_record.items() if value
+        )
+        instance._logger.log(instance.METRIC, log_message, extra=log_record)
 
     @staticmethod
     def enable_debugging():
@@ -528,25 +548,11 @@ class UnmanicLogging:
     @staticmethod
     def enable_remote_logging(endpoint, app_id):
         instance = UnmanicLogging()
-        if instance.remote_handler:
-            instance._logger.info("Remote logging is already enabled.")
-            return
-
-        json_formatter = ForwardJSONFormatter()
-        buffer_path = os.path.join(instance._log_path, "buffer")
-        instance.remote_handler = ForwardLogHandler(endpoint, buffer_path, app_id)
-        instance.remote_handler.setFormatter(json_formatter)
-        instance._logger.addHandler(instance.remote_handler)
+        instance.remote_handler.configure_endpoint(endpoint, app_id)
         instance._logger.info("Remote logging enabled.")
 
     @staticmethod
     def disable_remote_logging():
         instance = UnmanicLogging()
-        if not instance.remote_handler:
-            instance._logger.info("Remote logging is already disabled.")
-            return
-
-        instance._logger.removeHandler(instance.remote_handler)
-        instance.remote_handler.close()
-        instance.remote_handler = None
+        instance.remote_handler.configure_endpoint(None, None)
         instance._logger.info("Remote logging disabled.")

@@ -160,8 +160,9 @@ class LibraryScannerManager(threading.Thread):
             # Check if library scanner is enabled on any library
             if library.get_enable_scanner():
                 # Run library scan
-                self.logger.info("Running full library scan on library '%s'", library.get_name())
-                self.scan_library_path(library.get_path(), library.get_id())
+                library_name = library.get_name()
+                self.logger.info("Running full library scan on library '%s'", library_name)
+                self.scan_library_path(library_name, library.get_path(), library.get_id())
         if no_libraries_configured:
             self.logger.info("No libraries are configured to run a library scan")
 
@@ -197,10 +198,11 @@ class LibraryScannerManager(threading.Thread):
         for manager_id in self.file_test_managers:
             self.file_test_managers[manager_id].abort_flag.set()
 
-    def scan_library_path(self, library_path, library_id):
+    def scan_library_path(self, library_name, library_path, library_id):
         """
         Run a scan of the given library path
 
+        :param library_name:
         :param library_path:
         :param library_id:
         :return:
@@ -221,7 +223,7 @@ class LibraryScannerManager(threading.Thread):
         for results_manager_id in range(int(concurrent_file_testers)):
             self.start_results_manager_thread(results_manager_id, status_updates, library_id)
 
-        start_time = time.time()
+        scan_start_time = time.time()
 
         frontend_messages.update(
             {
@@ -317,7 +319,16 @@ class LibraryScannerManager(threading.Thread):
             self.file_test_managers[manager_id].abort_flag.set()
             self.file_test_managers[manager_id].join(2)
 
-        self.logger.warning("Library scan completed in %s seconds", str((time.time() - start_time)))
+        scan_end_time = time.time()
+        scan_duration = str((scan_end_time - scan_start_time))
+        self.logger.warning("Library scan completed in %s seconds", scan_duration)
+        UnmanicLogging.metric("library_scan_completed",
+                              library_name=library_name,
+                              library_path=library_path,
+                              library_id=library_id,
+                              scan_start_time=scan_start_time,
+                              scan_end_time=scan_end_time,
+                              scan_duration=scan_duration)
 
         # Run a manual garbage collection
         gc.collect()

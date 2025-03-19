@@ -2,339 +2,360 @@ name: Build All Packages CI
 
 on:
   push:
-    branches: [ 'dev-**', 'pr-**', staging, master ]
-    tags: [ '**' ]
+    branches: ["dev-**", "pr-**", "staging", "master"]
+    tags: ["**"]
   pull_request:
-    branches: [ staging, master ]
+    branches: ["staging", "master"]
   schedule:
     # At 02:30 on Saturday
-    - cron:  '30 2 * * 6'
+    - cron: "30 2 * * 6"
 
 jobs:
-
   integration_tests:
-
     name: Run integration tests
     runs-on: ubuntu-latest
 
     steps:
-    # Fetch shallow git repository
-    - uses: actions/checkout@v4
+      # Fetch shallow git repository
+      - uses: actions/checkout@v4
 
-    # Restore test video's cache
-    - name: Restore test videos cache
-      uses: actions/cache@v4
-      id: test_videos_cache
-      with:
-        path: tests/support_/videos
-        key: ${{ runner.os }}-test_videos-${{ hashFiles('tests/scripts_/download_test_files.sh') }}
-        restore-keys: |
-          ${{ runner.os }}-test_videos-
+      # Restore test video's cache
+      - name: Restore test videos cache
+        uses: actions/cache@v4
+        id: test_videos_cache
+        with:
+          path: tests/support_/videos
+          key: ${{ runner.os }}-test_videos-${{ hashFiles('tests/scripts_/download_test_files.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-test_videos-
 
-    # Download any missing test videos
-    - name: Download any missing test videos
-      if: success() && steps.test_videos_cache.outputs.cache-hit != 'true'
-      run: |
-        bash -c "tests/scripts_/download_test_files.sh"
+      # Download any missing test videos
+      - name: Download any missing test videos
+        if: success() && steps.test_videos_cache.outputs.cache-hit != 'true'
+        run: |
+          bash -c "tests/scripts_/download_test_files.sh"
 
-    # Setup python environment
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.8'
+      # Setup python environment
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
 
-    # Restore the python cache if it exists
-    - name: Restore python cache
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+      # Restore the python cache if it exists
+      - name: Restore python cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-    # Restore the apt cache if it exists
-    # TODO: Fix this cache. Its not really working at all. It would be nice to have tho.
-    - name: Restore python cache
-      id: apt-cache
-      uses: actions/cache@v4
-      with:
-        path: /var/cache/apt/archives
-        key: ${{ runner.os }}-apt-cache
+      # Restore the apt cache if it exists
+      # TODO: Fix this cache. Its not really working at all. It would be nice to have tho.
+      - name: Restore python cache
+        id: apt-cache
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-apt-cache
 
-    # Download FFMPEG
-    - name: Download FFMPEG
-      if: success()
-      run: |
-        [[ ! -z `sudo find /var/cache/apt/archives -type f -name "ffmpeg*.deb"` ]] && echo "no update" || sudo apt-get update
-        sudo apt-get install -yq --no-install-recommends --download-only ffmpeg
+      # Download FFMPEG
+      - name: Download FFMPEG
+        if: success()
+        run: |
+          [[ ! -z `sudo find /var/cache/apt/archives -type f -name "ffmpeg*.deb"` ]] && echo "no update" || sudo apt-get update
+          sudo apt-get install -yq --no-install-recommends --download-only ffmpeg
 
-    # Install FFMPEG
-    - name: Install FFMPEG
-      if: success()
-      run: |
-        sudo apt-get install -yq --no-install-recommends ffmpeg
+      # Install FFMPEG
+      - name: Install FFMPEG
+        if: success()
+        run: |
+          sudo apt-get install -yq --no-install-recommends ffmpeg
 
-    # Install python dependencies for testing unmanic
-    - name: Install python dependencies
-      if: success()
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+      # Install python dependencies for testing unmanic
+      - name: Install python dependencies
+        if: success()
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 
-    # Run pytest unit tests
-    - name: Test with pytest
-      if: success()
-      run: |
-        echo "Using test videos:"
-        ls -l ./tests/support_/videos/*/
-        pytest -m integrationtest
+      # Run pytest unit tests
+      - name: Test with pytest
+        if: success()
+        run: |
+          echo "Using test videos:"
+          ls -l ./tests/support_/videos/*/
+          pytest -m integrationtest
 
   py_build:
-
     name: Build Python package
     needs: integration_tests
     runs-on: ubuntu-latest
 
     steps:
-    # Fetch full git repository and all submodules
-    - name: Checkout project
-      uses: actions/checkout@v4
-      with:
-        submodules: 'recursive'
+      # Fetch full git repository and all submodules
+      - name: Checkout project
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
 
-    # Checkout tags
-    - name: Fetch tags
-      run: |
-        git fetch --prune --unshallow --tags
-        echo exit code $?
-        git tag --list
+      # Checkout tags
+      - name: Fetch tags
+        run: |
+          git fetch --prune --unshallow --tags
+          echo exit code $?
+          git tag --list
 
-    # Setup python environment
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      # Setup python environment
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-    # Restore the python cache if it exists
-    - name: Restore python cache
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+      # Restore the python cache if it exists
+      - name: Restore python cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-    # Install python dependencies for building unmanic
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+      # Install python dependencies for building unmanic
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 
-    # Setup node environment for building unmanic's webui
-    - uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      # Setup node environment for building unmanic's webui
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
-    # Build python dist package
-    - name: Build python dist package
-      id: build_py
-      run: |
-        echo "Short version:"
-        python ./setup.py  --quiet --version
-        echo "Long version:"
-        python ./setup.py  --quiet fullversion
-        REPO_URL="https://github.com/${GITHUB_REPOSITORY}/raw/${GITHUB_REF#refs/heads}/"
-        sed -i "s|(./docs/|(${REPO_URL:?}/docs/|g" README.md
-        python -m build --no-isolation --skip-dependency-check --wheel
-        python -m build --no-isolation --skip-dependency-check --sdist
+      # Build python dist package
+      - name: Build python dist package
+        id: build_py
+        run: |
+          echo "Short version:"
+          python ./setup.py  --quiet --version
+          echo "Long version:"
+          python ./setup.py  --quiet fullversion
+          REPO_URL="https://github.com/${GITHUB_REPOSITORY}/raw/${GITHUB_REF#refs/heads}/"
+          sed -i "s|(./docs/|(${REPO_URL:?}/docs/|g" README.md
+          python -m build --no-isolation --skip-dependency-check --wheel
+          python -m build --no-isolation --skip-dependency-check --sdist
 
-    # Read the python package distribution data (save version to file)
-    - name: Read python package distribution data
-      id: py_build_data
-      run: |
-        PY_VERSION=$(python ./setup.py  --quiet --version)
-        PY_BDIST_PATH=$(ls  dist/*.whl | head -n1)
-        PY_BDIST_FILE=${PY_BDIST_PATH#*/}
-        echo "py_version=${PY_VERSION}" >> $GITHUB_OUTPUT
-        echo "py_bdist_file=${PY_BDIST_FILE}" >> $GITHUB_OUTPUT
-        echo "py_bdist_path=${PY_BDIST_PATH}" >> $GITHUB_OUTPUT
-        echo ${PY_VERSION} > dist/VERSION.txt
+      # Read the python package distribution data (save version to file)
+      - name: Read python package distribution data
+        id: py_build_data
+        run: |
+          PY_VERSION=$(python ./setup.py  --quiet --version)
+          PY_BDIST_PATH=$(ls  dist/*.whl | head -n1)
+          PY_BDIST_FILE=${PY_BDIST_PATH#*/}
+          echo "py_version=${PY_VERSION}" >> $GITHUB_OUTPUT
+          echo "py_bdist_file=${PY_BDIST_FILE}" >> $GITHUB_OUTPUT
+          echo "py_bdist_path=${PY_BDIST_PATH}" >> $GITHUB_OUTPUT
+          echo ${PY_VERSION} > dist/VERSION.txt
 
-    # Upload python package distribution data artifact
-    - uses: actions/upload-artifact@v4
-      with:
-        name: unmanic-py-dist-data-${{ steps.py_build_data.outputs.py_version }}
-        path: dist/
+      # Upload python package distribution data artifact
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unmanic-py-dist-data-${{ steps.py_build_data.outputs.py_version }}
+          path: dist/
 
   build_docker:
-
     name: Build Docker Image
     needs: py_build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
-    # Fetch shallow git repository
-    - name: Checkout
-      uses: actions/checkout@v4
+      # ---
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    # Fetch all artifacts
-    - name: Download Artifact
-      uses: actions/download-artifact@v4
-      with:
-        path: ./artifacts/
+      # ---
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts/
 
-    # Restore python package distribution data
-    - name: Restore python package distribution data
-      id: py_build_data
-      run: |
-        mkdir -p ./dist
-        find ./artifacts/ -type f -name "*.whl" -exec cp -n {} ./dist/ \;
-        find ./artifacts/ -type f -name "VERSION.txt" -exec cp -n {} ./dist/ \;
-        ls -l ./dist/
-        PY_VERSION=$(cat ./dist/VERSION.txt)
-        echo "py_version=${PY_VERSION}" >> $GITHUB_OUTPUT
+      # ---
+      - name: Restore python package distribution data
+        id: py_build_data
+        run: |
+          mkdir -p ./dist
+          find ./artifacts/ -type f -name "*.whl" -exec cp -n {} ./dist/ \;
+          find ./artifacts/ -type f -name "VERSION.txt" -exec cp -n {} ./dist/ \;
+          ls -l ./dist/
+          PY_VERSION=$(cat ./dist/VERSION.txt)
+          echo "py_version=${PY_VERSION}" >> $GITHUB_OUTPUT
 
-    # Use QEMU to build for other arch
-    - name: Set up QEMU
-      if: success()
-      id: qemu
-      uses: docker/setup-qemu-action@v3
-      with:
-        image: tonistiigi/binfmt:latest
-        platforms: all
+      # ---
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 #v3.6.0
 
-    # Use configure docker to use buildx to build the image
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      if: success()
-      id: buildx
-      with:
-        version: latest
+      # ---
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@6524bf65af31da8d45b59e8c27de4bd072b392f5 #v3.8.0
 
-    # List available build platforms
-    - name: Available platforms
-      if: success()
-      run: echo ${{ steps.buildx.outputs.platforms }}
+      # List available build platforms
+      - name: Available platforms
+        if: success()
+        run: echo ${{ steps.buildx.outputs.platforms }}
 
-    # Generate 'prepare' build arguments to be retrieved later on
-    - name: Prepare
-      if: success()
-      id: prepare
-      run: |
-        echo  "GITHUB_REF:${GITHUB_REF}"
-        echo  "GITHUB_REPOSITORY:${GITHUB_REPOSITORY}"
-        DOCKER_IMAGE=docker.io/josh5/unmanic
-        VERSION_TAG=${GITHUB_REF#refs/*/}
+      # Generate 'prepare' build arguments to be retrieved later on
+      - name: Prepare
+        if: success()
+        id: prepare
+        run: |
+          echo "GITHUB_REF:${GITHUB_REF}"
+          echo "GITHUB_REPOSITORY:${GITHUB_REPOSITORY}"
+          VERSION_TAG=${GITHUB_REF#refs/*/}
+          SHA_SHORT="${GITHUB_SHA::7}"
+          ORG=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
-        DOCKER_TAGS=""
-        if [[ ${VERSION_TAG%/merge} == 'master' ]]; then
-          DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_IMAGE}:latest,"
-        elif [[ ${VERSION_TAG%/merge} == 'staging' ]]; then
-          DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_IMAGE}:staging,"
-        elif [[ ${VERSION_TAG%/merge} =~ "dev-"* ]]; then
-          DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_IMAGE}:${VERSION_TAG%/merge},"
-        fi
-        if [[ ${GITHUB_REF} == refs/tags/* ]]; then
-          VERSION=${GITHUB_REF#refs/tags/}
-          if [[ ${VERSION} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}[-\w]*$ ]]; then
-            DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_IMAGE}:${VERSION},"
-            DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_IMAGE}:latest,"
+          SERVICE_NAME=unmanic
+          DOCKER_HUB_IMAGE=docker.io/josh5/${SERVICE_NAME:?}
+          GHCR_IMAGE=ghcr.io/${ORG:?}/${SERVICE_NAME:?}
+
+          DOCKER_TAGS=""
+          if [[ ${GITHUB_REF} == refs/heads/master ]]; then
+            DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_HUB_IMAGE}:latest,${GHCR_IMAGE}:latest,"
+          elif [[ ${GITHUB_REF} == refs/heads/staging ]]; then
+            DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_HUB_IMAGE}:staging,${GHCR_IMAGE}:staging,"
+          elif [[ ${GITHUB_REF} == refs/heads/dev-* ]]; then
+            DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_HUB_IMAGE}:${VERSION_TAG},${GHCR_IMAGE}:${VERSION_TAG},"
+          elif [[ ${GITHUB_REF} == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            if [[ ${VERSION} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}[-\w]*$ ]]; then
+              DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_HUB_IMAGE}:${VERSION},${GHCR_IMAGE}:${VERSION},"
+              DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_HUB_IMAGE}:latest,${GHCR_IMAGE}:latest,"
+            fi
+          elif [[ ${GITHUB_REF} == refs/pull/* ]]; then
+            PR_NUMBER=$(echo ${GITHUB_REF} | cut -d'/' -f3)
+            # For PR builds, only tag the GHCR image.
+            DOCKER_TAGS="${GHCR_IMAGE}:pr-${PR_NUMBER},"
           fi
-        fi
 
-        DOCKER_PUSH="true"
-        if [[ ${DOCKER_IMAGE} != 'docker.io/josh5/unmanic' ]]; then
-          DOCKER_PUSH="false"
-        fi
-        if [[ ${VERSION_TAG%/merge} =~ "pr-"* ]]; then
-          DOCKER_PUSH="false"
-        fi
-        if [[ ${VERSION_TAG%/merge} =~ ^[0-9]+$ ]]; then
-          DOCKER_PUSH="false"
-        fi
+          DOCKER_PUSH="true"
+          if [[ ${DOCKER_HUB_IMAGE} != 'docker.io/josh5/unmanic' ]]; then
+            DOCKER_PUSH="false"
+          fi
 
-        echo "docker_image=${DOCKER_IMAGE}" >> $GITHUB_OUTPUT
-        echo "docker_tags=$(echo ${DOCKER_TAGS} | sed 's/,$//')" >> $GITHUB_OUTPUT
-        echo "docker_platforms=linux/amd64,linux/arm64" >> $GITHUB_OUTPUT
-        echo "docker_push=${DOCKER_PUSH}" >> $GITHUB_OUTPUT
+          echo "Build: [$(date +"%F %T")] [${GITHUB_REF_NAME}] [${GITHUB_SHA}]" > ./docker/overlay/version.txt
+          cat ./docker/overlay/version.txt
 
-    # Cache the build
-    - name: Cache Docker layers
-      uses: actions/cache@v4
-      id: cache
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
-    
-    # Login to Docker Hub
-    - name: Login to Docker Hub
-      if: success() && (startsWith(github.ref, 'refs/heads/') || startsWith(github.ref, 'refs/tags/'))
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-    
-    # Run docker build and push
-    - name: Docker Build and Push
-      if: success()
-      uses: docker/build-push-action@v3
-      with:
-        context: .
-        file: docker/Dockerfile
-        platforms: ${{ steps.prepare.outputs.docker_platforms }}
-        pull: true
-        push: ${{ steps.prepare.outputs.docker_push }}
-        tags: |
-          ${{ steps.prepare.outputs.docker_tags }}
-        cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+          echo "docker_hub_image:${DOCKER_HUB_IMAGE:?}"
+          echo "docker_hub_image=${DOCKER_HUB_IMAGE:?}" >> $GITHUB_OUTPUT
 
-    # Keep only latest cache
-    #   https://github.com/docker/build-push-action/issues/252
-    #   https://github.com/moby/buildkit/issues/1896
-    - name: Move cache
-      if: always()
-      run: |
-        if [[ -e /tmp/.buildx-cache-new ]]; then
-          echo "Cleaning up old cache..."
-          rm -rf /tmp/.buildx-cache
-          mv -v /tmp/.buildx-cache-new /tmp/.buildx-cache
-        fi
+          echo "ghcr_image:${GHCR_IMAGE:?}"
+          echo "ghcr_image=${GHCR_IMAGE:?}" >> $GITHUB_OUTPUT
+
+          echo "sha_short:${SHA_SHORT:?}"
+          echo "sha_short=${SHA_SHORT:?}" >> $GITHUB_OUTPUT
+
+          echo "service_name:${SERVICE_NAME:?}"
+          echo "service_name=${SERVICE_NAME:?}" >> $GITHUB_OUTPUT
+
+          echo "docker_image:${DOCKER_HUB_IMAGE:?}"
+          echo "docker_image=${DOCKER_HUB_IMAGE:?}" >> $GITHUB_OUTPUT
+
+          echo "docker_tags:$(echo ${DOCKER_TAGS} | sed 's/,$//')"
+          echo "docker_tags=$(echo ${DOCKER_TAGS} | sed 's/,$//')" >> $GITHUB_OUTPUT
+
+          echo "docker_push:${DOCKER_PUSH:?}"
+          echo "docker_push=${DOCKER_PUSH:?}" >> $GITHUB_OUTPUT
+
+          echo "docker_build_date:${BUILD_DATE:?}" 
+          echo "docker_build_date=${BUILD_DATE:?}" >> $GITHUB_OUTPUT
+
+          echo "docker_platforms=linux/amd64,linux/arm64" >> $GITHUB_OUTPUT
+
+      # ---
+      - name: Log into GHCR registry
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---
+      - name: Log into Docker Hub registry
+        if: success() && (startsWith(github.ref, 'refs/heads/') || startsWith(github.ref, 'refs/tags/'))
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 #v3.3.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # ---
+      - name: Docker meta
+        if: success()
+        id: meta
+        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 #v5.6.1
+        with:
+          images: |
+            ${{ steps.prepare.outputs.docker_image }}
+          labels: |
+            maintainer=Josh.5
+            source.version=${{ steps.prepare.outputs.sha_short }}
+            source.project=Unmanic
+            source.service=${{ steps.prepare.outputs.service_name }}
+            org.opencontainers.image.title=${{ steps.prepare.outputs.service_name }}
+            org.opencontainers.image.created=${{ steps.prepare.outputs.docker_build_date }}
+
+      # ---
+      - name: Build Image
+        if: success()
+        uses: docker/build-push-action@b32b51a8eda65d6793cd0494a773d4f6bcef32dc #v6.11.0
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          pull: "true"
+          push: ${{ steps.prepare.outputs.docker_push }}
+          tags: |
+            ${{ steps.prepare.outputs.docker_tags }}
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ steps.prepare.outputs.service_name }}-main
+          cache-to: type=gha,scope=${{ steps.prepare.outputs.service_name }}-main,mode=max
 
   build_pypi:
-
     name: Publish package to PyPI
     needs: py_build
     runs-on: ubuntu-latest
     if: github.event_name != 'schedule'
 
     steps:
-    # Fetch shallow git repository
-    - name: Checkout
-      uses: actions/checkout@v4
+      # Fetch shallow git repository
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    # Fetch all artifacts
-    - name: Download Artifact
-      uses: actions/download-artifact@v4
-      with:
-        path: ./artifacts/
+      # Fetch all artifacts
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts/
 
-    # Restore python package distribution data
-    - name: Restore python package distribution data
-      id: py_build_data
-      run: |
-        mkdir -p ./dist
-        find ./artifacts/ -type f -name "*.whl" -exec cp -n {} ./dist/ \;
-        find ./artifacts/ -type f -name "*.tar.gz" -exec cp -n {} ./dist/ \;
-        ls -l ./dist/
+      # Restore python package distribution data
+      - name: Restore python package distribution data
+        id: py_build_data
+        run: |
+          mkdir -p ./dist
+          find ./artifacts/ -type f -name "*.whl" -exec cp -n {} ./dist/ \;
+          find ./artifacts/ -type f -name "*.tar.gz" -exec cp -n {} ./dist/ \;
+          ls -l ./dist/
 
-    # Push the artifacts to PyPI repo
-    - name: Publish distribution package to PyPI
-      if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
-      uses: pypa/gh-action-pypi-publish@master
-      with:
-        password: ${{ secrets.PYPI_TOKEN }}
+      # Push the artifacts to PyPI repo
+      - name: Publish distribution package to PyPI
+        if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}

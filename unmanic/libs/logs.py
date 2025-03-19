@@ -385,7 +385,7 @@ class ForwardLogHandler(logging.Handler):
 
 
 class UnmanicLogging:
-    METRIC = 15
+    METRIC = 9
     _instance = None
     _lock = threading.Lock()
     _configured = False
@@ -466,10 +466,11 @@ class UnmanicLogging:
             buffer_path = os.path.join(self._log_path, "buffer")
             self.remote_handler = ForwardLogHandler(buffer_path)
             self.remote_handler.setFormatter(json_formatter)
+            self.remote_handler.setLevel(self.METRIC)
             self._logger.addHandler(self.remote_handler)
 
             # Set root logger level
-            self._logger.setLevel(logging.DEBUG if settings.get_debugging() else logging.INFO)
+            self._logger.setLevel(self.METRIC)
             self._configured = True
 
     @staticmethod

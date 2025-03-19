@@ -249,9 +249,6 @@ jobs:
             DOCKER_PUSH="false"
           fi
 
-          echo "Build: [$(date +"%F %T")] [${GITHUB_REF_NAME}] [${GITHUB_SHA}]" > ./docker/overlay/version.txt
-          cat ./docker/overlay/version.txt
-
           echo "docker_hub_image:${DOCKER_HUB_IMAGE:?}"
           echo "docker_hub_image=${DOCKER_HUB_IMAGE:?}" >> $GITHUB_OUTPUT
 

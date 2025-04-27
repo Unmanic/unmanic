@@ -644,7 +644,7 @@ class Foreman(threading.Thread):
                         self._log("Exception when fetching completed task report from worker", message2=str(e),
                                   level="exception")
 
-                # Setup the correct number of workers
+                # Set up the correct number of workers
                 if not self.abort_flag.is_set():
                     self.init_worker_threads()
 
@@ -653,6 +653,22 @@ class Foreman(threading.Thread):
                     # Pause all workers
                     self.pause_all_worker_threads()
                     continue
+
+                # Record metrics for each worker
+                workers_info = self.get_all_worker_status()
+                for worker_info in workers_info:
+                    UnmanicLogging.metric("worker_info",
+                                          idle=worker_info.get('idle'),
+                                          paused=worker_info.get('paused'),
+                                          start_time=worker_info.get('start_time'),
+                                          current_task=worker_info.get('current_task'),
+                                          current_file=worker_info.get('current_file'),
+                                          worker_log_tail=worker_info.get('worker_log_tail'),
+                                          runners_info=worker_info.get('runners_info'),
+                                          subprocess_pid=worker_info.get('subprocess', {}).get('pid'),
+                                          subprocess_percent=worker_info.get('subprocess', {}).get('percent'),
+                                          subprocess_elapsed=worker_info.get('subprocess', {}).get('elapsed'),
+                                          )
 
                 # Manage worker event schedules
                 self.manage_event_schedules()

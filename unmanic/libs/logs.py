@@ -80,12 +80,13 @@ class ForwardLogHandler(logging.Handler):
     - On failure, chunk files remain for later retry.
     """
 
-    def __init__(self, buffer_path, labels=None, flush_interval=5, max_chunk_size=5 * 1024 * 1024):
+    def __init__(self, buffer_path, installation_name, labels=None, flush_interval=5, max_chunk_size=5 * 1024 * 1024):
         # TODO: Set default flush interval to 10 seconds
         super().__init__()
         self.buffer_path = buffer_path
         self.endpoint = None
         self.app_id = None
+        self.installation_name = installation_name
         self.labels = labels if labels is not None else {"job": "unmanic"}
         self.flush_interval = flush_interval
         self.max_chunk_size = max_chunk_size
@@ -116,10 +117,12 @@ class ForwardLogHandler(logging.Handler):
 
             # Set default labels
             labels = {
-                "job":      "unmanic",
-                "logger":   record.name,
-                "level":    record.levelname,
-                "log_type": "APPLICATION_LOG",
+                "job":               "unmanic",
+                "logger":            record.name,
+                "level":             record.levelno,
+                "levelname":         record.levelname,
+                "installation_name": self.installation_name,
+                "log_type":          "APPLICATION_LOG",
             }
 
             # If the record has a log_type attribute, override
@@ -140,7 +143,7 @@ class ForwardLogHandler(logging.Handler):
         """
         buffer = []
         buffer_size = 0
-        last_flush_time = time.time()
+        last_flush_time = int(time.time())
 
         while not self.stop_event.is_set():
 
@@ -158,13 +161,13 @@ class ForwardLogHandler(logging.Handler):
                     self._flush_to_disk(buffer)
                     buffer = []
                     buffer_size = 0
-                    last_flush_time = time.time()
+                    last_flush_time = int(time.time())
 
             except Empty:
                 # No logs available right now
                 pass
 
-            current_time = time.time()
+            current_time = int(time.time())
             if current_time - last_flush_time >= 5:
                 # Flush to disk if more than 5 seconds have passed
                 if buffer:
@@ -464,7 +467,8 @@ class UnmanicLogging:
             # Setup ForwardLogHandler
             json_formatter = ForwardJSONFormatter()
             buffer_path = os.path.join(self._log_path, "buffer")
-            self.remote_handler = ForwardLogHandler(buffer_path)
+            installation_name = settings.get_installation_name()
+            self.remote_handler = ForwardLogHandler(buffer_path, installation_name)
             self.remote_handler.setFormatter(json_formatter)
             self.remote_handler.setLevel(self.METRIC)
             self._logger.addHandler(self.remote_handler)

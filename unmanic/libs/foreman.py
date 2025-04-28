@@ -665,9 +665,7 @@ class Foreman(threading.Thread):
                                           current_file=worker_info.get('current_file'),
                                           worker_log_tail=worker_info.get('worker_log_tail'),
                                           runners_info=worker_info.get('runners_info'),
-                                          subprocess_pid=worker_info.get('subprocess', {}).get('pid'),
-                                          subprocess_percent=worker_info.get('subprocess', {}).get('percent'),
-                                          subprocess_elapsed=worker_info.get('subprocess', {}).get('elapsed'),
+                                          subprocess=worker_info.get('subprocess'),
                                           )
 
                 # Manage worker event schedules

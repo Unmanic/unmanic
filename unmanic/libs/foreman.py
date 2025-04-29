@@ -658,6 +658,7 @@ class Foreman(threading.Thread):
                 workers_info = self.get_all_worker_status()
                 for worker_info in workers_info:
                     UnmanicLogging.metric("worker_info",
+                                          worker_name=worker_info.get('name'),
                                           idle=worker_info.get('idle'),
                                           paused=worker_info.get('paused'),
                                           start_time=worker_info.get('start_time'),

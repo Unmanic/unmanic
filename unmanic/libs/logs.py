@@ -119,8 +119,7 @@ class ForwardLogHandler(logging.Handler):
             labels = {
                 "job":               "unmanic",
                 "logger":            record.name,
-                "level":             record.levelno,
-                "levelname":         record.levelname,
+                "level":             record.levelname,
                 "installation_name": self.installation_name,
                 "log_type":          "APPLICATION_LOG",
             }

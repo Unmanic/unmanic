@@ -229,8 +229,18 @@ class Session(object, metaclass=SingletonType):
 
     def __configure_log_forwarding(self, session_valid=False):
         if session_valid:
-            # TODO: Fetch endpoint from unmanic-api
+            # Import endpoint from env vars
             endpoint = os.environ.get('UNMANIC_REMOTE_LOGING_ENDPOINT')
+            # If not set in env vars, fetch endpoint from unmanic-api
+            if not endpoint.startswith("http"):
+                endpoint = None
+                try:
+                    # Fetch endpoint from Unmanic site API
+                    response, status_code = self.api_get('unmanic-api', 1, 'central_config/get_datastore_endpoint')
+                    if status_code in [200] and response.get("success"):
+                        endpoint = response.get("data").get("endpoint")
+                except Exception as e:
+                    self.logger.debug('Exception while fetching Unmanic Central Datastore endpoint - %s', e)
             if endpoint:
                 UnmanicLogging.enable_remote_logging(endpoint, self.uuid)
                 return

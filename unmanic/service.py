@@ -31,10 +31,12 @@
 """
 import argparse
 import os
-import time
 import queue
 import signal
+import time
 import threading
+
+import psutil
 
 from unmanic import config, metadata
 from unmanic.libs import libraryscanner, common, eventmonitor
@@ -171,6 +173,47 @@ class RootService:
         })
         return scheduled_tasks_manager
 
+    def start_resource_logger(self):
+        def log_resources():
+            pid = os.getpid()
+            proc = psutil.Process(pid)
+            cpu_count = psutil.cpu_count(logical=True)
+            start_time = time.time()
+
+            while not self.event.is_set():
+                try:
+                    # Fetch CPU info
+                    cpu_percent = proc.cpu_percent(interval=None)
+                    normalised_cpu_percent = cpu_percent / cpu_count
+
+                    # Fetch Memory info
+                    mem_info = proc.memory_info()
+                    rss_bytes = mem_info.rss
+                    vms_bytes = mem_info.vms
+
+                    # Calculate uptime in seconds
+                    uptime = int(time.time() - start_time)
+
+                    UnmanicLogging.metric("root_service_resources",
+                                          pid=pid,
+                                          uptime=uptime,
+                                          cpu_percent=normalised_cpu_percent,
+                                          rss_bytes=rss_bytes,
+                                          vms_bytes=vms_bytes)
+                except Exception as e:
+                    self.logger.warning(f"Resource logging failed: {e}")
+                    time.sleep(5)
+                    continue
+
+                time.sleep(5)  # Polling interval
+
+        thread = threading.Thread(target=log_resources, daemon=True)
+        thread.start()
+        self.threads.append({
+            'name':   'RootServiceResourceLogger',
+            'thread': thread
+        })
+
     def initial_register_unmanic(self):
         from unmanic.libs import session
         s = session.Session(dev_api=self.dev_api)
@@ -218,6 +261,9 @@ class RootService:
 
         # Start new thread to run the scheduled tasks manager
         self.start_scheduled_tasks_manager()
+
+        # Start main thread resource logger
+        self.start_resource_logger()
 
     def stop_threads(self):
         self.logger.info("Stopping all threads")

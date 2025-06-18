@@ -230,7 +230,7 @@ class Session(object, metaclass=SingletonType):
     def __configure_log_forwarding(self, session_valid=False):
         if session_valid:
             # Import endpoint from env vars
-            endpoint = os.environ.get('UNMANIC_REMOTE_LOGING_ENDPOINT', '')
+            endpoint = os.environ.get('UNMANIC_REMOTE_LOGGING_ENDPOINT', '')
             # If not set in env vars, fetch endpoint from unmanic-api
             if not endpoint or not endpoint.startswith("http"):
                 endpoint = None

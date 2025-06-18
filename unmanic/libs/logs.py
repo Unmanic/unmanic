@@ -271,7 +271,7 @@ class ForwardLogHandler(logging.Handler):
                 return True
 
             payload = self._create_payload(buffer)
-            response = requests.post(self.endpoint, json=payload, headers={"Content-Type": "application/json"})
+            response = requests.post(f"{self.endpoint}/api/v1/push", json=payload, headers={"Content-Type": "application/json"})
 
             if response.status_code == 204:
                 # Success, remove the file

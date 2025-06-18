@@ -191,6 +191,10 @@ class RootService:
                     rss_bytes = mem_info.rss
                     vms_bytes = mem_info.vms
 
+                    # Calculate percentage of memory used relative to total system RAM
+                    total_system_ram = psutil.virtual_memory().total
+                    mem_percent = (rss_bytes / total_system_ram) * 100
+
                     # Calculate uptime in seconds
                     uptime = int(time.time() - start_time)
 
@@ -198,6 +202,7 @@ class RootService:
                                           pid=pid,
                                           uptime=uptime,
                                           cpu_percent=normalised_cpu_percent,
+                                          mem_percent=mem_percent,
                                           rss_bytes=rss_bytes,
                                           vms_bytes=vms_bytes)
                 except Exception as e:

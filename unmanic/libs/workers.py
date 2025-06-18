@@ -97,6 +97,11 @@ class SubprocessResourceMonitor(threading.Thread):
                 self.parent_worker.worker_subprocess_rss_bytes = total_rss
                 self.parent_worker.worker_subprocess_vms_bytes = total_vms
 
+                # Calculate percentage of memory used relative to total system RAM
+                total_system_ram = psutil.virtual_memory().total
+                mem_percent = (total_rss / total_system_ram) * 100
+                self.parent_worker.worker_subprocess_mem_percent = mem_percent
+
             except psutil.NoSuchProcess:
                 break
             except Exception as e:
@@ -119,6 +124,7 @@ class Worker(threading.Thread):
     worker_subprocess_percent = None
     worker_subprocess_elapsed = None
     worker_subprocess_cpu_percent = None
+    worker_subprocess_mem_percent = None
     worker_subprocess_rss_bytes = None
     worker_subprocess_vms_bytes = None
 
@@ -217,6 +223,7 @@ class Worker(threading.Thread):
                 'percent':     str(self.worker_subprocess_percent),
                 'elapsed':     str(self.worker_subprocess_elapsed),
                 'cpu_percent': str(self.worker_subprocess_cpu_percent),
+                'mem_percent': str(self.worker_subprocess_mem_percent),
                 'rss_bytes':   str(self.worker_subprocess_rss_bytes),
                 'vms_bytes':   str(self.worker_subprocess_vms_bytes),
             },
@@ -272,6 +279,7 @@ class Worker(threading.Thread):
         self.worker_subprocess_percent = ''
         self.worker_subprocess_elapsed = '0'
         self.worker_subprocess_cpu_percent = '0'
+        self.worker_subprocess_mem_percent = '0'
         self.worker_subprocess_rss_bytes = '0'
         self.worker_subprocess_vms_bytes = '0'
 

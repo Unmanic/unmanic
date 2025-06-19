@@ -128,6 +128,10 @@ class ForwardLogHandler(logging.Handler):
             if hasattr(record, 'log_type') and record.log_type:
                 labels['log_type'] = record.log_type
 
+            # If the record has a metric_name attribute, add it as a label
+            if hasattr(record, 'metric_name') and record.metric_name:
+                labels['metric_name'] = record.metric_name
+
             self.log_queue.put({
                 "labels": labels,
                 "entry":  [ts, log_entry]

@@ -207,7 +207,7 @@ class ForwardLogHandler(logging.Handler):
     def _send_from_disk(self):
         """
         Periodically attempts to send logs from disk.
-        Processes one file at a time, oldest first.
+        Processes one file at a time, oldest first (important).
         If successful (204), deletes the file.
         If failed, leaves the file for later retry.
         """
@@ -224,8 +224,8 @@ class ForwardLogHandler(logging.Handler):
                 continue
 
             for buffer_file in buffer_files:
-                # Ignore files older than one week
-                if self._buffer_file_older_than_one_week(buffer_file):
+                # Ignore files that are too old
+                if self._buffer_file_too_old(buffer_file):
                     os.remove(buffer_file)
                     self.stop_event.wait(timeout=0.2)
                     continue
@@ -271,7 +271,8 @@ class ForwardLogHandler(logging.Handler):
                 return True
 
             payload = self._create_payload(buffer)
-            response = requests.post(f"{self.endpoint}/api/v1/push", json=payload, headers={"Content-Type": "application/json"})
+            response = requests.post(f"{self.endpoint}/api/v1/push", json=payload,
+                                     headers={"Content-Type": "application/json"})
 
             if response.status_code == 204:
                 # Success, remove the file
@@ -296,14 +297,14 @@ class ForwardLogHandler(logging.Handler):
         return False
 
     @staticmethod
-    def _buffer_file_older_than_one_week(buffer_file):
+    def _buffer_file_too_old(buffer_file, max_days=14):
         """
-        Check if the log buffer file is older than one week based on its timestamp in the filename.
+        Check if the log buffer file is older than the specified number of days based on its timestamp in the filename.
 
         The expected filename format is:
           log_buffer_YYYY-MM-DDTHH:MM:SS.ffffff.json
 
-        Returns True if the timestamp is older than one week, otherwise False.
+        Returns True if the timestamp is older than max_days, otherwise False.
         """
         basename = os.path.basename(buffer_file)
         prefix = "log_buffer_"
@@ -321,8 +322,8 @@ class ForwardLogHandler(logging.Handler):
             # Unable to parse the timestamp.
             return False
 
-        one_week_ago = datetime.now() - timedelta(weeks=1)
-        return file_timestamp < one_week_ago
+        max_age_threshold = datetime.now() - timedelta(days=max_days)
+        return file_timestamp < max_age_threshold
 
     def _create_payload(self, buffer):
         """

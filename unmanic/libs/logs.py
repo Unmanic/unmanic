@@ -68,6 +68,14 @@ class ForwardJSONFormatter(JSONFormatter):
                 extra['stack_info'] = None
             extra['thread'] = record.thread
             extra['threadName'] = record.threadName
+        # Choose time from metric_timestamp or data_timestamp
+        ts_str = extra.get('metric_timestamp') or extra.get('data_timestamp')
+        if ts_str:
+            try:
+                ts_float = float(ts_str)
+                extra['time'] = datetime.utcfromtimestamp(ts_float).isoformat()
+            except Exception:
+                pass  # Ignore this. The default formatter will add a "time" record
         return super(ForwardJSONFormatter, self).json_record(message, extra, record)
 
 
@@ -117,7 +125,7 @@ class ForwardLogHandler(logging.Handler):
 
             # Set default labels
             labels = {
-                "job":               "unmanic",
+                "service_name":      "unmanic",  # This is a required label
                 "logger":            record.name,
                 "level":             record.levelname,
                 "installation_name": self.installation_name,
@@ -131,6 +139,10 @@ class ForwardLogHandler(logging.Handler):
             # If the record has a metric_name attribute, add it as a label
             if hasattr(record, 'metric_name') and record.metric_name:
                 labels['metric_name'] = record.metric_name
+
+            # If the record has a data_primary_key attribute, add it as a label
+            if hasattr(record, 'data_primary_key') and record.data_primary_key:
+                labels['data_primary_key'] = record.data_primary_key
 
             self.log_queue.put({
                 "labels": labels,
@@ -393,6 +405,7 @@ class ForwardLogHandler(logging.Handler):
 
 class UnmanicLogging:
     METRIC = 9
+    DATA = 8
     _instance = None
     _lock = threading.Lock()
     _configured = False
@@ -474,11 +487,11 @@ class UnmanicLogging:
             installation_name = settings.get_installation_name()
             self.remote_handler = ForwardLogHandler(buffer_path, installation_name)
             self.remote_handler.setFormatter(json_formatter)
-            self.remote_handler.setLevel(self.METRIC)
+            self.remote_handler.setLevel(self.DATA)
             self._logger.addHandler(self.remote_handler)
 
             # Set root logger level
-            self._logger.setLevel(self.METRIC)
+            self._logger.setLevel(self.DATA)
             self._configured = True
 
     @staticmethod
@@ -501,6 +514,25 @@ class UnmanicLogging:
             for key, value in log_record.items() if value
         )
         instance._logger.log(instance.METRIC, log_message, extra=log_record)
+
+    @staticmethod
+    def data(data_primary_key: str, data_search_key: str = None, timestamp: datetime = None, **kwargs):
+        """
+        Custom log method for the DATA level.
+        Logs directly to the remote_handler, if enabled.
+        """
+        instance = UnmanicLogging()
+        if not timestamp:
+            timestamp = datetime.now()
+        log_record = {
+            'log_type':         'DATA',
+            'data_primary_key': data_primary_key,
+            'data_search_key':  data_search_key,
+            'data_timestamp':   f"{int(timestamp.timestamp())}.{timestamp.microsecond}",
+            **kwargs
+        }
+        log_message = "DATA STREAM"
+        instance._logger.log(instance.DATA, log_message, extra=log_record)
 
     @staticmethod
     def enable_debugging():

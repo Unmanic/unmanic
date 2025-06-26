@@ -329,6 +329,14 @@ class LibraryScannerManager(threading.Thread):
                               scan_start_time=scan_start_time,
                               scan_end_time=scan_end_time,
                               scan_duration=scan_duration)
+        UnmanicLogging.data("last_library_scan",
+                            data_search_key=library_id,  # Key this metric by the library_id
+                            library_name=library_name,
+                            library_path=library_path,
+                            library_id=library_id,
+                            scan_start_time=scan_start_time,
+                            scan_end_time=scan_end_time,
+                            scan_duration=scan_duration)
 
         # Run a manual garbage collection
         gc.collect()

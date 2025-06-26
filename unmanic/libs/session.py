@@ -586,16 +586,20 @@ class Session(object, metaclass=SingletonType):
 
         :return:
         """
-        if remote:
-            post_data = {
-                "uuid": self.get_installation_uuid(),
-            }
-            response, status_code = self.api_post('unmanic-api', 1,
-                                                  'installation_auth/remove_installation_registration',
-                                                  post_data)
-            # The only way we can now log out is if the auth server response with true
-            # Save data
-            self.logger.debug("Remote registry logout response - Code: %s, Body: %s", status_code, response)
+        try:
+            if remote:
+                post_data = {
+                    "uuid": self.get_installation_uuid(),
+                }
+                response, status_code = self.api_post('unmanic-api', 1,
+                                                      'installation_auth/remove_installation_registration',
+                                                      post_data)
+                # The only way we can now log out is if the auth server response with true
+                # Save data
+                self.logger.debug("Remote registry logout response - Code: %s, Body: %s", status_code, response)
+        except RemoteApiException as e:
+            self.logger.warning(
+                "Failed to reach remote server to request a logout. This is fine, we can continue to logout the app locally.")
         self.__reset_session_installation_data()
         return True
 

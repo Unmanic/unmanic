@@ -77,7 +77,7 @@ class Session(object, metaclass=SingletonType):
     """
     non supporter linked installations count
     """
-    link_count = 5
+    link_count = 3
 
     """
     picture_uri - The user avatar
@@ -126,14 +126,19 @@ class Session(object, metaclass=SingletonType):
         self.requests_session = requests.Session()
         self.token_poll_task = None
         self.logger.info('Initialising new session object')
+        self.created = None
+        self.last_check = None
 
     def __created_older_than_x_days(self, days=1):
+        if not self.created:
+            # There is no session created. How did we get here???
+            return False
         # (86400 = 24 hours)
         seconds = (days * 86400)
         # Get session expiration time
         time_now = time.time()
         time_when_session_expires = self.created + seconds
-        # Check that the time create is less than 24 hours old
+        # Check that the time create is less than X days old
         if time_now < time_when_session_expires:
             return False
         return True
@@ -149,13 +154,12 @@ class Session(object, metaclass=SingletonType):
         # Last checked less than a min ago... just keep the current session.
         # This check is only to prevent spamming requests when the site API is unreachable
         # Only check in every 40 mins (2400s) minimum. Never ignore a checkin for more than 45 mins (2700s)
-        ### if self.last_check and 2700 > (time.time() - self.last_check) < 2400:
-        if self.last_check and 45 > (time.time() - self.last_check) < 40:
+        if self.last_check and 2700 > (time.time() - self.last_check) < 2400:
             return True
         # If the session has never been created, return false
         if not self.created:
             return False
-        # Check if the time the session was created is less than 1 day old
+        # Check if the time the session was created is less than X days old
         if not self.__created_older_than_x_days(days=2):
             # Only try to recreate the session once a day
             return True
@@ -171,7 +175,7 @@ class Session(object, metaclass=SingletonType):
         # Get the time now in seconds
         seconds = time.time()
         # Create a seconds offset of some random number between 300 (5 mins) and 900 (15 mins)
-        seconds_offset = random.randint(300, 900 - 1)
+        seconds_offset = random.randint(300, 900)
         # Set the created flag with the seconds variable plus a random offset to avoid people joining
         #   together to register if the site goes down
         self.created = (seconds + seconds_offset)
@@ -426,12 +430,14 @@ class Session(object, metaclass=SingletonType):
         return False
 
     def fetch_user_data(self):
-        # Set default level to 0
-        updated_level = 0
-        response, status_code = self.api_get('support-auth-api', 1, 'user_auth/user_info')
+        response, status_code = self.api_get('support-auth-api', 2, 'user_info/get')
+        if status_code == 401:
+            # API return a 401. Set back to default level 0
+            self.level = 0
+            return
         if status_code > 403:
             # Failed to fetch data from server. Ignore this for now. Will try again later.
-            raise RemoteApiException("Failed to fetch user info from user_auth/user_info", status_code)
+            raise RemoteApiException("Failed to fetch user info from user_info/get", status_code)
         if status_code in [200, 201, 202] and response.get('success'):
             # Get user data from response data
             user_data = response.get('data', {}).get('user')
@@ -443,8 +449,7 @@ class Session(object, metaclass=SingletonType):
                 # Set email from user data
                 self.email = user_data.get("email", "")
                 # Update level from response data (default back to 0)
-                updated_level = int(user_data.get("supporter_level", 0))
-        return updated_level
+                self.level = int(user_data.get("supporter_level", 0))
 
     def auth_user_account(self, force_checkin=False):
         # Don't bother if the user has never logged in
@@ -462,7 +467,7 @@ class Session(object, metaclass=SingletonType):
 
         # If the token was verified and is valid, fetch user info
         if token_verified:
-            self.level = self.fetch_user_data()
+            self.fetch_user_data()
             return True
 
         # Finally, if no valid session and no user account (and at this point force_checkin was True), run the sign-out process
@@ -481,7 +486,7 @@ class Session(object, metaclass=SingletonType):
             self.logger.debug("Updating session with trial token")
             self.__update_session_auth(access_token=response.get('data', {}).get('accessToken'))
             # Fetch user data
-            self.level = self.fetch_user_data()
+            self.fetch_user_data()
             # Store the updated session cookies
             self.__store_installation_data()
             self.__configure_log_forwarding(session_valid=True)  # TODO: Remove from here. It wont work with trials.
@@ -554,18 +559,26 @@ class Session(object, metaclass=SingletonType):
                 raise RemoteApiException("Failed to register installation to installation_auth/register", status_code)
 
             # Allow an extension for the session for 7 days without an internet connection
+            # We will get here if we received a 403 from the unmanic-api. We should just ignore that for a few days
             if self.__created_older_than_x_days(days=7):
                 # Reset the session - Unmanic should phone home once every 7 days
                 self.__reset_session_installation_data()
+            else:
+                self.logger.debug("Allowing session extension")
             return False
         except RemoteApiException as e:
             self.logger.error("Exception while registering Unmanic with remote API: %s", e)
+            if self.level < 2:
+                # Upgrade supporter level here to avoid stopping anything
+                # (this function will return false below to indicate a failure in updating the session)
+                self.level = 100
         except Exception as e:
             self.logger.debug("Exception while registering Unmanic: %s", e, exc_info=True)
             if self.__check_session_valid():
                 # If the session is still valid, just return true. Perhaps the internet is down and it timed out?
                 return True
             return False
+        return False
 
     def sign_out(self, remote=True):
         """
@@ -580,6 +593,7 @@ class Session(object, metaclass=SingletonType):
             response, status_code = self.api_post('unmanic-api', 1,
                                                   'installation_auth/remove_installation_registration',
                                                   post_data)
+            # The only way we can now log out is if the auth server response with true
             # Save data
             self.logger.debug("Remote registry logout response - Code: %s, Body: %s", status_code, response)
         self.__reset_session_installation_data()

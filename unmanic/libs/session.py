@@ -572,6 +572,7 @@ class Session(object, metaclass=SingletonType):
                 # Upgrade supporter level here to avoid stopping anything
                 # (this function will return false below to indicate a failure in updating the session)
                 self.level = 100
+                self.logger.debug("Setting trial application level while remote servers are down", self.level)
         except Exception as e:
             self.logger.debug("Exception while registering Unmanic: %s", e, exc_info=True)
             if self.__check_session_valid():
@@ -688,6 +689,7 @@ class Session(object, metaclass=SingletonType):
                 # Issue with server... Just carry on with current access token can't fix that here.
                 raise RemoteApiException("App token retrieval request failed for %s", status_code)
             elif status_code in [200] and response.get('data', {}).get('applicationToken'):
+                time.sleep(interval)  # Wait for {interval} before we use this new app token
                 # Store the updated access token
                 self.logger.info("Application linked to account")
                 # Store the updated refresh token

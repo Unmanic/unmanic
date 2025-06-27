@@ -56,6 +56,7 @@ class Foreman(threading.Thread):
         self.remote_workers_pending_task_queue = queue.Queue(maxsize=1)
         self.complete_queue = queue.Queue()
         self.worker_threads = {}
+        self.paused_worker_threads = []
         self.remote_task_manager_threads = {}
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
@@ -79,6 +80,7 @@ class Foreman(threading.Thread):
         getattr(self.logger, level)(message)
 
     def stop(self):
+        self.paused_worker_threads = []
         self.abort_flag.set()
         # Stop all workers
         # To avoid having the dictionary change size during iteration,
@@ -489,14 +491,13 @@ class Foreman(threading.Thread):
         frontend_messages.remove_item('pendingTaskHaltedPostProcessorQueueFull')
         return False
 
-    def pause_worker_thread(self, worker_id):
+    def pause_worker_thread(self, worker_id, record_paused=False):
         """
         Pauses a single worker thread
 
         :param worker_id:
-        :type worker_id:
+        :param record_paused:
         :return:
-        :rtype:
         """
         if worker_id not in self.worker_threads:
             self._log("Asked to pause Worker ID '{}', but this was not found.".format(worker_id), level='warning')
@@ -505,16 +506,24 @@ class Foreman(threading.Thread):
         if not self.worker_threads[worker_id].paused_flag.is_set():
             self._log("Asked to pause Worker ID '{}'".format(worker_id), level='debug')
             self.worker_threads[worker_id].paused_flag.set()
+            if record_paused and worker_id not in self.paused_worker_threads:
+                self.paused_worker_threads.append(worker_id)
         return True
 
-    def pause_all_worker_threads(self, worker_group_id=None):
-        """Pause all threads"""
+    def pause_all_worker_threads(self, worker_group_id=None, record_paused=False):
+        """
+        Pause all threads
+
+        :param worker_group_id:
+        :param record_paused:
+        :return:
+        """
         result = True
         for thread in self.worker_threads:
             # Limit by worker group if requested
             if worker_group_id and self.worker_threads[thread].worker_group_id != worker_group_id:
                 continue
-            if not self.pause_worker_thread(thread):
+            if not self.pause_worker_thread(thread, record_paused=record_paused):
                 result = False
         return result
 
@@ -533,14 +542,18 @@ class Foreman(threading.Thread):
             return False
 
         self.worker_threads[worker_id].paused_flag.clear()
+        if worker_id in self.paused_worker_threads:
+            self.paused_worker_threads.remove(worker_id)
         return True
 
-    def resume_all_worker_threads(self, worker_group_id=None):
+    def resume_all_worker_threads(self, worker_group_id=None, recorded_paused_only=False):
         """Resume all threads"""
         result = True
         for thread in self.worker_threads:
             # Limit by worker group if requested
             if worker_group_id and self.worker_threads[thread].worker_group_id != worker_group_id:
+                continue
+            if recorded_paused_only and thread not in self.paused_worker_threads:
                 continue
             if not self.resume_worker_thread(thread):
                 result = False
@@ -649,10 +662,16 @@ class Foreman(threading.Thread):
                     self.init_worker_threads()
 
                 # If the worker config is not valid, then pause all workers until it is
-                if not self.validate_worker_config():
+                valid_config = self.validate_worker_config()
+                if not valid_config:
                     # Pause all workers
-                    self.pause_all_worker_threads()
+                    self.pause_all_worker_threads(record_paused=True)
                     continue
+                elif self.paused_worker_threads:
+                    # for thread in self.worker_threads:
+                    self.resume_all_worker_threads(recorded_paused_only=True)
+                    # Reset pause worker list
+                    self.paused_worker_threads = []
 
                 # Record metrics for each worker
                 workers_info = self.get_all_worker_status()

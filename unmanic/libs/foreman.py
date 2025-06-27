@@ -75,10 +75,6 @@ class Foreman(threading.Thread):
         self.link_heartbeat_last_run = 0
         self.available_remote_managers = {}
 
-    def _log(self, message, message2=None, level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
-
     def stop(self):
         self.paused_worker_threads = []
         self.abort_flag.set()
@@ -105,7 +101,7 @@ class Foreman(threading.Thread):
             self.current_config['settings'] = settings
         if settings_hash:
             self.current_config['settings_hash'] = settings_hash
-        self._log('Updated config. If this is modified, all workers will be paused', level='debug')
+        self.logger.debug('Updated config. If this is modified, all workers will be paused')
 
     def get_current_library_configuration(self):
         # Fetch all libraries
@@ -114,7 +110,7 @@ class Foreman(threading.Thread):
             try:
                 library_config = Library(library.get('id'))
             except Exception as e:
-                self._log("Unable to fetch library config for ID {}".format(library.get('id')), level='exception')
+                self.logger.exception('Unable to fetch library config for ID', library.get('id'))
                 continue
             # Get list of enabled plugins with their settings
             enabled_plugins = []
@@ -184,16 +180,16 @@ class Foreman(threading.Thread):
         self.last_schedule_run = time_now
         if task == 'pause':
             # Pause all workers now
-            self._log("Running scheduled event - Pause all worker threads", level='debug')
+            self.logger.debug('Running scheduled event - Pause all worker threads')
             self.pause_all_worker_threads(worker_group_id=worker_group_id)
         elif task == 'resume':
             # Resume all workers now
-            self._log("Running scheduled event - Resume all worker threads", level='debug')
+            self.logger.debug('Running scheduled event - Resume all worker threads')
             self.resume_all_worker_threads(worker_group_id=worker_group_id)
         elif task == 'count':
             # Set the worker count value
             # Save the settings so this scheduled event will persist an application restart
-            self._log("Running scheduled event - Setting worker count to '{}'".format(worker_count), level='debug')
+            self.logger.debug('Running scheduled event - Setting worker count to %s', worker_count)
             worker_group.set_number_of_workers(worker_count)
             worker_group.save()
 
@@ -217,7 +213,7 @@ class Foreman(threading.Thread):
                 worker_group = WorkerGroup(group_id=wg.get('id'))
                 event_schedules = worker_group.get_worker_event_schedules()
             except Exception as e:
-                self._log("While iterating through the worker groups, the worker group disappeared", str(e), level='debug')
+                self.logger.debug('While iterating through the worker groups, the worker group disappeared: %s', str(e))
                 continue
 
             for event_schedule in event_schedules:
@@ -355,7 +351,7 @@ class Foreman(threading.Thread):
         for thread in thread_keys:
             if thread in self.remote_task_manager_threads:
                 if not self.remote_task_manager_threads[thread].is_alive():
-                    self._log("Removing thread '{}'".format(thread), level='debug')
+                    self.logger.debug('Removing thread %s', thread)
                     del self.remote_task_manager_threads[thread]
                     continue
 
@@ -379,13 +375,13 @@ class Foreman(threading.Thread):
             # Ensure the UUID is still in our config
             if thread_assigned_uuid not in configured_uuids:
                 self.mark_remote_task_manager_thread_as_redundant(thread)
-                self._log(term_log_msg.format('UUID', thread_assigned_uuid))
+                self.logger.info(term_log_msg.format('UUID', thread_assigned_uuid))
                 continue
             # Ensure the configured address has not changed
             configured_address = configured_uuids.get(thread_assigned_uuid)
             if thread_assigned_address not in configured_address:
                 self.mark_remote_task_manager_thread_as_redundant(thread)
-                self._log(term_log_msg.format('address', thread_assigned_address))
+                self.logger.info(term_log_msg.format('address', thread_assigned_address))
                 continue
 
     def update_remote_worker_availability_status(self):
@@ -475,7 +471,7 @@ class Foreman(threading.Thread):
         current_count = len(self.task_queue.list_processed_tasks())
         if current_count > limit:
             msg = "There are currently {} items in the post-processor queue. Halting feeding workers until it drops below {}."
-            self._log(msg.format(current_count, limit), level='warning')
+            self.logger.warning(msg.format(current_count, limit))
             frontend_messages.update(
                 {
                     'id':      'pendingTaskHaltedPostProcessorQueueFull',
@@ -500,11 +496,11 @@ class Foreman(threading.Thread):
         :return:
         """
         if worker_id not in self.worker_threads:
-            self._log("Asked to pause Worker ID '{}', but this was not found.".format(worker_id), level='warning')
+            self.logger.warning("Asked to pause Worker ID '%s', but this was not found.", worker_id)
             return False
 
         if not self.worker_threads[worker_id].paused_flag.is_set():
-            self._log("Asked to pause Worker ID '{}'".format(worker_id), level='debug')
+            self.logger.debug('Asked to pause Worker ID %s', worker_id)
             self.worker_threads[worker_id].paused_flag.set()
             if record_paused and worker_id not in self.paused_worker_threads:
                 self.paused_worker_threads.append(worker_id)
@@ -536,9 +532,9 @@ class Foreman(threading.Thread):
         :return:
         :rtype:
         """
-        self._log("Asked to resume Worker ID '{}'".format(worker_id), level='debug')
+        self.logger.debug('Asked to resume Worker ID %s', worker_id)
         if worker_id not in self.worker_threads:
-            self._log("Asked to resume Worker ID '{}', but this was not found.".format(worker_id), level='warning')
+            self.logger.warning("Asked to resume Worker ID '%s', but this was not found.", worker_id)
             return False
 
         self.worker_threads[worker_id].paused_flag.clear()
@@ -568,9 +564,9 @@ class Foreman(threading.Thread):
         :return:
         :rtype:
         """
-        self._log("Asked to terminate Worker ID '{}'".format(worker_id), level='debug')
+        self.logger.debug('Asked to terminate Worker ID %s', worker_id)
         if worker_id not in self.worker_threads:
-            self._log("Asked to terminate Worker ID '{}', but this was not found.".format(worker_id), level='warning')
+            self.logger.warning("Asked to terminate Worker ID '%s', but this was not found.", worker_id)
             return False
 
         self.mark_worker_thread_as_redundant(worker_id)
@@ -621,7 +617,6 @@ class Foreman(threading.Thread):
         time_now = time.time()
         if self.link_heartbeat_last_run > (time_now - 10):
             return
-        # self._log("Running remote link manager heartbeat", level='debug')
         # Terminate remote manager threads for unlinked installations
         self.terminate_unlinked_remote_task_manager_threads()
         # Clear out dead threads
@@ -634,7 +629,7 @@ class Foreman(threading.Thread):
         self.link_heartbeat_last_run = time_now
 
     def run(self):
-        self._log("Starting Foreman Monitor loop")
+        self.logger.info('Starting Foreman Monitor loop')
 
         # Flag to force checking for idle remote workers when set to False.
         # This will prevent always looping on idle local workers when the local worker's
@@ -654,8 +649,7 @@ class Foreman(threading.Thread):
                     except queue.Empty:
                         continue
                     except Exception as e:
-                        self._log("Exception when fetching completed task report from worker", message2=str(e),
-                                  level="exception")
+                        self.logger.exception('Exception when fetching completed task report from worker', str(e))
 
                 # Set up the correct number of workers
                 if not self.abort_flag.is_set():
@@ -745,7 +739,7 @@ class Foreman(threading.Thread):
                                 library_tags = self.get_tags_configured_for_worker(worker_id)
                             except Exception as e:
                                 # This will happen if the worker group is deleted
-                                self._log("Error while fetching the tags for the configured worker", str(e), level='debug')
+                                self.logger.debug('Error while fetching the tags for the configured worker: %s', str(e))
                                 # Break this fore loop. The main while loop wil clean up these workers on the next pass
                                 break
                             next_item_to_process = self.task_queue.get_next_pending_tasks(
@@ -770,23 +764,23 @@ class Foreman(threading.Thread):
                             source_abspath = next_item_to_process.get_source_abspath()
                             task_library_name = next_item_to_process.get_task_library_name()
                         except Exception as e:
-                            self._log("Exception in fetching task details", message2=str(e), level="exception")
+                            self.logger.exception('Exception in fetching task details', str(e))
                             self.event.wait(3)
                             continue
 
-                        self._log("Processing item - {}".format(source_abspath))
+                        self.logger.info('Processing item - %s', str(source_abspath))
                         success = self.hand_task_to_workers(next_item_to_process, local=process_local,
                                                             library_name=task_library_name,
                                                             worker_id=available_worker_id)
                         if not success:
-                            self._log("Re-queueing tasks. Unable to find worker capable of processing task '{}'".format(
-                                next_item_to_process.get_source_abspath()), level="warning")
+                            self.logger.warning("Re-queueing tasks. Unable to find worker capable of processing task '%s'",
+                                                next_item_to_process.get_source_abspath())
                             # Re-queue item at the bottom
                             self.task_queue.requeue_tasks_at_bottom(next_item_to_process.get_task_id())
             except Exception as e:
                 raise Exception(e)
 
-        self._log("Leaving Foreman Monitor loop...")
+        self.logger.info('Leaving Foreman Monitor loop...')
 
     def get_all_worker_status(self):
         all_status = []

@@ -151,27 +151,27 @@ class Library(object):
         from unmanic.libs.session import Session
         s = Session()
         s.register_unmanic()
-        if s.level > 1:
-            return True
 
-        # Fetch all enabled plugins
-        library_count = Libraries.select().count()
+        if s.level <= 1:
+            # Fetch all enabled plugins
+            library_count = Libraries.select().count()
 
-        # Ensure enabled plugins are within limits
-        # Function was returned above if the user was logged in and able to use infinite
-        if library_count > s.library_count:
-            # If the frontend messages queue was included in request, append a message
-            if frontend_messages:
-                frontend_messages.put(
-                    {
-                        'id':      'libraryEnabledLimits',
-                        'type':    'error',
-                        'code':    'libraryEnabledLimits',
-                        'message': '',
-                        'timeout': 0
-                    }
-                )
-            return False
+            # Ensure enabled plugins are within limits
+            # Function was returned above if the user was logged in and able to use infinite
+            if library_count > s.library_count:
+                # If the frontend messages queue was included in request, append a message
+                if frontend_messages:
+                    frontend_messages.put(
+                        {
+                            'id':      'libraryEnabledLimits',
+                            'type':    'error',
+                            'code':    'libraryEnabledLimits',
+                            'message': '',
+                            'timeout': 0
+                        }
+                    )
+                return False
+
         # If the frontend messages queue was included in request, remove the notification as we are currently within limits
         if frontend_messages:
             frontend_messages.remove_item('libraryEnabledLimits')

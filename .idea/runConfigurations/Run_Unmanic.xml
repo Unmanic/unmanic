@@ -10,7 +10,7 @@
       <env name="HOME_DIR" value="./dev_environment" />
     </envs>
     <option name="SDK_HOME" value="$PROJECT_DIR$/venv/bin/python" />
-    <option name="SDK_NAME" value="Python 3.12 (unmanic)" />
+    <option name="SDK_NAME" value="Python 3.10 (unmanic)" />
     <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
     <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />

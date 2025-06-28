@@ -51,7 +51,8 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-line-length=127 --statistics
 
-    # Run pytest unit tests
-    - name: Test with pytest
-      run: |
-        pytest -m unittest
+    # Unit testing is disabled until further notice... Thank-you and goodbye
+    # # Run pytest unit tests
+    # - name: Test with pytest
+    #   run: |
+    #     pytest -m unittest

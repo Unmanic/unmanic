@@ -109,7 +109,6 @@ class ApiUploadHandler(BaseApiHandler):
 
         def receiver(chunk):
             nonlocal index
-            nonlocal frontend_messages
             if index == 0:
                 index += 1
                 split_chunk = chunk.split(SEPARATOR)

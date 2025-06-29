@@ -848,3 +848,16 @@ class PluginsHandler(object, metaclass=SingletonType):
                 }
             )
         return return_plugin_flow
+
+    def run_event_plugins_for_plugin_type(self, plugin_type, data):
+        """
+        Run all enabled plugins for an event plugin type
+
+        :param plugin_type:
+        :param data:
+        :return:
+        """
+        plugin_modules = self.get_enabled_plugin_modules_by_type(plugin_type)
+        for plugin_module in plugin_modules:
+            if not self.exec_plugin_runner(data, plugin_module.get('plugin_id'), plugin_type):
+                continue

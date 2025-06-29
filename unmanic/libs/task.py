@@ -195,7 +195,7 @@ class Task(object):
 
     def create_task_by_absolute_path(self, abspath, task_type='local', library_id=1, priority_score=0):
         """
-        Creates the task by it's absolute path.
+        Creates the task by its absolute path.
         If the task already exists in the list, then this will throw an exception and return false
 
         Calls to read_and_set_task_by_absolute_path() to read back all data out of the database.

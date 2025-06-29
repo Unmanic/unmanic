@@ -98,6 +98,16 @@ class PostProcessor(threading.Thread):
                 self.event.wait(.2)
                 self.current_task = self.task_queue.get_next_processed_tasks()
                 if self.current_task:
+
+                    # Execute event plugin runners
+                    plugin_handler = PluginsHandler()
+                    plugin_handler.run_event_plugins_for_plugin_type('events.postprocessor_started', {
+                        "library_id":  self.current_task.get_task_library_id(),
+                        "task_type":   self.current_task.get_task_type(),
+                        "cache_path":  self.current_task.get_cache_path(),
+                        "source_data": self.current_task.get_source_data(),
+                    })
+
                     try:
                         self._log("Post-processing task - {}".format(self.current_task.get_source_abspath()))
                     except Exception as e:
@@ -166,7 +176,7 @@ class PostProcessor(threading.Thread):
         # Create a list for filling with destination paths
         destination_files = []
         if self.current_task.task.success:
-            # Run a postprocess file movement on the cache file for for each plugin that configures it
+            # Run a postprocess file movement on the cache file for each plugin that configures it
 
             # Fetch all 'postprocessor.file_move' plugin modules
             plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('postprocessor.file_move',
@@ -284,7 +294,8 @@ class PostProcessor(threading.Thread):
     def post_process_remote_file(self):
         """
         Process remote files.
-        Remote files are not processed by plugins.
+        Remote files are not processed by plugins. They are just sent back to the OG installation and then the cache files are cleaned up here.
+        A remote file's source_data will be the download path where this installation initial received and stored it.
 
         TODO: Should we move remote tasks to a permanent download location within the cache path? Possibly not...
 
@@ -317,7 +328,7 @@ class PostProcessor(threading.Thread):
     def __cleanup_cache_files(self, cache_path):
         """
         Remove cache files and the cache directory
-        This ensure we are not simply blindly removing a whole directory.
+        This ensures we are not simply blindly removing a whole directory.
         It ensures were are in-fact only deleting this task's cache files.
 
         :param cache_path:
@@ -421,6 +432,18 @@ class PostProcessor(threading.Thread):
                 'log':                 task_dump.get('log', ''),
             }
         )
+
+        # Execute event plugin runners
+        plugin_handler = PluginsHandler()
+        plugin_handler.run_event_plugins_for_plugin_type('events.postprocessor_complete', {
+                'task_label':          task_dump.get('task_label', ''),
+                'abspath':             task_dump.get('abspath', ''),
+                'task_success':        task_dump.get('task_success', ''),
+                'start_time':          task_dump.get('start_time', ''),
+                'finish_time':         task_dump.get('finish_time', ''),
+                'processed_by_worker': task_dump.get('processed_by_worker', ''),
+                'log':                 task_dump.get('log', ''),
+            })
 
     def dump_history_log(self):
         self._log("Dumping remote task history log.", level='debug')

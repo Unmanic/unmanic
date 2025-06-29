@@ -183,6 +183,7 @@ class FileTesterThread(threading.Thread):
     def run(self):
         self.logger.info("Starting %s", self.name)
         file_test = FileTest(self.library_id)
+        plugin_handler = PluginsHandler()
         while not self.abort_flag.is_set():
             try:
                 # Pending task queue has an item available. Fetch it.
@@ -210,6 +211,15 @@ class FileTesterThread(threading.Thread):
                         'path':           next_file,
                         'priority_score': priority_score,
                     })
+                    # Execute event plugin runners (only when added to queue)
+                    data = {
+                        "library_id":     self.library_id,
+                        "file_path":      next_file,
+                        "priority_score": priority_score,
+                        "issues":         issues,
+                    }
+                    plugin_handler.run_event_plugins_for_plugin_type('events.task_queued', data)
+
             except UnicodeEncodeError:
                 self.logger.warning("File contains Unicode characters that cannot be processed. Ignoring.")
             except Exception as e:

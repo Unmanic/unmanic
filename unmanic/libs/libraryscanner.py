@@ -336,7 +336,21 @@ class LibraryScannerManager(threading.Thread):
                             library_id=library_id,
                             scan_start_time=scan_start_time,
                             scan_end_time=scan_end_time,
-                            scan_duration=scan_duration)
+                            scan_duration=scan_duration,
+                            files_scanned_count=total_file_count)
+
+        # Execute event plugin runners
+        data = {
+            "library_id":          library_id,
+            "library_name":        library_name,
+            "library_path":        library_path,
+            "scan_start_time":     scan_start_time,
+            "scan_end_time":       scan_end_time,
+            "scan_duration":       scan_duration,
+            "files_scanned_count": total_file_count,
+        }
+        plugin_handler = PluginsHandler()
+        plugin_handler.run_event_plugins_for_plugin_type('events.scan_complete', data)
 
         # Run a manual garbage collection
         gc.collect()

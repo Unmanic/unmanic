@@ -43,6 +43,7 @@ from unmanic import config
 from unmanic.libs import common, session, task
 from unmanic.libs.library import Library
 from unmanic.libs.logs import UnmanicLogging
+from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.session import Session
 from unmanic.libs.singleton import SingletonType
 
@@ -1247,6 +1248,22 @@ class RemoteTaskManager(threading.Thread):
         """Sets the given task to the worker class"""
         self.current_task = current_task
         self.worker_log = []
+
+        # Execute event plugin runners
+        event_data = {
+            "library_id":               self.current_task.get("library_id"),
+            "task_schedule_type":       "remote",
+            "remote_installation_info": {
+                'uuid':    self.installation_info.get("installation_uuid"),
+                'address': self.installation_info.get("remote_address"),
+            },
+            "task_info":                {
+                "abspath":    self.current_task.get("abspath"),
+                "library_id": self.current_task.get("library_id"),
+            }
+        }
+        plugin_handler = PluginsHandler()
+        plugin_handler.run_event_plugins_for_plugin_type('events.task_scheduled', event_data)
 
     def __unset_current_task(self):
         self.current_task = None

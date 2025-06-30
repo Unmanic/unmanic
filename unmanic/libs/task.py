@@ -32,7 +32,9 @@
 import json
 import os
 import shutil
+import threading
 import time
+from copy import deepcopy
 from operator import attrgetter
 
 from playhouse.shortcuts import model_to_dict
@@ -166,6 +168,21 @@ class Task(object):
 
     def get_source_abspath(self):
         return self.get_source_data().get('abspath')
+
+    def get_task_success(self):
+        if not self.task:
+            raise Exception('Unable to fetch task success. Task has not been set!')
+        return self.task.success
+
+    def get_start_time(self):
+        if not self.task:
+            raise Exception('Unable to fetch task start time. Task has not been set!')
+        return self.task.start_time
+
+    def get_finish_time(self):
+        if not self.task:
+            raise Exception('Unable to fetch task finish time. Task has not been set!')
+        return self.task.finish_time
 
     def task_dump(self):
         # Generate a copy of this class as a dict
@@ -435,3 +452,214 @@ class Task(object):
         """
         query = Tasks.update(library_id=library_id).where(Tasks.id.in_(id_list))
         return query.execute()
+
+
+class TaskDataStore:
+    """
+    Thread-safe in-memory store for task lifecycle data, shared across all plugins and threads.
+
+    There are two separate stores:
+
+    1. Runner State (immutable)
+       - Stores data emitted by individual plugin runners.
+       - Once a key is set under a (task_id, plugin_id, runner), it cannot be overwritten.
+       - Structure:
+           {
+               task_id: {
+                   plugin_id: {
+                       runner_function_name: {
+                           key: value,
+                           ...
+                       },
+                       ...
+                   },
+                   ...
+               },
+               ...
+           }
+       - Example:
+           {
+               42: {
+                   "video_file_tester": {
+                       "on_worker_process": {
+                           "ffprobe": {
+                               "streams": [...],
+                               "format": {...}
+                           }
+                       }
+                   }
+               }
+           }
+
+    2. Task State (mutable)
+       - Stores arbitrary state values for a task that plugins may update freely.
+       - Structure:
+           {
+               task_id: {
+                   key: value,
+                   ...
+               },
+               ...
+           }
+       - Example:
+           {
+               42: {
+                   "progress": 0.75,
+                   "status": "running"
+               }
+           }
+    """
+
+    _runner_state = {}
+    _task_state = {}
+    _lock = threading.RLock()
+    _ctx = threading.local()
+
+    @classmethod
+    def bind_runner_context(cls, task_id, plugin_id, runner):
+        """
+        Bind the current thread's runner context.
+
+        Must be called before a plugin runner executes so that
+        set_runner_value / get_runner_value know which (task_id, plugin_id, runner)
+        to use.
+
+        :param task_id: Integer ID of the task being processed.
+        :param plugin_id: String identifier of the plugin.
+        :param runner: String name of the runner function.
+        """
+        cls._ctx.task_id = task_id
+        cls._ctx.plugin_id = plugin_id
+        cls._ctx.runner = runner
+
+    @classmethod
+    def clear_context(cls):
+        """
+        Clear the current thread's runner context.
+
+        Should be called after the plugin runner completes.
+        """
+        cls._ctx.task_id = None
+        cls._ctx.plugin_id = None
+        cls._ctx.runner = None
+
+    @classmethod
+    def set_runner_value(cls, key, value):
+        """
+        Store an immutable value under the bound (task_id, plugin_id, runner).
+
+        :param key: String key to identify the data.
+        :param value: Any JSON-serializable Python object to store.
+        :return: True if stored successfully, False if that key already exists.
+        :raises RuntimeError: if no runner context is bound.
+        """
+        tid = getattr(cls._ctx, 'task_id', None)
+        pid = getattr(cls._ctx, 'plugin_id', None)
+        run = getattr(cls._ctx, 'runner', None)
+        if None in (tid, pid, run):
+            raise RuntimeError("Runner context not bound")
+        with cls._lock:
+            task = cls._runner_state.setdefault(tid, {})
+            plug = task.setdefault(pid, {})
+            rtn = plug.setdefault(run, {})
+            if key in rtn:
+                return False
+            rtn[key] = deepcopy(value)
+            return True
+
+    @classmethod
+    def get_runner_value(cls, key, default=None, *, plugin_id=None, runner=None):
+        """
+        Retrieve an immutable runner value by key.
+
+        :param key: String key to retrieve.
+        :param default: Value to return if key is not found.
+        :param plugin_id: (optional) override plugin identifier.
+        :param runner: (optional) override runner name.
+        :return: The stored value or default.
+        :raises RuntimeError: if context not bound and no override provided.
+        """
+        tid = getattr(cls._ctx, 'task_id', None)
+        if tid is None:
+            raise RuntimeError("Runner context not bound")
+
+        pid = plugin_id if plugin_id is not None else getattr(cls._ctx, 'plugin_id', None)
+        run = runner if runner is not None else getattr(cls._ctx, 'runner', None)
+        if None in (pid, run):
+            raise RuntimeError("Runner context not fully bound and no override provided")
+
+        with cls._lock:
+            return (
+                cls._runner_state
+                .get(tid, {})
+                .get(pid, {})
+                .get(run, {})
+                .get(key, default)
+            )
+
+    @classmethod
+    def set_task_state(cls, task_id, key, value):
+        """
+        Store or overwrite a mutable value for a given task.
+
+        :param task_id: Integer ID of the task.
+        :param key: String key to identify the data.
+        :param value: Any JSON-serializable Python object to store.
+        """
+        with cls._lock:
+            t = cls._task_state.setdefault(task_id, {})
+            t[key] = value
+
+    @classmethod
+    def get_task_state(cls, task_id, key, default=None):
+        """
+        Retrieve a mutable task value by key.
+
+        :param task_id: Integer ID of the task.
+        :param key: String key to retrieve.
+        :param default: Value to return if key is not present.
+        :return: The stored value or default.
+        """
+        with cls._lock:
+            return cls._task_state.get(task_id, {}).get(key, default)
+
+    @classmethod
+    def delete_task_state(cls, task_id, key):
+        """
+        Delete a mutable key for a given task.
+
+        :param task_id: Integer ID of the task.
+        :param key: String key to remove.
+        """
+        with cls._lock:
+            t = cls._task_state.get(task_id, {})
+            t.pop(key, None)
+            if not t:
+                cls._task_state.pop(task_id, None)
+
+    @classmethod
+    def dump_all(cls):
+        """
+        Return deep copies of both runner and task stores.
+
+        :return: Dict containing:
+                 {
+                   "runner_state": {...},
+                   "task_state":   {...}
+                 }
+        """
+        with cls._lock:
+            return {
+                "runner_state": deepcopy(cls._runner_state),
+                "task_state":   deepcopy(cls._task_state),
+            }
+
+    @classmethod
+    def dump_json(cls, **json_kwargs):
+        """
+        Return a JSON string representing both stores.
+
+        :param json_kwargs: forwarded to json.dumps (e.g. indent=2).
+        :return: JSON string.
+        """
+        return json.dumps(cls.dump_all(), **json_kwargs)

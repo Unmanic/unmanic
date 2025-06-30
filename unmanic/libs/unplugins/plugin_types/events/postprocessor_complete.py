@@ -41,8 +41,14 @@ class PostprocessorComplete(PluginType):
 
     The 'data' object argument includes:
         library_id           - Integer, the ID of the library.
-        task_label           - String, human-readable label for the task.
-        abspath              - String, absolute path to the file.
+        task_id              - Integer, unique identifier of the task.
+        task_type            - String, "local" or "remote".
+        source_data          - Dict, information about the source file for the task, e.g.:
+                                 - abspath: String, absolute path to the file.
+                                 - basename: String, file name.
+        destination_data     - Dict, information about the final output file after postprocessing for the task, e.g.:
+                                 - abspath: String, absolute path to the file.
+                                 - basename: String, file name.
         task_success         - Boolean, True if the task succeeded.
         start_time           - Float, UNIX timestamp when the task began.
         finish_time          - Float, UNIX timestamp when the task completed.
@@ -54,8 +60,10 @@ class PostprocessorComplete(PluginType):
     """
     data_schema = {
         "library_id":          {"required": False, "type": int},
-        "task_label":          {"required": False, "type": str},
-        "abspath":             {"required": False, "type": str},
+        "task_id":             {"required": False, "type": int},
+        "task_type":           {"required": False, "type": str},
+        "source_data":         {"required": False, "type": dict},
+        "destination_data":    {"required": False, "type": dict},
         "task_success":        {"required": False, "type": bool},
         "start_time":          {"required": False, "type": float},
         "finish_time":         {"required": False, "type": float},
@@ -64,8 +72,16 @@ class PostprocessorComplete(PluginType):
     }
     test_data = {
         "library_id":          1,
-        "task_label":          "file.mp4",
-        "abspath":             "/path/to/media/file.mp4",
+        "task_id":             4321,
+        "task_type":           "local",
+        "source_data":         {
+            "abspath":  "/path/to/media/file.mp4",
+            "basename": "file.mp4"
+        },
+        "destination_data":    {
+            "abspath":  "/path/to/media/file.mkv",
+            "basename": "file.mkv"
+        },
         "task_success":        True,
         "start_time":          1625080000.0,
         "finish_time":         1625080050.0,

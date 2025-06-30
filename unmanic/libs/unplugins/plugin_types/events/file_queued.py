@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 
 """
-    unmanic.task_queued.py
+    unmanic.file_queued.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
     Date:                     29 June 2025, (9:32 PM)
@@ -33,35 +33,32 @@
 from ..plugin_type_base import PluginType
 
 
-class TaskQueued(PluginType):
-    name = "Events - Task queued"
-    runner = "emit_task_queued"
+class FileQueued(PluginType):
+    name = "Events - File queued"
+    runner = "emit_file_queued"
     runner_docstring = """
-    Runner function - emit data when a new task is created and added to the execution queue.
+    Runner function - emit data when a file has been tested and marked to be added to the pending task queue.
 
     The 'data' object argument includes:
-        library_id   - Integer, the ID of the library.
-        task_id      - Integer, unique identifier of the new task.
-        task_type    - String, "local" or "remote".
-        source_data  - Dict, information about the source file for the task, e.g.:
-                         - abspath: String, absolute path to the file.
-                         - basename: String, file name.
+        library_id      - Integer, the ID of the library.
+        file_path       - String, the full path to the file being queued.
+        priority_score  - Integer, the priority score assigned to this task.
+        issues          - List, any file issues that were raised.
 
     :param data:
     :return:
     """
     data_schema = {
-        "library_id":  {"required": False, "type": int},
-        "task_id":     {"required": False, "type": int},
-        "task_type":   {"required": False, "type": str},
-        "source_data": {"required": False, "type": dict},
+        "library_id":     {"required": False, "type": int},
+        "file_path":      {"required": False, "type": str},
+        "priority_score": {"required": False, "type": int},
+        "issues":         {"required": False, "type": list},
     }
     test_data = {
-        "library_id":  1,
-        "task_id":     4321,
-        "task_type":   "local",
-        "source_data": {
-            "abspath":  "/path/to/media/file.mp4",
-            "basename": "file.mp4"
-        }
+        "library_id":     1,
+        "file_path":      "/path/to/media/file.mp4",
+        "priority_score": 0,
+        "issues":         [
+            {"id": "format", "message": "File is already in target format."}
+        ],
     }

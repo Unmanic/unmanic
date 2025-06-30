@@ -1251,16 +1251,15 @@ class RemoteTaskManager(threading.Thread):
 
         # Execute event plugin runners
         event_data = {
-            "library_id":               self.current_task.get("library_id"),
+            "library_id":               self.current_task.get_task_library_id(),
+            "task_id":                  self.current_task.get_task_id(),
+            "task_type":                self.current_task.get_task_type(),
             "task_schedule_type":       "remote",
             "remote_installation_info": {
                 'uuid':    self.installation_info.get("installation_uuid"),
                 'address': self.installation_info.get("remote_address"),
             },
-            "task_info":                {
-                "abspath":    self.current_task.get("abspath"),
-                "library_id": self.current_task.get("library_id"),
-            }
+            "source_data":              self.current_task.get_source_data()
         }
         plugin_handler = PluginsHandler()
         plugin_handler.run_event_plugins_for_plugin_type('events.task_scheduled', event_data)

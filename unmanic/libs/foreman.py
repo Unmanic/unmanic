@@ -594,14 +594,12 @@ class Foreman(threading.Thread):
                 if item.get("type") == "local":
                     # Execute event plugin runners (only for locally added tasks. Remote tasks are scheduled on the installation they were considered "local")
                     event_data = {
-                        "library_id":               item.get("library_id"),
+                        "library_id":               item.get_task_library_id(),
+                        "task_id":                  item.get_task_id(),
+                        "task_type":                item.get_task_type(),
                         "task_schedule_type":       "local",
                         "remote_installation_info": {},
-                        "task_info":                {
-                            "abspath":    item.get("abspath"),
-                            "library_id": item.get("library_id"),
-                        }
-
+                        "source_data":              item.get_source_data()
                     }
                     plugin_handler = PluginsHandler()
                     plugin_handler.run_event_plugins_for_plugin_type('events.task_scheduled', event_data)

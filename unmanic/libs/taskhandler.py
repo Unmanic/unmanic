@@ -37,6 +37,7 @@ import time
 from unmanic import config
 from unmanic.libs import common, task
 from unmanic.libs.logs import UnmanicLogging
+from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.unmodels.tasks import Tasks
 
 
@@ -159,6 +160,15 @@ class TaskHandler(threading.Thread):
         new_task = self.create_task_from_path(pathname, library_id, priority_score=priority_score)
         if not new_task:
             return False
+        # Execute event plugin runners
+        plugin_handler = PluginsHandler()
+        plugin_handler.run_event_plugins_for_plugin_type('events.task_queued', {
+            'library_id':  library_id,
+            'task_id':     new_task.get_task_id(),
+            'task_type':   new_task.get_task_type(),
+            'source_data': new_task.get_source_data(),
+        })
+
         return True
 
     def create_task_from_path(self, pathname, library_id, priority_score=0):

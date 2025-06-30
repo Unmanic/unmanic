@@ -41,30 +41,36 @@ class TaskScheduled(PluginType):
 
     The 'data' object argument includes:
         library_id                - Integer, the ID of the library.
-        task_schedule_type        - String, either "local" or "remote".
+        task_id                   - Integer, unique identifier of the task.
+        task_type                 - String, "local" or "remote". Indicates how this task is going to be processed.
+        task_schedule_type        - String, either "local" or "remote". Where are we scheduling this task?
         remote_installation_info  - Dict, for remote tasks contains:
                                       - uuid:    String, the installation UUID.
                                       - address: String, the remote worker address.
                                     Empty dict for local tasks.
-        task_info                 - Dict, details of the task being scheduled:
-                                      - abspath:    String, absolute path to the file.
-                                      - library_id: Integer, ID of the library.
+        source_data               - Dict, details of the task being scheduled:
+                                      - abspath: String, absolute path to the file.
+                                      - basename: String, file name.
 
     :param data:
     :return:
     """
     data_schema = {
         "library_id":               {"required": False, "type": int},
+        "task_id":                  {"required": False, "type": int},
+        "task_type":                {"required": False, "type": str},
         "task_schedule_type":       {"required": False, "type": str},
         "remote_installation_info": {"required": False, "type": dict},
-        "task_info":                {"required": False, "type": dict},
+        "source_data":              {"required": False, "type": dict},
     }
     test_data = {
         "library_id":               1,
+        "task_id":                  4321,
+        "task_type":                "local",
         "task_schedule_type":       "local",
         "remote_installation_info": {},
-        "task_info":                {
-            "abspath":    "/path/to/media/file.mp4",
-            "library_id": 1,
+        "source_data":              {
+            "abspath":  "/path/to/media/file.mp4",
+            "basename": "file.mp4"
         }
     }

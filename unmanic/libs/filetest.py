@@ -212,13 +212,12 @@ class FileTesterThread(threading.Thread):
                         'priority_score': priority_score,
                     })
                     # Execute event plugin runners (only when added to queue)
-                    data = {
-                        "library_id":     self.library_id,
-                        "file_path":      next_file,
-                        "priority_score": priority_score,
-                        "issues":         issues,
-                    }
-                    plugin_handler.run_event_plugins_for_plugin_type('events.task_queued', data)
+                    plugin_handler.run_event_plugins_for_plugin_type('events.file_queued', {
+                        'library_id':     self.library_id,
+                        'file_path':      next_file,
+                        'priority_score': priority_score,
+                        'issues':         issues,
+                    })
 
             except UnicodeEncodeError:
                 self.logger.warning("File contains Unicode characters that cannot be processed. Ignoring.")

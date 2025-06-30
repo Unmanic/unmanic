@@ -102,10 +102,11 @@ class PostProcessor(threading.Thread):
                     # Execute event plugin runners
                     plugin_handler = PluginsHandler()
                     plugin_handler.run_event_plugins_for_plugin_type('events.postprocessor_started', {
-                        "library_id":  self.current_task.get_task_library_id(),
-                        "task_type":   self.current_task.get_task_type(),
-                        "cache_path":  self.current_task.get_cache_path(),
-                        "source_data": self.current_task.get_source_data(),
+                        'library_id':  self.current_task.get_task_library_id(),
+                        'task_id':     self.current_task.get_task_id(),
+                        'task_type':   self.current_task.get_task_type(),
+                        'cache_path':  self.current_task.get_cache_path(),
+                        'source_data': self.current_task.get_source_data(),
                     })
 
                     try:
@@ -275,12 +276,16 @@ class PostProcessor(threading.Thread):
 
         for plugin_module in plugin_modules:
             data = {
-                'final_cache_path':            cache_path,
                 'library_id':                  library_id,
-                'source_data':                 source_data,
-                'task_processing_success':     self.current_task.task.success,
+                "task_id":                     self.current_task.get_task_id(),
+                "task_type":                   self.current_task.get_task_type(),
+                'final_cache_path':            cache_path,
+                'task_processing_success':     self.current_task.get_task_success(),
                 'file_move_processes_success': file_move_processes_success,
                 'destination_files':           destination_files,
+                'source_data':                 source_data,
+                'start_time':                  self.current_task.get_start_time(),
+                'finish_time':                 self.current_task.get_finish_time(),
             }
 
             # Run plugin to update data
@@ -425,7 +430,7 @@ class PostProcessor(threading.Thread):
             {
                 'task_label':          task_dump.get('task_label', ''),
                 'abspath':             task_dump.get('abspath', ''),
-                'task_success':        task_dump.get('task_success', ''),
+                'task_success':        task_dump.get('task_success', False),
                 'start_time':          task_dump.get('start_time', ''),
                 'finish_time':         task_dump.get('finish_time', ''),
                 'processed_by_worker': task_dump.get('processed_by_worker', ''),
@@ -436,14 +441,17 @@ class PostProcessor(threading.Thread):
         # Execute event plugin runners
         plugin_handler = PluginsHandler()
         plugin_handler.run_event_plugins_for_plugin_type('events.postprocessor_complete', {
-                'task_label':          task_dump.get('task_label', ''),
-                'abspath':             task_dump.get('abspath', ''),
-                'task_success':        task_dump.get('task_success', ''),
-                'start_time':          task_dump.get('start_time', ''),
-                'finish_time':         task_dump.get('finish_time', ''),
-                'processed_by_worker': task_dump.get('processed_by_worker', ''),
-                'log':                 task_dump.get('log', ''),
-            })
+            'library_id':          self.current_task.get_task_library_id(),
+            'task_id':             self.current_task.get_task_id(),
+            'task_type':           self.current_task.get_task_type(),
+            'source_data':         self.current_task.get_source_data(),
+            'destination_data':    self.current_task.get_destination_data(),
+            'task_success':        task_dump.get('task_success', False),
+            'start_time':          task_dump.get('start_time', ''),
+            'finish_time':         task_dump.get('finish_time', ''),
+            'processed_by_worker': task_dump.get('processed_by_worker', ''),
+            'log':                 task_dump.get('log', ''),
+        })
 
     def dump_history_log(self):
         self._log("Dumping remote task history log.", level='debug')
@@ -456,7 +464,7 @@ class PostProcessor(threading.Thread):
             {
                 'task_label':          task_dump.get('task_label', ''),
                 'abspath':             task_dump.get('abspath', ''),
-                'task_success':        task_dump.get('task_success', ''),
+                'task_success':        task_dump.get('task_success', False),
                 'start_time':          task_dump.get('start_time', ''),
                 'finish_time':         task_dump.get('finish_time', ''),
                 'processed_by_worker': task_dump.get('processed_by_worker', ''),

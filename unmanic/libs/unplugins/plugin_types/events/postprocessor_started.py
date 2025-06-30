@@ -41,6 +41,7 @@ class PostprocessorStarted(PluginType):
 
     The 'data' object argument includes:
         library_id        - Integer, the ID of the library.
+        task_id           - Integer, unique identifier of the new task.
         task_type         - String, "local" or "remote" indicating how this task was processed.
         cache_path        - String, path to the task’s cache file.
         source_data       - Dict, information about the original source file:
@@ -52,12 +53,14 @@ class PostprocessorStarted(PluginType):
     """
     data_schema = {
         "library_id":  {"required": False, "type": int},
+        "task_id":     {"required": False, "type": int},
         "task_type":   {"required": False, "type": str},
         "cache_path":  {"required": False, "type": str},
         "source_data": {"required": False, "type": dict},
     }
     test_data = {
         "library_id":  1,
+        "task_id":     4321,
         "task_type":   "local",
         "cache_path":  "/path/to/cache/file.mp4",
         "source_data": {

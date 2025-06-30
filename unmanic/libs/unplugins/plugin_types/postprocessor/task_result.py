@@ -40,45 +40,35 @@ class TaskResult(PluginType):
     Runner function - provides a means for additional postprocessor functions based on the task success.
 
     The 'data' object argument includes:
-        final_cache_path                - The path to the final cache file that was then used as the source for all destination files.
         library_id                      - The library that the current task is associated with.
+        task_id                         - Integer, unique identifier of the task.
+        task_type                       - String, "local" or "remote".
+        final_cache_path                - The path to the final cache file that was then used as the source for all destination files.
         task_processing_success         - Boolean, did all task processes complete successfully.
         file_move_processes_success     - Boolean, did all postprocessor movement tasks complete successfully.
         destination_files               - List containing all file paths created by postprocessor file movements.
         source_data                     - Dictionary containing data pertaining to the original source file.
+        start_time                      - Float, UNIX timestamp when the task began.
+        finish_time                     - Float, UNIX timestamp when the task completed.
 
     :param data:
     :return:
     """
     data_schema = {
-        'final_cache_path':            {
-            "required": False,
-            "type":     str,
-        },
-        'library_id':                  {
-            "required": False,
-            "type":     int,
-        },
-        "task_processing_success":     {
-            "required": False,
-            "type":     bool,
-        },
-        "file_move_processes_success": {
-            "required": False,
-            "type":     bool,
-        },
-        "destination_files":           {
-            "required": False,
-            "type":     list,
-        },
-        "source_data":                 {
-            "required": False,
-            "type":     dict,
-        },
+        "library_id":                  {"required": False, "type": int},
+        "task_id":                     {"required": False, "type": int},
+        "task_type":                   {"required": False, "type": str},
+        "final_cache_path":            {"required": False, "type": str},
+        "task_processing_success":     {"required": False, "type": bool},
+        "file_move_processes_success": {"required": False, "type": bool},
+        "destination_files":           {"required": False, "type": list},
+        "source_data":                 {"required": False, "type": dict},
     }
     test_data = {
-        'final_cache_path':            '{cache_path}/{test_file_out}',
         'library_id':                  1,
+        "task_id":                     4321,
+        "task_type":                   "local",
+        'final_cache_path':            '{cache_path}/{test_file_out}',
         'task_processing_success':     True,
         'file_move_processes_success': True,
         'destination_files':           [

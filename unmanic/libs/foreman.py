@@ -591,7 +591,7 @@ class Foreman(threading.Thread):
             # Assign the task to the worker id provided
             if worker_id in self.worker_threads and self.worker_threads[worker_id].is_alive():
                 self.worker_threads[worker_id].set_task(item)
-                if item.get("type") == "local":
+                if item.get_task_type() == "local":
                     # Execute event plugin runners (only for locally added tasks. Remote tasks are scheduled on the installation they were considered "local")
                     event_data = {
                         "library_id":               item.get_task_library_id(),

@@ -598,68 +598,105 @@ class TaskDataStore:
             )
 
     @classmethod
-    def set_task_state(cls, task_id, key, value):
+    def set_task_state(cls, key, value, task_id=None):
         """
-        Store or overwrite a mutable value for a given task.
+        Store or overwrite a mutable value for a task.
 
-        :param task_id: Integer ID of the task.
-        :param key: String key to identify the data.
-        :param value: Any JSON-serializable Python object to store.
+        :param key: Identifier for the state.
+        :param value: JSON-serializable object.
+        :param task_id: Optional task ID; if omitted, uses bound runner context.
+        :raises: RuntimeError if no task_id provided and no context bound.
         """
+        tid = task_id if task_id is not None else getattr(cls._ctx, 'task_id', None)
+        if tid is None:
+            raise RuntimeError("Task ID not provided or bound")
         with cls._lock:
-            t = cls._task_state.setdefault(task_id, {})
+            t = cls._task_state.setdefault(tid, {})
             t[key] = value
 
     @classmethod
-    def get_task_state(cls, task_id, key, default=None):
+    def get_task_state(cls, key, default=None, task_id=None):
         """
         Retrieve a mutable task value by key.
 
-        :param task_id: Integer ID of the task.
-        :param key: String key to retrieve.
-        :param default: Value to return if key is not present.
-        :return: The stored value or default.
+        :param key: Identifier to fetch.
+        :param default: Returned if key missing.
+        :param task_id: Optional task ID; if omitted, uses bound runner context.
+        :raises: RuntimeError if no task_id provided and no context bound.
+        :return: Stored value or default.
         """
+        tid = task_id if task_id is not None else getattr(cls._ctx, 'task_id', None)
+        if tid is None:
+            raise RuntimeError("Task ID not provided or bound")
         with cls._lock:
-            return cls._task_state.get(task_id, {}).get(key, default)
+            return cls._task_state.get(tid, {}).get(key, default)
 
     @classmethod
-    def delete_task_state(cls, task_id, key):
+    def delete_task_state(cls, key, task_id=None):
         """
         Delete a mutable key for a given task.
 
-        :param task_id: Integer ID of the task.
-        :param key: String key to remove.
+        :param key: Identifier to remove.
+        :param task_id: Optional task ID; if omitted, uses bound runner context.
+        :raises: RuntimeError if no task_id provided and no context bound.
         """
+        tid = task_id if task_id is not None else getattr(cls._ctx, 'task_id', None)
+        if tid is None:
+            raise RuntimeError("Task ID not provided or bound")
         with cls._lock:
-            t = cls._task_state.get(task_id, {})
+            t = cls._task_state.get(tid, {})
             t.pop(key, None)
             if not t:
-                cls._task_state.pop(task_id, None)
+                cls._task_state.pop(tid, None)
 
     @classmethod
-    def dump_all(cls):
+    def export_task_state(cls, task_id):
         """
-        Return deep copies of both runner and task stores.
+        Export the mutable state for a specific task as a deep-copied dict.
 
-        :return: Dict containing:
-                 {
-                   "runner_state": {...},
-                   "task_state":   {...}
-                 }
+        :param task_id: Integer ID of the task to export.
+        :return: Dict of key→value for that task, or {} if none.
         """
         with cls._lock:
-            return {
-                "runner_state": deepcopy(cls._runner_state),
-                "task_state":   deepcopy(cls._task_state),
-            }
+            return deepcopy(cls._task_state.get(task_id, {}))
 
     @classmethod
-    def dump_json(cls, **json_kwargs):
+    def export_task_state_json(cls, task_id, **json_kwargs):
         """
-        Return a JSON string representing both stores.
+        Export the mutable state for a specific task as JSON.
 
-        :param json_kwargs: forwarded to json.dumps (e.g. indent=2).
+        :param task_id: Integer ID of the task to export.
+        :param json_kwargs: Passed to json.dumps (e.g. indent=2).
         :return: JSON string.
         """
-        return json.dumps(cls.dump_all(), **json_kwargs)
+        state = cls.export_task_state(task_id)
+        return json.dumps(state, **json_kwargs)
+
+    @classmethod
+    def import_task_state(cls, task_id, new_state):
+        """
+        Merge a dict of new_state into existing task_state for a task.
+
+        Only adds or updates keys; existing keys not in new_state remain untouched.
+
+        :param task_id: Integer ID of the task.
+        :param new_state: Dict of key→value to merge in.
+        """
+        with cls._lock:
+            t = cls._task_state.setdefault(task_id, {})
+            for k, v in new_state.items():
+                t[k] = v
+
+    @classmethod
+    def import_task_state_json(cls, task_id, json_data):
+        """
+        Parse a JSON string and import it into task_state for a given task,
+        merging keys as in import_task_state.
+
+        :param task_id: Integer ID of the task.
+        :param json_data: JSON string produced by export_task_state_json.
+        """
+        parsed = json.loads(json_data)
+        if not isinstance(parsed, dict):
+            raise ValueError("Imported JSON must be an object/dict")
+        cls.import_task_state(task_id, parsed)

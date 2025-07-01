@@ -40,6 +40,7 @@ from unmanic.libs.library import Library
 from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.notifications import Notifications
 from unmanic.libs.plugins import PluginsHandler
+from unmanic.libs.task import TaskDataStore
 
 """
 
@@ -458,8 +459,9 @@ class PostProcessor(threading.Thread):
         task_dump = self.current_task.task_dump()
         destination_data = self.current_task.get_destination_data()
 
-        # Dump history log as metadata in the file's path
+        # Dump history log & task state as metadata in the file's path
         tasks_data_file = os.path.join(os.path.dirname(destination_data.get('abspath')), 'data.json')
+        task_state = TaskDataStore.export_task_state(self.current_task.get_task_id())
         result = common.json_dump_to_file(
             {
                 'task_label':          task_dump.get('task_label', ''),
@@ -470,6 +472,7 @@ class PostProcessor(threading.Thread):
                 'processed_by_worker': task_dump.get('processed_by_worker', ''),
                 'log':                 task_dump.get('log', ''),
                 'checksum':            'UNKNOWN',
+                'task_state':          task_state,
             }
             , tasks_data_file)
         if not result['success']:

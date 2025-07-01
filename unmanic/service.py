@@ -174,13 +174,15 @@ class RootService:
         return scheduled_tasks_manager
 
     def start_resource_logger(self):
+        abort_flag = threading.Event()
+
         def log_resources():
             pid = os.getpid()
             proc = psutil.Process(pid)
             cpu_count = psutil.cpu_count(logical=True)
             start_time = time.time()
 
-            while not self.event.is_set():
+            while not self.event.is_set() and not abort_flag.is_set():
                 try:
                     # Fetch CPU info
                     cpu_percent = proc.cpu_percent(interval=None)
@@ -212,7 +214,12 @@ class RootService:
 
                 time.sleep(5)  # Polling interval
 
-        thread = threading.Thread(target=log_resources, daemon=True)
+        thread = threading.Thread(
+            target=log_resources,
+            name='RootServiceResourceLogger',
+            daemon=True
+        )
+        thread.stop = abort_flag.set
         thread.start()
         self.threads.append({
             'name':   'RootServiceResourceLogger',

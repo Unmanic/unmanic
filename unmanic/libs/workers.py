@@ -358,8 +358,9 @@ class Worker(threading.Thread):
         original_abspath = self.current_task.get_source_abspath()
 
         # Process item in loop.
-        # First process the item for for each plugin that configures it, then run the default Unmanic configuration
+        # First process the item for each plugin that configures it, then run the default Unmanic configuration
         task_cache_path = self.current_task.get_cache_path()
+        cache_directory = os.path.dirname(os.path.abspath(task_cache_path))
         # Set the current input file to the original file path
         file_in = original_abspath
         # Mark the overall success of all runners. This will be set to False if any of the runners fails.
@@ -372,6 +373,15 @@ class Worker(threading.Thread):
         runner_count = 0
         # Flag if a task has run a command
         no_exec_command_run = True
+
+        # Execute event plugin runners
+        plugin_handler.run_event_plugins_for_plugin_type('events.worker_process_started', {
+            "library_id":          library_id,
+            "task_type":           self.current_task.get_task_type(),
+            "original_file_path":  original_abspath,
+            "cache_directory":     cache_directory,
+            "worker_runners_info": self.worker_runners_info,
+        })
 
         # Generate default data object for the runner functions
         data = {
@@ -549,7 +559,6 @@ class Worker(threading.Thread):
                 # Set the new file out as the extension may have changed
                 split_file_name = os.path.splitext(current_file_out)
                 file_extension = split_file_name[1].lstrip('.')
-                cache_directory = os.path.dirname(os.path.abspath(task_cache_path))
                 self.current_task.set_cache_path(cache_directory, file_extension)
                 # Read the updated cache path
                 task_cache_path = self.current_task.get_cache_path()
@@ -584,15 +593,23 @@ class Worker(threading.Thread):
             except Exception as e:
                 self._log("Exception in final move operation of file {} to {}:".format(current_file_out, task_cache_path),
                           message2=str(e), level="exception")
-                return False
+                overall_success = False
 
-            # Return True
-            return True
+        # Execute event plugin runners (only when added to queue)
+        plugin_handler.run_event_plugins_for_plugin_type('events.worker_process_complete', {
+            "library_id":          library_id,
+            "task_type":           self.current_task.get_task_type(),
+            "original_file_path":  original_abspath,
+            "final_cache_path":    task_cache_path,
+            "overall_success":     overall_success,
+            "worker_runners_info": self.worker_runners_info,
+            "worker_log":          self.worker_log,
+        })
 
-        # If the overall result of the jobs carried out on this task were not successful, we will get here.
-        # Log the failure and return False
-        self._log("Failed to process task for file '{}'".format(original_abspath), level='warning')
-        return False
+        # If the overall result of the jobs carried out on this task were not successful, log the failure and return False
+        if not overall_success:
+            self._log("Failed to process task for file '{}'".format(original_abspath), level='warning')
+        return overall_success
 
     def __log_proc_terminated(self, proc):
         self._log("Process {} terminated with exit code {}".format(proc, proc.returncode))

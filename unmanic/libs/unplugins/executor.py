@@ -31,6 +31,7 @@
 """
 import copy
 import gc
+import inspect
 import os
 import importlib.util
 import importlib
@@ -39,6 +40,7 @@ import sys
 from . import plugin_types
 from unmanic.libs import common
 from ..logs import UnmanicLogging
+from ..task import TaskDataStore
 
 
 class PluginExecutor(object):
@@ -233,26 +235,43 @@ class PluginExecutor(object):
 
         # Load this plugin module
         plugin_module = self.__load_plugin_module(plugin_id, plugin_path)
+        if not plugin_module:
+            self.logger.error("No module found with plugin_id '%s' and plugin_path '%s'", plugin_id, plugin_path)
+            return False
 
         # Get the called runner function for the given plugin type
         plugin_type_meta = self.get_plugin_type_meta(plugin_type)
         plugin_runner = plugin_type_meta.plugin_runner()
 
         # Check if this module contains the given plugin type runner
+        runner = getattr(plugin_module, plugin_runner, None)
+        if not runner:
+            # Plugin does not contain this runner, return false
+            return False
+
         run_successfully = False
-        if hasattr(plugin_module, plugin_runner):
+        task_id = data.get("task_id")
+        try:
+            # if we have a task_id, bind context for store-based calls
+            if task_id is not None:
+                TaskDataStore.bind_runner_context(
+                    task_id=task_id,
+                    plugin_id=plugin_id,
+                    runner=plugin_runner,
+                )
 
-            # If it does, get the runner function
-            runner = getattr(plugin_module, plugin_runner)
-
-            try:
+            sig = inspect.signature(runner)
+            # if runner declares two parameters, pass the store class as second arg
+            if len(sig.parameters) >= 2:
+                runner(data, TaskDataStore)
+            else:
                 runner(data)
-                run_successfully = True
-            except Exception:
-                self.logger.exception("Exception while carrying out '%s' plugin runner '%s'", plugin_type, plugin_id)
 
-            del runner
-            # gc.collect()
+            run_successfully = True
+        except Exception:
+            self.logger.exception("Exception while carrying out '%s' plugin runner '%s'", plugin_type, plugin_id)
+        finally:
+            TaskDataStore.clear_context()
 
         return run_successfully
 

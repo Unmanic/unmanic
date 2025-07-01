@@ -165,7 +165,7 @@ class PluginSettings(object):
     def get_profile_directory(self):
         """
         Return the absolute path to the Plugin's profile directory.
-        This is where where Plugin settings are saved and where all mutable data for the
+        This is where Plugin settings are saved and where all mutable data for the
         Plugin should be stored.
 
         :return:

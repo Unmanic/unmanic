@@ -591,6 +591,18 @@ class Foreman(threading.Thread):
             # Assign the task to the worker id provided
             if worker_id in self.worker_threads and self.worker_threads[worker_id].is_alive():
                 self.worker_threads[worker_id].set_task(item)
+                if item.get_task_type() == "local":
+                    # Execute event plugin runners (only for locally added tasks. Remote tasks are scheduled on the installation they were considered "local")
+                    event_data = {
+                        "library_id":               item.get_task_library_id(),
+                        "task_id":                  item.get_task_id(),
+                        "task_type":                item.get_task_type(),
+                        "task_schedule_type":       "local",
+                        "remote_installation_info": {},
+                        "source_data":              item.get_source_data()
+                    }
+                    plugin_handler = PluginsHandler()
+                    plugin_handler.run_event_plugins_for_plugin_type('events.task_scheduled', event_data)
             # If the worker thread specified was not available to collect this task, it will be fetched again in the next loop
         else:
             # Place into queue for a remote link manager thread to collect

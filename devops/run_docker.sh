@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 ###################################################################################################
 #
@@ -29,69 +29,115 @@
 #
 ###################################################################################################
 
-SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd );
-PROJECT_BASE=$(realpath ${SCRIPT_PATH}/..);
-PUID=$(id -u);
-PGID=$(id -g);
-DEBUGGING=false;
-CACHE_PATH="${PROJECT_BASE}/dev_environment/cache/";
-EXT_PORT=8888;
+set -eo pipefail
 
-ADDITIONAL_DOCKER_PARAMS=""
-for ARG in ${@}; do
-    case ${ARG} in
-        --debug)
-            DEBUGGING=true;
-            ;;
-        --hw*)
-            HW_ACCELERATION=$(echo ${ARG} | awk -F'=' '{print $2}');
-            ;;
-        --cpus*)
-            ADDITIONAL_DOCKER_PARAMS="${ADDITIONAL_DOCKER_PARAMS} --cpus='$(echo ${ARG} | awk -F'=' '{print $2}')'";
-            ;;
-        --memory*)
-            ADDITIONAL_DOCKER_PARAMS="${ADDITIONAL_DOCKER_PARAMS} --memory='$(echo ${ARG} | awk -F'=' '{print $2}')'";
-            ;;
-        --cache*)
-            CACHE_PATH="$(echo ${ARG} | awk -F'=' '{print $2}')"
-            ;;
-        --port*)
-            EXT_PORT="$(echo ${ARG} | awk -F'=' '{print $2}')"
-            ;;
-        *)
-            ;;
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PROJECT_BASE=$(cd "$SCRIPT_DIR/.." && pwd)
+
+# Defaults
+PUID=$(id -u)
+PGID=$(id -g)
+DEBUG="false"
+USE_TEST_SUPPORT_API="false"
+CACHE_PATH="$PROJECT_BASE/dev_environment/cache"
+EXT_PORT=8888
+IMAGE_TAG="staging"
+DOCKER_PARAMS=()
+
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Options:
+    --help, -h                  Show this help message and exit
+    --debug                     Enable debug mode inside container
+    --use-test-support-api      Set USE_TEST_SUPPORT_API=true inside container
+    --hw=<nvidia|vaapi>         Enable hardware acceleration
+    --cpus=<value>              Limit container CPUs (e.g. "2.5")
+    --memory=<value>            Limit container memory (e.g. "4g")
+    --cache=<path>              Override cache directory (default: $CACHE_PATH)
+    --port=<port>               Map host port to container 8888 (default: $EXT_PORT)
+    --tag=<image-tag>           Docker image tag to run (default: $IMAGE_TAG)
+EOF
+}
+
+# parse flags
+while [[ $# -gt 0 ]]; do
+    case $1 in
+    --help | -h)
+        usage
+        exit 0
+        ;;
+    --debug)
+        DEBUG=true
+        ;;
+    --use-test-support-api)
+        USE_TEST_SUPPORT_API=true
+        ;;
+    --hw=*)
+        HW="${1#*=}"
+        ;;
+    --cpus=*)
+        DOCKER_PARAMS+=(--cpus "${1#*=}")
+        ;;
+    --memory=*)
+        DOCKER_PARAMS+=(--memory "${1#*=}")
+        ;;
+    --cache=*)
+        CACHE_PATH="${1#*=}"
+        ;;
+    --port=*)
+        EXT_PORT="${1#*=}"
+        ;;
+    --tag=*)
+        IMAGE_TAG="${1#*=}"
+        ;;
+    *)
+        echo "Unknown option: $1" >&2
+        usage
+        exit 1
+        ;;
     esac
+    shift
 done
 
-if [[ ! -z ${HW_ACCELERATION} ]]; then
-    PARAM=""
-    case ${HW_ACCELERATION} in
-        nvidia)
-            PARAM="--gpu=all -e NVIDIA_VISIBLE_DEVICES=all"
-            ;;
-        vaapi)
-            PARAM="--device=/dev/dri:/dev/dri"
-            ;;
-        *)
-            ;;
+if [[ -n $HW ]]; then
+    case $HW in
+    nvidia)
+        DOCKER_PARAMS+=(--gpus all -e NVIDIA_VISIBLE_DEVICES=all)
+        ;;
+    vaapi)
+        DOCKER_PARAMS+=(--device /dev/dri:/dev/dri)
+        ;;
+    *)
+        echo "Unsupported --hw=$HW" >&2
+        exit 1
+        ;;
     esac
-    ADDITIONAL_DOCKER_PARAMS="${ADDITIONAL_DOCKER_PARAMS} ${PARAM} "
 fi
 
-CMD="docker run -ti --rm --name=unmanic \
-    -e TZ=Pacific/Auckland \
-    -p ${EXT_PORT}:8888 \
-    -v ${PROJECT_BASE}/:/app/ \
-    -v ${PROJECT_BASE}/dev_environment/config/:/config/ \
-    -v ${PROJECT_BASE}/dev_environment/library/:/library/ \
-    -v ${CACHE_PATH}/:/tmp/unmanic/ \
-    -v ${CACHE_PATH}/remote_library/:/tmp/unmanic/remote_library/ \
-    -v /run/user/:/run/user/ \
-    -e PUID=${PUID} \
-    -e PGID=${PGID} \
-    -e DEBUGGING=${DEBUGGING} \
-    ${ADDITIONAL_DOCKER_PARAMS} \
-    josh5/unmanic:latest bash"
+# detect if we need sudo
+if docker ps >/dev/null 2>&1; then
+    DOCKER_CMD="docker"
+else
+    DOCKER_CMD="sudo docker"
+fi
 
-echo "${CMD}"
-bash -c "${CMD}"
+# run!
+$DOCKER_CMD run --rm -it \
+    --name unmanic \
+    -e TZ=Pacific/Auckland \
+    -e PUID="$PUID" \
+    -e PGID="$PGID" \
+    -e DEBUGGING="$DEBUG" \
+    -e USE_TEST_SUPPORT_API="$USE_TEST_SUPPORT_API" \
+    -p "$EXT_PORT":8888 \
+    -v "$PROJECT_BASE":/app:Z \
+    -v "$PROJECT_BASE/dev_environment/config":/config:Z \
+    -v "$PROJECT_BASE/dev_environment/library":/library:Z \
+    -v "$CACHE_PATH":/tmp/unmanic:Z \
+    -v "$CACHE_PATH/remote_library":/tmp/unmanic/remote_library:Z \
+    -v /run/user/"$PUID":/run/user:ro,Z \
+    "${DOCKER_PARAMS[@]}" \
+    ghcr.io/unmanic/unmanic:"$IMAGE_TAG" \
+    bash

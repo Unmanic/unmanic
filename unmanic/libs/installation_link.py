@@ -43,8 +43,10 @@ from unmanic import config
 from unmanic.libs import common, session, task
 from unmanic.libs.library import Library
 from unmanic.libs.logs import UnmanicLogging
+from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.session import Session
 from unmanic.libs.singleton import SingletonType
+from unmanic.libs.task import TaskDataStore
 
 
 class RequestHandler:
@@ -1248,6 +1250,21 @@ class RemoteTaskManager(threading.Thread):
         self.current_task = current_task
         self.worker_log = []
 
+        # Execute event plugin runners
+        event_data = {
+            "library_id":               self.current_task.get_task_library_id(),
+            "task_id":                  self.current_task.get_task_id(),
+            "task_type":                self.current_task.get_task_type(),
+            "task_schedule_type":       "remote",
+            "remote_installation_info": {
+                'uuid':    self.installation_info.get("installation_uuid"),
+                'address': self.installation_info.get("remote_address"),
+            },
+            "source_data":              self.current_task.get_source_data()
+        }
+        plugin_handler = PluginsHandler()
+        plugin_handler.run_event_plugins_for_plugin_type('events.task_scheduled', event_data)
+
     def __unset_current_task(self):
         self.current_task = None
         self.worker_runners_info = {}
@@ -1361,7 +1378,7 @@ class RemoteTaskManager(threading.Thread):
         library_path = library.get_path()
 
         # Check if we can create the remote task with just a relative path
-        #   only create checksum and send file if the remote library path cannot accept relative paths or
+        #   only create checksum and send file if the remote library path cannot accept relative paths, or
         #   it is configured for only receiving remote files
         send_file = False
         library_config = self.links.get_the_remote_library_config_by_name(self.installation_info, library_name)
@@ -1593,6 +1610,12 @@ class RemoteTaskManager(threading.Thread):
 
         # Save the completed command log
         self.current_task.save_command_log(self.worker_log)
+
+        # Update task state
+        task_state = data.get('task_state')
+        self.logger.warn("Importing task_state into TaskDataStore: %s", task_state)
+        if task_state:
+            TaskDataStore.import_task_state(self.current_task.get_task_id(), task_state)
 
         # Fetch remote task file
         if data.get('task_success'):

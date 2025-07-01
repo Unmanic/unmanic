@@ -1183,8 +1183,8 @@ class RemoteTaskManager(threading.Thread):
     start_time = None
     finish_time = None
 
-    worker_subprocess_percent = None
-    worker_subprocess_elapsed = None
+    worker_subprocess_percent = '0'
+    worker_subprocess_elapsed = '0'
 
     worker_runners_info = {}
 
@@ -1260,7 +1260,7 @@ class RemoteTaskManager(threading.Thread):
         :return:
         """
         # Set the progress to an empty string
-        self.worker_subprocess_percent = ''
+        self.worker_subprocess_percent = '0'
         self.worker_subprocess_elapsed = '0'
 
         # Log the start of the job

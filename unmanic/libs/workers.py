@@ -121,12 +121,12 @@ class Worker(threading.Thread):
 
     worker_subprocess = None
     worker_subprocess_pid = None
-    worker_subprocess_percent = None
-    worker_subprocess_elapsed = None
-    worker_subprocess_cpu_percent = None
-    worker_subprocess_mem_percent = None
-    worker_subprocess_rss_bytes = None
-    worker_subprocess_vms_bytes = None
+    worker_subprocess_percent = '0'
+    worker_subprocess_elapsed = '0'
+    worker_subprocess_cpu_percent = '0'
+    worker_subprocess_mem_percent = '0'
+    worker_subprocess_rss_bytes = '0'
+    worker_subprocess_vms_bytes = '0'
 
     worker_runners_info = {}
 
@@ -276,7 +276,7 @@ class Worker(threading.Thread):
         self.idle = False
 
         # Set the progress to an empty string
-        self.worker_subprocess_percent = ''
+        self.worker_subprocess_percent = '0'
         self.worker_subprocess_elapsed = '0'
         self.worker_subprocess_cpu_percent = '0'
         self.worker_subprocess_mem_percent = '0'

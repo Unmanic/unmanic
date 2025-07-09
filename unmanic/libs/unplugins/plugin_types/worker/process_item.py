@@ -50,6 +50,46 @@ class ProcessItem(PluginType):
         original_file_path      - String, the absolute path to the original file.
         repeat                  - Boolean, should this runner be executed again once completed with the same variables.
 
+    **Shared task & runner state**  
+    Plugins can store shared, cross‐plugin and even cross‐process state via `TaskDataStore`:
+    
+        from unmanic.libs.task import TaskDataStore
+
+        # Store mutable per‐task values:
+        TaskDataStore.set_task_state("source_file_size", source_file_size)
+        # read it back later (same or other plugin):
+        p = TaskDataStore.get_task_state("source_file_size")
+
+        # Store immutable runner‐scoped values:
+        TaskDataStore.set_runner_value("probe_info", {...})
+        val = TaskDataStore.get_runner_value("probe_info")
+
+    **Spawning your own child process**  
+    Instead of setting `exec_command`, you can perform complex or Python‐only work in a separate process while still reporting logs & progress:
+
+        from unmanic.libs.unplugins.child_process import PluginChildProcess
+
+        proc = PluginChildProcess(plugin_id="<your_plugin_id>", data=data)
+
+        def child_work(log_queue, prog_queue):
+            # any Python code here
+            for i in range(10):
+                # emit a UI log line:
+                log_queue.put(f"step {i}/10 completed")
+                # emit progress 0–100:
+                prog_queue.put((i + 1) * 10)
+                time.sleep(1)
+
+        # Runs child_work in its own process, returns True if exit code==0
+        success = proc.run(child_work)
+
+    In this mode the `PluginChildProcess` helper:
+      1. Spawns the child via `multiprocessing.Process`.  
+      2. Registers its PID & start‐time with the worker’s `default_progress_parser`.  
+      3. Drains `log_queue` → `data["worker_log"]` for UI tail.  
+      4. Drains `prog_queue` → `command_progress_parser(line_text)` to update the progress bar.  
+      5. Will unset the child process PID on exit to reset all tracked subprocess metrics in the Unmanic Worker (CPU, memory, progress, etc.).
+
     :param data:
     :return:
     """

@@ -40,6 +40,7 @@ class ProcessItem(PluginType):
     Runner function - enables additional configured processing jobs during the worker stages of a task.
 
     The 'data' object argument includes:
+        task_id                 - Integer, unique identifier of the task.
         worker_log              - Array, the log lines that are being tailed by the frontend. Can be left empty.
         library_id              - Number, the library that the current task is associated with.
         exec_command            - Array, a subprocess command that Unmanic should execute. Can be empty.
@@ -53,13 +54,17 @@ class ProcessItem(PluginType):
     :return:
     """
     data_schema = {
-        "worker_log":              {
-            "required": True,
-            "type":     list,
-        },
         "library_id":              {
             "required": True,
             "type":     int,
+        },
+        "task_id":                 {
+            "required": False,
+            "type":     int
+        },
+        "worker_log":              {
+            "required": True,
+            "type":     list,
         },
         "exec_command":            {
             "required": True,
@@ -87,8 +92,9 @@ class ProcessItem(PluginType):
         },
     }
     test_data = {
-        'worker_log':              [],
         'library_id':              1,
+        "task_id":                 4321,
+        'worker_log':              [],
         'exec_command':            [],
         'command_progress_parser': None,
         'file_in':                 '{library_path}/{test_file_in}',

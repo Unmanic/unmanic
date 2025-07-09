@@ -34,7 +34,6 @@ import os
 import sys
 
 from unmanic import config
-from unmanic.libs.singleton import SingletonType
 
 
 class PluginSettings(object):

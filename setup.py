@@ -65,7 +65,6 @@ module_classifiers = [
     'Programming Language :: Python :: 3.12',
     'Operating System :: POSIX :: Linux',
     'Operating System :: Unix',
-    'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
     'Topic :: Multimedia :: Video :: Conversion',
     'Topic :: Internet :: WWW/HTTP',
 ]
@@ -190,6 +189,8 @@ def requirements_dev():
 setup(
     name=module_name,
     version=module_version,
+    license="GPL-3.0-only",
+    license_files=("LICENSE",),
     author=module_author,
     author_email=module_email,
     maintainer=module_author,

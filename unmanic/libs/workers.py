@@ -238,7 +238,15 @@ class WorkerSubprocessMonitor(threading.Thread):
         except Exception:
             self.logger.exception("Exception in set_subprocess_percent()")
 
-    def default_progress_parser(self, line_text, pid=None, proc_start_time=None):
+    def default_progress_parser(self, line_text, pid=None, proc_start_time=None, unset=False):
+        if unset:
+            # Here we provide a plugin with the ability to unset a subprocess (indicating that it completed)
+            self.unset_proc()
+            return {
+                'killed':  self.redundant_flag.is_set(),
+                'paused':  self.paused,
+                'percent': str(self.subprocess_percent),
+            }
         try:
             if pid is not None:
                 self.set_proc(pid)
@@ -593,6 +601,7 @@ class Worker(threading.Thread):
         })
 
         # Generate default data object for the runner functions
+        task_id = self.current_task.get_task_id()
         data = {
             "worker_log":              self.worker_log,
             "library_id":              library_id,
@@ -638,6 +647,7 @@ class Worker(threading.Thread):
                 data['file_out'] = file_out
                 data['original_file_path'] = original_abspath
                 data['repeat'] = False
+                data['task_id'] = task_id
 
                 self.event.wait(.2)  # Add delay for preventing loop maxing compute resources
                 self.worker_log.append("\n\nRUNNER: \n{} [Pass #{}]\n\n".format(plugin_module.get('name'), runner_pass_count))

@@ -35,6 +35,7 @@ import shutil
 import threading
 import time
 from copy import deepcopy
+from multiprocessing import Manager
 from operator import attrgetter
 
 from playhouse.shortcuts import model_to_dict
@@ -454,6 +455,9 @@ class Task(object):
         return query.execute()
 
 
+_manager = Manager()
+
+
 class TaskDataStore:
     """
     Thread-safe in-memory store for task lifecycle data, shared across all plugins and threads.
@@ -510,8 +514,8 @@ class TaskDataStore:
            }
     """
 
-    _runner_state = {}
-    _task_state = {}
+    _runner_state = _manager.dict()
+    _task_state = _manager.dict()
     _lock = threading.RLock()
     _ctx = threading.local()
 
@@ -559,12 +563,15 @@ class TaskDataStore:
         if None in (tid, pid, run):
             raise RuntimeError("Runner context not bound")
         with cls._lock:
-            task = cls._runner_state.setdefault(tid, {})
-            plug = task.setdefault(pid, {})
-            rtn = plug.setdefault(run, {})
-            if key in rtn:
+            task_map = dict(cls._runner_state.get(tid, {}))
+            plugin_map = dict(task_map.get(pid, {}))
+            runner_map = dict(plugin_map.get(run, {}))
+            if key in runner_map:
                 return False
-            rtn[key] = deepcopy(value)
+            runner_map[key] = deepcopy(value)
+            plugin_map[run] = runner_map
+            task_map[pid] = plugin_map
+            cls._runner_state[tid] = task_map
             return True
 
     @classmethod
@@ -611,8 +618,10 @@ class TaskDataStore:
         if tid is None:
             raise RuntimeError("Task ID not provided or bound")
         with cls._lock:
-            t = cls._task_state.setdefault(tid, {})
-            t[key] = value
+            existing = cls._task_state.get(tid, {})
+            new_t = dict(existing)
+            new_t[key] = value
+            cls._task_state[tid] = new_t
 
     @classmethod
     def get_task_state(cls, key, default=None, task_id=None):

@@ -134,7 +134,7 @@ class WorkerSubprocessMonitor(threading.Thread):
                     continue
 
             self.paused = True
-            start_pause = time.time()
+            self.subprocess_pause_time = int(time.time())
             while not self.redundant_flag.is_set():
                 self.event.wait(1)
                 if not self.paused_flag.is_set():
@@ -149,10 +149,6 @@ class WorkerSubprocessMonitor(threading.Thread):
                         except psutil.NoSuchProcess:
                             continue
                     self.paused = False
-                    # Elapsed time is used for calculating etc.
-                    # We account for this by counting the time we are paused also.
-                    # This is then subtracted from the elapsed time in the calculation above.
-                    self.subprocess_pause_time += time.time() - start_pause
                     break
 
         except Exception:
@@ -222,10 +218,20 @@ class WorkerSubprocessMonitor(threading.Thread):
 
     def get_subprocess_elapsed(self):
         try:
-            return str(time.time() - self.subprocess_start_time - self.subprocess_pause_time)
+            subprocess_elapsed = 0
+            if self.subprocess is not None:
+                # Get the time now
+                now = int(time.time())
+                # Get the total running time (including time being paused)
+                total_run_time = int(now - self.subprocess_start_time)
+                # Get the time when we started being paused
+                pause_duration = int(now - self.subprocess_pause_time)
+                # Calculate elapsed time of the subprocess subtracting the pause duration
+                subprocess_elapsed = int(total_run_time - pause_duration)
+            return subprocess_elapsed
         except Exception:
             self.logger.exception("Exception in get_subprocess_elapsed()")
-            return "0"
+            return 0
 
     def get_subprocess_stats(self):
         try:

@@ -978,7 +978,7 @@ components:
           - library_management.file_test
           - postprocessor.file_move
           - postprocessor.task_result
-          - worker.process_item
+          - worker.process
           items:
             type: string
       required:
@@ -1459,7 +1459,7 @@ components:
                   using the native FFmpeg ac3 encoder.
                 version: 0.0.2
                 icon: https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png
-              worker.process_item:
+              worker.process:
               - plugin_id: encoder_audio_ac3
                 name: Audio Encoder AC3
                 author: Josh.5

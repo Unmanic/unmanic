@@ -29,12 +29,85 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import signal
 import time
 import queue
 import threading
-from multiprocessing import Process, Manager
+
+import psutil
 
 from unmanic.libs.logs import UnmanicLogging
+
+# Configure a global shared manager
+_shared_manager = None
+
+_active_plugin_pids = set()
+_active_lock = threading.Lock()
+
+
+def _register_pid(pid: int):
+    with _active_lock:
+        _active_plugin_pids.add(pid)
+
+
+def _unregister_pid(pid: int):
+    with _active_lock:
+        _active_plugin_pids.discard(pid)
+
+
+def kill_all_plugin_processes():
+    """
+    Terminate every plugin-spawned process (and its children)
+    that’s still registered. Intended for use in atexit
+    and tornado.autoreload hooks.
+    """
+    with _active_lock:
+        pids = list(_active_plugin_pids)
+        _active_plugin_pids.clear()
+
+    for pid in pids:
+        try:
+            root = psutil.Process(pid)
+        except psutil.NoSuchProcess:
+            continue
+
+        procs = root.children(recursive=True) + [root]
+
+        # Ensure no processes are left in SIGSTOP
+        for p in procs:
+            try:
+                # on Unix, unblock with SIGCONT
+                p.send_signal(signal.SIGCONT)
+            except Exception:
+                pass
+            try:
+                # on all platforms psutil.resume() works if supported
+                p.resume()
+            except Exception:
+                pass
+
+        # Attempt graceful shutdown
+        for p in procs:
+            try:
+                p.terminate()
+            except psutil.NoSuchProcess:
+                pass
+
+        gone, alive = psutil.wait_procs(procs, timeout=3)
+
+        # Finally, force kill any stragglers
+        for p in alive:
+            try:
+                p.kill()
+            except psutil.NoSuchProcess:
+                pass
+        psutil.wait_procs(alive, timeout=3)
+
+
+def set_shared_manager(mgr):
+    """Called once at service startup to inject the shared Manager."""
+    global _shared_manager
+    _shared_manager = mgr
 
 
 class PluginChildProcess:
@@ -48,7 +121,9 @@ class PluginChildProcess:
             name=f'Plugin.{plugin_id}.{__class__.__name__}'
         )
         self.data = data
-        self.manager = Manager()
+        if _shared_manager is None:
+            raise RuntimeError("PluginChildProcess must be initialized after shared Manager is set")
+        self.manager = _shared_manager
         self._log_q = self.manager.Queue()
         self._prog_q = self.manager.Queue()
         self._proc = None
@@ -62,12 +137,14 @@ class PluginChildProcess:
           prog_queue –> use prog_queue.put(percentage:float) to emit progress
         """
         # Start child as before
+        from multiprocessing import Process
         self._proc = Process(
             target=self._child_entry,
             args=(target, args, kwargs),
             daemon=True
         )
         self._proc.start()
+        _register_pid(self._proc.pid)
         self.logger.info("Started child PID %s", self._proc.pid)
 
         # Register PID & start time with WorkerSubprocessMonitor
@@ -79,7 +156,13 @@ class PluginChildProcess:
                 self.logger.exception("Failed to register progress parser")
 
         # Drain logs, progress, watch exit
-        return self._monitor()
+        success = self._monitor()
+
+        # When the child process is done, unregister
+        _unregister_pid(self._proc.pid)
+
+        # Return success status
+        return success
 
     def _child_entry(self, target, args, kwargs):
         """

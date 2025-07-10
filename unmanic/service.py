@@ -93,6 +93,8 @@ class RootService:
 
         self.event = threading.Event()
 
+        self._mgr = None
+
     def start_handler(self, data_queues, task_queue):
         self.logger.info("Starting TaskHandler")
         handler = TaskHandler(data_queues, task_queue, self.event)
@@ -297,6 +299,26 @@ class RootService:
         self.run_threads = False
 
     def run(self):
+        # Init the TaskDataStore and PluginChildProcess
+        import tornado.autoreload
+        from multiprocessing import Manager
+        import atexit
+        from unmanic.libs.task import TaskDataStore
+        from unmanic.libs.unplugins.child_process import kill_all_plugin_processes, set_shared_manager
+        # Init a shared manager
+        self._mgr = Manager()
+        # Ensure Manager shuts down on process exit or tornado autoreload (dev mode)
+        atexit.register(self._mgr.shutdown)
+        tornado.autoreload.add_reload_hook(self._mgr.shutdown)
+        # Ensure any PluginChildProcess shuts down on process exit or tornado autoreload (dev mode)
+        atexit.register(kill_all_plugin_processes)
+        tornado.autoreload.add_reload_hook(kill_all_plugin_processes)
+        # Replace the in-process dicts with manager proxies
+        TaskDataStore._runner_state = self._mgr.dict()
+        TaskDataStore._task_state = self._mgr.dict()
+        # Set the shared manager for PluginChildProcess
+        set_shared_manager(self._mgr)
+
         # Init the configuration
         settings = config.Config()
 

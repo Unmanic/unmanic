@@ -35,7 +35,6 @@ import shutil
 import threading
 import time
 from copy import deepcopy
-from multiprocessing import Manager
 from operator import attrgetter
 
 from playhouse.shortcuts import model_to_dict
@@ -455,9 +454,6 @@ class Task(object):
         return query.execute()
 
 
-_manager = Manager()
-
-
 class TaskDataStore:
     """
     Thread-safe in-memory store for task lifecycle data, shared across all plugins and threads.
@@ -514,8 +510,8 @@ class TaskDataStore:
            }
     """
 
-    _runner_state = _manager.dict()
-    _task_state = _manager.dict()
+    _runner_state = {}
+    _task_state = {}
     _lock = threading.RLock()
     _ctx = threading.local()
 

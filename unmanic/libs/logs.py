@@ -110,6 +110,8 @@ class ForwardLogHandler(logging.Handler):
         self.sender_thread = threading.Thread(target=self._send_from_disk, daemon=True)
         self.sender_thread.start()
 
+        self.previous_connection_failed = False
+
     def configure_endpoint(self, endpoint, app_id):
         self.endpoint = endpoint
         self.app_id = app_id
@@ -293,23 +295,31 @@ class ForwardLogHandler(logging.Handler):
             if response.status_code == 204:
                 # Success, remove the file
                 os.remove(buffer_file)
+                if self.previous_connection_failed:
+                    self.previous_connection_failed = False
+                    logging.getLogger("Unmanic.ForwardLogHandler").info("Successfully flushed log buffer after retry.")
                 return True
             else:
-                logging.getLogger("Unmanic.ForwardLogHandler").error("Failed to forward logs from %s to remote host %s: %s %s",
-                                                                     os.path.basename(buffer_file),
-                                                                     self.endpoint,
-                                                                     response.status_code,
-                                                                     response.text)
-                # Leave the file for later retry
+                # The buffer file will be left here for another retry later on
+                self.previous_connection_failed = True
+                logging.getLogger("Unmanic.ForwardLogHandler").error(
+                    "Failed to forward logs from %s to remote host %s: %s %s",
+                    os.path.basename(buffer_file),
+                    self.endpoint,
+                    response.status_code,
+                    response.text)
         except requests.exceptions.ConnectionError as e:
             # Ignore this. We will try again later
             logging.getLogger("Unmanic.ForwardLogHandler").warning(
                 "ConnectionError on remote endpoint %s. Ensure this URL is reachable by Unmanic.",
                 self.endpoint)
+            self.previous_connection_failed = True
         except Exception as e:
-            logging.getLogger("Unmanic.ForwardLogHandler").exception("Exception while trying to forward logs from %s: %s",
-                                                                     buffer_file, e)
-            # Leave the file for later retry
+            # Ignore this. We will try again later
+            logging.getLogger("Unmanic.ForwardLogHandler").exception(
+                "Exception while trying to forward logs from %s: %s",
+                buffer_file, e)
+            self.previous_connection_failed = True
         return False
 
     @staticmethod

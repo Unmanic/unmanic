@@ -143,6 +143,9 @@ class WorkerSubprocessMonitor(threading.Thread):
                         try:
                             self.logger.debug("Resuming PID %s", p.pid)
                             p.resume()
+                            # Force anything to shut down straight away if we are exiting the thread
+                            if self.redundant_flag.is_set() or self._stop_event.is_set():
+                                p.terminate()
                         except psutil.NoSuchProcess:
                             continue
                     self.paused = False
@@ -176,26 +179,44 @@ class WorkerSubprocessMonitor(threading.Thread):
     def __terminate_proc_tree(self, proc: psutil.Process):
         """
         Terminate the process tree (including grandchildren).
-        Processes that fail to stop with SIGTERM will be sent a SIGKILL.
+        Ensures any suspended processes are first resumed so that
+        terminate() will actually take effect.  Processes that
+        fail to stop with terminate() within 3s will be killed.
 
         :param proc:
         :return:
         """
         try:
-            children = proc.children(recursive=True)
-            children.append(proc)
-            for p in children:
+            # Build the full tree
+            all_procs = proc.children(recursive=True) + [proc]
+
+            # Resume all suspended processes so they can handle signals
+            for p in all_procs:
+                try:
+                    p.resume()
+                except (psutil.NoSuchProcess, NotImplementedError):
+                    pass
+
+            # Attempt graceful shutdown
+            for p in all_procs:
                 try:
                     p.terminate()
                 except psutil.NoSuchProcess:
                     pass
-            gone, alive = psutil.wait_procs(children, timeout=3, callback=self.__log_proc_terminated)
+
+            # Wait up to 3s for them to exit
+            gone, alive = psutil.wait_procs(all_procs, timeout=3, callback=self.__log_proc_terminated)
+
+            # Force-kill any remaining processes
             for p in alive:
                 try:
                     p.kill()
                 except psutil.NoSuchProcess:
                     pass
+
+            # Final wait to reap
             psutil.wait_procs(alive, timeout=3, callback=self.__log_proc_terminated)
+
         except Exception:
             self.logger.exception("Exception in __terminate_proc_tree()")
 
@@ -284,8 +305,6 @@ class WorkerSubprocessMonitor(threading.Thread):
 
                 if self.redundant_flag.is_set():
                     # If the worker needs to exit, then terminate the subprocess
-                    self.paused_flag.clear()
-                    self.event.wait(.1)
                     self.terminate_proc()
                     self.event.wait(1)
                     continue
@@ -341,8 +360,6 @@ class WorkerSubprocessMonitor(threading.Thread):
         self.logger.info("Exiting WorkerMonitor loop")
 
     def stop(self):
-        self.paused_flag.clear()
-        self.event.wait(.1)
         self.terminate_proc()
         self._stop_event.set()
 

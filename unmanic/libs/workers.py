@@ -556,7 +556,7 @@ class Worker(threading.Thread):
         # Init plugins
         library_id = self.current_task.get_task_library_id()
         plugin_handler = PluginsHandler()
-        plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('worker.process_item', library_id=library_id)
+        plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('worker.process', library_id=library_id)
 
         # Create dictionary of runners info for the frontend
         self.worker_runners_info = {}
@@ -658,7 +658,7 @@ class Worker(threading.Thread):
 
                 def _run_plugin():
                     result["success"] = plugin_handler.exec_plugin_runner(
-                        data, runner_id, 'worker.process_item'
+                        data, runner_id, 'worker.process'
                     )
 
                 runner_thread = threading.Thread(target=_run_plugin, daemon=True)

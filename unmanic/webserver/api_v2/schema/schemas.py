@@ -872,7 +872,7 @@ class PluginTypesResultsSchema(BaseSchema):
             "library_management.file_test",
             "postprocessor.file_move",
             "postprocessor.task_result",
-            "worker.process_item"
+            "worker.process"
         ],
     )
 
@@ -1402,7 +1402,7 @@ class SettingsLibraryPluginConfigExportSchema(BaseSchema):
                         "icon":        "https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png"
                     }
                 ],
-                "worker.process_item":          [
+                "worker.process":          [
                     {
                         "plugin_id":   "encoder_audio_ac3",
                         "name":        "Audio Encoder AC3",

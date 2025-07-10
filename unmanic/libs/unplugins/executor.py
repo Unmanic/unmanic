@@ -51,8 +51,8 @@ class PluginExecutor(object):
             home_directory = common.get_home_dir()
             plugins_directory = os.path.join(home_directory, '.unmanic', 'plugins')
         self.plugins_directory = plugins_directory
-        # List plugin types in order that they are run
-        # Listing them in order helps for the frontend
+        # NOTE: List plugin types in order that they are run against a library
+        #       This is listing them in order helps the frontend. Don't order alphabetically
         self.plugin_types = [
             {
                 'id':       'frontend.panel',
@@ -67,8 +67,36 @@ class PluginExecutor(object):
                 'has_flow': True,
             },
             {
-                'id':       'worker.process_item',
+                'id':       'events.file_queued',
+                'has_flow': False,
+            },
+            {
+                'id':       'events.task_queued',
+                'has_flow': False,
+            },
+            {
+                'id':       'events.scan_complete',
+                'has_flow': False,
+            },
+            {
+                'id':       'events.task_scheduled',
+                'has_flow': False,
+            },
+            {
+                'id':       'events.worker_process_started',
+                'has_flow': False,
+            },
+            {
+                'id':       'worker.process',
                 'has_flow': True,
+            },
+            {
+                'id':       'events.worker_process_complete',
+                'has_flow': False,
+            },
+            {
+                'id':       'events.postprocessor_started',
+                'has_flow': False,
             },
             {
                 'id':       'postprocessor.file_move',
@@ -77,6 +105,10 @@ class PluginExecutor(object):
             {
                 'id':       'postprocessor.task_result',
                 'has_flow': True,
+            },
+            {
+                'id':       'events.postprocessor_complete',
+                'has_flow': False,
             },
         ]
         self.logger = UnmanicLogging.get_logger(name=__class__.__name__)

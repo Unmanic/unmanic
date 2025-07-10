@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.process_item.py
+    unmanic.process.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
     Date:                     05 Mar 2021, (8:05 PM)

@@ -196,7 +196,7 @@ def get_git_version_info():
 
     # Check if there are uncommitted changes on the directory
     git_diff_status = subprocess.check_output(
-        "git diff-index --quiet HEAD -- || echo 'is_dirty'", shell=True
+        "git diff-index --quiet HEAD -- ':!README.md' || echo 'is_dirty'", shell=True
     ).strip().decode("utf-8")
     if git_diff_status == 'is_dirty':
         # There are commits since the last tag

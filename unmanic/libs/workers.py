@@ -284,8 +284,8 @@ class WorkerSubprocessMonitor(threading.Thread):
 
                 if self.redundant_flag.is_set():
                     # If the worker needs to exit, then terminate the subprocess
-                    # self.paused_flag.clear()
-                    # self.event.wait(.1)
+                    self.paused_flag.clear()
+                    self.event.wait(.1)
                     self.terminate_proc()
                     self.event.wait(1)
                     continue
@@ -341,6 +341,8 @@ class WorkerSubprocessMonitor(threading.Thread):
         self.logger.info("Exiting WorkerMonitor loop")
 
     def stop(self):
+        self.paused_flag.clear()
+        self.event.wait(.1)
         self.terminate_proc()
         self._stop_event.set()
 

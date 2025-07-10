@@ -398,7 +398,6 @@ class PluginsCLI(object):
 
         plugin_results = self.__get_installed_plugins(plugin_id=plugin_id)
         for plugin_result in plugin_results:
-            # plugin_runners = plugin_executor.get_plugin_runners('worker.process_item')
             print("{1}Testing plugin: '{0}'{2}".format(plugin_result.get("name"), BColours.HEADER, BColours.ENDC))
             plugin_id = plugin_result.get("plugin_id")
 

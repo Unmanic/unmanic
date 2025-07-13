@@ -3,7 +3,7 @@ schedule==1.2.2
 tornado==6.3.3
 marshmallow~=3.22
 peewee>=3.14.4
-peewee_migrate==1.6.1
+peewee_migrate==1.13.0
 psutil~=6.0.0
 requests>=2.28.2
 requests_toolbelt>=0.9.1

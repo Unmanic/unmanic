@@ -99,7 +99,7 @@ class Migrations(object):
             with self.database.transaction():
                 for model in all_models:
                     self.migrator.create_table(model)
-                self.migrator.run()
+                self.migrator()
         except Exception:
             self.database.rollback()
             self.logger.exception("Initialising tables failed")
@@ -127,7 +127,7 @@ class Migrations(object):
                             try:
                                 with self.database.transaction():
                                     self.migrator.add_columns(model, **{field.name: field})
-                                    self.migrator.run()
+                                    self.migrator()
                             except Exception:
                                 self.database.rollback()
                                 self.logger.exception("Update failed")

@@ -31,7 +31,7 @@
 """
 import threading
 
-lock = threading.Lock()
+lock = threading.RLock()
 
 
 class SingletonType(type):

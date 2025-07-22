@@ -620,19 +620,6 @@ class Session(object, metaclass=SingletonType):
         It then logs the verification URL and user code for the user to enter, and finally
         calls poll_for_app_token() to retrieve the app token.
         """
-        # Construct the AuthAPIBase using self.get_site_url()
-        auth_api_base = f"{self.get_site_url()}/support-auth-api"
-        request_body = {
-            "uuid": self.get_installation_uuid()
-        }
-        url = f"{auth_api_base}/v2/app_auth/request_pin"
-
-        try:
-            response = requests.post(url, json=request_body, headers={"Content-Type": "application/json"})
-        except requests.RequestException as e:
-            self.logger.error("The remote service is currently unavailable. Please try again later.")
-            raise e
-
         # Try to fetch token if this was the initial login
         post_data = {"uuid": self.get_installation_uuid()}
         response, status_code = self.api_post('support-auth-api', 2, 'app_auth/request_pin', post_data)

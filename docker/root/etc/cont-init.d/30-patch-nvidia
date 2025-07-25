@@ -11,7 +11,7 @@ if [[ ! -z ${NVIDIA_PATCH_VERSION} ]]; then
     echo "**** (patch-nvidia) Fetch NVIDIA Patch ****";
     curl -sSLf \
         -o /usr/local/bin/patch.sh \
-        "https://raw.githubusercontent.com/keylase/nvidia-patch/${NVIDIA_PATCH_VERSION}/patch.sh"
+        "https://raw.githubusercontent.com/keylase/nvidia-patch/master/patch.sh"
     chmod +x /usr/local/bin/patch.sh
 
     echo "**** (patch-nvidia) Exec NVIDIA Patch ****";

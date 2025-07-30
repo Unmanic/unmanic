@@ -210,7 +210,7 @@ class ForwardLogHandler(logging.Handler):
                 # Nothing in buffer
                 return
 
-            timestamp_str = datetime.utcnow().isoformat()
+            timestamp_str = datetime.utcnow().isoformat().replace(":", "-")
             buffer_file = os.path.join(self.buffer_path, f"log_buffer_{timestamp_str}.json.lock")
 
             with open(buffer_file, "w") as f:
@@ -328,7 +328,7 @@ class ForwardLogHandler(logging.Handler):
         Check if the log buffer file is older than the specified number of days based on its timestamp in the filename.
 
         The expected filename format is:
-          log_buffer_YYYY-MM-DDTHH:MM:SS.ffffff.json
+          log_buffer_YYYY-MM-DDTHH-MM-SS.ffffff.json
 
         Returns True if the timestamp is older than max_days, otherwise False.
         """
@@ -342,11 +342,17 @@ class ForwardLogHandler(logging.Handler):
         # Extract the timestamp part from the filename.
         timestamp_str = basename[len(prefix):-len(suffix)]
 
+        # Migrate from old format (log_buffer_YYYY-MM-DDTHH:MM:SS.ffffff.json)
         try:
-            file_timestamp = datetime.fromisoformat(timestamp_str)
+            # Try new format first (with colons replaced by dashes)
+            file_timestamp = datetime.strptime(timestamp_str, "%Y-%m-%dT%H-%M-%S.%f")
         except ValueError:
-            # Unable to parse the timestamp.
-            return False
+            try:
+                # Fallback to old format with colons
+                file_timestamp = datetime.fromisoformat(timestamp_str)
+            except ValueError:
+                # Unable to parse the timestamp.
+                return False
 
         max_age_threshold = datetime.now() - timedelta(days=max_days)
         return file_timestamp < max_age_threshold

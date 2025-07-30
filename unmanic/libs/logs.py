@@ -436,6 +436,7 @@ class UnmanicLogging:
                 cls._instance = super(UnmanicLogging, cls).__new__(cls)
                 cls._instance._logger = logging.getLogger("Unmanic")
                 logging.addLevelName(cls._instance.METRIC, "METRIC")
+                logging.addLevelName(cls._instance.DATA, "DATA")
                 cls._instance._logger.setLevel(logging.INFO)
                 cls._instance._logger.propagate = False
             return cls._instance

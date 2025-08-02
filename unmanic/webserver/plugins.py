@@ -116,6 +116,12 @@ class PluginAPIRequestHandler(tornado.web.RequestHandler):
     def post(self, path):
         self.handle_panel_request()
 
+    def delete(self, path):
+        self.handle_panel_request()
+
+    def put(self, path):
+        self.handle_panel_request()
+
     def handle_panel_request(self):
         path = list(filter(None, self.request.path.split('/')[4:]))
 

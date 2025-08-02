@@ -123,6 +123,7 @@ class PluginAPIRequestHandler(tornado.web.RequestHandler):
         data = {
             'content_type': 'application/json',
             'content':      {},
+            'method':       self.request.method,
             'path':         "/" + "/".join(path),
             'uri':          self.request.uri,
             'query':        self.request.query,

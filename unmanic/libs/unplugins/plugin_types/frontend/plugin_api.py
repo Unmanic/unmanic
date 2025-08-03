@@ -42,6 +42,8 @@ class PluginAPI(PluginType):
     The 'data' object argument includes:
         content_type                    - The content type to be set when writing back to the browser.
         content                         - The content to print to the browser.
+        status                          - The HTTP status code for the response.
+        method                          - The request method.
         path                            - The path received after the '/unmanic/panel' path.
         uri                             - The request uri.
         query                           - The request query.
@@ -59,6 +61,14 @@ class PluginAPI(PluginType):
         "content":      {
             "required": True,
             "type":     dict,
+        },
+        "status":      {
+            "required": True,
+            "type":     int,
+        },
+        "method":      {
+            "required": False,
+            "type":     str,
         },
         "path":         {
             "required": False,
@@ -84,6 +94,8 @@ class PluginAPI(PluginType):
     test_data = {
         'content_type': 'application/json',
         'content':      {},
+        'status':       200,
+        'method':       "GET",
         'path':         "/webhook",
         'arguments':    {'param': [b'true'], 'foo': [b'ba']},
         'body':         {'param': [b'true'], 'foo': [b'ba']},

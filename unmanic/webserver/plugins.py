@@ -116,6 +116,12 @@ class PluginAPIRequestHandler(tornado.web.RequestHandler):
     def post(self, path):
         self.handle_panel_request()
 
+    def delete(self, path):
+        self.handle_panel_request()
+
+    def put(self, path):
+        self.handle_panel_request()
+
     def handle_panel_request(self):
         path = list(filter(None, self.request.path.split('/')[4:]))
 
@@ -123,6 +129,8 @@ class PluginAPIRequestHandler(tornado.web.RequestHandler):
         data = {
             'content_type': 'application/json',
             'content':      {},
+            'status':       200,
+            'method':       self.request.method,
             'path':         "/" + "/".join(path),
             'uri':          self.request.uri,
             'query':        self.request.query,
@@ -163,6 +171,7 @@ class PluginAPIRequestHandler(tornado.web.RequestHandler):
 
     def render_data(self, data):
         self.set_header("Content-Type", data.get('content_type', 'application/json'))
+        self.set_status(data.get('status'))
         self.write(data.get('content'))
 
 

@@ -534,7 +534,7 @@ class PluginExecutor(object):
         # Get the called runner function for the given plugin type
         plugin_settings = {}
         try:
-            plugin_settings, plugin_settings_meta = self.get_plugin_settings(plugin_id)
+            plugin_settings, plugin_settings_meta = self.get_plugin_settings(plugin_id, library_id=1)
         except Exception as e:
             errors.append(str(e))
 

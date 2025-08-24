@@ -33,6 +33,8 @@ import inspect
 import json
 from copy import deepcopy
 
+from unmanic.libs.task import TaskDataStore
+
 
 class PluginType(object):
     """
@@ -188,6 +190,7 @@ class PluginType(object):
         """
         plugin_runner = self.plugin_runner()
         plugin_runner_function = self.get_plugin_runner_function(plugin_module)
+        plugin_runner_sig = inspect.signature(plugin_runner_function)
 
         # Get test data
         if not test_data:
@@ -200,7 +203,20 @@ class PluginType(object):
         # Execute plugin function
         run_count = 0
         while run_count < 2:
-            plugin_runner_function(test_data_copy)
+            # if we have a task_id, bind context for store-based calls
+            task_id = test_data_copy.get("task_id")
+            if task_id is not None:
+                TaskDataStore.bind_runner_context(
+                    task_id=task_id,
+                    plugin_id=plugin_id,
+                    runner=plugin_runner,
+                )
+            # if runner declares two parameters, pass the store class as second arg
+            if len(plugin_runner_sig.parameters) >= 2:
+                plugin_runner_function(test_data_copy, TaskDataStore)
+            else:
+                plugin_runner_function(test_data_copy)
+            # break loop if the plugin did not request to be run again
             if not test_data_copy.get('repeat', False):
                 break
             run_count += 1

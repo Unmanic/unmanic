@@ -1098,6 +1098,7 @@ class SettingsReadAndWriteSchema(BaseSchema):
         example={
             "ui_port":                    8888,
             "debugging":                  False,
+            "log_buffer_retention":       14,
             "library_path":               "/library",
             "enable_library_scanner":     False,
             "schedule_full_scan_minutes": 1440,
@@ -1402,7 +1403,7 @@ class SettingsLibraryPluginConfigExportSchema(BaseSchema):
                         "icon":        "https://raw.githubusercontent.com/Josh5/unmanic.plugin.encoder_audio_ac3/master/icon.png"
                     }
                 ],
-                "worker.process":          [
+                "worker.process":               [
                     {
                         "plugin_id":   "encoder_audio_ac3",
                         "name":        "Audio Encoder AC3",
@@ -1505,6 +1506,12 @@ class WorkerStatusResultsSchema(BaseSchema):
         required=True,
         description="The Task ID",
         example=1,
+        allow_none=True,
+    )
+    current_command = fields.Str(
+        required=True,
+        description="The command currently being executed",
+        example="ffmpeg ....",
         allow_none=True,
     )
     worker_log_tail = fields.List(

@@ -134,9 +134,15 @@ class WorkerSubprocessMonitor(threading.Thread):
                     continue
 
             self.paused = True
-            self.subprocess_pause_time = int(time.time())
+            pause_time_counter = time.time()
+
             while not self.redundant_flag.is_set():
                 self.event.wait(1)
+
+                # Update pause duration on each loop
+                self.subprocess_pause_time += int(time.time() - pause_time_counter)
+                pause_time_counter = time.time()
+
                 if not self.paused_flag.is_set():
                     # Resume in reverse order
                     for p in reversed(procs):
@@ -225,9 +231,8 @@ class WorkerSubprocessMonitor(threading.Thread):
                 # Get the total running time (including time being paused)
                 total_run_time = int(now - self.subprocess_start_time)
                 # Get the time when we started being paused
-                pause_duration = int(now - self.subprocess_pause_time)
                 # Calculate elapsed time of the subprocess subtracting the pause duration
-                subprocess_elapsed = int(total_run_time - pause_duration)
+                subprocess_elapsed = int(total_run_time - self.subprocess_pause_time)
             return subprocess_elapsed
         except Exception:
             self.logger.exception("Exception in get_subprocess_elapsed()")
@@ -389,6 +394,7 @@ class Worker(threading.Thread):
         self.event = event
 
         self.current_task = None
+        self.current_command = ""
         self.pending_queue = pending_queue
         self.complete_queue = complete_queue
         self.worker_subprocess_monitor = None
@@ -474,6 +480,7 @@ class Worker(threading.Thread):
             'start_time':      None if not self.start_time else str(self.start_time),
             'current_task':    None,
             'current_file':    "",
+            'current_command': self.current_command,
             'worker_log_tail': [],
             'runners_info':    {},
             'subprocess':      subprocess_stats,
@@ -901,6 +908,7 @@ class Worker(threading.Thread):
         if isinstance(exec_command, list):
             command_string = shlex.join(exec_command)
         self._log("Executing: {}".format(command_string), level='debug')
+        self.current_command = command_string
 
         # Append start of command to worker subprocess stdout
         self.worker_log += [
@@ -988,6 +996,7 @@ class Worker(threading.Thread):
 
             # Stop proc monitor
             self.worker_subprocess_monitor.unset_proc()
+            self.current_command = ""
 
             if sub_proc.returncode == 0:
                 return True

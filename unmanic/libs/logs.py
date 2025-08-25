@@ -99,6 +99,8 @@ class ForwardLogHandler(logging.Handler):
         self.flush_interval = flush_interval
         self.max_chunk_size = max_chunk_size
 
+        self.buffer_retention_max_days = None
+
         self.log_queue = Queue()
         self.stop_event = threading.Event()
 
@@ -115,6 +117,9 @@ class ForwardLogHandler(logging.Handler):
     def configure_endpoint(self, endpoint, app_id):
         self.endpoint = endpoint
         self.app_id = app_id
+
+    def configure_retention(self, max_days):
+        self.buffer_retention_max_days = max_days
 
     def emit(self, record):
         try:
@@ -229,6 +234,9 @@ class ForwardLogHandler(logging.Handler):
         If successful (204), deletes the file.
         If failed, leaves the file for later retry.
         """
+        max_days = 14
+        if self.buffer_retention_max_days:
+            max_days = self.buffer_retention_max_days
         while not self.stop_event.is_set():
             # Just loop if no endpoint is set
             if not self.endpoint or not self.app_id:
@@ -243,7 +251,7 @@ class ForwardLogHandler(logging.Handler):
 
             for buffer_file in buffer_files:
                 # Ignore files that are too old
-                if self._buffer_file_too_old(buffer_file):
+                if self._buffer_file_too_old(buffer_file, max_days=max_days):
                     os.remove(buffer_file)
                     self.stop_event.wait(timeout=0.2)
                     continue
@@ -604,13 +612,25 @@ class UnmanicLogging:
             instance._logger.warning("No stream handler found to update formatter.")
 
     @staticmethod
-    def enable_remote_logging(endpoint, app_id):
+    def enable_remote_logging(endpoint, app_id, log_buffer_retention):
         instance = UnmanicLogging()
+        instance.remote_handler.configure_retention(log_buffer_retention)
         instance.remote_handler.configure_endpoint(endpoint, app_id)
+
         instance._logger.info("Remote logging enabled.")
 
     @staticmethod
-    def disable_remote_logging():
+    def disable_remote_logging(log_buffer_retention):
         instance = UnmanicLogging()
+        instance.remote_handler.configure_retention(log_buffer_retention)
         instance.remote_handler.configure_endpoint(None, None)
         instance._logger.info("Remote logging disabled.")
+
+    @staticmethod
+    def set_remote_logging_retention(log_buffer_retention):
+        """
+        Enable debugging globally across all threads.
+        """
+        instance = UnmanicLogging()
+        instance.remote_handler.configure_retention(log_buffer_retention)
+        instance._logger.info("Remote logging buffer retention set to %s days.", log_buffer_retention)

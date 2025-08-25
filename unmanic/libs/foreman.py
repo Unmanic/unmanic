@@ -689,6 +689,7 @@ class Foreman(threading.Thread):
                                           start_time=worker_info.get('start_time'),
                                           current_task=worker_info.get('current_task'),
                                           current_file=worker_info.get('current_file'),
+                                          current_command=worker_info.get('current_command'),
                                           worker_log_tail=worker_info.get('worker_log_tail'),
                                           runners_info=worker_info.get('runners_info'),
                                           subprocess=worker_info.get('subprocess'),

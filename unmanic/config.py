@@ -65,6 +65,9 @@ class Config(object, metaclass=SingletonType):
         # Configure debugging
         self.debugging = False
 
+        # Configure log buffer retention (in days)
+        self.log_buffer_retention = 14
+
         # Configure first run (future feature)
         self.first_run = False
 
@@ -340,6 +343,33 @@ class Config(object, metaclass=SingletonType):
         else:
             UnmanicLogging.disable_debugging()
         self.debugging = value
+
+    def get_log_buffer_retention(self):
+        """
+        Get setting - log_buffer_retention
+
+        :return:
+        """
+        return self.log_buffer_retention
+
+    def set_log_buffer_retention(self, value):
+        """
+        Set setting - log_buffer_retention
+
+        This requires an update to the logger object
+
+        :return:
+        """
+        try:
+            retention_days = int(value)
+        except (TypeError, ValueError):
+            raise ValueError(f"log_buffer_retention must be an integer, got {value!r}")
+        try:
+            # On Unmanic startup, it may not have yet initialised the logger when this is first run.
+            UnmanicLogging.set_remote_logging_retention(value)
+        except (AttributeError):
+            pass
+        self.log_buffer_retention = retention_days
 
     def get_first_run(self):
         """

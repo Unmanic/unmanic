@@ -232,6 +232,8 @@ class Session(object, metaclass=SingletonType):
             db_installation.save()
 
     def __configure_log_forwarding(self, session_valid=False):
+        settings = config.Config()
+        log_buffer_retention = settings.get_log_buffer_retention()
         if session_valid:
             # Import endpoint from env vars
             endpoint = os.environ.get('UNMANIC_REMOTE_LOGGING_ENDPOINT', '')
@@ -246,9 +248,9 @@ class Session(object, metaclass=SingletonType):
                 except Exception as e:
                     self.logger.debug('Exception while fetching Unmanic Central Datastore endpoint - %s', e)
             if endpoint:
-                UnmanicLogging.enable_remote_logging(endpoint, self.uuid)
+                UnmanicLogging.enable_remote_logging(endpoint, self.uuid, log_buffer_retention)
                 return
-        UnmanicLogging.disable_remote_logging()
+        UnmanicLogging.disable_remote_logging(log_buffer_retention)
 
     def __reset_session_installation_data(self):
         """

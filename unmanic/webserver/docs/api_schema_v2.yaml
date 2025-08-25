@@ -1553,6 +1553,11 @@ components:
           description: The Task ID
           example: 1
           nullable: true
+        current_command:
+          type: string
+          description: The command currently being executed
+          example: ffmpeg ....
+          nullable: true
         worker_log_tail:
           type: array
           minItems: 0
@@ -1594,6 +1599,7 @@ components:
             elapsed: None
           additionalProperties: {}
       required:
+      - current_command
       - current_file
       - current_task
       - id

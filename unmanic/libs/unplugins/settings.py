@@ -129,7 +129,11 @@ class PluginSettings(object):
         # Loop over settings
         for key in self.settings:
             if key in plugin_settings:
-                self.settings_configured[key] = plugin_settings.get(key)
+                value = plugin_settings.get(key)
+                if value is None:
+                    # Restore default value
+                    value = self.settings.get(key)
+                self.settings_configured[key] = value
 
     def reset_settings_to_defaults(self):
         """
@@ -207,8 +211,7 @@ class PluginSettings(object):
 
         if key is None:
             return self.settings_configured
-        else:
-            return self.settings_configured.get(key)
+        return self.settings_configured.get(key)
 
     def set_setting(self, key, value):
         """
@@ -239,3 +242,15 @@ class PluginSettings(object):
         self.__export_configured_settings()
 
         return True
+
+    def get_default_setting(self, key=None):
+        """
+        Fetch a single configuration value, or, when passed "all" as the key argument,
+        return the full configuration dictionary.
+
+        :param key:
+        :return:
+        """
+        if key is None:
+            return self.settings
+        return self.settings.get(key)

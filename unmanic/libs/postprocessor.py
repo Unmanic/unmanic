@@ -54,7 +54,7 @@ This prevents conflicting copy operations or deleting a file that is also being 
 
 
 class PostProcessError(Exception):
-    def __init___(self, expected_var, result_var):
+    def __init__(self, expected_var, result_var):
         Exception.__init__(self, "Errors found during post process checks. Expected {}, but instead found {}".format(
             expected_var, result_var))
         self.expected_var = expected_var

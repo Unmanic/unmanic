@@ -45,7 +45,7 @@ from unmanic.libs.plugins import PluginsHandler
 
 
 class WorkerCommandError(Exception):
-    def __init___(self, command):
+    def __init__(self, command):
         Exception.__init__(self, "Worker command returned non 0 status. Command: {}".format(command))
         self.command = command
 

@@ -424,6 +424,11 @@ class PluginExecutor(object):
         :param library_id:
         :return:
         """
+        # Fetch level from session
+        from unmanic.libs.session import Session
+        s = Session()
+        s.register_unmanic()
+
         # Get the path for this plugin
         plugin_path = self.__get_plugin_directory(plugin_id)
 
@@ -432,10 +437,18 @@ class PluginExecutor(object):
 
         try:
             plugin_settings = plugin_module.Settings(library_id=library_id)
+            plugin_form_settings = copy.deepcopy(plugin_settings.get_form_settings())
 
             save_result = True
             for key in settings:
                 value = settings.get(key)
+                # Check option usability level
+                plugin_setting_meta = plugin_form_settings.get(key, {})
+                req_lev = plugin_setting_meta.get('req_lev', 0)
+                if s.level < req_lev:
+                    # Set default
+                    self.logger.debug("Option '%s' is reserved for supporters of the project. Resetting to default.", key)
+                    value = plugin_settings.get_default_setting(key)
                 if not plugin_settings.set_setting(key, value):
                     save_result = False
 

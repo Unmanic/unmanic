@@ -32,7 +32,7 @@
 
 
 class FFProbeError(Exception):
-    def __init___(self, path, info):
+    def __init__(self, path, info):
         Exception.__init__(self, "Unable to fetch data from file {}. {}".format(path, info))
         self.path = path
         self.info = info

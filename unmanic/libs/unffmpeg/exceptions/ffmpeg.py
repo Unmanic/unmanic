@@ -32,7 +32,7 @@
 
 
 class FFMpegError(Exception):
-    def __init___(self, command, info):
+    def __init__(self, command, info):
         Exception.__init__(self,
                            "Unable to fetch data from ffmpeg command - {}. Command: {}".format(info, " ".join(command)))
         self.path = command

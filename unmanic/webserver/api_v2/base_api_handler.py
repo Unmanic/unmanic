@@ -52,7 +52,7 @@ class BaseApiError(Exception):
     Manage errors handled by the BaseApiHandler
     """
 
-    def __init___(self, errmsg):
+    def __init__(self, errmsg):
         Exception.__init__(self, errmsg)
 
 

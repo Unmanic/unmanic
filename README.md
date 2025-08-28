@@ -98,7 +98,7 @@ To run from source:
 
 ## License and Contribution
 
-This projected is licensed under th GPL version 3. 
+This projected is licensed under the GPL version 3. 
 
 Copyright (C) Josh Sunnex - All Rights Reserved
 

@@ -5,7 +5,10 @@
       <w>dirname</w>
       <w>ffmpeg</w>
       <w>ffprobe</w>
+      <w>filtergraph</w>
       <w>firstrun</w>
+      <w>hwdownload</w>
+      <w>hwupload</w>
       <w>inotify</w>
       <w>inotifytasks</w>
       <w>loglevel</w>

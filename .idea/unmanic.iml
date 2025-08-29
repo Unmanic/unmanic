@@ -4,6 +4,7 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/dev_environment/.unmanic/plugins" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/dev_environment/config/.unmanic/plugins" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/build" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/unmanic/webserver/frontend/.quasar" />

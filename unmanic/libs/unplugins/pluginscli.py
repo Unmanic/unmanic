@@ -130,8 +130,9 @@ def install_npm_modules(plugin_path):
     subprocess.call(['npm', 'run', 'build'], cwd=plugin_path)
 
 
-def install_plugin_requirements(plugin_path):
-    requirements_file = os.path.join(plugin_path, 'requirements.txt')
+def install_plugin_requirements(plugin_path, requirements_file=None):
+    if requirements_file is None:
+        requirements_file = os.path.join(plugin_path, 'requirements.txt')
     install_target = os.path.join(plugin_path, 'site-packages')
     # Check if the requirements file exists
     if not os.path.exists(requirements_file):

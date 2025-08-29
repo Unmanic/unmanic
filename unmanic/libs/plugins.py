@@ -47,6 +47,7 @@ from unmanic.libs.session import Session
 from unmanic.libs.singleton import SingletonType
 from unmanic.libs.unmodels import EnabledPlugins, LibraryPluginFlow, Plugins, PluginRepos
 from unmanic.libs.unplugins import PluginExecutor
+from unmanic.libs.unplugins.pluginscli import install_npm_modules, install_plugin_requirements
 
 
 class PluginsHandler(object, metaclass=SingletonType):
@@ -478,8 +479,17 @@ class PluginsHandler(object, metaclass=SingletonType):
         self.logger.debug("Extracting plugin to '{}'".format(plugin_directory))
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
             zip_ref.extractall(str(plugin_directory))
+        # Read plugin info
+        plugin_info = self.get_plugin_info(plugin_id)
+        # Run through any required dependency installation
+        post_install_python_requirements = os.path.join(str(plugin_directory), 'requirements.post-install.txt')
+        if os.path.exists(post_install_python_requirements):
+            install_plugin_requirements(plugin_directory, requirements_file=post_install_python_requirements)
+        if plugin_info.get('defer_dependency_install', False):
+            install_plugin_requirements(plugin_directory)
+            install_npm_modules(plugin_directory)
         # Return installed plugin info
-        return self.get_plugin_info(plugin_id)
+        return plugin_info
 
     @staticmethod
     def write_plugin_data_to_db(plugin, plugin_directory):

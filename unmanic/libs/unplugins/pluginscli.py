@@ -405,6 +405,19 @@ class PluginsCLI(object):
             # Reload the plugin
             plugin_executor.reload_plugin_module(plugin_id)
 
+            # Test Plugin settings
+            print("  {0}Testing settings{1}".format(BColours.SUBHEADER, BColours.ENDC))
+            errors, plugin_settings = plugin_executor.test_plugin_settings(plugin_id)
+            print("    {}Plugin settings schema{}".format(BColours.SECTION, BColours.ENDC))
+            if errors:
+                for error in errors:
+                    print("        -- {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
+            else:
+                formatted_plugin_settings = json.dumps(plugin_settings, indent=1)
+                formatted_plugin_settings = formatted_plugin_settings.replace('\n', '\n' + '                    ')
+                print("        - {1}Settings: {0}{2}".format(formatted_plugin_settings, BColours.RESULTS, BColours.ENDC))
+                print("        -- {}PASSED{} --".format(BColours.OKGREEN, BColours.ENDC))
+
             # Test Plugin runners
             print("  {0}Testing runners{1}".format(BColours.SUBHEADER, BColours.ENDC))
             plugin_types_in_plugin = plugin_executor.get_all_plugin_types_in_plugin(plugin_id)
@@ -423,19 +436,6 @@ class PluginsCLI(object):
                     else:
                         print("        -- {}PASSED{} --".format(BColours.OKGREEN, BColours.ENDC))
                     print()
-
-            # Test Plugin settings
-            print("  {0}Testing settings{1}".format(BColours.SUBHEADER, BColours.ENDC))
-            errors, plugin_settings = plugin_executor.test_plugin_settings(plugin_id)
-            print("    {}Plugin settings schema{}".format(BColours.SECTION, BColours.ENDC))
-            if errors:
-                for error in errors:
-                    print("        -- {1}FAILED: {0}{2}".format(error, BColours.FAIL, BColours.ENDC))
-            else:
-                formatted_plugin_settings = json.dumps(plugin_settings, indent=1)
-                formatted_plugin_settings = formatted_plugin_settings.replace('\n', '\n' + '                    ')
-                print("        - {1}Settings: {0}{2}".format(formatted_plugin_settings, BColours.RESULTS, BColours.ENDC))
-                print("        -- {}PASSED{} --".format(BColours.OKGREEN, BColours.ENDC))
             print()
             print()
 

@@ -34,7 +34,7 @@ from ..plugin_type_base import PluginType
 
 
 class TaskResult(PluginType):
-    name = "Post-processor - Marking task success/failure"
+    name = "Post-processor - TaskResult"
     runner = "on_postprocessor_task_results"
     runner_docstring = """
     Runner function - provides a means for additional postprocessor functions based on the task success.
@@ -63,6 +63,8 @@ class TaskResult(PluginType):
         "file_move_processes_success": {"required": False, "type": bool},
         "destination_files":           {"required": False, "type": list},
         "source_data":                 {"required": False, "type": dict},
+        "start_time":                  {"required": False, "type": float},
+        "finish_time":                 {"required": False, "type": float},
     }
     test_data = {
         'library_id':                  1,

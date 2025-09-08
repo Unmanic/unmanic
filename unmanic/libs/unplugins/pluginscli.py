@@ -34,8 +34,6 @@ import logging
 import os
 import re
 import shutil
-import subprocess
-import sys
 
 import inquirer
 import requests
@@ -120,33 +118,6 @@ def print_table(table_data, col_list=None, sep='\uFFFA', max_col_width=9):
         row = [i[:max_col_width].split(sep, 1) for i in item]
         print(format_str.format(*[i[0] for i in row]))
         item = [i[1] if len(i) > 1 else '' for i in row]
-
-
-def install_npm_modules(plugin_path):
-    package_file = os.path.join(plugin_path, 'package.json')
-    if not os.path.exists(package_file):
-        return
-    subprocess.call(['npm', 'install'], cwd=plugin_path)
-    subprocess.call(['npm', 'run', 'build'], cwd=plugin_path)
-
-
-def install_plugin_requirements(plugin_path, requirements_file=None):
-    if requirements_file is None:
-        requirements_file = os.path.join(plugin_path, 'requirements.txt')
-    install_target = os.path.join(plugin_path, 'site-packages')
-    # Check if the requirements file exists
-    if not os.path.exists(requirements_file):
-        return
-    # First, remove the existing site-packages directory if it exists to ensure a clean installation
-    if os.path.exists(install_target):
-        shutil.rmtree(install_target)
-    # Recreate the site-packages directory
-    os.makedirs(install_target, exist_ok=True)
-    subprocess.call([
-        sys.executable, '-m', 'pip', 'install', '--upgrade',
-        '-r', requirements_file,
-        '--target={}'.format(install_target)
-    ])
 
 
 class PluginsCLI(object):
@@ -330,8 +301,8 @@ class PluginsCLI(object):
                 print("Exception while saving plugin info to DB. - {}".format(str(e)))
                 return
 
-            install_plugin_requirements(plugin_path)
-            install_npm_modules(plugin_path)
+            PluginsHandler.install_plugin_requirements(plugin_path)
+            PluginsHandler.install_npm_modules(plugin_path)
             print()
         print()
 

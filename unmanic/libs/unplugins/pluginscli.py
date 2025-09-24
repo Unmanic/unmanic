@@ -202,7 +202,7 @@ class PluginsCLI(object):
 
         # Generate menu menu
         print()
-        print('INFO: https://docs.unmanic.app/docs/plugins/writing_plugins/plugin_runner_types')
+        print('INFO: https://docs.unmanic.app/docs/development/writing_plugins/plugin_runner_types')
         plugin_runners_inquirer = inquirer.List(
             'selected_plugin',
             message="Which Plugin runner will be used?",

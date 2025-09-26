@@ -259,6 +259,13 @@ class Library(object):
 
         :return:
         """
+        from unmanic.libs import task as task_module
+
+        select_query = Tasks.select(Tasks.id).where(Tasks.library_id == self.model.id)
+        task_ids = [task_row.id for task_row in select_query]
+        for task_id in task_ids:
+            task_module.TaskDataStore.clear_task(task_id)
+
         Tasks.delete().where(Tasks.library_id == self.model.id).execute()
 
     def get_id(self):

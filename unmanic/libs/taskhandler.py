@@ -123,11 +123,22 @@ class TaskHandler(threading.Thread):
                 self._log("Exception in processing inotifytasks", str(e), level='exception')
 
     def clear_tasks_on_startup(self):
-        query = Tasks.delete()
+        where_clause = None
         if not self.settings.get_clear_pending_tasks_on_restart():
             # Exclude all pending tasks except for those that are remote tasks... They need to be removed
-            query = query.where((Tasks.status != 'pending') | (Tasks.type == 'remote'))
-        rows_deleted_count = query.execute()
+            where_clause = (Tasks.status != 'pending') | (Tasks.type == 'remote')
+        # Get all task IDs to be deleted
+        select_query = Tasks.select(Tasks.id)
+        if where_clause is not None:
+            select_query = select_query.where(where_clause)
+        # Remove any task data associated with the tasks
+        for (task_id,) in select_query.tuples().iterator():
+            task.TaskDataStore.clear_task(task_id)
+        # Delete the tasks
+        delete_query = Tasks.delete()
+        if where_clause is not None:
+            delete_query = delete_query.where(where_clause)
+        rows_deleted_count = delete_query.execute()
         self._log("Deleted {} items from tasks list".format(rows_deleted_count), level='debug')
 
     @staticmethod

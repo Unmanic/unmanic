@@ -269,6 +269,8 @@ class Task(object):
             raise Exception('Unable to set status. Task has not been set!')
         self.task.status = status
         self.save()
+        if status == 'complete':
+            TaskDataStore.clear_task(self.task.id)
 
     def set_success(self, success):
         """
@@ -327,6 +329,7 @@ class Task(object):
         """
         if not self.task:
             raise Exception('Unable to save Task. Task has not been set!')
+        TaskDataStore.clear_task(self.task.id)
         self.task.delete_instance()
 
     def get_total_task_list_count(self):
@@ -394,6 +397,7 @@ class Task(object):
                             self.logger.info("Removing remote pending library task '%s'.", remote_task_dirname)
                             shutil.rmtree(os.path.dirname(remote_task_dirname))
 
+                    TaskDataStore.clear_task(task_id.id)
                     task_id.delete_instance(recursive=True)
                 except Exception as e:
                     # Catch delete exceptions
@@ -439,7 +443,11 @@ class Task(object):
         :return:
         """
         query = Tasks.update(status=status).where(Tasks.id.in_(id_list))
-        return query.execute()
+        result = query.execute()
+        if status == 'complete' and id_list:
+            for task_id in id_list:
+                TaskDataStore.clear_task(task_id)
+        return result
 
     @staticmethod
     def set_tasks_library_id(id_list, library_id):
@@ -514,6 +522,17 @@ class TaskDataStore:
     _task_state = {}
     _lock = threading.RLock()
     _ctx = threading.local()
+
+    @classmethod
+    def clear_task(cls, task_id):
+        """
+        Remove all cached state for the given task ID.
+
+        :param task_id: Integer ID of the task to purge.
+        """
+        with cls._lock:
+            cls._runner_state.pop(task_id, None)
+            cls._task_state.pop(task_id, None)
 
     @classmethod
     def bind_runner_context(cls, task_id, plugin_id, runner):

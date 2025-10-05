@@ -46,7 +46,7 @@ from unmanic.libs.scheduler import ScheduledTasksManager
 from unmanic.libs.taskqueue import TaskQueue
 from unmanic.libs.postprocessor import PostProcessor
 from unmanic.libs.taskhandler import TaskHandler
-from unmanic.libs.uiserver import FrontendPushMessages, UIServer
+from unmanic.libs.uiserver import UIServer
 from unmanic.libs.foreman import Foreman
 
 
@@ -240,7 +240,6 @@ class RootService:
             "scheduledtasks":           queue.Queue(),
             "inotifytasks":             queue.Queue(),
             "progress_reports":         queue.Queue(),
-            "frontend_messages":        FrontendPushMessages(),
         }
 
         # Clear cache directory

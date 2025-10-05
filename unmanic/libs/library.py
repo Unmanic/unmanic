@@ -33,6 +33,7 @@ import random
 
 from unmanic.config import Config
 from unmanic.libs import common
+from unmanic.libs.frontend_push_messages import FrontendPushMessages
 from unmanic.libs.unmodels import EnabledPlugins, Libraries, LibraryPluginFlow, Plugins, Tags, Tasks
 
 
@@ -146,11 +147,13 @@ class Library(object):
         return default_library + sorted(libraries, key=lambda d: d['name'])
 
     @staticmethod
-    def within_library_count_limits(frontend_messages=None):
+    def within_library_count_limits():
         # Fetch level from session
         from unmanic.libs.session import Session
         s = Session()
         s.register_unmanic()
+
+        frontend_messages = FrontendPushMessages()
 
         if s.level <= 1:
             # Fetch all enabled plugins
@@ -160,21 +163,19 @@ class Library(object):
             # Function was returned above if the user was logged in and able to use infinite
             if library_count > s.library_count:
                 # If the frontend messages queue was included in request, append a message
-                if frontend_messages:
-                    frontend_messages.put(
-                        {
-                            'id':      'libraryEnabledLimits',
-                            'type':    'error',
-                            'code':    'libraryEnabledLimits',
-                            'message': '',
-                            'timeout': 0
-                        }
-                    )
+                frontend_messages.add(
+                    {
+                        'id':      'libraryEnabledLimits',
+                        'type':    'error',
+                        'code':    'libraryEnabledLimits',
+                        'message': '',
+                        'timeout': 0
+                    }
+                )
                 return False
 
         # If the frontend messages queue was included in request, remove the notification as we are currently within limits
-        if frontend_messages:
-            frontend_messages.remove_item('libraryEnabledLimits')
+        frontend_messages.remove_item('libraryEnabledLimits')
         return True
 
     @staticmethod

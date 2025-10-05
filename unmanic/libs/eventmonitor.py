@@ -183,9 +183,9 @@ class EventMonitorManager(threading.Thread):
         """
         valid = True
         plugin_handler = PluginsHandler()
-        if plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages')):
+        if plugin_handler.get_incompatible_enabled_plugins():
             valid = False
-        if not Library.within_library_count_limits(self.data_queues.get('frontend_messages')):
+        if not Library.within_library_count_limits():
             valid = False
         return valid
 

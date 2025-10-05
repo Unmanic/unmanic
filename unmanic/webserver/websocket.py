@@ -41,6 +41,7 @@ from tornado import gen
 
 from unmanic import config
 from unmanic.libs import common, session
+from unmanic.libs.frontend_push_messages import FrontendPushMessages
 from unmanic.libs.uiserver import UnmanicDataQueues, UnmanicRunningTreads
 from unmanic.webserver.helpers import completed_tasks, pending_tasks
 
@@ -242,7 +243,7 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
         :return:
         :rtype:
         """
-        frontend_messages = self.data_queues.get('frontend_messages')
+        frontend_messages = FrontendPushMessages()
         frontend_messages.remove_item(params.get('message_id', ''))
 
     async def send(self, message):
@@ -251,7 +252,7 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
 
     async def async_frontend_message(self):
         while self.sending_frontend_message:
-            frontend_messages = self.data_queues.get('frontend_messages')
+            frontend_messages = FrontendPushMessages()
             frontend_message_items = frontend_messages.read_all_items()
             # Send message to client
             await self.send(

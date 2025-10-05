@@ -41,6 +41,9 @@ import requests
 from datetime import datetime, timedelta
 from json_log_formatter import JSONFormatter
 
+from unmanic.libs.notifications import Notifications
+from unmanic.libs.frontend_push_messages import FrontendPushMessages
+
 
 class ForwardJSONFormatter(JSONFormatter):
     """
@@ -81,15 +84,15 @@ class ForwardJSONFormatter(JSONFormatter):
 
 class ForwardLogHandler(logging.Handler):
     """
-    A custom log handler that:
-    - Writes incoming logs to disk in chunk files at intervals or size thresholds.
-    - A separate thread reads these chunk files from disk and forwards them.
-    - On success, chunk files are removed.
-    - On failure, chunk files remain for later retry.
+    Forwards logs to a remote endpoint while maintaining an ordered on-disk buffer.
     """
 
+    STATE_FILENAME = "buffer_state.json"
+    _BATCH_MAX_ITEMS = 256
+    _CLEANUP_INTERVAL_SECONDS = 600
+
     def __init__(self, buffer_path, installation_name, labels=None, flush_interval=5, max_chunk_size=5 * 1024 * 1024):
-        # TODO: Set default flush interval to 10 seconds
+        """Initialise buffering paths, runtime state, and background threads."""
         super().__init__()
         self.buffer_path = buffer_path
         self.endpoint = None
@@ -100,34 +103,63 @@ class ForwardLogHandler(logging.Handler):
         self.max_chunk_size = max_chunk_size
 
         self.buffer_retention_max_days = None
+        self._retention_disabled = False
 
+        self._state_lock = threading.Lock()
+        self._buffer_state_path = os.path.join(self.buffer_path, self.STATE_FILENAME)
+        self._buffer_state = self._load_buffer_state()
+
+        self._in_memory_chunks = Queue()
         self.log_queue = Queue()
         self.stop_event = threading.Event()
 
-        # Thread that processes logs from the queue and writes them to disk
-        self.writer_thread = threading.Thread(target=self._process_logs, daemon=True)
+        self._last_cleanup = time.monotonic()
+        self.previous_connection_failed = False
+        self._notified_failures = set()
+
+        self._sync_state_with_disk()
+
+        self.writer_thread = threading.Thread(target=self._writer_loop, daemon=True)
         self.writer_thread.start()
 
-        # Thread that periodically attempts to send logs from disk
-        self.sender_thread = threading.Thread(target=self._send_from_disk, daemon=True)
+        self.sender_thread = threading.Thread(target=self._sender_loop, daemon=True)
         self.sender_thread.start()
 
-        self.previous_connection_failed = False
-
     def configure_endpoint(self, endpoint, app_id):
+        """Update the remote endpoint used for forwarding."""
         self.endpoint = endpoint
         self.app_id = app_id
 
     def configure_retention(self, max_days):
-        self.buffer_retention_max_days = max_days
+        """Toggle disk retention and track the configured horizon in days."""
+        try:
+            max_days_int = int(max_days)
+        except (TypeError, ValueError):
+            if max_days is not None:
+                logging.getLogger("Unmanic.ForwardLogHandler").warning(
+                    "Invalid log buffer retention value %r. Falling back to default.",
+                    max_days
+                )
+            max_days_int = None
+
+        if max_days_int is not None and max_days_int < 0:
+            max_days_int = 0
+
+        previously_disabled = self._retention_disabled
+        self.buffer_retention_max_days = max_days_int
+        self._retention_disabled = max_days_int == 0
+
+        if previously_disabled and not self._retention_disabled:
+            self._spill_memory_chunks_to_disk()
 
     def emit(self, record):
+        """Format a record and enqueue it for asynchronous handling."""
         try:
             log_entry = self.format(record)
 
             # Set log timestamp in nanoseconds
             ts = str(int(time.time() * 1e9))
-            if hasattr(record, 'created'):
+            if hasattr(record, "created"):
                 ts = str(int(record.created * 1e9))
 
             # Set default labels
@@ -140,16 +172,16 @@ class ForwardLogHandler(logging.Handler):
             }
 
             # If the record has a log_type attribute, override
-            if hasattr(record, 'log_type') and record.log_type:
-                labels['log_type'] = record.log_type
+            if hasattr(record, "log_type") and record.log_type:
+                labels["log_type"] = record.log_type
 
             # If the record has a metric_name attribute, add it as a label
-            if hasattr(record, 'metric_name') and record.metric_name:
-                labels['metric_name'] = record.metric_name
+            if hasattr(record, "metric_name") and record.metric_name:
+                labels["metric_name"] = record.metric_name
 
             # If the record has a data_primary_key attribute, add it as a label
-            if hasattr(record, 'data_primary_key') and record.data_primary_key:
-                labels['data_primary_key'] = record.data_primary_key
+            if hasattr(record, "data_primary_key") and record.data_primary_key:
+                labels["data_primary_key"] = record.data_primary_key
 
             self.log_queue.put({
                 "labels": labels,
@@ -158,14 +190,10 @@ class ForwardLogHandler(logging.Handler):
         except Exception as e:
             logging.getLogger("Unmanic.ForwardLogHandler").error("Failed to enqueue log: %s", e)
 
-    def _process_logs(self):
-        """
-        Reads logs from the queue and writes them to disk in chunks.
-        Chunks are created either at flush_interval timeout or if max_chunk_size is reached.
-        """
-        buffer = []
-        buffer_size = 0
-        last_flush_time = int(time.time())
+    def _writer_loop(self):
+        """Drain the queue into either the disk-backed buffer or the in-memory queue."""
+        batch = []
+        last_flush = time.monotonic()
 
         while not self.stop_event.is_set():
 
@@ -174,225 +202,518 @@ class ForwardLogHandler(logging.Handler):
                 if log_entry is None:
                     # Sentinel received, means shutdown is requested
                     break
-                # Process the log entry
-                buffer.append(log_entry)
-                buffer_size += len(log_entry)
-
-                # If size exceeds max_chunk_size, flush now
-                if buffer_size >= self.max_chunk_size:
-                    self._flush_to_disk(buffer)
-                    buffer = []
-                    buffer_size = 0
-                    last_flush_time = int(time.time())
-
+                batch.append(log_entry)
+                if len(batch) >= self._BATCH_MAX_ITEMS:
+                    self._handle_batch(batch)
+                    batch = []
+                    last_flush = time.monotonic()
             except Empty:
-                # No logs available right now
                 pass
 
-            current_time = int(time.time())
-            if current_time - last_flush_time >= 5:
-                # Flush to disk if more than 5 seconds have passed
-                if buffer:
-                    self._flush_to_disk(buffer)
-                    buffer = []
-                    buffer_size = 0
-                    last_flush_time = current_time
+            if batch and (time.monotonic() - last_flush) >= self.flush_interval:
+                self._handle_batch(batch)
+                batch = []
+                last_flush = time.monotonic()
 
-        # Outside the loop, if we are shutting down and have pending logs, flush them
-        if buffer:
-            self._flush_to_disk(buffer)
+        if batch:
+            self._handle_batch(batch)
 
-    def _flush_to_disk(self, buffer):
-        """
-        Write the given buffer of logs to a new chunk file on disk.
-        The file name includes a timestamp to ensure ordering by time.
-        """
+    def _handle_batch(self, batch):
+        """Send a batch to in-memory or disk storage depending on retention mode."""
+        if not batch:
+            return
+        if self._retention_disabled:
+            self._in_memory_chunks.put(list(batch))
+            return
+        self._append_to_disk(batch)
+
+    def _append_to_disk(self, batch):
+        """Append log entries to the current hour's JSONL buffer file."""
+        if not batch:
+            return
         try:
-            if not os.path.exists(self.buffer_path):
-                os.makedirs(self.buffer_path)
+            os.makedirs(self.buffer_path, exist_ok=True)
+            buffer_file = self._get_hourly_buffer_file()
+            with open(buffer_file, "a", encoding="utf-8") as handle:
+                for log_entry in batch:
+                    handle.write(json.dumps(log_entry))
+                    handle.write("\n")
+            self._ensure_state_entry(os.path.basename(buffer_file))
+        except Exception as exc:
+            logging.getLogger("Unmanic.ForwardLogHandler").error("Failed to save logs to disk: %s", exc)
 
-            if not buffer:
-                # Nothing in buffer
-                return
+    def _ensure_state_entry(self, filename):
+        """Register a new buffer file with an initial offset of zero."""
+        with self._state_lock:
+            if filename not in self._buffer_state:
+                self._buffer_state[filename] = 0
+                self._persist_state_locked()
 
-            timestamp_str = datetime.utcnow().isoformat().replace(":", "-")
-            buffer_file = os.path.join(self.buffer_path, f"log_buffer_{timestamp_str}.json.lock")
-
-            with open(buffer_file, "w") as f:
-                for log_entry in buffer:
-                    f.write(json.dumps(log_entry) + "\n")
-
-            # Rename the file to indicate it is ready for processing
-            os.rename(buffer_file, buffer_file.rstrip(".lock"))
-        except Exception as e:
-            logging.getLogger("Unmanic.ForwardLogHandler").error("Failed to save logs to disk: %s", e)
-
-    def _send_from_disk(self):
-        """
-        Periodically attempts to send logs from disk.
-        Processes one file at a time, oldest first (important).
-        If successful (204), deletes the file.
-        If failed, leaves the file for later retry.
-        """
-        max_days = 14
-        if self.buffer_retention_max_days:
-            max_days = self.buffer_retention_max_days
+    def _sender_loop(self):
+        """Continuously attempt to forward buffered logs, oldest first."""
         while not self.stop_event.is_set():
-            # Just loop if no endpoint is set
-            if not self.endpoint or not self.app_id:
-                self.stop_event.wait(timeout=10)
+            processed = False
+
+            if self._send_next_disk_batch():
+                processed = True
+            else:
+                if self._send_from_memory():
+                    processed = True
+
+            now = time.monotonic()
+            if now - self._last_cleanup >= self._CLEANUP_INTERVAL_SECONDS:
+                self._cleanup_retention()
+                self._last_cleanup = now
+
+            wait_time = 0.2 if processed else 2
+            self.stop_event.wait(timeout=wait_time)
+
+    def _send_next_disk_batch(self):
+        """Send the next available chunk from disk, returning True on success."""
+        if not (self.endpoint and self.app_id):
+            return False
+
+        chunk = self._read_next_disk_chunk()
+        if not chunk:
+            return False
+
+        file_path, start_offset, end_offset, entries, payload = chunk
+        filename = os.path.basename(file_path)
+
+        if not self._transmit_buffer(entries, filename, payload):
+            return False
+
+        self._update_state_offset(filename, end_offset)
+        self._maybe_remove_consumed_file(file_path)
+        return True
+
+    def _read_next_disk_chunk(self):
+        """Determine the next readable slice of buffered logs on disk."""
+        files = self._list_buffer_files()
+        if not files:
+            return None
+
+        for file_path in files:
+            filename = os.path.basename(file_path)
+
+            with self._state_lock:
+                offset = self._buffer_state.get(filename, 0)
+
+            try:
+                file_size = os.path.getsize(file_path)
+            except FileNotFoundError:
+                self._remove_state_entry(filename)
                 continue
-            # Attempt to send the oldest file first
-            buffer_files = self._get_buffer_files()
-            if not buffer_files:
-                # No files to send, sleep
-                self.stop_event.wait(timeout=10)
-                continue
 
-            for buffer_file in buffer_files:
-                # Ignore files that are too old
-                if self._buffer_file_too_old(buffer_file, max_days=max_days):
-                    os.remove(buffer_file)
-                    self.stop_event.wait(timeout=0.2)
-                    continue
-                # Ignore if no endpoint is set
-                if not self.endpoint or not self.app_id:
-                    self.stop_event.wait(timeout=0.2)
-                    continue
-                if not self._attempt_send_file(buffer_file):
-                    # Add a longer pause here and then retry after the delay
-                    self.stop_event.wait(timeout=60)
-                self.stop_event.wait(timeout=0.2)
-                if self.stop_event.is_set():
-                    break
-            self.stop_event.wait(timeout=0.2)
+            if offset > file_size:
+                offset = 0
 
-    def _get_buffer_files(self):
-        """
-        Returns a sorted list of buffer files based on their timestamp in the filename.
-        """
-        if not os.path.exists(self.buffer_path):
-            return []
-        files = [f for f in os.listdir(self.buffer_path) if f.startswith("log_buffer_") and f.endswith(".json")]
-        files.sort()
-        return [os.path.join(self.buffer_path, f) for f in files]
+            chunk = self._read_file_chunk(file_path, filename, offset)
+            if chunk:
+                return chunk
 
-    def _attempt_send_file(self, buffer_file):
-        """
-        Attempt to send the logs from buffer_file.
-        On success, delete the file.
-        On failure, leave it for next retry.
-        """
+            if offset >= file_size:
+                self._maybe_remove_consumed_file(file_path)
+
+        return None
+
+    def _read_file_chunk(self, file_path, filename, offset):
+        """Read entries from a single file until the payload nears the 5 MB threshold."""
+        entries = []
+        payload = None
+        payload_size = 0
+        new_offset = offset
+
         try:
-            buffer = []
-            with open(buffer_file, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        buffer.append(json.loads(line))
+            with open(file_path, "rb") as handle:
+                handle.seek(offset)
+                while True:
+                    line_start = handle.tell()
+                    line_bytes = handle.readline()
+                    if not line_bytes:
+                        break
+                    line_end = handle.tell()
+                    stripped = line_bytes.strip()
+                    if not stripped:
+                        new_offset = line_end
+                        continue
+                    try:
+                        entry = json.loads(stripped.decode("utf-8"))
+                    except Exception:
+                        logging.getLogger("Unmanic.ForwardLogHandler").warning(
+                            "Skipping corrupt log entry in %s.",
+                            filename,
+                        )
+                        new_offset = line_end
+                        continue
 
-            if not buffer:
-                # Empty file, just remove it
-                os.remove(buffer_file)
-                return True
+                    entries.append(entry)
+                    payload, payload_size = self._build_payload(entries)
+                    if payload_size > self.max_chunk_size:
+                        if len(entries) == 1:
+                            logging.getLogger("Unmanic.ForwardLogHandler").warning(
+                                "Single log entry in %s exceeds max chunk size (%s bytes). Sending anyway.",
+                                filename,
+                                payload_size,
+                            )
+                            new_offset = line_end
+                            break
+                        entries.pop()
+                        payload, payload_size = self._build_payload(entries)
+                        handle.seek(line_start)
+                        new_offset = line_start
+                        break
 
-            payload = self._create_payload(buffer)
-            response = requests.post(f"{self.endpoint}/api/v1/push", json=payload,
-                                     headers={"Content-Type": "application/json"})
+                    new_offset = line_end
+                    if payload_size >= self.max_chunk_size * 0.9:
+                        break
+        except FileNotFoundError:
+            self._remove_state_entry(filename)
+            return None
+        except Exception as exc:
+            logging.getLogger("Unmanic.ForwardLogHandler").exception(
+                "Failed reading log buffer %s: %s",
+                filename,
+                exc,
+            )
+            return None
+
+        if not entries:
+            return None
+
+        if payload is None:
+            payload, payload_size = self._build_payload(entries)
+
+        return file_path, offset, new_offset, entries, payload
+
+    def _build_payload(self, entries):
+        """Return a payload dict and byte size for the given entries."""
+        payload = self._create_payload(entries)
+        payload_bytes = json.dumps(payload).encode("utf-8")
+        return payload, len(payload_bytes)
+
+    def _update_state_offset(self, filename, offset):
+        """Persist the latest read offset for a buffer file."""
+        with self._state_lock:
+            self._buffer_state[filename] = offset
+            self._persist_state_locked()
+
+    def _maybe_remove_consumed_file(self, file_path):
+        """Delete a buffer file once all bytes have been transmitted and it's past the hour."""
+        filename = os.path.basename(file_path)
+        try:
+            file_size = os.path.getsize(file_path)
+        except FileNotFoundError:
+            self._remove_state_entry(filename)
+            return
+
+        with self._state_lock:
+            offset = self._buffer_state.get(filename, 0)
+
+        if offset < file_size:
+            return
+
+        timestamp = self._parse_buffer_filename_timestamp(filename)
+        current_hour = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+        if timestamp and timestamp >= current_hour:
+            return
+
+        try:
+            os.remove(file_path)
+        except FileNotFoundError:
+            pass
+        self._remove_state_entry(filename)
+
+    def _cleanup_retention(self):
+        """Remove buffer files that sit beyond the configured retention horizon."""
+        if not self.buffer_retention_max_days or self.buffer_retention_max_days <= 0:
+            return
+        threshold = datetime.utcnow() - timedelta(days=self.buffer_retention_max_days)
+
+        # TODO: remove legacy `.json` cleanup once all older buffer files are gone in the wild.
+        if os.path.isdir(self.buffer_path):
+            for legacy_name in os.listdir(self.buffer_path):
+                if not legacy_name.endswith(".json"):
+                    continue
+                legacy_path = os.path.join(self.buffer_path, legacy_name)
+                try:
+                    os.remove(legacy_path)
+                except FileNotFoundError:
+                    pass
+
+        for file_path in self._list_buffer_files():
+            filename = os.path.basename(file_path)
+            timestamp = self._parse_buffer_filename_timestamp(filename)
+            if timestamp and timestamp < threshold:
+                try:
+                    os.remove(file_path)
+                except FileNotFoundError:
+                    pass
+                self._remove_state_entry(filename)
+
+    def _send_from_memory(self):
+        """Drain in-memory batches while enforcing the 5 MB payload limit."""
+        processed = False
+        while True:
+            try:
+                chunk = self._in_memory_chunks.get_nowait()
+            except Empty:
+                break
+
+            index = 0
+            while index < len(chunk):
+                sub_entries, consumed, payload = self._slice_entries_for_send(chunk[index:])
+                if not sub_entries:
+                    break
+
+                if not (self.endpoint and self.app_id):
+                    remaining = chunk[index:]
+                    if remaining:
+                        self._in_memory_chunks.put(list(remaining))
+                    return processed
+
+                if not self._transmit_buffer(sub_entries, "in-memory chunk", payload):
+                    remaining = list(sub_entries) + chunk[index + consumed:]
+                    if remaining:
+                        self._in_memory_chunks.put(list(remaining))
+                    return processed
+
+                processed = True
+                index += consumed
+
+        return processed
+
+    def _slice_entries_for_send(self, entries):
+        """Return a sub-batch that fits inside the max payload size."""
+        if not entries:
+            return [], 0, None
+
+        chunk = []
+        payload = None
+        payload_size = 0
+
+        for entry in entries:
+            chunk.append(entry)
+            payload, payload_size = self._build_payload(chunk)
+            if payload_size > self.max_chunk_size:
+                if len(chunk) == 1:
+                    logging.getLogger("Unmanic.ForwardLogHandler").warning(
+                        "Single in-memory log entry exceeds max chunk size (%s bytes). Sending anyway.",
+                        payload_size,
+                    )
+                    return chunk, 1, payload
+                chunk.pop()
+                payload, payload_size = self._build_payload(chunk)
+                return chunk, len(chunk), payload
+            if payload_size >= self.max_chunk_size * 0.9:
+                return chunk, len(chunk), payload
+
+        return chunk, len(chunk), payload
+
+    def _get_hourly_buffer_file(self):
+        """Return the JSONL filename for the current UTC hour."""
+        current_hour = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+        timestamp = current_hour.strftime("%Y%m%dT%H")
+        return os.path.join(self.buffer_path, f"log_buffer_{timestamp}.jsonl")
+
+    def _list_buffer_files(self):
+        """Return all buffer filenames sorted chronologically."""
+        if not os.path.isdir(self.buffer_path):
+            return []
+        files = [
+            os.path.join(self.buffer_path, name)
+            for name in os.listdir(self.buffer_path)
+            if name.startswith("log_buffer_") and (name.endswith(".jsonl") or name.endswith(".json"))
+        ]
+        files.sort()
+        return files
+
+    def _parse_buffer_filename_timestamp(self, filename):
+        """Parse the UTC hour encoded in a JSONL buffer filename."""
+        prefix = "log_buffer_"
+        suffix = ".jsonl"
+        if not filename.startswith(prefix) or not filename.endswith(suffix):
+            return None
+        timestamp_str = filename[len(prefix):-len(suffix)]
+        try:
+            return datetime.strptime(timestamp_str, "%Y%m%dT%H")
+        except ValueError:
+            return None
+
+    def _spill_memory_chunks_to_disk(self):
+        """Persist in-memory batches when retention becomes enabled again."""
+        pending = []
+        while True:
+            try:
+                pending.extend(self._in_memory_chunks.get_nowait())
+            except Empty:
+                break
+
+        if not pending:
+            return
+
+        for start in range(0, len(pending), self._BATCH_MAX_ITEMS):
+            self._append_to_disk(pending[start:start + self._BATCH_MAX_ITEMS])
+
+    def _load_buffer_state(self):
+        """Read the persisted offsets mapping from disk, if present."""
+        if not os.path.exists(self._buffer_state_path):
+            return {}
+        try:
+            with open(self._buffer_state_path, "r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except Exception:
+            logging.getLogger("Unmanic.ForwardLogHandler").warning(
+                "Failed to load log buffer state. Starting fresh.")
+            return {}
+
+        files = data.get("files", {})
+        state = {}
+        for name, offset in files.items():
+            try:
+                state[name] = int(offset)
+            except (TypeError, ValueError):
+                continue
+        return state
+
+    def _persist_state_locked(self):
+        """Write the state file atomically; caller must hold `_state_lock`."""
+        try:
+            os.makedirs(self.buffer_path, exist_ok=True)
+            temp_path = f"{self._buffer_state_path}.tmp"
+            with open(temp_path, "w", encoding="utf-8") as handle:
+                json.dump({"files": self._buffer_state}, handle)
+            os.replace(temp_path, self._buffer_state_path)
+        except Exception as exc:
+            logging.getLogger("Unmanic.ForwardLogHandler").warning(
+                "Failed to persist log buffer state: %s",
+                exc,
+            )
+
+    def _persist_state(self):
+        """Public helper to persist state with locking."""
+        with self._state_lock:
+            self._persist_state_locked()
+
+    def _remove_state_entry(self, filename):
+        """Drop a single filename from the persisted offsets mapping."""
+        with self._state_lock:
+            if filename in self._buffer_state:
+                del self._buffer_state[filename]
+                self._persist_state_locked()
+
+    def _sync_state_with_disk(self):
+        """Ensure state entries only reference buffer files that still exist."""
+        if not os.path.isdir(self.buffer_path):
+            return
+        existing = {
+            name
+            for name in os.listdir(self.buffer_path)
+            if name.startswith("log_buffer_") and name.endswith(".jsonl")
+        }
+        with self._state_lock:
+            changed = False
+            for name in list(self._buffer_state.keys()):
+                if name not in existing:
+                    del self._buffer_state[name]
+                    changed = True
+            for name in existing:
+                if name not in self._buffer_state:
+                    self._buffer_state[name] = 0
+                    changed = True
+            if changed:
+                self._persist_state_locked()
+
+    def _transmit_buffer(self, entries, buffer_label, payload=None):
+        """Send a payload to the remote endpoint, logging any retriable failures."""
+        if not entries:
+            return True
+        if not (self.endpoint and self.app_id):
+            return False
+
+        if payload is None:
+            payload = self._create_payload(entries)
+
+        try:
+            response = requests.post(
+                f"{self.endpoint}/api/v1/push",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+            )
 
             if response.status_code == 204:
-                # Success, remove the file
-                os.remove(buffer_file)
                 if self.previous_connection_failed:
                     self.previous_connection_failed = False
+                    self._notified_failures.clear()
                     logging.getLogger("Unmanic.ForwardLogHandler").info("Successfully flushed log buffer after retry.")
                 return True
-            else:
-                # The buffer file will be left here for another retry later on
-                self.previous_connection_failed = True
-                logging.getLogger("Unmanic.ForwardLogHandler").error(
-                    "Failed to forward logs from %s to remote host %s: %s %s",
-                    os.path.basename(buffer_file),
-                    self.endpoint,
-                    response.status_code,
-                    response.text)
-        except requests.exceptions.ConnectionError as e:
-            # Ignore this. We will try again later
-            logging.getLogger("Unmanic.ForwardLogHandler").warning(
-                "ConnectionError on remote endpoint %s. Ensure this URL is reachable by Unmanic.",
-                self.endpoint)
+
             self.previous_connection_failed = True
-        except Exception as e:
-            # Ignore this. We will try again later
+            message_text = "Failed to forward logs to remote host {}: {} {}".format(
+                self.endpoint,
+                response.status_code,
+                response.text,
+            )
+
+            status_key = str(response.status_code)
+
+            if status_key not in self._notified_failures:
+                notifications = Notifications()
+                notifications.update({
+                    'uuid':       f'forwardLogHandlerError_{response.status_code}',
+                    'type':       'warning',
+                    'icon':       'report_problem',
+                    'label':      'forwardLogHandlerErrorLabel',
+                    'message':    message_text,
+                    'navigation': {
+                        'push': '/ui/settings-support',
+                    },
+                })
+
+                frontend_messages = FrontendPushMessages()
+                frontend_messages.add(
+                    {
+                        'id':      f'forwardLogHandlerError_{response.status_code}',
+                        'type':    'error',
+                        'code':    'forwardLogHandlerError',
+                        'message': message_text,
+                        'timeout': 20000
+                    }
+                )
+                logging.getLogger("Unmanic.ForwardLogHandler").error(message_text)
+                self._notified_failures.add(status_key)
+        except requests.exceptions.ConnectionError:
+            logging.getLogger("Unmanic.ForwardLogHandler").warning(
+                "ConnectionError on remote endpoint %s while sending %s. Ensure this URL is reachable by Unmanic.",
+                self.endpoint,
+                buffer_label,
+            )
+            self.previous_connection_failed = True
+        except Exception as exc:
             logging.getLogger("Unmanic.ForwardLogHandler").exception(
                 "Exception while trying to forward logs from %s: %s",
-                buffer_file, e)
+                buffer_label,
+                exc,
+            )
             self.previous_connection_failed = True
+            self._notified_failures.add('EXCEPTION')
         return False
 
-    @staticmethod
-    def _buffer_file_too_old(buffer_file, max_days=14):
-        """
-        Check if the log buffer file is older than the specified number of days based on its timestamp in the filename.
-
-        The expected filename format is:
-          log_buffer_YYYY-MM-DDTHH-MM-SS.ffffff.json
-
-        Returns True if the timestamp is older than max_days, otherwise False.
-        """
-        basename = os.path.basename(buffer_file)
-        prefix = "log_buffer_"
-        suffix = ".json"
-
-        if not (basename.startswith(prefix) and basename.endswith(suffix)):
-            return False  # Filename doesn't match expected pattern.
-
-        # Extract the timestamp part from the filename.
-        timestamp_str = basename[len(prefix):-len(suffix)]
-
-        # Migrate from old format (log_buffer_YYYY-MM-DDTHH:MM:SS.ffffff.json)
-        try:
-            # Try new format first (with colons replaced by dashes)
-            file_timestamp = datetime.strptime(timestamp_str, "%Y-%m-%dT%H-%M-%S.%f")
-        except ValueError:
-            try:
-                # Fallback to old format with colons
-                file_timestamp = datetime.fromisoformat(timestamp_str)
-            except ValueError:
-                # Unable to parse the timestamp.
-                return False
-
-        max_age_threshold = datetime.now() - timedelta(days=max_days)
-        return file_timestamp < max_age_threshold
-
     def _create_payload(self, buffer):
-        """
-        Create the payload from the given buffer of logs.
-        {
-          "streams": [
-            {
-              "stream": { "label": "value", ... },
-              "values": [
-                [ "<ts in ns>", "<log line>" ],
-                ...
-              ]
-            }
-          ]
-        }
-        """
+        """Group entries by labels to produce the payload expected by the remote API."""
         combined_streams = {}
         for log_item in buffer:
             stream_key = frozenset(log_item["labels"].items())
             if stream_key not in combined_streams:
                 combined_streams[stream_key] = {
                     "stream": dict(log_item["labels"]),
-                    "values": []
+                    "values": [],
                 }
             combined_streams[stream_key]["values"].append(log_item["entry"])
 
         return {
             "app_id": self.app_id,
-            "data":   {"streams": list(combined_streams.values())}
+            "data":   {"streams": list(combined_streams.values())},
         }
 
     def close(self):
@@ -414,15 +735,17 @@ class ForwardLogHandler(logging.Handler):
         remaining_logs = []
         while True:
             try:
-                log_entry = self.log_queue.get(timeout=1)
-                if log_entry is not None:
-                    remaining_logs.append(log_entry)
+                log_entry = self.log_queue.get_nowait()
             except Empty:
                 # No logs available right now, break loop
                 break
+            if log_entry is not None:
+                remaining_logs.append(log_entry)
 
         if remaining_logs:
-            self._flush_to_disk(remaining_logs)
+            self._handle_batch(remaining_logs)
+
+        self._persist_state()
 
         super().close()
 

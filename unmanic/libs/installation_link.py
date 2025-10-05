@@ -41,6 +41,7 @@ from requests_toolbelt import MultipartEncoder
 
 from unmanic import config
 from unmanic.libs import common, session, task
+from unmanic.libs.frontend_push_messages import FrontendPushMessages
 from unmanic.libs.library import Library
 from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.plugins import PluginsHandler
@@ -823,13 +824,13 @@ class Links(object, metaclass=SingletonType):
 
         return installations_with_info
 
-    def within_enabled_link_limits(self, frontend_messages=None):
+    def within_enabled_link_limits(self):
         """
         Ensure enabled plugins are within limits
 
-        :param frontend_messages:
         :return:
         """
+        frontend_messages = FrontendPushMessages()
         # Fetch level from session
         s = Session()
         s.register_unmanic()
@@ -842,7 +843,7 @@ class Links(object, metaclass=SingletonType):
         def add_frontend_message():
             # If the frontend messages queue was included in request, append a message
             if frontend_messages:
-                frontend_messages.put(
+                frontend_messages.add(
                     {
                         'id':      'linkedInstallationLimits',
                         'type':    'error',

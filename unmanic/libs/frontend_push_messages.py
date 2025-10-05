@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.notifications.py
+    unmanic.frontend_push_messages.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     03 Jul 2022, (7:49 AM)
+    Date:                     06 Dec 2018, (7:21 AM)
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,61 +30,21 @@
 
 """
 import threading
-import uuid
 from queue import Queue, Empty
 
 from unmanic.libs.singleton import SingletonType
 
 
-class Notifications(Queue, metaclass=SingletonType):
+class FrontendPushMessages(Queue, metaclass=SingletonType):
     """
     Handles messages passed to the frontend.
 
     Messages are sent as objects. These objects require the following fields:
-        - 'uuid'            : A unique ID of the message. Prevent messages duplication
-        - 'type'            : The type of message - 'error', 'warning', 'success', or 'info'
-        - 'icon'            : The icon to display with the notification
-        - 'label'           : A code to represent an I18n string for the frontend to display the notification label
-        - 'message'         : The message string that is appended to the I18n string displayed on the frontend.
-        - 'link'            : The link to be applied to the notification. Can be relative or a URL
-
-    Examples:
-        notifications = Notifications()
-
-        # Place a notification
-        notifications.add(
-            {
-                'uuid':       'failedTask',
-                'type':       'error',
-                'icon':       'report',
-                'label':      'failedTaskLabel',
-                'message':    'You have a new failed task in your completed tasks list',
-                'navigation': {
-                    'push': '/unmanic/ui/dashboard',
-                    'events': [
-                        'completedTasksShowMore',
-                    ],
-                },
-            })
-
-        # Remove an item
-        notifications.remove('updateAvailable')
-
-        # Read the current list of notifications
-        notifications.read_all_items()
-
-        # Update an item in place
-        notifications.add(
-            {
-                'uuid':       'updateAvailable',
-                'type':       'info',
-                'icon':       'update',
-                'label':      'updateAvailableLabel',
-                'message':    'updateAvailableMessage',
-                'navigation': {
-                    'url': 'https://docs.unmanic.app',
-                },
-            })
+        - 'id'          : A unique ID of the message. Prevent messages duplication
+        - 'type'        : The type of message - 'error', 'warning', 'success', or 'info'
+        - 'code'        : A code to represent an I18n string for the frontend to display
+        - 'message'     : Additional message string that can be appended to the I18n string displayed on the frontend.
+        - 'timeout'     : The timeout for this message. If set to 0, then the message will persist until manually dismissed.
 
     """
 
@@ -100,12 +60,12 @@ class Notifications(Queue, metaclass=SingletonType):
     @staticmethod
     def __validate_item(item):
         # Ensure all required keys are present
-        for key in ['type', 'icon', 'label', 'message', 'navigation']:
+        for key in ['id', 'type', 'code', 'message', 'timeout']:
             if key not in item:
                 raise Exception("Frontend message item incorrectly formatted. Missing key: '{}'".format(key))
 
         # Ensure the given type is valid
-        if item.get('type') not in ['error', 'warning', 'success', 'info']:
+        if item.get('type') not in ['error', 'warning', 'success', 'info', 'status']:
             raise Exception(
                 "Frontend message item's code must be in ['error', 'warning', 'success', 'info', 'status']. Received '{}'".format(
                     item.get('type')
@@ -132,70 +92,67 @@ class Notifications(Queue, metaclass=SingletonType):
         # Ensure received item is valid
         self.__validate_item(item)
         with self._lock:
-            # Generate uuid if one is not provided
-            if not item.get('uuid'):
-                item['uuid'] = str(uuid.uuid4())
-            # If it is not already in message list, add it to the list and the queue
-            if item['uuid'] in self.all_items:
+            item_id = item.get('id')
+            if item_id in self.all_items:
                 return
-            self.all_items.add(item['uuid'])
+            self.all_items.add(item_id)
             self.__add_to_queue_locked(item)
 
-    def remove(self, item_uuid):
-        """
-        Remove a single item from the notifications list given it's UUID
-
-        :param item_uuid:
-        :return:
-        """
+    def get_all_items(self):
+        items = []
         with self._lock:
-            success = False
-            # Get all items out of queue
+            items = self.__get_all_items_locked()
+            # Add all items back into the queue for continued processing
+            self.__requeue_items_locked(items)
+        return items
+
+    def requeue_items(self, items):
+        with self._lock:
+            # Add all given items back into the queue
+            self.__requeue_items_locked(items)
+
+    def remove_item(self, item_id):
+        with self._lock:
             current_items = self.__get_all_items_locked()
-            # Create list of items that will be queued again
             requeue_items = []
+            # Create list of items that will be queued again
             for current_item in current_items:
-                if current_item.get('uuid') != item_uuid:
+                if current_item.get('id') != item_id:
                     requeue_items.append(current_item)
-                else:
-                    success = True
-            if success and item_uuid in self.all_items:
-                self.all_items.remove(item_uuid)
+            if item_id in self.all_items:
+                self.all_items.remove(item_id)
             # Add all requeue_items items back into the queue
             self.__requeue_items_locked(requeue_items)
-            return success
 
     def read_all_items(self):
         with self._lock:
-            # Get all items out of queue
             current_items = self.__get_all_items_locked()
             # Add all requeue_items items back into the queue
             self.__requeue_items_locked(current_items)
-            # Return items list
             return list(current_items)
 
     def update(self, item):
         # Ensure received item is valid
         self.__validate_item(item)
+        item_id = item.get('id')
         with self._lock:
-            # Generate uuid if one is not provided
-            if not item.get('uuid'):
-                item['uuid'] = str(uuid.uuid4())
             current_items = self.__get_all_items_locked()
+
             requeue_items = []
             replaced = False
+            # Create list of items that will be queued again, replacing matching IDs
             for current_item in current_items:
-                if current_item.get('uuid') == item['uuid']:
+                if current_item.get('id') == item_id:
                     requeue_items.append(item)
                     replaced = True
                 else:
                     requeue_items.append(current_item)
             if not replaced:
-                self.all_items.add(item['uuid'])
+                self.all_items.add(item_id)
                 # Restore original queue state before adding new item
                 self.__requeue_items_locked(current_items)
                 self.__add_to_queue_locked(item)
                 return
-            self.all_items.add(item['uuid'])
+            self.all_items.add(item_id)
             # Add all requeue_items items back into the queue
             self.__requeue_items_locked(requeue_items)

@@ -1098,7 +1098,7 @@ class SettingsReadAndWriteSchema(BaseSchema):
         example={
             "ui_port":                    8888,
             "debugging":                  False,
-            "log_buffer_retention":       14,
+            "log_buffer_retention":       0,
             "library_path":               "/library",
             "enable_library_scanner":     False,
             "schedule_full_scan_minutes": 1440,

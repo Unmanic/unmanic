@@ -37,6 +37,7 @@ import time
 from datetime import datetime, timedelta
 
 from unmanic.libs import common, installation_link
+from unmanic.libs.frontend_push_messages import FrontendPushMessages
 from unmanic.libs.library import Library
 from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.plugins import PluginsHandler
@@ -144,13 +145,13 @@ class Foreman(threading.Thread):
 
     def validate_worker_config(self):
         valid = True
-        frontend_messages = self.data_queues.get('frontend_messages')
+        frontend_messages = FrontendPushMessages()
 
         # Ensure that the enabled plugins are compatible with the PluginHandler version
         plugin_handler = PluginsHandler()
-        if plugin_handler.get_incompatible_enabled_plugins(frontend_messages):
+        if plugin_handler.get_incompatible_enabled_plugins():
             valid = False
-        if not self.links.within_enabled_link_limits(frontend_messages):
+        if not self.links.within_enabled_link_limits():
             valid = False
 
         # Check if plugin configuration has been modified. If it has, stop the workers.
@@ -158,7 +159,7 @@ class Foreman(threading.Thread):
         #   and having the workers pickup a job mid configuration.
         if self.configuration_changed():
             # Generate a frontend message and falsify validation
-            frontend_messages.put(
+            frontend_messages.add(
                 {
                     'id':      'pluginSettingsChangeWorkersStopped',
                     'type':    'warning',
@@ -170,7 +171,7 @@ class Foreman(threading.Thread):
             valid = False
 
         # Ensure library config is within limits
-        if not Library.within_library_count_limits(frontend_messages):
+        if not Library.within_library_count_limits():
             valid = False
 
         return valid
@@ -462,7 +463,7 @@ class Foreman(threading.Thread):
 
         :return:
         """
-        frontend_messages = self.data_queues.get('frontend_messages')
+        frontend_messages = FrontendPushMessages()
         # Use the configured worker count + 1 as the post-processor queue limit
         limit = (int(self.get_total_worker_count()) + 1)
         # Include a count of all available and busy remote workers for the postprocessor queue limit

@@ -40,6 +40,7 @@ import schedule
 
 from unmanic import config
 from unmanic.libs.filetest import FileTesterThread
+from unmanic.libs.frontend_push_messages import FrontendPushMessages
 from unmanic.libs.library import Library
 from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.plugins import PluginsHandler
@@ -174,9 +175,9 @@ class LibraryScannerManager(threading.Thread):
         """
         valid = True
         plugin_handler = PluginsHandler()
-        if plugin_handler.get_incompatible_enabled_plugins(self.data_queues.get('frontend_messages')):
+        if plugin_handler.get_incompatible_enabled_plugins():
             valid = False
-        if not Library.within_library_count_limits(self.data_queues.get('frontend_messages')):
+        if not Library.within_library_count_limits():
             valid = False
         return valid
 
@@ -214,7 +215,7 @@ class LibraryScannerManager(threading.Thread):
             self.logger.debug("Scanning directory - '%s'", library_path)
 
         # Push status notification to frontend
-        frontend_messages = self.data_queues.get('frontend_messages')
+        frontend_messages = FrontendPushMessages()
 
         # Start X number of FileTesterThread threads
         concurrent_file_testers = self.settings.get_concurrent_file_testers()

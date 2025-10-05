@@ -43,6 +43,7 @@ import requests
 
 from unmanic import config
 from unmanic.libs import common
+from unmanic.libs.frontend_push_messages import FrontendPushMessages
 from unmanic.libs.library import Library
 from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.session import Session
@@ -798,19 +799,20 @@ class PluginsHandler(object, metaclass=SingletonType):
         """
         Ensure that the currently installed plugins are compatible with this PluginsHandler version
 
-        :param frontend_messages:
         :return:
         :rtype:
         """
+        if frontend_messages is None:
+            frontend_messages = FrontendPushMessages()
         # Fetch all libraries
         all_libraries = Library.get_all_libraries()
 
         def add_frontend_message(plugin_id, name):
             # If the frontend messages queue was included in request, append a message
             if frontend_messages:
-                frontend_messages.put(
+                frontend_messages.add(
                     {
-                        'id':      'incompatiblePlugin_{}'.format(plugin_id),
+                        'id':      f'incompatiblePlugin_{plugin_id}',
                         'type':    'error',
                         'code':    'incompatiblePlugin',
                         'message': name,

@@ -312,25 +312,57 @@ class PostProcessor(threading.Thread):
         cache_path = self.current_task.get_cache_path()
         source_data = self.current_task.get_source_data()
         destination_data = self.current_task.get_destination_data()
+        def_cache_path = self.settings.get_cache_path()
+
+        remove_source_file = True
+        if def_cache_path not in destination_data['abspath']:
+            remove_source_file = False
+
+        self._log(f"Cache path: {def_cache_path}", level='debug')
+        self._log(f"Remote source: {source_data['abspath']}, destination file: {destination_data['abspath']}.", level='debug')
+        self._log(f"Task cache path: {cache_path}", level='debug')
 
         # Remove the source
-        if os.path.exists(source_data.get('abspath')):
+        if os.path.exists(source_data.get('abspath')) and remove_source_file:
             self._log("Removing remote source: {}".format(source_data.get('abspath')))
             os.remove(source_data.get('abspath'))
+        elif os.path.exists(source_data.get('abspath')) and not remove_source_file:
+            self._log("Keep remote source: {}, remote file source is in library and not cache.".format(source_data.get('abspath')))
         else:
             self._log("Remote source file '{}' does not exist!".format(source_data.get('abspath')), level="warning")
 
         # Copy final cache file to original directory
-        if os.path.exists(cache_path):
+        random_string = '{}-{}'.format(common.random_string(), int(time.time()))
+        library_tdir =  os.path.join(os.path.dirname(source_data.get('abspath')), "unmanic_remote_pending_library-" + random_string)
+        cache_tdir = os.path.join(def_cache_path, "unmanic_remote_pending_library-" + random_string)
+
+        if os.path.exists(cache_path) and remove_source_file:
             self.__copy_file(cache_path, destination_data.get('abspath'), [], 'DEFAULT', move=True)
+            tdir = cache_tdir
+        elif os.path.exists(cache_path) and not remove_source_file:
+            try:
+                tdir = library_tdir
+                os.mkdir(library_tdir)
+                capture_success = self.__copy_file(cache_path, os.path.join(library_tdir, os.path.basename(cache_path)), [], 'DEFAULT', move=True)
+                if not capture_success:
+                    raise Exception("Failed to copy back to network share")
+            except:
+                 os.mkdir(cache_tdir)
+                 self.__copy_file(cache_path, os.path.join(cache_tdir, os.path.basename(cache_path)), [], 'DEFAULT', move=True)
+                 tdir = cache_tdir
         else:
             self._log("Final cache file '{}' does not exist!".format(cache_path), level="warning")
+
+        self._log(f"tdir: {tdir}", level='debug')
 
         # Cleanup cache files
         self.__cleanup_cache_files(cache_path)
 
         # Modify the task abspath - this may be different now
-        self.current_task.modify_path(destination_data.get('abspath'))
+        if remove_source_file:
+            self.current_task.modify_path(destination_data.get('abspath'))
+        else:
+            self.current_task.modify_path(os.path.join(tdir, os.path.basename(cache_path)))
 
     def __cleanup_cache_files(self, cache_path):
         """

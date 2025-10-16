@@ -1625,31 +1625,36 @@ class RemoteTaskManager(threading.Thread):
                 "Remote task #{} was successful, proceeding to download the completed file '{}'".format(remote_task_id,
                                                                                                         task_label),
                 level='debug')
-            # Set the new file out as the extension may have changed
-            split_file_name = os.path.splitext(data.get('abspath'))
-            file_extension = split_file_name[1].lstrip('.')
-            self.current_task.set_cache_path(cache_directory, file_extension)
-            # Read the updated cache path
-            task_cache_path = self.current_task.get_cache_path()
+            if os.path.exists(data.get('abspath')):
+                # /library/tvshows/show_name/season/unmanic_remote_pending_library/file.mkv
+                task_cache_path = data.get('abspath')
+                self.current_task.cache_path = task_cache_path
+            else:
+                # Set the new file out as the extension may have changed
+                split_file_name = os.path.splitext(data.get('abspath'))
+                file_extension = split_file_name[1].lstrip('.')
+                self.current_task.set_cache_path(cache_directory, file_extension)
+                # Read the updated cache path
+                task_cache_path = self.current_task.get_cache_path()
 
-            # Loop until we are able to upload the file to the remote installation
-            while not self.redundant_flag.is_set():
-                # Check for network transfer lock
-                lock_key = self.links.acquire_network_transfer_lock(address, transfer_limit=2, lock_type='receive')
-                if not lock_key:
-                    self.event.wait(1)
-                    continue
-                # Download the file
-                self._log("Downloading file from remote installation '{}'".format(task_label), level='debug')
-                success = self.links.fetch_remote_task_completed_file(self.installation_info, remote_task_id, task_cache_path)
-                self.links.release_network_transfer_lock(lock_key)
-                if not success:
-                    self._log("Failed to download file '{}'".format(os.path.basename(data.get('abspath'))), level='error')
-                    # Send request to terminate the remote worker then return
-                    self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
-                    self.__write_failure_to_worker_log()
-                    return False
-                break
+                # Loop until we are able to upload the file to the remote installation
+                while not self.redundant_flag.is_set():
+                    # Check for network transfer lock
+                    lock_key = self.links.acquire_network_transfer_lock(address, transfer_limit=2, lock_type='receive')
+                    if not lock_key:
+                        self.event.wait(1)
+                        continue
+                    # Download the file
+                    self._log("Downloading file from remote installation '{}'".format(task_label), level='debug')
+                    success = self.links.fetch_remote_task_completed_file(self.installation_info, remote_task_id, task_cache_path)
+                    self.links.release_network_transfer_lock(lock_key)
+                    if not success:
+                        self._log("Failed to download file '{}'".format(os.path.basename(data.get('abspath'))), level='error')
+                        # Send request to terminate the remote worker then return
+                        self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
+                        self.__write_failure_to_worker_log()
+                        return False
+                    break
 
             # If the previous loop was broken because this tread needs to terminate, return False here (did not complete)
             if self.redundant_flag.is_set():

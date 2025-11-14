@@ -363,6 +363,8 @@ def main():
                         help='Enable development against another unmanic support api')
     parser.add_argument('--port', nargs='?',
                         help='Specify the port to run the webserver on')
+    parser.add_argument('--address', nargs='?',
+                        help='Specify the address to listen on, to limit connections to a specific interface')
     # parser.add_argument('--unmanic_path', nargs='?',
     #                    help='Specify the unmanic configuration path instead of ~/.unmanic')
     args = parser.parse_args()
@@ -370,6 +372,7 @@ def main():
     # Configure application from args
     settings = config.Config(
         port=args.port,
+        address=args.address,
         unmanic_path=None
     )
 

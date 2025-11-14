@@ -54,6 +54,7 @@ class Config(object, metaclass=SingletonType):
     def __init__(self, config_path=None, **kwargs):
         # Set the default UI Port
         self.ui_port = 8888
+        self.ui_address = ''
 
         # Set default directories
         home_directory = common.get_home_dir()
@@ -118,6 +119,8 @@ class Config(object, metaclass=SingletonType):
         # Overwrite all other settings passed from command params
         if kwargs.get('port'):
             self.set_config_item('ui_port', kwargs.get('port'), save_settings=False)
+        if kwargs.get('address'):
+            self.set_config_item('ui_address', kwargs.get('address'), save_settings=False)
 
         # Apply settings to the unmanic logger
         self.__setup_unmanic_logger()
@@ -294,6 +297,14 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.ui_port
+
+    def get_ui_address(self):
+        """
+        Get setting - ui_address
+
+        :return:
+        """
+        return self.ui_address
 
     def get_cache_path(self):
         """

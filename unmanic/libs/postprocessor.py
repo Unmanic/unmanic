@@ -347,13 +347,13 @@ class PostProcessor(threading.Thread):
                 if not capture_success:
                     raise Exception("Failed to copy back to network share")
             except:
-                 os.mkdir(cache_tdir)
-                 self.__copy_file(cache_path, os.path.join(cache_tdir, os.path.basename(cache_path)), [], 'DEFAULT', move=True)
-                 tdir = cache_tdir
+                os.mkdir(cache_tdir)
+                self.__copy_file(cache_path, os.path.join(cache_tdir, os.path.basename(cache_path)), [], 'DEFAULT', move=True)
+                tdir = cache_tdir
+            finally:
+                self._log(f"tdir: {tdir}", level='debug')
         else:
             self._log("Final cache file '{}' does not exist!".format(cache_path), level="warning")
-
-        self._log(f"tdir: {tdir}", level='debug')
 
         # Cleanup cache files
         self.__cleanup_cache_files(cache_path)

@@ -190,7 +190,7 @@ class UIServer(threading.Thread):
         )
 
         try:
-            self.server.listen(int(self.config.get_ui_port()))
+            self.server.listen(int(self.config.get_ui_port()), address=self.config.get_ui_address())
         except socket.error as e:
             self._log("Exception when setting WebUI port {}:".format(self.config.get_ui_port()), message2=str(e),
                       level="warning")

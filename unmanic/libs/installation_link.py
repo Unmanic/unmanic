@@ -34,6 +34,8 @@ import os.path
 import queue
 import threading
 import time
+import shutil
+import re
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -1625,10 +1627,47 @@ class RemoteTaskManager(threading.Thread):
                 "Remote task #{} was successful, proceeding to download the completed file '{}'".format(remote_task_id,
                                                                                                         task_label),
                 level='debug')
+            self._log(
+                "Remote task abspath {} to be transferred".format(data.get('abspath')),
+                level='debug')
             if os.path.exists(data.get('abspath')):
                 # /library/tvshows/show_name/season/unmanic_remote_pending_library/file.mkv
                 task_cache_path = data.get('abspath')
                 self.current_task.cache_path = task_cache_path
+                self._log("abspath exists - task cache path: '{}'".format(task_cache_path), level='debug')
+                # need to get the file into the local instance /tmp/unmanic/unmanic_file_conversion... location
+                # the task_cache_path file is currently sitting in the library's unmanic_remote_pending_library directory
+                # with a different random string - reformulate the basename of the file with the correct random string
+                # and copy it to the local instance /tmp/unmanic/unmanic_file_conversion location
+                tcp_base = os.path.basename(task_cache_path)
+                match1 = re.search(r'-\w{5}-\d{10}', cache_directory)
+                if match1:
+                    correct_random_string = match1.group()
+                else:
+                    self._log("Unable to detect random_string pattern in main instance cache directory named '{}'".format(cache_directory), level='error')
+                    self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
+                    self.__write_failure_to_worker_log()
+                    return False
+                match2 = re.search(r'-\w{5}-\d{10}', tcp_base)
+                if match2:
+                    incorrect_random_string = match2.group()
+                else:
+                    self._log("Unable to detect random_string pattern in remote library located directory named '{}'".format(task_cache_path), level='error')
+                    self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
+                    self.__write_failure_to_worker_log()
+                    return False
+                new_tcp_base = tcp_base.split(incorrect_random_string)[0]
+                sfx = tcp_base.split(incorrect_random_string)[1]
+                correct_cache_file_path = os.path.join(cache_directory, new_tcp_base + correct_random_string + sfx)
+                self._log(f"...copying {task_cache_path} to {correct_cache_file_path}", level='debug')
+                try:
+                    output = shutil.copy(task_cache_path, correct_cache_file_path)
+                    if os.path.exists(output) and os.path.getsize(output) > 0:
+                        self._log("File successfully copied from remote library located cache to main instance cache at '{}'".format(output), level='info')
+                    else:
+                        self.__write_failure_to_worker_log()
+                except (FileNotFoundError, PermissionError, shutil.SameFileError):
+                    self.__write_failure_to_worker_log()
             else:
                 # Set the new file out as the extension may have changed
                 split_file_name = os.path.splitext(data.get('abspath'))
@@ -1636,6 +1675,7 @@ class RemoteTaskManager(threading.Thread):
                 self.current_task.set_cache_path(cache_directory, file_extension)
                 # Read the updated cache path
                 task_cache_path = self.current_task.get_cache_path()
+                self._log("task cache path: '{}'".format(task_cache_path), level='debug')
 
                 # Loop until we are able to upload the file to the remote installation
                 while not self.redundant_flag.is_set():

@@ -32,11 +32,6 @@ services:
       - ../dev_environment/library:/library
       # SSL test certificates
       # Commands to generate: 
-      # openssl req -x509 -newkey rsa:4096 \
-      #   -keyout docker/test-key.pem \
-      #   -out docker/test-cert.pem \
-      #   -days 10950 -nodes \
-      #   -subj "/C=XX/ST=Test/L=Test/O=Test/CN=localhost"
       #
       #  openssl req -x509 -newkey rsa:4096 \
       #   -keyout /path/to/test-key.pem \

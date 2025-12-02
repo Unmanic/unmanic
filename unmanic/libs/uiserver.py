@@ -181,12 +181,34 @@ class UIServer(threading.Thread):
         # Load the app
         self.app = self.make_web_app()
 
-        # TODO: add support for HTTPS
+        # Configure SSL/TLS if enabled
+        ssl_options_config = None
+        if self.config.get_ssl_enabled():
+            certfile = self.config.get_ssl_certfilepath()
+            keyfile = self.config.get_ssl_keyfilepath()
+
+            if certfile and keyfile:
+                # Verify certificate and key files exist
+                if not os.path.exists(certfile):
+                    self._log(f"SSL certificate file not found: {certfile}", level="error")
+                    raise SystemExit
+                if not os.path.exists(keyfile):
+                    self._log(f"SSL key file not found: {keyfile}", level="error")
+                    raise SystemExit
+
+                ssl_options_config = {
+                    "certfile": certfile,
+                    "keyfile": keyfile,
+                }
+                self._log(f"HTTPS enabled on port {self.config.get_ui_port()}", level="info")
+            else:
+                self._log("SSL enabled but certificate/key files not provided", level="error")
+                raise SystemExit
 
         # Web Server
         self.server = tornado.httpserver.HTTPServer(
             self.app,
-            ssl_options=None,
+            ssl_options=ssl_options_config,
         )
 
         try:

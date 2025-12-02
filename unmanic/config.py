@@ -55,6 +55,11 @@ class Config(object, metaclass=SingletonType):
         # Set the default UI Port
         self.ui_port = 8888
 
+        # SSL/TLS settings
+        self.ssl_enabled = False
+        self.ssl_certfilepath = None
+        self.ssl_keyfilepath = None
+
         # Set default directories
         home_directory = common.get_home_dir()
         self.config_path = os.path.join(home_directory, '.unmanic', 'config')
@@ -534,3 +539,30 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.distributed_worker_count_target
+
+    def get_ssl_enabled(self):
+        """
+        Get setting - ssl_enabled
+
+        :return:
+        """
+        # Convert string to boolean if necessary (for environment variables)
+        if isinstance(self.ssl_enabled, str):
+            return self.ssl_enabled.lower() in ('true', '1', 'yes', 'on')
+        return bool(self.ssl_enabled)
+
+    def get_ssl_certfilepath(self):
+        """
+        Get setting - ssl_certfilepath
+
+        :return:
+        """
+        return self.ssl_certfilepath
+
+    def get_ssl_keyfilepath(self):
+        """
+        Get setting - ssl_keyfilepath
+
+        :return:
+        """
+        return self.ssl_keyfilepath

@@ -219,6 +219,7 @@ jobs:
           VERSION_TAG=${GITHUB_REF#refs/*/}
           SHA_SHORT="${GITHUB_SHA::7}"
           ORG=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          PY_VERSION="${{ steps.py_build_data.outputs.py_version }}"
           BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
           SERVICE_NAME=unmanic
@@ -228,6 +229,9 @@ jobs:
           DOCKER_TAGS=""
           if [[ ${GITHUB_REF} == refs/heads/master ]]; then
             DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_HUB_IMAGE}:latest,${GHCR_IMAGE}:latest,"
+            if [[ -n ${PY_VERSION} ]]; then
+              DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_HUB_IMAGE}:${PY_VERSION},${GHCR_IMAGE}:${PY_VERSION},"
+            fi
           elif [[ ${GITHUB_REF} == refs/heads/staging ]]; then
             DOCKER_TAGS="${DOCKER_TAGS}${DOCKER_HUB_IMAGE}:staging,${GHCR_IMAGE}:staging,"
           elif [[ ${GITHUB_REF} == refs/heads/dev-* ]]; then

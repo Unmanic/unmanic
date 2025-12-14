@@ -230,8 +230,14 @@ ENV HOME=/config
 # Prepare default home directory for runtime user
 RUN \
     echo "**** Prepare /config home directory ****" \
-        && mkdir -p /config \
-        && chown 1000:1000 /config
+        && mkdir -p \
+            /app \
+            /config \
+            /tmp/unmanic \
+        && chown 1000:1000 \
+            /app \
+            /config \
+            /tmp/unmanic
 
 
 # Install pre-built Unmanic wheel

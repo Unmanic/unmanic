@@ -2,8 +2,9 @@
 
 ensure_paths() {
     mkdir -p \
-        /tmp/unmanic \
-        /config/.unmanic
+        /app \
+        /config/.unmanic \
+        /tmp/unmanic
 }
 
 PUID=${PUID:-1000}
@@ -11,51 +12,50 @@ PGID=${PGID:-1000}
 DEFAULT_USER=${DEFAULT_USER:-ubuntu}
 
 permissions_config() {
-    echo "**** (permission-config) Setting permissions ****";
+    echo "**** (permission-config) Setting permissions ****"
     chown -R ${PUID}:${PGID} \
-        /tmp/unmanic \
+        /app \
         /config/.unmanic \
-        /app
+        /tmp/unmanic
     chmod -R a+w \
-        /tmp/unmanic \
+        /app \
         /config/.unmanic \
-        /app
+        /tmp/unmanic
 }
 
 set_permissions_for_hardware_video_group() {
     # Taken from https://github.com/linuxserver/docker-ffmpeg/blob/master/root/ffmpegwrapper.sh
     # This is required in order to run Unmanic as a non-root user and give it permission to
     #   access the hardware decoders/encoders
-    echo "**** (permission-config) Adding run user to video group ****";
+    echo "**** (permission-config) Adding run user to video group ****"
     FILES=$(find /dev/dri -type c -print 2>/dev/null || true)
-    for i in $FILES
-    do
-      VIDEO_GID=$(stat -c '%g' "$i")
-      if id -G "${DEFAULT_USER}" | grep -qw "$VIDEO_GID"; then
-        touch /groupadd
-      else
-        if [ ! "${VIDEO_GID}" == '0' ]; then
-          VIDEO_NAME=$(getent group "${VIDEO_GID}" | awk -F: '{print $1}')
-          if [ -z "${VIDEO_NAME}" ]; then
-            VIDEO_NAME="video$(head /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c8)"
-            groupadd "$VIDEO_NAME"
-            groupmod -g "$VIDEO_GID" "$VIDEO_NAME"
-          fi
-          usermod -a -G "$VIDEO_NAME" "${DEFAULT_USER}"
-          touch /groupadd
+    for i in $FILES; do
+        VIDEO_GID=$(stat -c '%g' "$i")
+        if id -G "${DEFAULT_USER}" | grep -qw "$VIDEO_GID"; then
+            touch /groupadd
+        else
+            if [ ! "${VIDEO_GID}" == '0' ]; then
+                VIDEO_NAME=$(getent group "${VIDEO_GID}" | awk -F: '{print $1}')
+                if [ -z "${VIDEO_NAME}" ]; then
+                    VIDEO_NAME="video$(head /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c8)"
+                    groupadd "$VIDEO_NAME"
+                    groupmod -g "$VIDEO_GID" "$VIDEO_NAME"
+                fi
+                usermod -a -G "$VIDEO_NAME" "${DEFAULT_USER}"
+                touch /groupadd
+            fi
         fi
-      fi
     done
     if [ -n "${FILES}" ] && [ ! -f "/groupadd" ]; then
-      usermod -a -G root "${DEFAULT_USER}"
+        usermod -a -G root "${DEFAULT_USER}"
     fi
 }
 
-ensure_paths;
+ensure_paths
 
 if [[ "${EUID}" -eq 0 ]]; then
-    permissions_config;
-    set_permissions_for_hardware_video_group;
+    permissions_config
+    set_permissions_for_hardware_video_group
 else
-    echo "**** (permission-config) Not running as root, skipping ownership and device permission changes ****";
+    echo "**** (permission-config) Not running as root, skipping ownership and device permission changes ****"
 fi

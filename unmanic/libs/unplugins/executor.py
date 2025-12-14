@@ -404,8 +404,9 @@ class PluginExecutor(object):
             # Settings plugin_settings
             plugin_settings = plugin_module.Settings(library_id=library_id)
 
-            all_plugin_settings = copy.deepcopy(plugin_settings.get_setting())
+            # Build form first so any in-memory defaults are applied without persisting
             plugin_form_settings = copy.deepcopy(plugin_settings.get_form_settings())
+            all_plugin_settings = copy.deepcopy(plugin_settings.get_setting())
         except Exception as e:
             self.logger.exception("Exception while fetching settings for plugin '%s' %s", plugin_id, e)
             all_plugin_settings = {}

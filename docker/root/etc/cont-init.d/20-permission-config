@@ -35,7 +35,11 @@ set_permissions_for_hardware_video_group() {
             touch /groupadd
         else
             if [ ! "${VIDEO_GID}" == '0' ]; then
-                VIDEO_NAME=$(getent group "${VIDEO_GID}" | awk -F: '{print $1}')
+                if ! VIDEO_ENTRY=$(getent group "${VIDEO_GID}" 2>/dev/null); then
+                    VIDEO_NAME=""
+                else
+                    VIDEO_NAME=$(awk -F: '{print $1}' <<<"${VIDEO_ENTRY}")
+                fi
                 if [ -z "${VIDEO_NAME}" ]; then
                     VIDEO_NAME="video$(head /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c8)"
                     groupadd "$VIDEO_NAME"

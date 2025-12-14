@@ -3,31 +3,70 @@
 #   https://github.com/keylase/nvidia-patch/blob/master/docker-entrypoint.sh
 #
 
+log_patch() {
+    echo "**** (patch-nvidia) $*"
+}
+
+apply_nvidia_patch() {
+    local patch_dir="/patched-lib"
+    local patch_script="/config/nvidia-patch.${NVIDIA_PATCH_VERSION}.sh"
+
+    if [[ -f "${patch_script}" ]]; then
+        log_patch "Using cached patch script at ${patch_script}"
+    else
+        log_patch "Downloading patch script to ${patch_script}"
+        if ! curl -sSLf -o "${patch_script}" "https://raw.githubusercontent.com/keylase/nvidia-patch/${NVIDIA_PATCH_VERSION}/patch.sh"; then
+            log_patch "Failed to download ${NVIDIA_PATCH_VERSION}; skipping patch"
+            return 0
+        fi
+    fi
+    if ! chmod +x "${patch_script}"; then
+        log_patch "Failed to mark ${patch_script} executable; skipping patch"
+        return 0
+    fi
+
+    log_patch "Exec NVIDIA Patch"
+    if ! echo "${patch_dir}" >/etc/ld.so.conf.d/000-patched-lib.conf; then
+        log_patch "Failed to update ld.so configuration; skipping patch"
+        return 0
+    fi
+    if ! mkdir -p "${patch_dir}"; then
+        log_patch "Failed to create ${patch_dir}; skipping patch"
+        return 0
+    fi
+    if ! PATCH_OUTPUT_DIR="${patch_dir}" "${patch_script}"; then
+        log_patch "Patch script exited with error; skipping patch"
+        return 0
+    fi
+
+    local prev_dir
+    prev_dir=$(pwd)
+    if ! cd "${patch_dir}"; then
+        log_patch "Failed to enter ${patch_dir}; skipping symlink updates"
+    else
+        shopt -s nullglob
+        for f in *; do
+            suffix="${f##*.so}"
+            name="$(basename "$f" "$suffix")"
+            [ -h "$name" ] || ln -sf "$f" "$name"
+            [ -h "$name.1" ] || ln -sf "$f" "$name.1"
+        done
+        shopt -u nullglob
+        cd "${prev_dir}" || true
+    fi
+
+    if ! ldconfig; then
+        log_patch "ldconfig failed; runtime libraries may not load patched files"
+        return 0
+    fi
+
+    log_patch "NVIDIA patch applied successfully"
+}
 
 # Install NVIDIA Patch
 # REF: https://github.com/keylase/nvidia-patch#docker-support
-if [[ -n ${NVIDIA_PATCH_VERSION:-} ]] && [[ "${EUID}" -eq 0 ]]; then
-
-    echo "**** (patch-nvidia) Fetch NVIDIA Patch ****";
-    curl -sSLf \
-        -o /usr/local/bin/patch.sh \
-        "https://raw.githubusercontent.com/keylase/nvidia-patch/${NVIDIA_PATCH_VERSION}/patch.sh"
-    chmod +x /usr/local/bin/patch.sh
-
-    echo "**** (patch-nvidia) Exec NVIDIA Patch ****";
-    echo "/patched-lib" > /etc/ld.so.conf.d/000-patched-lib.conf && \
-    mkdir -p "/patched-lib" && \
-    PATCH_OUTPUT_DIR=/patched-lib /usr/local/bin/patch.sh && \
-    cd /patched-lib && \
-    for f in * ; do
-        suffix="${f##*.so}"
-        name="$(basename "$f" "$suffix")"
-        [ -h "$name" ] || ln -sf "$f" "$name"
-        [ -h "$name" ] || ln -sf "$f" "$name.1"
-    done && \
-    ldconfig
-    [ "$OLDPWD" ] && cd -
-
+if [[ -n "${NVIDIA_PATCH_VERSION:-}" ]] && [[ "${EUID}" -eq 0 ]]; then
+    apply_nvidia_patch
 elif [[ -n ${NVIDIA_PATCH_VERSION:-} ]]; then
-    echo "**** (patch-nvidia) Container is not running as root, skipping NVIDIA patch ****";
+    log_patch "Container is not running as root, skipping NVIDIA patch"
 fi

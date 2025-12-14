@@ -224,6 +224,14 @@ RUN \
 
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+ENV HOME=/config
+
+
+# Prepare default home directory for runtime user
+RUN \
+    echo "**** Prepare /config home directory ****" \
+        && mkdir -p /config \
+        && chown 1000:1000 /config
 
 
 # Install pre-built Unmanic wheel

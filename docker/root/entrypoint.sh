@@ -35,19 +35,26 @@ run_init_scripts() {
     shopt -u nullglob
 }
 
-activate_venv() {
-    if [[ -d /app/venv && -f /app/venv/bin/activate ]]; then
-        export VIRTUAL_ENV="/app/venv"
-        log "Activating development virtualenv at /app/venv"
-        source /app/venv/bin/activate
-        return
-    fi
+ensure_runtime_paths() {
+    mkdir -p \
+        /config \
+        /config/.unmanic \
+        /tmp/unmanic
 
-    if [[ -f "${VIRTUAL_ENV:?}/bin/activate" ]]; then
-        log "Activating virtualenv at ${VIRTUAL_ENV:?}"
-        source "${VIRTUAL_ENV:?}/bin/activate"
+    if [[ "${EUID}" -eq 0 ]]; then
+        chown -R 1000:1000 /config /tmp/unmanic || true
+    fi
+}
+
+activate_venv() {
+    local venv="${VIRTUAL_ENV:-/opt/venv}"
+
+    if [[ -f "${venv}/bin/activate" ]]; then
+        export VIRTUAL_ENV="${venv}"
+        log "Activating virtualenv at ${VIRTUAL_ENV}"
+        source "${VIRTUAL_ENV}/bin/activate"
     else
-        log "No virtualenv found to activate"
+        log "No virtualenv found at ${venv}"
     fi
 }
 
@@ -72,6 +79,7 @@ update_source_symlink() {
 }
 
 main() {
+    ensure_runtime_paths
     activate_venv
     run_init_scripts
 

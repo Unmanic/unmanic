@@ -2,6 +2,7 @@
 
 RUN_USER=${RUN_USER:-ubuntu}
 export HOME=/config
+export HOME_DIR=/config
 
 VENV_BIN="${VIRTUAL_ENV:-/opt/venv}/bin/unmanic"
 TARGET_BIN="${VENV_BIN}"

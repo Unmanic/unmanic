@@ -215,7 +215,6 @@ def json_dump_to_file(json_data, out_file, check=True, rollback_on_fail=True):
     }
 
     # If check param is flagged and there already exists a out file, create a temporary backup
-
     if rollback_on_fail and os.path.exists(out_file):
         temp_dir = tempfile.gettempdir()
         temp_path = os.path.join(temp_dir, 'json_dump_to_file_backup-{}'.format(time.time()))
@@ -239,21 +238,27 @@ def json_dump_to_file(json_data, out_file, check=True, rollback_on_fail=True):
     if check:
         try:
             with open(out_file) as infile:
-                data = json.load(infile)
+                json_data = json.load(infile)
         except Exception as e:
             result['success'] = False
             result['errors'].append("JSON file invalid - {}".format(e))
 
-    # If data save was unsuccessful and the rollback_on_fail param is flagged
-    #   and there is a temp file set, roll back to old file
-    if not result.get('success') and result.get('temp_path') and rollback_on_fail:
-        try:
-            os.remove(out_file)
-            shutil.copy2(result.get('temp_path'), out_file)
-            os.remove(result.get('temp_path'))
-        except Exception as e:
-            result['success'] = False
-            result['errors'].append("Exception while restoring original file file: {}".format(str(e)))
+    # If data save was unsuccessful and the rollback_on_fail param is flagged and there
+    #   is a temp file set, roll back to old file. Otherwise, just delete the temp file.
+    if rollback_on_fail and result.get('temp_path'):
+        if not result.get('success'):
+            try:
+                os.remove(out_file)
+                shutil.copy2(result.get('temp_path'), out_file)
+                os.remove(result.get('temp_path'))
+            except Exception as e:
+                result['success'] = False
+                result['errors'].append("Exception while restoring original file file: {}".format(str(e)))
+        else:
+            try:
+                os.remove(result.get('temp_path'))
+            except Exception as e:
+                pass
 
     return result
 

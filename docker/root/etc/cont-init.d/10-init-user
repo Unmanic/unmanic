@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+PUID=${PUID:-1000}
+PGID=${PGID:-1000}
+DEFAULT_USER=${DEFAULT_USER:-ubuntu}
+DEFAULT_HOME=${DEFAULT_HOME:-/config}
+
+report_user="${DEFAULT_USER}"
+report_uid=""
+report_gid=""
+
+resolve_user_display() {
+    local name
+    name=$(id -un 2>/dev/null || true)
+    if [[ -z "${name}" ]]; then
+        name="uid$(id -u)"
+    fi
+    echo "${name}"
+}
+
+if [[ "${EUID}" -ne 0 ]]; then
+    echo "**** (init-user) Not running as root, skipping UID/GID adjustments ****"
+else
+    if id -u "${DEFAULT_USER}" >/dev/null 2>&1; then
+        groupmod -o -g "${PGID}" "${DEFAULT_USER}"
+        usermod -o -u "${PUID}" -g "${DEFAULT_USER}" -d "${DEFAULT_HOME}" "${DEFAULT_USER}"
+        chown "${PUID}:${PGID}" "${DEFAULT_HOME}" || true
+        report_uid=$(id -u "${DEFAULT_USER}")
+        report_gid=$(id -g "${DEFAULT_USER}")
+    else
+        echo "**** (init-user) User ${DEFAULT_USER} not found; nothing to adjust ****"
+        report_user=$(resolve_user_display)
+        report_uid=$(id -u)
+        report_gid=$(id -g)
+    fi
+fi
+
+if [[ -z "${report_uid}" || -z "${report_gid}" ]]; then
+    report_user=$(resolve_user_display)
+    report_uid=$(id -u)
+    report_gid=$(id -g)
+fi
+
+echo "───────────────────────────────────────"
+echo "User: ${report_user}"
+echo "User UID:    ${report_uid}"
+echo "User GID:    ${report_gid}"
+echo "───────────────────────────────────────"

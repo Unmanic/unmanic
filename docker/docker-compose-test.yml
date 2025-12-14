@@ -6,8 +6,7 @@
 # docker exec --workdir=/app unmanic-testenv pytest --log-cli-level=INFO
 #
 
-
-version: '2'
+version: "2"
 
 services:
   unmanic-testenv:
@@ -15,6 +14,7 @@ services:
     image: josh5/unmanic:latest
     ports:
       - 8888:8888
+    # user: "1000:1000"
     environment:
       - PUID=1000
       - PGID=1000

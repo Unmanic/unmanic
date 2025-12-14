@@ -1,5 +1,22 @@
-#!/usr/bin/with-contenv bash
+#!/usr/bin/env bash
 
-RUN_USER=abc
+RUN_USER=${RUN_USER:-ubuntu}
 export HOME=/config
-exec s6-setuidgid ${RUN_USER} /usr/local/bin/unmanic-service ${@}
+
+VENV_BIN="${VIRTUAL_ENV:-/opt/venv}/bin/unmanic"
+TARGET_BIN="${VENV_BIN}"
+if [[ ! -x "${TARGET_BIN}" ]]; then
+    TARGET_BIN="$(command -v unmanic || true)"
+fi
+
+if [[ "${EUID}" -eq 0 ]]; then
+    if command -v gosu >/dev/null 2>&1; then
+        exec gosu "${RUN_USER}" "${TARGET_BIN}" "${@}"
+    fi
+    echo "Requirement 'gosu' not available. You should not run Unmanic as root. EXIT!"
+    sleep 5
+    exit 1
+fi
+
+echo "Not running as root, starting Unmanic without changing user"
+exec "${TARGET_BIN}" "${@}"

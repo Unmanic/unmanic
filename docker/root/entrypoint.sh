@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+set -euo pipefail
+set -E
+
+INIT_DIR=${INIT_DIR:-/etc/cont-init.d}
+
+log() {
+    echo "**** (entrypoint) $*"
+}
+
+on_error() {
+    local line_no=$1
+    local cmd=$2
+    local exit_code=$3
+    local source_file=${BASH_SOURCE[1]:-${BASH_SOURCE[0]}}
+    log "Initialization failed in ${source_file}:${line_no}: ${cmd} (exit ${exit_code})"
+    log "Sleeping 5 seconds before exiting to avoid rapid restarts"
+    sleep 5
+    exit 1
+}
+trap 'on_error ${LINENO} "${BASH_COMMAND}" $?' ERR
+
+run_init_scripts() {
+    if [[ ! -d "${INIT_DIR}" ]]; then
+        log "Init directory ${INIT_DIR} not found; skipping init scripts"
+        return
+    fi
+
+    shopt -s nullglob
+    for script in "${INIT_DIR}"/*; do
+        [[ -f "${script}" ]] || continue
+        log "Sourcing ${script}"
+        source "${script}"
+    done
+    shopt -u nullglob
+}
+
+activate_venv() {
+    if [[ -d /app/venv && -f /app/venv/bin/activate ]]; then
+        export VIRTUAL_ENV="/app/venv"
+        log "Activating development virtualenv at /app/venv"
+        source /app/venv/bin/activate
+        return
+    fi
+
+    if [[ -f "${VIRTUAL_ENV:?}/bin/activate" ]]; then
+        log "Activating virtualenv at ${VIRTUAL_ENV:?}"
+        source "${VIRTUAL_ENV:?}/bin/activate"
+    else
+        log "No virtualenv found to activate"
+    fi
+}
+
+update_source_symlink() {
+    if [[ ! -e /app/unmanic/service.py ]]; then
+        return
+    fi
+
+    if [[ "${EUID}" -ne 0 ]]; then
+        log "Not running as root, skipping source install symlink update"
+        return
+    fi
+
+    log "Update container to running Unmanic from source"
+    python_version=$(python3 --version 2>&1 | grep -oP 'Python \K\d+\.\d+')
+    target="/usr/local/lib/python${python_version:?}/dist-packages/unmanic"
+    if [[ -e "${target}" && ! -L "${target}" ]]; then
+        log "Move container unmanic install"
+        mv "${target}" "${target}-installed"
+    fi
+    ln -sf /app/unmanic "${target}"
+}
+
+main() {
+    activate_venv
+    run_init_scripts
+
+    update_source_symlink
+
+    if [[ "$1" == "/usr/bin/unmanic" || "$1" == "unmanic" ]]; then
+        unmanic_params=()
+        if [[ "${DEBUGGING:-}" == 'true' ]]; then
+            unmanic_params+=(--dev)
+        fi
+        if [[ "${USE_TEST_SUPPORT_API:-}" == 'true' ]]; then
+            unmanic_params+=(--dev-api=https://support-api.test.streamingtech.co.nz)
+        fi
+        set -- "$1" "${unmanic_params[@]}" "${@:2}"
+    fi
+
+    log "Starting: $*"
+    exec "$@"
+}
+
+main "$@"

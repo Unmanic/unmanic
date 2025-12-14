@@ -1,25 +1,23 @@
-#!/usr/bin/with-contenv bash
+#!/usr/bin/env bash
 
-PUID=${PUID:-911}
-PGID=${PGID:-911}
-
-set_uidgid() {
-    echo "**** (permissions_config) Setting run user uid=${PGID}(abc) gid=${PUID}(abc)  ****";
-    groupmod -o -g "${PGID}" abc
-    usermod -o -u "${PUID}" abc
-}
-
-permissions_config() {
-    echo "**** (permissions_config) Setting permissions ****";
+ensure_paths() {
     mkdir -p \
         /tmp/unmanic \
         /config/.unmanic
+}
+
+PUID=${PUID:-1000}
+PGID=${PGID:-1000}
+DEFAULT_USER=${DEFAULT_USER:-ubuntu}
+
+permissions_config() {
+    echo "**** (permission-config) Setting permissions ****";
     chown -R ${PUID}:${PGID} \
         /tmp/unmanic \
         /config/.unmanic \
         /app
     chmod -R a+w \
-        /tmp/unmanic\
+        /tmp/unmanic \
         /config/.unmanic \
         /app
 }
@@ -28,12 +26,12 @@ set_permissions_for_hardware_video_group() {
     # Taken from https://github.com/linuxserver/docker-ffmpeg/blob/master/root/ffmpegwrapper.sh
     # This is required in order to run Unmanic as a non-root user and give it permission to
     #   access the hardware decoders/encoders
-    echo "**** (permissions_config) Adding run user to video group ****";
-    FILES=$(find /dev/dri -type c -print 2>/dev/null)
+    echo "**** (permission-config) Adding run user to video group ****";
+    FILES=$(find /dev/dri -type c -print 2>/dev/null || true)
     for i in $FILES
     do
       VIDEO_GID=$(stat -c '%g' "$i")
-      if id -G abc | grep -qw "$VIDEO_GID"; then
+      if id -G "${DEFAULT_USER}" | grep -qw "$VIDEO_GID"; then
         touch /groupadd
       else
         if [ ! "${VIDEO_GID}" == '0' ]; then
@@ -43,16 +41,21 @@ set_permissions_for_hardware_video_group() {
             groupadd "$VIDEO_NAME"
             groupmod -g "$VIDEO_GID" "$VIDEO_NAME"
           fi
-          usermod -a -G "$VIDEO_NAME" abc
+          usermod -a -G "$VIDEO_NAME" "${DEFAULT_USER}"
           touch /groupadd
         fi
       fi
     done
     if [ -n "${FILES}" ] && [ ! -f "/groupadd" ]; then
-      usermod -a -G root abc
+      usermod -a -G root "${DEFAULT_USER}"
     fi
 }
 
-set_uidgid;
-permissions_config;
-set_permissions_for_hardware_video_group;
+ensure_paths;
+
+if [[ "${EUID}" -eq 0 ]]; then
+    permissions_config;
+    set_permissions_for_hardware_video_group;
+else
+    echo "**** (permission-config) Not running as root, skipping ownership and device permission changes ****";
+fi

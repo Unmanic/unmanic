@@ -1,12 +1,24 @@
-#!/usr/bin/with-contenv bash
+#!/usr/bin/env bash
 
+
+warn_if_risky_nonroot() {
+    local script_path="$1"
+    local risky_keywords=("apt" "apt-get" "aptitude" "dpkg")
+    for kw in "${risky_keywords[@]}"; do
+        if grep -Eq "\\b${kw}\\b" "${script_path}" 2>/dev/null; then
+            echo "**** (custom-setup-script) WARNING: '${script_path}' contains '${kw}' but container is not running as root; commands may fail with insufficent permissions ****"
+            return
+        fi
+    done
+}
 
 if [[ -f /config/startup.sh ]]; then
-
     echo "**** (custom-setup-script) Calling custom user setup script ****";
     sed -i 's/\r$//' /config/startup.sh
+    if [[ "${EUID}" -ne 0 ]]; then
+        warn_if_risky_nonroot "/config/startup.sh"
+    fi
     source /config/startup.sh
-
 fi
 
 for plugin_script in /config/.unmanic/plugins/*/init.d/*.sh ; do
@@ -15,6 +27,9 @@ for plugin_script in /config/.unmanic/plugins/*/init.d/*.sh ; do
 
         echo "[60-custom-setup-script] ${plugin_script}: executing..."
         sed -i 's/\r$//' "${plugin_script}"
+        if [[ "${EUID}" -ne 0 ]]; then
+            warn_if_risky_nonroot "${plugin_script}"
+        fi
         source "${plugin_script}"
 
     fi

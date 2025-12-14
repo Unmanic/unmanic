@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bash
+#!/usr/bin/env bash
 # Taken from:
 #   https://github.com/keylase/nvidia-patch/blob/master/docker-entrypoint.sh
 #
@@ -6,7 +6,7 @@
 
 # Install NVIDIA Patch
 # REF: https://github.com/keylase/nvidia-patch#docker-support
-if [[ ! -z ${NVIDIA_PATCH_VERSION} ]]; then
+if [[ -n ${NVIDIA_PATCH_VERSION:-} ]] && [[ "${EUID}" -eq 0 ]]; then
 
     echo "**** (patch-nvidia) Fetch NVIDIA Patch ****";
     curl -sSLf \
@@ -28,4 +28,6 @@ if [[ ! -z ${NVIDIA_PATCH_VERSION} ]]; then
     ldconfig
     [ "$OLDPWD" ] && cd -
 
+elif [[ -n ${NVIDIA_PATCH_VERSION:-} ]]; then
+    echo "**** (patch-nvidia) Container is not running as root, skipping NVIDIA patch ****";
 fi

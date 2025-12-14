@@ -1,6 +1,5 @@
-FROM lsiobase/ubuntu:jammy
+FROM ubuntu:24.04
 LABEL maintainer="Josh.5 <jsunnex@gmail.com>"
-
 
 # Env variables
 ENV \
@@ -14,12 +13,16 @@ ENV \
 #   https://jellyfin.org/docs/general/administration/hardware-acceleration.html
 #   https://github.com/jellyfin/jellyfin/blob/master/Dockerfile
 RUN \
+    echo "**** Configure APT ****" \
+        && export DEBIAN_FRONTEND=noninteractive \
+    && \
     echo "**** Install build dependencies requirements ****" \
         && apt-get update \
         && apt-get install -y \
             ca-certificates \
             curl \
             gnupg \
+            gosu \
             wget \
     && \
     echo "**** Install runtime packages ****" \
@@ -97,11 +100,15 @@ RUN \
             /var/tmp/* \
             /tmp/*
 
-
 # Install commonly used command line tools
 ARG JELLYFIN_FFMPEG_VERSION="6"
 ARG NODE_MAJOR="20"
 RUN \
+    echo "**** Configure APT ****" \
+        && export DEBIAN_FRONTEND=noninteractive \
+        && . /etc/os-release \
+        && JELLYFIN_CODENAME="${VERSION_CODENAME:-noble}" \
+    && \
     echo "**** Install FFmpeg for $(uname -m) ****" \
         && sleep 2 \
         && apt-get update \
@@ -109,7 +116,7 @@ RUN \
         if uname -m | grep -q x86; then \
             echo "**** Add Jellyfin repository ****" \
                 && wget -qO - https://repo.jellyfin.org/jellyfin_team.gpg.key | gpg --dearmor --output /usr/share/keyrings/jellyfin_team.gpg \
-                && echo "deb [arch=$( dpkg --print-architecture ) signed-by=/usr/share/keyrings/jellyfin_team.gpg] https://repo.jellyfin.org/ubuntu jammy main" | tee /etc/apt/sources.list.d/jellyfin.list \
+                && echo "deb [arch=$( dpkg --print-architecture ) signed-by=/usr/share/keyrings/jellyfin_team.gpg] https://repo.jellyfin.org/ubuntu ${JELLYFIN_CODENAME} main" | tee /etc/apt/sources.list.d/jellyfin.list \
             && \
             echo "**** Install jellyfin-ffmpeg and linked 3rd party libs ****" \
                 && apt-get update \
@@ -127,7 +134,7 @@ RUN \
         if uname -m | grep -q aarch64; then \
             echo "**** Add Jellyfin repository ****" \
                 && wget -qO - https://repo.jellyfin.org/jellyfin_team.gpg.key | gpg --dearmor --output /usr/share/keyrings/jellyfin_team.gpg \
-                && echo "deb [arch=$( dpkg --print-architecture ) signed-by=/usr/share/keyrings/jellyfin_team.gpg] https://repo.jellyfin.org/ubuntu jammy main" | tee /etc/apt/sources.list.d/jellyfin.list \
+                && echo "deb [arch=$( dpkg --print-architecture ) signed-by=/usr/share/keyrings/jellyfin_team.gpg] https://repo.jellyfin.org/ubuntu ${JELLYFIN_CODENAME} main" | tee /etc/apt/sources.list.d/jellyfin.list \
             && \
             echo "**** Install jellyfin-ffmpeg and linked 3rd party libs ****" \
                 && apt-get update \
@@ -180,6 +187,9 @@ COPY /requirements.txt /tmp/requirements.txt
 
 # Install Unmanic python dependencies.
 RUN \
+    echo "**** Configure APT ****" \
+        && export DEBIAN_FRONTEND=noninteractive \
+    && \
     echo "**** Install Unmanic application dependencies ****" \
         && sleep 2 \
         && \
@@ -193,11 +203,15 @@ RUN \
                 python3 \
                 python3-dev \
                 python3-pip \
+                python3-venv \
                 python3-setuptools \
                 unzip \
         && \
-        echo "**** Install pip packages ****" \
-            && python3 -m pip install --no-cache-dir -r /tmp/requirements.txt \
+        echo "**** Create virtual environment ****" \
+            && python3 -m venv /opt/venv \
+        && \
+        echo "**** Install pip packages into virtualenv ****" \
+            && /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt \
     && \
     echo "**** Section cleanup ****" \
         && apt-get clean autoclean -y \
@@ -206,6 +220,10 @@ RUN \
             /var/lib/apt/lists/* \
             /var/tmp/* \
             /tmp/*
+
+
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 
 # Install pre-built Unmanic wheel
@@ -217,10 +235,7 @@ RUN \
         && \
         echo "**** Install unmanic from pre-built wheel ****" \
             && ls -l /src/ \
-            && python3 -m pip install --no-cache-dir /src/*.whl \
-        && \
-        echo "**** Move unmanic executable so we can wrap a bash script around it for developers ****" \
-            && mv -f /usr/local/bin/unmanic /usr/local/bin/unmanic-service \
+            && /opt/venv/bin/pip install --no-cache-dir /src/*.whl \
         && \
         echo "**** Make default paths for unmanic library ****" \
             && mkdir -p /library
@@ -229,6 +244,8 @@ RUN \
 # Add local files
 COPY /docker/root /
 
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/usr/bin/unmanic"]
 
 # Unmanic runs on port 8888
 EXPOSE 8888/tcp

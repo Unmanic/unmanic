@@ -223,7 +223,6 @@ RUN \
 
 
 ENV VIRTUAL_ENV=/opt/venv
-ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 ENV HOME=/config
 
 

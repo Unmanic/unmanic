@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+ffprobe \
+    -show_format \
+    -show_streams \
+    -show_error \
+    -show_chapters \
+    -print_format json \
+    -loglevel quiet \
+    "$@"

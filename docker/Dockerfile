@@ -222,10 +222,6 @@ RUN \
             /tmp/*
 
 
-ENV VIRTUAL_ENV=/opt/venv
-ENV HOME=/config
-
-
 # Prepare default home directory for runtime user
 RUN \
     echo "**** Prepare /config home directory ****" \
@@ -242,13 +238,14 @@ RUN \
 # Install pre-built Unmanic wheel
 # Must first run `python3 ./setup.py bdist_wheel` on host to build package
 COPY /dist/ /src/
+ENV VIRTUAL_ENV=/opt/venv
 RUN \
     echo "**** Install Unmanic ****" \
         && sleep 2 \
         && \
         echo "**** Install unmanic from pre-built wheel ****" \
             && ls -l /src/ \
-            && /opt/venv/bin/pip install --no-cache-dir /src/*.whl \
+            && "${VIRTUAL_ENV:?}"/bin/pip install --no-cache-dir /src/*.whl \
         && \
         echo "**** Make default paths for unmanic library ****" \
             && mkdir -p /library

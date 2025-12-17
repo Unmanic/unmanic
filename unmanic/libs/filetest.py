@@ -176,9 +176,19 @@ class FileTesterThread(threading.Thread):
         self.status_updates = status_updates
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
+        self._testing_lock = threading.Lock()
+        self._currently_testing = False
 
     def stop(self):
         self.abort_flag.set()
+
+    def _set_testing_state(self, state):
+        with self._testing_lock:
+            self._currently_testing = state
+
+    def is_testing_file(self):
+        with self._testing_lock:
+            return self._currently_testing
 
     def run(self):
         self.logger.info("Starting %s", self.name)
@@ -188,12 +198,15 @@ class FileTesterThread(threading.Thread):
             try:
                 # Pending task queue has an item available. Fetch it.
                 next_file = self.files_to_test.get_nowait()
+                self._set_testing_state(True)
                 self.status_updates.put(next_file)
             except queue.Empty:
+                self._set_testing_state(False)
                 self.event.wait(2)
                 continue
             except Exception as e:
                 self.logger.exception("Exception in fetching library scan result for path %s:", self.name)
+                self._set_testing_state(False)
                 continue
 
             # Test file to be added to task list. Add it if required
@@ -223,6 +236,8 @@ class FileTesterThread(threading.Thread):
                 self.logger.warning("File contains Unicode characters that cannot be processed. Ignoring.")
             except Exception as e:
                 self.logger.exception("Exception testing file path in %s. Ignoring.", self.name)
+            finally:
+                self._set_testing_state(False)
 
         self.logger.info("Exiting %s", self.name)
 

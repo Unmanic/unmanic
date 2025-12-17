@@ -199,6 +199,17 @@ class LibraryScannerManager(threading.Thread):
         for manager_id in self.file_test_managers:
             self.file_test_managers[manager_id].abort_flag.set()
 
+    def file_tests_in_progress(self):
+        """
+        Check if any file tester threads are still processing a file.
+
+        :return: bool
+        """
+        for manager in self.file_test_managers.values():
+            if getattr(manager, "is_testing_file", None) and manager.is_testing_file():
+                return True
+        return False
+
     def scan_library_path(self, library_name, library_path, library_id):
         """
         Run a scan of the given library path
@@ -282,6 +293,11 @@ class LibraryScannerManager(threading.Thread):
             )
             # Check if all files have been tested
             if self.files_to_test.empty() and self.files_to_process.empty() and status_updates.empty():
+                # Do not exit this loop until all tester threads report idle
+                if self.file_tests_in_progress():
+                    double_check = 0
+                    self.event.wait(.5)
+                    continue
                 percent_completed_string = '100%'
                 # Add a "double check" section.
                 # This is used to ensure that the loop does not prematurely exit when the last file tests still
@@ -319,6 +335,8 @@ class LibraryScannerManager(threading.Thread):
         for manager_id in self.file_test_managers:
             self.file_test_managers[manager_id].abort_flag.set()
             self.file_test_managers[manager_id].join(2)
+            if self.file_test_managers[manager_id].is_alive():
+                self.logger.error("Completing Library scan, but thread %s is still alive. Files tested by this thread will be ignored.", manager_id)
 
         scan_end_time = time.time()
         scan_duration = str((scan_end_time - scan_start_time))

@@ -199,6 +199,18 @@ class LibraryScannerManager(threading.Thread):
         for manager_id in self.file_test_managers:
             self.file_test_managers[manager_id].abort_flag.set()
 
+    @staticmethod
+    def update_scan_progress(frontend_messages, message):
+        frontend_messages.update(
+            {
+                'id':      'libraryScanProgress',
+                'type':    'status',
+                'code':    'libraryScanProgress',
+                'message': message,
+                'timeout': 0
+            }
+        )
+
     def file_tests_in_progress(self):
         """
         Check if any file tester threads are still processing a file.
@@ -269,28 +281,12 @@ class LibraryScannerManager(threading.Thread):
                 if not status_updates.empty():
                     current_file = status_updates.get()
                     percent_completed_string = 'Testing: {}'.format(current_file)
-                    frontend_messages.update(
-                        {
-                            'id':      'libraryScanProgress',
-                            'type':    'status',
-                            'code':    'libraryScanProgress',
-                            'message': percent_completed_string,
-                            'timeout': 0
-                        }
-                    )
+                    self.update_scan_progress(frontend_messages, percent_completed_string)
 
         # Loop while waiting for all threads to finish
         double_check = 0
         while not self.abort_flag.is_set():
-            frontend_messages.update(
-                {
-                    'id':      'libraryScanProgress',
-                    'type':    'status',
-                    'code':    'libraryScanProgress',
-                    'message': percent_completed_string,
-                    'timeout': 0
-                }
-            )
+            self.update_scan_progress(frontend_messages, percent_completed_string)
             # Check if all files have been tested
             if self.files_to_test.empty() and self.files_to_process.empty() and status_updates.empty():
                 # Do not exit this loop until all tester threads report idle
@@ -323,6 +319,8 @@ class LibraryScannerManager(threading.Thread):
             # Fetch frontend messages from queue
             if not status_updates.empty():
                 current_file = status_updates.get()
+                percent_completed_string = 'Testing: {}'.format(current_file)
+                self.update_scan_progress(frontend_messages, percent_completed_string)
                 continue
             elif not self.files_to_process.empty():
                 item = self.files_to_process.get()

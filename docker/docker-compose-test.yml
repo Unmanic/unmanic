@@ -3,7 +3,7 @@
 #
 # This compose file is only good for automated testing.
 #
-# docker exec --workdir=/app unmanic-testenv pytest --log-cli-level=INFO
+# docker compose -f ./docker/docker-compose-test.yml exec --workdir=/app unmanic-testenv pytest --log-cli-level=INFO
 #
 
 version: "2"

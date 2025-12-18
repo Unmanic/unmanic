@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 warn_if_risky_nonroot() {
     local script_path="$1"
     local risky_keywords=("apt" "apt-get" "aptitude" "dpkg")
@@ -12,8 +11,47 @@ warn_if_risky_nonroot() {
     done
 }
 
+run_plugin_init_script() {
+    local plugin_script="$1"
+    local had_errexit=0
+    local had_nounset=0
+    local had_pipefail=0
+    local status=0
+
+    if [[ $- == *e* ]]; then
+        had_errexit=1
+        set +e
+    fi
+    if [[ $- == *u* ]]; then
+        had_nounset=1
+        set +u
+    fi
+    if set -o | grep -Eq '^pipefail[[:space:]]+on$'; then
+        had_pipefail=1
+        set +o pipefail
+    fi
+
+    (
+        trap - ERR
+        source "${plugin_script}"
+    )
+    status=$?
+
+    if [[ "${had_pipefail}" -eq 1 ]]; then
+        set -o pipefail
+    fi
+    if [[ "${had_nounset}" -eq 1 ]]; then
+        set -u
+    fi
+    if [[ "${had_errexit}" -eq 1 ]]; then
+        set -e
+    fi
+
+    return "${status}"
+}
+
 if [[ -f /config/startup.sh ]]; then
-    echo "**** (custom-setup-script) Calling custom user setup script ****";
+    echo "**** (custom-setup-script) Calling custom user setup script ****"
     sed -i 's/\r$//' /config/startup.sh
     if [[ "${EUID}" -ne 0 ]]; then
         warn_if_risky_nonroot "/config/startup.sh"
@@ -21,7 +59,7 @@ if [[ -f /config/startup.sh ]]; then
     source /config/startup.sh
 fi
 
-for plugin_script in /config/.unmanic/plugins/*/init.d/*.sh ; do
+for plugin_script in /config/.unmanic/plugins/*/init.d/*.sh; do
 
     if [[ -e "${plugin_script}" ]]; then
 
@@ -30,7 +68,16 @@ for plugin_script in /config/.unmanic/plugins/*/init.d/*.sh ; do
         if [[ "${EUID}" -ne 0 ]]; then
             warn_if_risky_nonroot "${plugin_script}"
         fi
-        source "${plugin_script}"
+        plugin_status=0
+        if run_plugin_init_script "${plugin_script}"; then
+            plugin_status=0
+        else
+            plugin_status=$?
+        fi
+
+        if [[ "${plugin_status}" -ne 0 ]]; then
+            echo "**** (custom-setup-script) ERROR: ${plugin_script} failed with exit code ${plugin_status}; continuing initialization ****"
+        fi
 
     fi
 

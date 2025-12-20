@@ -368,6 +368,8 @@ def main():
                         help='Test a specific plugin by id (use with --manage-plugins)')
     parser.add_argument('--test-plugins', action='store_true',
                         help='Test all plugins (use with --manage-plugins)')
+    parser.add_argument('--reload-plugins', action='store_true',
+                        help='Reload all plugins from disk (use with --manage-plugins)')
     parser.add_argument('--dev',
                         action='store_true',
                         help='Enable developer mode')

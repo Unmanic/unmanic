@@ -646,6 +646,9 @@ class PluginsCLI(object):
         if args.test_plugins:
             self.test_installed_plugins()
             return
+        if args.reload_plugins:
+            self.reload_plugin_from_disk()
+            return
         self.logger.info("Invalid plugin CLI arguments")
 
     def run(self):

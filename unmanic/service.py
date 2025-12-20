@@ -401,7 +401,7 @@ def main():
         # Run the plugin manager CLI
         from unmanic.libs.unplugins.pluginscli import PluginsCLI
         plugin_cli = PluginsCLI()
-        if args.create_plugin or args.test_plugin or args.test_plugins:
+        if args.create_plugin or args.reload_plugins or args.test_plugin or args.test_plugins:
             plugin_cli.run_from_args(args)
         else:
             plugin_cli.run()

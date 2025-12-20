@@ -374,6 +374,8 @@ def main():
                         help='Override test_file_out for plugin tests (use with --manage-plugins)')
     parser.add_argument('--reload-plugins', action='store_true',
                         help='Reload all plugins from disk (use with --manage-plugins)')
+    parser.add_argument('--install-test-data', action='store_true',
+                        help='Install test data (use with --manage-plugins)')
     parser.add_argument('--dev',
                         action='store_true',
                         help='Enable developer mode')
@@ -401,7 +403,7 @@ def main():
         # Run the plugin manager CLI
         from unmanic.libs.unplugins.pluginscli import PluginsCLI
         plugin_cli = PluginsCLI()
-        if args.create_plugin or args.reload_plugins or args.test_plugin or args.test_plugins:
+        if args.create_plugin or args.reload_plugins or args.test_plugin or args.test_plugins or args.install_test_data:
             plugin_cli.run_from_args(args)
         else:
             plugin_cli.run()

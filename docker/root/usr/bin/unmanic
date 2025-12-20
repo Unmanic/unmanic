@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 RUN_USER=${RUN_USER:-ubuntu}
-export HOME=/config
-export HOME_DIR=/config
+export HOME_DIR="${HOME_DIR:-/config}"
+export HOME="${HOME_DIR}"
 
 VENV_BIN="${VIRTUAL_ENV:-/opt/venv}/bin/unmanic"
 TARGET_BIN="${VENV_BIN}"

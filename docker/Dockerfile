@@ -233,6 +233,7 @@ RUN \
             /app \
             /config \
             /tmp/unmanic
+ENV HOME_DIR="/config"
 
 
 # Install pre-built Unmanic wheel

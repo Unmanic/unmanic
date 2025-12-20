@@ -38,7 +38,7 @@ RUN \
             libxext6 \
             libxml2 \
     && \
-    echo "**** Install all available media acceleration packages ****" \
+    echo "**** Install all available Video Acceleration API packages ****" \
         # va-driver-all: 
         #   A meta-package for installing all available Video Acceleration API (VAAPI) drivers. Includes packages like:
         #       - i965-va-driver
@@ -48,6 +48,11 @@ RUN \
         #       - etc
         && apt-get install -y \
             va-driver-all \
+    && \
+    echo "**** Install all available Vulkan API packages ****" \
+        && apt-get install -y \
+            libvulkan1 \
+            mesa-vulkan-drivers \
     && \
     echo "**** Install arch specific packages for $(uname -m) ****" \
         && sleep 2 \

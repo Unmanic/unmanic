@@ -633,6 +633,10 @@ class PluginsCLI(object):
             return
 
     def run_from_args(self, args):
+        if args.test_file_in:
+            self.test_data_modifiers['{test_file_in}'] = args.test_file_in
+        if args.test_file_out:
+            self.test_data_modifiers['{test_file_out}'] = args.test_file_out
         if args.create_plugin:
             self.create_new_plugins_from_args(
                 plugin_id=args.plugin_id,

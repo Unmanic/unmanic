@@ -354,8 +354,20 @@ def main():
     parser = argparse.ArgumentParser(description='Unmanic')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {version}'.format(version=metadata.read_version_string('long')))
-    parser.add_argument('--manage_plugins', action='store_true',
+    parser.add_argument('--manage-plugins', '--manage_plugins', action='store_true', dest='manage_plugins',
                         help='manage installed plugins')
+    parser.add_argument('--create-plugin', action='store_true',
+                        help='Create a new plugin (use with --manage-plugins)')
+    parser.add_argument('--plugin-id', nargs='?',
+                        help='Plugin id for plugin CLI actions')
+    parser.add_argument('--plugin-name', nargs='?',
+                        help='Plugin name for --create-plugin')
+    parser.add_argument('--plugin-runners', nargs='+',
+                        help='Plugin runner types for --create-plugin (names or runner functions)')
+    parser.add_argument('--test-plugin', nargs='?',
+                        help='Test a specific plugin by id (use with --manage-plugins)')
+    parser.add_argument('--test-plugins', action='store_true',
+                        help='Test all plugins (use with --manage-plugins)')
     parser.add_argument('--dev',
                         action='store_true',
                         help='Enable developer mode')
@@ -383,7 +395,10 @@ def main():
         # Run the plugin manager CLI
         from unmanic.libs.unplugins.pluginscli import PluginsCLI
         plugin_cli = PluginsCLI()
-        plugin_cli.run()
+        if args.create_plugin or args.test_plugin or args.test_plugins:
+            plugin_cli.run_from_args(args)
+        else:
+            plugin_cli.run()
 
         # Stop the DB connection
         db_connection.stop()

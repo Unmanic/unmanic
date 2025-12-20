@@ -69,8 +69,9 @@ update_source_symlink() {
     fi
 
     log "Update container to running Unmanic from source"
-    python_version=$(python3 --version 2>&1 | grep -oP 'Python \K\d+\.\d+')
-    target="/usr/local/lib/python${python_version:?}/dist-packages/unmanic"
+    local venv="${VIRTUAL_ENV:-/opt/venv}"
+    local python_version=$("${venv}/bin/python3" --version 2>&1 | grep -oP 'Python \K\d+\.\d+')
+    local target="${venv}/lib/python${python_version:?}/site-packages/unmanic"
     if [[ -e "${target}" && ! -L "${target}" ]]; then
         log "Move container unmanic install"
         mv "${target}" "${target}-installed"

@@ -498,7 +498,8 @@ class PluginsCLI(object):
             else:
                 formatted_plugin_settings = json.dumps(plugin_settings, indent=1)
                 formatted_plugin_settings = formatted_plugin_settings.replace('\n', '\n' + '                    ')
-                print("        - {1}Settings: {0}{2}".format(formatted_plugin_settings, BColours.RESULTS, BColours.ENDC))
+                print("        - {1}Settings: {0}{2}".format(formatted_plugin_settings,
+                      BColours.RESULTS, BColours.ENDC))
                 print("        -- {}PASSED{} --".format(BColours.OKGREEN, BColours.ENDC))
 
             # Test Plugin runners
@@ -594,6 +595,7 @@ class PluginsCLI(object):
             "Big_Buck_Bunny_1080_10s_30MB_h264.mkv": "https://test-videos.co.uk/vids/bigbuckbunny/mkv/1080/Big_Buck_Bunny_1080_10s_30MB.mkv",
             "Big_Buck_Bunny_1080_10s_30MB_h264.mp4": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_30MB.mp4",
             "Big_Buck_Bunny_1080_10s_30MB_av1.mp4":  "https://test-videos.co.uk/vids/bigbuckbunny/mp4/av1/1080/Big_Buck_Bunny_1080_10s_30MB.mp4",
+            "Big_Buck_Bunny_360_10s_1MB_h264.mp4":  "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4",
             "sample-12s.mp3":                        "https://download.samplelib.com/mp3/sample-12s.mp3",
         }
         if not os.path.exists(dev_cache_directory):
@@ -613,7 +615,8 @@ class PluginsCLI(object):
                             f.write(chunk)
 
             split_file_in = os.path.splitext(key)
-            cache_file = os.path.join(dev_cache_directory, "{}-{}{}".format(split_file_in[0], "WORKING-1", split_file_in[1]))
+            cache_file = os.path.join(
+                dev_cache_directory, "{}-{}{}".format(split_file_in[0], "WORKING-1", split_file_in[1]))
             shutil.copyfile(library_file, cache_file)
 
     def main(self, arg):

@@ -132,7 +132,7 @@ jobs:
       # Setup node environment for building unmanic's webui
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       # Build python dist package
       - name: Build python dist package

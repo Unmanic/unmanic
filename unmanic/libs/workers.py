@@ -543,11 +543,11 @@ class Worker(threading.Thread):
         # Log the start of the job
         self.logger.info("Picked up job - %s", self.current_task.get_source_abspath())
 
-        # Mark as being "in progress"
-        self.current_task.set_status('in_progress')
-
         # Start current task stats
         self.__set_start_task_stats()
+
+        # Mark as being "in progress"
+        self.current_task.set_status('in_progress')
 
         # Process the file. Will return true if success, otherwise false
         success = self.__exec_worker_runners_on_set_task()
@@ -575,7 +575,7 @@ class Worker(threading.Thread):
         self.finish_time = None
 
         # Format our starting statistics data
-        self.current_task.task.processed_by_worker = self.name
+        self.current_task.task.processed_by_worker = str(self.name)
         self.current_task.task.start_time = self.start_time
         self.current_task.task.finish_time = self.finish_time
 

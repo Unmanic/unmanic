@@ -29,6 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import atexit
 import json
 import logging
 import os
@@ -43,7 +44,9 @@ from . import plugin_types
 from unmanic import config
 from unmanic.libs import common
 from unmanic.libs.plugins import PluginsHandler
+from unmanic.libs.task import TaskDataStore
 from unmanic.libs.unplugins import PluginExecutor
+from unmanic.libs.unplugins.child_process import kill_all_plugin_processes, set_shared_manager
 from ..logs import UnmanicLogging
 
 home_directory = common.get_home_dir()
@@ -123,6 +126,8 @@ def print_table(table_data, col_list=None, sep='\uFFFA', max_col_width=9):
 class PluginsCLI(object):
 
     def __init__(self, plugins_directory=None):
+        from multiprocessing import Manager
+
         # Read settings
         self.settings = config.Config()
 
@@ -141,6 +146,14 @@ class PluginsCLI(object):
         UnmanicLogging.disable_file_handler(debugging=True)
         UnmanicLogging.enable_debugging()
         self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
+
+        # Ensure PluginChildProcess has a shared manager during CLI tests.
+        self._mgr = Manager()
+        atexit.register(self._mgr.shutdown)
+        atexit.register(kill_all_plugin_processes)
+        TaskDataStore._runner_state = self._mgr.dict()
+        TaskDataStore._task_state = self._mgr.dict()
+        set_shared_manager(self._mgr)
 
         self.test_data_modifiers = {
             "{cache_path}":    dev_cache_directory,

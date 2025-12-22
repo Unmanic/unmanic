@@ -116,6 +116,7 @@ class PluginChildProcess:
         data must include:
           - data['worker_log']              : list to which your child functions logs go
           - data['command_progress_parser'] : callable(line_text, pid=None, proc_start_time=None, unset=False)
+          - data['current_command']         : list used to share a "current command" string with the UI
         """
         self.logger = UnmanicLogging.get_logger(
             name=f'Plugin.{plugin_id}.{__class__.__name__}'
@@ -129,6 +130,19 @@ class PluginChildProcess:
         self._proc = None
         self._term_lock = threading.Lock()
 
+    def _set_current_command(self, command):
+        current_command = self.data.get('current_command')
+        if not isinstance(current_command, list):
+            return
+        current_command.clear()
+        current_command.append(command)
+
+    def _clear_current_command(self):
+        current_command = self.data.get('current_command')
+        if not isinstance(current_command, list):
+            return
+        current_command.clear()
+
     def run(self, target, *args, **kwargs):
         """
         Launch `target(*args, **kwargs, log_queue, prog_queue)` in its own process.
@@ -136,6 +150,11 @@ class PluginChildProcess:
           log_queue  –> use log_queue.put(str) to emit log lines
           prog_queue –> use prog_queue.put(percentage:float) to emit progress
         """
+        if isinstance(self.data.get('current_command'), list):
+            current_command = self.data.get('current_command')
+            if not current_command or not current_command[-1]:
+                target_name = getattr(target, "__name__", "child_process")
+                self._set_current_command(f"PluginChildProcess: {target_name}")
         # Start child as before
         from multiprocessing import Process
         self._proc = Process(
@@ -160,6 +179,7 @@ class PluginChildProcess:
 
         # When the child process is done, unregister
         _unregister_pid(self._proc.pid)
+        self._clear_current_command()
 
         # Return success status
         return success

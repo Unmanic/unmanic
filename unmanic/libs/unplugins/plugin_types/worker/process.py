@@ -44,6 +44,7 @@ class ProcessItem(PluginType):
         worker_log              - Array, the log lines that are being tailed by the frontend. Can be left empty.
         library_id              - Number, the library that the current task is associated with.
         exec_command            - Array, a subprocess command that Unmanic should execute. Can be empty.
+        current_command         - Array, shared list for updating the worker's "current command" text in the UI (last entry wins).
         command_progress_parser - Function, a function that Unmanic can use to parse the STDOUT of the command to collect progress stats. Can be empty.
         file_in                 - String, the source file to be processed by the command.
         file_out                - String, the destination that the command should output (may be the same as the file_in if necessary).
@@ -110,6 +111,10 @@ class ProcessItem(PluginType):
             "required": True,
             "type":     [list, str],
         },
+        "current_command":         {
+            "required": True,
+            "type":     list,
+        },
         "command_progress_parser": {
             "required": True,
             "type":     ['callable', None],
@@ -136,6 +141,7 @@ class ProcessItem(PluginType):
         "task_id":                 4321,
         'worker_log':              [],
         'exec_command':            [],
+        'current_command':         [],
         'command_progress_parser': None,
         'file_in':                 '{library_path}/{test_file_in}',
         'file_out':                '{cache_path}/{test_file_out}',

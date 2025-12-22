@@ -394,7 +394,7 @@ class Worker(threading.Thread):
         self.event = event
 
         self.current_task = None
-        self.current_command = ""
+        self.current_command_ref = None
         self.pending_queue = pending_queue
         self.complete_queue = complete_queue
         self.worker_subprocess_monitor = None
@@ -472,6 +472,14 @@ class Worker(threading.Thread):
         subprocess_stats = None
         if self.worker_subprocess_monitor:
             subprocess_stats = self.worker_subprocess_monitor.get_subprocess_stats()
+        current_command = ""
+        try:
+            if self.current_command_ref:
+                shared_command = self.current_command_ref[-1]
+                if shared_command:
+                    current_command = shared_command
+        except Exception as e:
+            self._log("Exception in fetching current command of worker {}:".format(self.name), message2=str(e), level="exception")
         status = {
             'id':              str(self.thread_id),
             'name':            self.name,
@@ -480,7 +488,7 @@ class Worker(threading.Thread):
             'start_time':      None if not self.start_time else str(self.start_time),
             'current_task':    None,
             'current_file':    "",
-            'current_command': self.current_command,
+            'current_command': current_command,
             'worker_log_tail': [],
             'runners_info':    {},
             'subprocess':      subprocess_stats,
@@ -638,6 +646,7 @@ class Worker(threading.Thread):
             "worker_log":              self.worker_log,
             "library_id":              library_id,
             "exec_command":            [],
+            "current_command":         [],
             "command_progress_parser": None,
             "file_in":                 file_in,
             "file_out":                None,
@@ -674,12 +683,14 @@ class Worker(threading.Thread):
                 # Reset data object for this runner functions
                 data['library_id'] = library_id
                 data['exec_command'] = []
+                data['current_command'] = []
                 data['command_progress_parser'] = self.worker_subprocess_monitor.default_progress_parser
                 data['file_in'] = file_in
                 data['file_out'] = file_out
                 data['original_file_path'] = original_abspath
                 data['repeat'] = False
                 data['task_id'] = task_id
+                self.current_command_ref = data['current_command']
 
                 self.event.wait(.2)  # Add delay for preventing loop maxing compute resources
                 self.worker_log.append("\n\nRUNNER: \n{} [Pass #{}]\n\n".format(plugin_module.get('name'), runner_pass_count))
@@ -722,6 +733,8 @@ class Worker(threading.Thread):
                     self.worker_log.append("\n\nPLUGIN FAILED!")
                     self.worker_log.append("\nFailed to execute Plugin '{}'".format(plugin_module.get('name')))
                     self.worker_log.append("\nCheck Unmanic logs for more information")
+                    self.current_command_ref = None
+                    data['current_command'] = []
                     break
 
                 # Log the in and out files returned by the plugin runner for debugging
@@ -735,6 +748,8 @@ class Worker(threading.Thread):
                     self.worker_log.append("\nPlugin runner requested for a command to be executed by Unmanic")
 
                     # Exec command as subprocess
+                    self.current_command_ref = None
+                    data['current_command'] = []
                     success = self.__exec_command_subprocess(data)
                     no_exec_command_run = False
 
@@ -747,6 +762,8 @@ class Worker(threading.Thread):
                         overall_success = False
                         # Append long entry to say the worker was terminated
                         self.worker_log.append("\n\nWORKER TERMINATED!")
+                        self.current_command_ref = None
+                        data['current_command'] = []
                         # Don't continue
                         break
 
@@ -789,14 +806,19 @@ class Worker(threading.Thread):
                             level="error")
                         self.worker_runners_info[runner_id]['success'] = False
                         overall_success = False
-                else:
-                    # Ensure the new 'file_in' is set to the previous runner's 'file_in' for the next loop
-                    file_in = data.get("file_in")
-                    # Log that this plugin did not request to execute anything
-                    self.worker_log.append("\nRunner did not request for Unmanic to execute a command")
-                    self._log(
-                        "Worker process '{}' did not request to execute a command.".format(runner_id),
-                        level='debug')
+                # Exec command was handled, clear shared command reference for the UI.
+                self.current_command_ref = None
+                data['current_command'] = []
+            else:
+                # Ensure the new 'file_in' is set to the previous runner's 'file_in' for the next loop
+                file_in = data.get("file_in")
+                # Log that this plugin did not request to execute anything
+                self.worker_log.append("\nRunner did not request for Unmanic to execute a command")
+                self._log(
+                    "Worker process '{}' did not request to execute a command.".format(runner_id),
+                    level='debug')
+                self.current_command_ref = None
+                data['current_command'] = []
 
                 if data.get('file_out') and os.path.exists(data.get('file_out')):
                     # Set the current file out to the most recently completed cache file
@@ -908,7 +930,10 @@ class Worker(threading.Thread):
         if isinstance(exec_command, list):
             command_string = shlex.join(exec_command)
         self._log("Executing: {}".format(command_string), level='debug')
-        self.current_command = command_string
+        current_command_ref = data.get("current_command")
+        if isinstance(current_command_ref, list):
+            current_command_ref.clear()
+            current_command_ref.append(command_string)
 
         # Append start of command to worker subprocess stdout
         self.worker_log += [
@@ -996,7 +1021,8 @@ class Worker(threading.Thread):
 
             # Stop proc monitor
             self.worker_subprocess_monitor.unset_proc()
-            self.current_command = ""
+            if isinstance(current_command_ref, list):
+                current_command_ref.clear()
 
             if sub_proc.returncode == 0:
                 return True

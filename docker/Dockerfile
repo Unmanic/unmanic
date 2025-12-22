@@ -105,7 +105,7 @@ RUN \
 
 # Install commonly used command line tools
 ARG JELLYFIN_FFMPEG_VERSION="7"
-ARG NODE_MAJOR="20"
+ARG NODE_MAJOR="22"
 RUN \
     echo "**** Configure APT ****" \
         && export DEBIAN_FRONTEND=noninteractive \

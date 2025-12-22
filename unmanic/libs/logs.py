@@ -435,6 +435,8 @@ class ForwardLogHandler(logging.Handler):
             for legacy_name in os.listdir(self.buffer_path):
                 if not legacy_name.endswith(".json"):
                     continue
+                if legacy_name == self.STATE_FILENAME:
+                    continue
                 legacy_path = os.path.join(self.buffer_path, legacy_name)
                 try:
                     os.remove(legacy_path)

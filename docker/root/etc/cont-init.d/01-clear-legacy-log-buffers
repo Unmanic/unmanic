@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+log() {
+    echo "**** (legacy-log-cleanup) $*"
+}
+
+buffer_dir="/config/.unmanic/logs/buffer"
+state_file="buffer_state.json"
+
+if [[ ! -d "${buffer_dir}" ]]; then
+    log "No log buffer directory at ${buffer_dir}; skipping legacy cleanup"
+    return 0
+fi
+
+shopt -s nullglob
+removed=0
+for legacy_path in "${buffer_dir}"/*.json; do
+    if [[ "$(basename "${legacy_path}")" == "${state_file}" ]]; then
+        continue
+    fi
+    if rm -f -- "${legacy_path}"; then
+        removed=$((removed + 1))
+    else
+        log "Failed to remove legacy buffer file ${legacy_path}"
+    fi
+done
+shopt -u nullglob
+
+if [[ "${removed}" -gt 0 ]]; then
+    log "Removed ${removed} legacy log buffer file(s)"
+else
+    log "No legacy log buffer files found"
+fi

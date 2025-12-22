@@ -43,6 +43,10 @@ CACHE_PATH="$PROJECT_BASE/dev_environment/cache"
 EXT_PORT=8888
 IMAGE_TAG="staging"
 DOCKER_PARAMS=()
+CONTAINER_NAME="unmanic-dev"
+CONFIG_LABEL="com.unmanic.run_config"
+CPUS=""
+MEMORY=""
 
 usage() {
     cat <<EOF
@@ -78,10 +82,12 @@ while [[ $# -gt 0 ]]; do
         HW="${1#*=}"
         ;;
     --cpus=*)
-        DOCKER_PARAMS+=(--cpus "${1#*=}")
+        CPUS="${1#*=}"
+        DOCKER_PARAMS+=(--cpus "$CPUS")
         ;;
     --memory=*)
-        DOCKER_PARAMS+=(--memory "${1#*=}")
+        MEMORY="${1#*=}"
+        DOCKER_PARAMS+=(--memory "$MEMORY")
         ;;
     --cache=*)
         CACHE_PATH="${1#*=}"
@@ -123,21 +129,54 @@ else
     DOCKER_CMD="sudo docker"
 fi
 
-# run!
-$DOCKER_CMD run --rm -it \
-    --name unmanic \
-    -e TZ=Pacific/Auckland \
-    -e PUID="$PUID" \
-    -e PGID="$PGID" \
-    -e DEBUGGING="$DEBUG" \
-    -e USE_TEST_SUPPORT_API="$USE_TEST_SUPPORT_API" \
-    -p "$EXT_PORT":8888 \
-    -v "$PROJECT_BASE":/app:Z \
-    -v "$PROJECT_BASE/dev_environment/config":/config:Z \
-    -v "$PROJECT_BASE/dev_environment/library":/library:Z \
-    -v "$CACHE_PATH":/tmp/unmanic:Z \
-    -v "$CACHE_PATH/remote_library":/tmp/unmanic/remote_library:Z \
-    -v /run/user/"$PUID":/run/user:ro,Z \
-    "${DOCKER_PARAMS[@]}" \
-    ghcr.io/unmanic/unmanic:"$IMAGE_TAG" \
-    bash
+config_string="debug=$DEBUG;use_test_support_api=$USE_TEST_SUPPORT_API;hw=${HW:-};cpus=$CPUS;memory=$MEMORY;cache=$CACHE_PATH;port=$EXT_PORT;tag=$IMAGE_TAG;puid=$PUID;pgid=$PGID"
+config_hash=$(printf '%s' "$config_string" | sha256sum | awk '{print $1}')
+
+start_container() {
+    $DOCKER_CMD run --rm -d \
+        --name "$CONTAINER_NAME" \
+        --label "$CONFIG_LABEL=$config_hash" \
+        -e TZ=Pacific/Auckland \
+        -e PUID="$PUID" \
+        -e PGID="$PGID" \
+        -e DEBUGGING="$DEBUG" \
+        -e USE_TEST_SUPPORT_API="$USE_TEST_SUPPORT_API" \
+        -p "$EXT_PORT":8888 \
+        -v "$PROJECT_BASE":/app:Z \
+        -v "$PROJECT_BASE/dev_environment/config":/config:Z \
+        -v "$PROJECT_BASE/dev_environment/library":/library:Z \
+        -v "$CACHE_PATH":/tmp/unmanic:Z \
+        -v "$CACHE_PATH/remote_library":/tmp/unmanic/remote_library:Z \
+        -v /run/user/"$PUID":/run/user:ro,Z \
+        "${DOCKER_PARAMS[@]}" \
+        ghcr.io/unmanic/unmanic:"$IMAGE_TAG"
+}
+
+container_exists() {
+    $DOCKER_CMD inspect "$CONTAINER_NAME" >/dev/null 2>&1
+}
+
+container_running() {
+    $DOCKER_CMD inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null | grep -q true
+}
+
+existing_hash="$($DOCKER_CMD inspect -f "{{ index .Config.Labels \"$CONFIG_LABEL\" }}" "$CONTAINER_NAME" 2>/dev/null || true)"
+
+if container_exists; then
+    if [[ "$existing_hash" != "$config_hash" ]] || ! container_running; then
+        echo "Recreating $CONTAINER_NAME container with updated settings..."
+        $DOCKER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+        start_container
+    else
+        echo "$CONTAINER_NAME container already running with matching settings."
+    fi
+else
+    start_container
+fi
+
+if [[ -t 0 ]]; then
+    read -r -p "Shell into $CONTAINER_NAME now? [y/N] " RESP
+    if [[ "$RESP" =~ ^[Yy]$ ]]; then
+        $DOCKER_CMD exec -it "$CONTAINER_NAME" bash
+    fi
+fi

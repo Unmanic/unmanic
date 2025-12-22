@@ -9,9 +9,6 @@ ENV \
 
 
 # Install the runtime dependencies
-# TODO: Remove intel-opencl-icd and replace with suggested build by Jellyfin
-#   https://jellyfin.org/docs/general/administration/hardware-acceleration.html
-#   https://github.com/jellyfin/jellyfin/blob/master/Dockerfile
 RUN \
     echo "**** Configure APT ****" \
         && export DEBIAN_FRONTEND=noninteractive \
@@ -107,7 +104,7 @@ RUN \
             /tmp/*
 
 # Install commonly used command line tools
-ARG JELLYFIN_FFMPEG_VERSION="6"
+ARG JELLYFIN_FFMPEG_VERSION="7"
 ARG NODE_MAJOR="20"
 RUN \
     echo "**** Configure APT ****" \

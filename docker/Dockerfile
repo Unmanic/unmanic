@@ -53,6 +53,7 @@ RUN \
         && apt-get install -y \
             libvulkan1 \
             mesa-vulkan-drivers \
+            vulkan-tools \
     && \
     echo "**** Install arch specific packages for $(uname -m) ****" \
         && sleep 2 \

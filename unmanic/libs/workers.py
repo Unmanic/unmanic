@@ -423,10 +423,6 @@ class Worker(threading.Thread):
         # Create logger for this worker
         self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
 
-    def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
-
     def run(self):
         self.logger.info("Starting worker")
 
@@ -458,8 +454,7 @@ class Worker(threading.Thread):
                 except queue.Empty:
                     continue
                 except Exception as e:
-                    self._log("Exception in processing job with {}:".format(self.name), message2=str(e),
-                              level="exception")
+                    self.logger.exception("Exception in processing job with %s: %s", self.name, e)
 
         self.logger.info("Stopping worker")
         self.worker_subprocess_monitor.stop()
@@ -492,7 +487,7 @@ class Worker(threading.Thread):
                 if shared_command:
                     current_command = shared_command
         except Exception as e:
-            self._log("Exception in fetching current command of worker {}:".format(self.name), message2=str(e), level="exception")
+            self.logger.exception("Exception in fetching current command of worker %s: %s", self.name, e)
         status = {
             'id':              str(self.thread_id),
             'name':            self.name,
@@ -511,15 +506,13 @@ class Worker(threading.Thread):
             try:
                 status['current_task'] = self.current_task.get_task_id()
             except Exception as e:
-                self._log("Exception in fetching the current task ID for worker {}:".format(self.name), message2=str(e),
-                          level="exception")
+                self.logger.exception("Exception in fetching the current task ID for worker %s: %s", self.name, e)
 
             # Fetch the current file
             try:
                 status['current_file'] = self.current_task.get_source_basename()
             except Exception as e:
-                self._log("Exception in fetching the current file of worker {}:".format(self.name), message2=str(e),
-                          level="exception")
+                self.logger.exception("Exception in fetching the current file of worker %s: %s", self.name, e)
 
             # Append the worker log tail
             try:
@@ -528,15 +521,13 @@ class Worker(threading.Thread):
                 else:
                     status['worker_log_tail'] = self.worker_log
             except Exception as e:
-                self._log("Exception in fetching log tail of worker: ", message2=str(e),
-                          level="exception")
+                self.logger.exception("Exception in fetching log tail of worker: %s", e)
 
             # Append the runners info
             try:
                 status['runners_info'] = self.worker_runners_info
             except Exception as e:
-                self._log("Exception in runners info of worker {}:".format(self.name), message2=str(e),
-                          level="exception")
+                self.logger.exception("Exception in runners info of worker %s: %s", self.name, e)
         return status
 
     def __unset_current_task(self):
@@ -751,10 +742,8 @@ class Worker(threading.Thread):
                     break
 
                 # Log the in and out files returned by the plugin runner for debugging
-                self._log("Worker process '{}' (in)".format(runner_id), data.get("file_in"),
-                          level='debug')
-                self._log("Worker process '{}' (out)".format(runner_id), data.get("file_out"),
-                          level='debug')
+                self.logger.debug("Worker process '%s' (in) %s", runner_id, data.get("file_in"))
+                self.logger.debug("Worker process '%s' (out) %s", runner_id, data.get("file_out"))
 
                 # Only run the conversion process if "exec_command" is not empty
                 if data.get("exec_command"):
@@ -767,7 +756,7 @@ class Worker(threading.Thread):
 
                     if self.redundant_flag.is_set():
                         # This worker has been marked as redundant. It is being terminated.
-                        self._log("Worker has been terminated before a command was completed", level="warning")
+                        self.logger.warning("Worker has been terminated before a command was completed")
                         # Mark runner as failed
                         self.worker_runners_info[runner_id]['success'] = False
                         # Set overall success status to failed
@@ -810,12 +799,9 @@ class Worker(threading.Thread):
                             file_in = data.get("file_out")
                     else:
                         # If file conversion was not successful
-                        self._log(
-                            "Error while running worker process '{}' on file '{}'".format(
-                                runner_id,
-                                original_abspath
-                            ),
-                            level="error")
+                        self.logger.error("Error while running worker process '%s' on file '%s'",
+                                          runner_id,
+                                          original_abspath)
                         self.worker_runners_info[runner_id]['success'] = False
                         overall_success = False
                 else:
@@ -823,9 +809,7 @@ class Worker(threading.Thread):
                     file_in = data.get("file_in")
                     # Log that this plugin did not request to execute anything
                     self.worker_log.append("\nRunner did not request for Unmanic to execute a command")
-                    self._log(
-                        "Worker process '{}' did not request to execute a command.".format(runner_id),
-                        level='debug')
+                    self.logger.debug("Worker process '%s' did not request to execute a command.", runner_id)
 
                 if data.get('file_out') and os.path.exists(data.get('file_out')):
                     # Set the current file out to the most recently completed cache file
@@ -851,8 +835,7 @@ class Worker(threading.Thread):
         # Log if no command was run by any Plugins
         if no_exec_command_run:
             # If no jobs were carried out on this task
-            self._log("No Plugin requested for Unmanic to run commands for this file '{}'".format(original_abspath),
-                      level='warning')
+            self.logger.warning("No Plugin requested for Unmanic to run commands for this file '%s'", original_abspath)
             self.worker_log.append(
                 "\n\nNo Plugin requested for Unmanic to run commands for this file '{}'".format(original_abspath))
 
@@ -875,7 +858,7 @@ class Worker(threading.Thread):
                 task_cache_path = self.current_task.get_cache_path()
 
                 # Move file to original cache path
-                self._log("Moving final cache file from '{}' to '{}'".format(current_file_out, task_cache_path))
+                self.logger.info("Moving final cache file from '%s' to '%s'", current_file_out, task_cache_path)
                 current_file_out = os.path.abspath(current_file_out)
 
                 # There is a really odd intermittent bug with the shutil module that is causing it to
@@ -883,7 +866,7 @@ class Worker(threading.Thread):
                 # This section adds a small pause and logs the error if that is the case.
                 # I have not yet figured out a solution as this is difficult to reproduce.
                 if not os.path.exists(current_file_out):
-                    self._log("Error - current_file_out path does not exist! '{}'".format(file_in), level="error")
+                    self.logger.error("Error - current_file_out path does not exist! '%s'", file_in)
                     self.event.wait(1)
 
                 # Ensure the cache directory exists
@@ -896,14 +879,16 @@ class Worker(threading.Thread):
                     # This can happen if all Plugins failed to run, or a Plugin specifically reset the out
                     #   file to the original source in order to preserve it.
                     # In this circumstance, we want to create a cache copy and let the process continue.
-                    self._log("Final cache file is the same path as the original source. Creating cache copy.", level='debug')
+                    self.logger.debug("Final cache file is the same path as the original source. Creating cache copy.")
                     shutil.copyfile(current_file_out, task_cache_path)
                 else:
                     # Use shutil module to move the file to the final task cache location
                     shutil.move(current_file_out, task_cache_path)
             except Exception as e:
-                self._log("Exception in final move operation of file {} to {}:".format(current_file_out, task_cache_path),
-                          message2=str(e), level="exception")
+                self.logger.exception("Exception in final move operation of file %s to %s: %s",
+                                      current_file_out,
+                                      task_cache_path,
+                                      e)
                 overall_success = False
 
         # Execute event plugin runners (only when added to queue)
@@ -919,7 +904,7 @@ class Worker(threading.Thread):
 
         # If the overall result of the jobs carried out on this task were not successful, log the failure and return False
         if not overall_success:
-            self._log("Failed to process task for file '{}'".format(original_abspath), level='warning')
+            self.logger.warning("Failed to process task for file '%s'", original_abspath)
         return overall_success
 
     def __exec_command_subprocess(self, data):
@@ -941,7 +926,7 @@ class Worker(threading.Thread):
         command_string = exec_command
         if isinstance(exec_command, list):
             command_string = shlex.join(exec_command)
-        self._log("Executing: {}".format(command_string), level='debug')
+        self.logger.debug("Executing: %s", command_string)
         current_command_ref = data.get("current_command")
         if isinstance(current_command_ref, list):
             current_command_ref.clear()
@@ -988,8 +973,8 @@ class Worker(threading.Thread):
                     parent_proc_nice = parent_proc.nice()
                     proc.nice(parent_proc_nice + 1)
                 except Exception as e:
-                    self._log("Unable to lower priority of subprocess. Subprocess should continue to run at normal priority",
-                              str(e), level='warning')
+                    self.logger.warning("Unable to lower priority of subprocess. Subprocess should continue to run at normal priority: %s",
+                                        e)
 
             # Poll process for new output until finished
             while not self.redundant_flag.is_set():
@@ -1011,7 +996,7 @@ class Worker(threading.Thread):
 
                 # Check if the command has completed. If it has, exit the loop
                 if line_text == '' and sub_proc.poll() is not None:
-                    self._log("Subprocess task completed!", level='debug')
+                    self.logger.debug("Subprocess task completed!")
                     break
 
                 # Parse the progress
@@ -1022,7 +1007,7 @@ class Worker(threading.Thread):
                 except Exception as e:
                     # Only need to show any sort of exception if we have debugging enabled.
                     # So we should log it as a debug rather than an exception.
-                    self._log("Exception while parsing command progress", str(e), level='debug')
+                    self.logger.debug("Exception while parsing command progress: %s", e)
 
             # Get the final output and the exit status
             if not self.redundant_flag.is_set():
@@ -1039,13 +1024,15 @@ class Worker(threading.Thread):
             if sub_proc.returncode == 0:
                 return True
             else:
-                self._log("Command run against '{}' exited with non-zero status. "
-                          "Download command dump from history for more information.".format(data.get("file_in")),
-                          message2=str(exec_command), level="error")
+                self.logger.error("Command run against '%s' exited with non-zero status. "
+                                  "Download command dump from history for more information. %s",
+                                  data.get("file_in"),
+                                  exec_command)
                 return False
 
         except Exception as e:
-            self._log("Error while executing the command against file{}.".format(data.get("file_in")), message2=str(e),
-                      level="error")
+            self.logger.error("Error while executing the command against file %s. %s",
+                              data.get("file_in"),
+                              e)
 
         return False

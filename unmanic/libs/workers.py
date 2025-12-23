@@ -706,7 +706,7 @@ class Worker(threading.Thread):
                 self.current_command_ref = data['current_command']
 
                 self.event.wait(.2)  # Add delay for preventing loop maxing compute resources
-                self.worker_log.append("\n\nRUNNER: \n{} [Pass #{}]\n\n".format(plugin_module.get('name'), runner_pass_count))
+                self.worker_log.append(f"\n\nRUNNER: \n{plugin_module.get('name')} [Pass #{runner_pass_count}]\n\n")
                 self.worker_log.append("\nExecuting plugin runner... Please wait\n")
 
                 # Run plugin (in its own thread) to update data
@@ -818,19 +818,14 @@ class Worker(threading.Thread):
                             level="error")
                         self.worker_runners_info[runner_id]['success'] = False
                         overall_success = False
-                # Exec command was handled, clear shared command reference for the UI.
-                self.current_command_ref = None
-                data['current_command'] = []
-            else:
-                # Ensure the new 'file_in' is set to the previous runner's 'file_in' for the next loop
-                file_in = data.get("file_in")
-                # Log that this plugin did not request to execute anything
-                self.worker_log.append("\nRunner did not request for Unmanic to execute a command")
-                self._log(
-                    "Worker process '{}' did not request to execute a command.".format(runner_id),
-                    level='debug')
-                self.current_command_ref = None
-                data['current_command'] = []
+                else:
+                    # Ensure the new 'file_in' is set to the previous runner's 'file_in' for the next loop
+                    file_in = data.get("file_in")
+                    # Log that this plugin did not request to execute anything
+                    self.worker_log.append("\nRunner did not request for Unmanic to execute a command")
+                    self._log(
+                        "Worker process '{}' did not request to execute a command.".format(runner_id),
+                        level='debug')
 
                 if data.get('file_out') and os.path.exists(data.get('file_out')):
                     # Set the current file out to the most recently completed cache file
@@ -840,8 +835,12 @@ class Worker(threading.Thread):
                     # Ensure the current_file_out is set the currently set 'file_in'
                     current_file_out = data.get('file_in')
 
+                # Exec command was handled, clear shared command reference for the UI.
+                self.current_command_ref = None
+                data['current_command'] = []
+
                 if data.get("repeat"):
-                    # The returned data contained the 'repeat'' flag.
+                    # The returned data contained the 'repeat' flag.
                     # Run another pass against this same plugin
                     continue
                 break
@@ -935,7 +934,8 @@ class Worker(threading.Thread):
         exec_command = data.get("exec_command", [])
 
         # Fetch the command progress parser function
-        command_progress_parser = data.get("command_progress_parser", self.worker_subprocess_monitor.default_progress_parser)
+        command_progress_parser = data.get("command_progress_parser",
+                                           self.worker_subprocess_monitor.default_progress_parser)
 
         # Log the command for debugging
         command_string = exec_command

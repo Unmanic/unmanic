@@ -47,6 +47,7 @@ CONTAINER_NAME="unmanic-dev"
 CONFIG_LABEL="com.unmanic.run_config"
 CPUS=""
 MEMORY=""
+FORCE_RECREATE="false"
 
 usage() {
     cat <<EOF
@@ -62,6 +63,7 @@ Options:
     --cache=<path>              Override cache directory (default: $CACHE_PATH)
     --port=<port>               Map host port to container 8888 (default: $EXT_PORT)
     --tag=<image-tag>           Docker image tag to run (default: $IMAGE_TAG)
+    --force-recreate            Recreate container even if settings match
 EOF
 }
 
@@ -97,6 +99,9 @@ while [[ $# -gt 0 ]]; do
         ;;
     --tag=*)
         IMAGE_TAG="${1#*=}"
+        ;;
+    --force-recreate)
+        FORCE_RECREATE=true
         ;;
     *)
         echo "Unknown option: $1" >&2
@@ -163,7 +168,7 @@ container_running() {
 existing_hash="$($DOCKER_CMD inspect -f "{{ index .Config.Labels \"$CONFIG_LABEL\" }}" "$CONTAINER_NAME" 2>/dev/null || true)"
 
 if container_exists; then
-    if [[ "$existing_hash" != "$config_hash" ]] || ! container_running; then
+    if [[ "$FORCE_RECREATE" == "true" ]] || [[ "$existing_hash" != "$config_hash" ]] || ! container_running; then
         echo "Recreating $CONTAINER_NAME container with updated settings..."
         $DOCKER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
         start_container

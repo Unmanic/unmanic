@@ -523,8 +523,8 @@ class Worker(threading.Thread):
 
             # Append the worker log tail
             try:
-                if self.worker_log and len(self.worker_log) > 20:
-                    status['worker_log_tail'] = self.worker_log[-19:]
+                if self.worker_log and len(self.worker_log) > 40:
+                    status['worker_log_tail'] = self.worker_log[-39:]
                 else:
                     status['worker_log_tail'] = self.worker_log
             except Exception as e:

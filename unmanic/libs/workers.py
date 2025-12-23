@@ -68,6 +68,7 @@ class WorkerSubprocessMonitor(threading.Thread):
         self.subprocess = None
         self.subprocess_start_time = 0
         self.subprocess_pause_time = 0
+        self._pause_time_counter = None
 
         # Subprocess stats
         self.subprocess_percent = 0
@@ -116,8 +117,8 @@ class WorkerSubprocessMonitor(threading.Thread):
         self.subprocess_mem_percent = mem_percent
 
     def suspend_proc(self):
-        # Stop the process if the worker is paused
-        # Then resume it when the worker is resumed
+        # Stop the process if the worker is paused.
+        # Resume is handled separately so the monitor loop can keep running.
         try:
             if not self.subprocess or not self.subprocess.is_running():
                 return
@@ -134,31 +135,32 @@ class WorkerSubprocessMonitor(threading.Thread):
                     continue
 
             self.paused = True
-            pause_time_counter = time.time()
-
-            while not self.redundant_flag.is_set():
-                self.event.wait(1)
-
-                # Update pause duration on each loop
-                self.subprocess_pause_time += int(time.time() - pause_time_counter)
-                pause_time_counter = time.time()
-
-                if not self.paused_flag.is_set():
-                    # Resume in reverse order
-                    for p in reversed(procs):
-                        try:
-                            self.logger.debug("Resuming PID %s", p.pid)
-                            p.resume()
-                            # Force anything to shut down straight away if we are exiting the thread
-                            if self.redundant_flag.is_set() or self._stop_event.is_set():
-                                p.terminate()
-                        except psutil.NoSuchProcess:
-                            continue
-                    self.paused = False
-                    break
 
         except Exception:
             self.logger.exception("Exception in suspend_proc()")
+
+    def resume_proc(self):
+        try:
+            if not self.subprocess or not self.subprocess.is_running():
+                return
+
+            # Create list of all subprocesses - parent + all children
+            procs = [self.subprocess] + self.subprocess.children(recursive=True)
+
+            # Resume in reverse order
+            for p in reversed(procs):
+                try:
+                    self.logger.debug("Resuming PID %s", p.pid)
+                    p.resume()
+                    # Force anything to shut down straight away if we are exiting the thread
+                    if self.redundant_flag.is_set() or self._stop_event.is_set():
+                        p.terminate()
+                except psutil.NoSuchProcess:
+                    continue
+            self.paused = False
+
+        except Exception:
+            self.logger.exception("Exception in resume_proc()")
 
     def terminate_proc(self):
         with self._terminate_lock:
@@ -351,9 +353,20 @@ class WorkerSubprocessMonitor(threading.Thread):
                 # Set values in parent worker thread
                 self.set_proc_resources_in_parent_worker(normalised_cpu_percent, total_rss, total_vms, mem_percent)
 
-                # Pause subprocesses if the worker is paused
+                # Pause/resume subprocesses while keeping the monitor loop alive
                 if self.paused_flag.is_set():
-                    self.suspend_proc()
+                    if not self.paused:
+                        self.suspend_proc()
+                        self._pause_time_counter = time.time()
+                    elif self._pause_time_counter is not None:
+                        self.subprocess_pause_time += int(time.time() - self._pause_time_counter)
+                        self._pause_time_counter = time.time()
+                    self.event.wait(1)
+                elif self.paused:
+                    if self._pause_time_counter is not None:
+                        self.subprocess_pause_time += int(time.time() - self._pause_time_counter)
+                    self.resume_proc()
+                    self._pause_time_counter = None
 
             except psutil.NoSuchProcess:
                 self.logger.debug("No such process: %s", self.subprocess_pid)

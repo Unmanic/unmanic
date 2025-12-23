@@ -387,7 +387,7 @@ def prepare_plugin_info_and_settings(plugin_id, prefer_local=True, library_id=No
         if plugin_installed:
             plugin_data['settings'] = get_plugin_settings(plugin_result.get('plugin_id'), library_id=library_id)
             plugin_data['changelog'] = "".join(get_plugin_changelog(plugin_result.get('plugin_id')))
-            plugin_data['description'] += "\n" + "".join(
+            plugin_data['description'] += "\n\n" + "".join(
                 get_plugin_long_description(plugin_result.get('plugin_id')))
         break
 

@@ -748,8 +748,7 @@ class Worker(threading.Thread):
                     self.worker_log.append("\nPlugin runner requested for a command to be executed by Unmanic")
 
                     # Exec command as subprocess
-                    self.current_command_ref = None
-                    data['current_command'] = []
+                    self.current_command_ref = data['current_command']
                     success = self.__exec_command_subprocess(data)
                     no_exec_command_run = False
 

@@ -76,9 +76,8 @@ class Config(object, metaclass=SingletonType):
 
         # Configure first run (future feature)
         self.first_run = False
-
-        # Configure first run (future feature)
         self.release_notes_viewed = None
+        self.trial_welcome_viewed = None
 
         # Library Settings:
         self.library_path = common.get_default_library_path()
@@ -402,6 +401,14 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.release_notes_viewed
+
+    def get_trial_welcome_viewed(self):
+        """
+        Get setting - trial_welcome_viewed
+
+        :return:
+        """
+        return self.trial_welcome_viewed
 
     def get_library_path(self):
         """

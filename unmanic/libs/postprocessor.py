@@ -441,6 +441,8 @@ class PostProcessor(threading.Thread):
         self._log("Writing task history log.", level='debug')
         history_logging = history.History()
         task_dump = self.current_task.task_dump()
+        destination_data = self.current_task.get_destination_data()
+        source_data = self.current_task.get_source_data()
 
         # If task fails, the add a notification that a task has failed
         if not self.current_task.task.success:
@@ -459,6 +461,8 @@ class PostProcessor(threading.Thread):
                         ],
                     },
                 })
+
+        self._log_completed_task_data(task_dump, source_data, destination_data)
 
         history_logging.save_task_history(
             {
@@ -512,3 +516,36 @@ class PostProcessor(threading.Thread):
             for message in result['errors']:
                 self._log("Exception:", message2=str(message), level="exception")
             raise Exception("Exception in dumping completed task data to file")
+
+    def _log_completed_task_data(self, task_dump, source_data, destination_data):
+        status = "success" if task_dump.get('task_success', False) else "failed"
+        start_time = task_dump.get('start_time', '')
+        finish_time = task_dump.get('finish_time', '')
+        command_error_log_tail = ""
+        if status != "success":
+            task_log = task_dump.get('log', '')
+            if task_log:
+                command_error_log_tail = "\n".join(task_log.splitlines()[-20:])
+        try:
+            library_id = self.current_task.get_task_library_id()
+            library_name = self.current_task.get_task_library_name()
+        except Exception:
+            library_id = None
+            library_name = None
+
+        UnmanicLogging.data(
+            "completed_task",
+            data_search_key=self.current_task.get_task_id(),
+            task_id=self.current_task.get_task_id(),
+            task_type=self.current_task.get_task_type(),
+            library_id=library_id,
+            library_name=library_name,
+            status=status,
+            start_time=start_time,
+            finish_time=finish_time,
+            source_file=source_data.get('basename', ''),
+            source_path=source_data.get('abspath', ''),
+            dest_file=destination_data.get('basename', ''),
+            dest_path=destination_data.get('abspath', ''),
+            command_error_log_tail=command_error_log_tail,
+        )

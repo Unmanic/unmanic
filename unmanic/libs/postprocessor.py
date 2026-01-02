@@ -535,7 +535,7 @@ class PostProcessor(threading.Thread):
 
         UnmanicLogging.data(
             "completed_task",
-            data_search_key=self.current_task.get_task_id(),
+            data_search_key=f"{library_id} | {finish_time} | {source_data.get('abspath', '')}",
             task_id=self.current_task.get_task_id(),
             task_type=self.current_task.get_task_type(),
             library_id=library_id,

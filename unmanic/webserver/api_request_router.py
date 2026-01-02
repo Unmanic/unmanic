@@ -53,6 +53,13 @@ class APIRequestRouter(tornado.routing.Router):
         self.config = config.Config()
 
     def find_handler(self, request, **kwargs):
+        # Check for proxy header
+        target_id = request.headers.get("X-Unmanic-Target-Installation")
+        if target_id and target_id.lower() != 'local':
+            # Return proxy handler
+            from unmanic.webserver.proxy import ProxyHandler
+            return self.app.get_handler_delegate(request, ProxyHandler)
+
         api_version = request.path.split('/')[3]  # Set API version
         endpoint = request.path.split('/')[4]  # Set the endpoint
         params = list(filter(None, request.path.split('/')[4:]))  # Set the request params

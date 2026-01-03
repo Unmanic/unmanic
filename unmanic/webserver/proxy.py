@@ -13,12 +13,33 @@ def resolve_proxy_target(target_id):
     remotes = links.settings.get_remote_installations()
     target_config = None
 
-    for r in remotes:
-        if (r.get('name') == target_id or
-                r.get('address') == target_id or
-                r.get('uuid') == target_id):
-            target_config = r
-            break
+    # Helper to search remotes
+    def search_remotes(search_list):
+        if not target_id:
+            return None
+        t_id = str(target_id).strip().lower()
+        # Priority 1: Address (normalized)
+        for r in search_list:
+            addr = str(r.get('address', '')).strip().lower().rstrip('/')
+            if addr == t_id or addr == t_id.rstrip('/') or addr.replace('http://', '').replace('https://', '') == t_id.replace('http://', '').replace('https://', ''):
+                return r
+        # Priority 2: UUID
+        for r in search_list:
+            if str(r.get('uuid', '')).strip().lower() == t_id:
+                return r
+        # Priority 3: Name
+        for r in search_list:
+            if str(r.get('name', '')).strip().lower() == t_id:
+                return r
+        return None
+
+    target_config = search_remotes(remotes)
+
+    if not target_config:
+        # Try reloading settings in case another process updated them
+        links.settings.reload()
+        remotes = links.settings.get_remote_installations()
+        target_config = search_remotes(remotes)
 
     if not target_config:
         return None
@@ -69,7 +90,7 @@ class ProxyHandler(tornado.web.RequestHandler):
 
         # Prepare headers
         headers = self.request.headers.copy()
-        for h in ['Host', 'Content-Length', 'Transfer-Encoding', 'Connection']:
+        for h in ['Host', 'Content-Length', 'Transfer-Encoding', 'Connection', 'X-Unmanic-Target-Installation']:
             if h in headers:
                 del headers[h]
 

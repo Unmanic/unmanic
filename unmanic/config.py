@@ -96,6 +96,7 @@ class Config(object, metaclass=SingletonType):
 
         # Link settings
         self.installation_name = ''
+        self.installation_public_address = ''
         self.remote_installations = []
         self.distributed_worker_count_target = 0
 
@@ -537,6 +538,14 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.installation_name
+
+    def get_installation_public_address(self):
+        """
+        Get setting - installation_public_address
+
+        :return:
+        """
+        return self.installation_public_address
 
     def get_remote_installations(self):
         """

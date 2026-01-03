@@ -257,7 +257,7 @@ class Session(object, metaclass=SingletonType):
         Fetch list of installations if supporter and sync addresses
         """
         settings = config.Config()
-        installations_response, status_code = self.api_post('unmanic-api', 1, 'installation_data/list', {})
+        installations_response, status_code = self.api_get('unmanic-api', 1, 'installation_data/list')
         installations = installations_response.get('data', {}).get('installations', [])
 
         if status_code in [200, 201, 202] and installations_response.get("success") and installations:

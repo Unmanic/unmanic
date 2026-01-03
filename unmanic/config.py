@@ -188,6 +188,13 @@ class Config(object, metaclass=SingletonType):
             # Set data to Config class
             self.set_bulk_config_items(data, save_settings=False)
 
+    def reload(self):
+        """
+        Reload configuration from file
+        :return:
+        """
+        self.__import_settings_from_file()
+
     def __write_settings_to_file(self):
         """
         Dump current settings to the settings JSON file.

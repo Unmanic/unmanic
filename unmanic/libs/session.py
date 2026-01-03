@@ -252,6 +252,42 @@ class Session(object, metaclass=SingletonType):
                 return
         UnmanicLogging.disable_remote_logging(log_buffer_retention)
 
+    def __sync_remote_installation_addresses(self):
+        """
+        Fetch list of installations if supporter and sync addresses
+        """
+        settings = config.Config()
+        installations_response, status_code = self.api_post('unmanic-api', 1, 'installation_data/list', {})
+        installations = installations_response.get('data', {}).get('installations', [])
+
+        if status_code in [200, 201, 202] and installations_response.get("success") and installations:
+            from unmanic.libs.installation_link import Links
+            links = Links()
+
+            # Create a dictionary of the received installations keyed by name, overwriting duplicates (so last one wins)
+            received_insts_by_name = {}
+            for inst in installations:
+                name = inst.get("installation_name")
+                address = inst.get("installation_public_address")
+                if name and address:
+                    received_insts_by_name[name] = address
+
+            # Now iterate our local links and update if name matches
+            current_remote_installations = settings.get_remote_installations()
+            for local_link in current_remote_installations:
+                local_name = local_link.get("name")
+                if local_name in received_insts_by_name:
+                    new_address = received_insts_by_name[local_name]
+                    current_address = local_link.get("address", "")
+
+                    # Only update if current address is invalid
+                    is_invalid = not current_address or current_address == "???" or not current_address.lower().startswith("http")
+
+                    if is_invalid and local_link.get("address") != new_address:
+                        # Update it
+                        local_link["address"] = new_address
+                        links.update_single_remote_installation_link_config(local_link)
+
     def __reset_session_installation_data(self):
         """
         Reset stored session data
@@ -559,35 +595,9 @@ class Session(object, metaclass=SingletonType):
                 self.__store_installation_data()
                 self.__configure_log_forwarding(session_valid=True)
 
-                # Process returned installations
-                installations = registration_response.get("installations", [])
-                if installations:
-                    from unmanic.libs.installation_link import Links
-                    links = Links()
-
-                    # Create a dictionary of the received installations keyed by name, overwriting duplicates (so last one wins)
-                    received_insts_by_name = {}
-                    for inst in installations:
-                        name = inst.get("installation_name")
-                        address = inst.get("installation_public_address")
-                        if name and address:
-                            received_insts_by_name[name] = address
-
-                    # Now iterate our local links and update if name matches
-                    current_remote_installations = settings.get_remote_installations()
-                    for local_link in current_remote_installations:
-                        local_name = local_link.get("name")
-                        if local_name in received_insts_by_name:
-                            new_address = received_insts_by_name[local_name]
-                            current_address = local_link.get("address", "")
-                            
-                            # Only update if current address is invalid
-                            is_invalid = not current_address or current_address == "???" or not current_address.lower().startswith("http")
-                            
-                            if is_invalid and local_link.get("address") != new_address:
-                                # Update it
-                                local_link["address"] = new_address
-                                links.update_single_remote_installation_link_config(local_link)
+                # Fetch list of installations if supporter
+                if self.level > 1:
+                    self.__sync_remote_installation_addresses()
 
                 return True
             elif status_code > 403:

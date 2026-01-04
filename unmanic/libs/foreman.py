@@ -649,6 +649,9 @@ class Foreman(threading.Thread):
         # tags prevent them from taking up tasks
         allow_local_idle_worker_check = True
 
+        last_metrics_time = 0
+        metrics_interval = 2
+
         while not self.abort_flag.is_set():
             self.event.wait(2)
 
@@ -680,21 +683,26 @@ class Foreman(threading.Thread):
                     # Reset pause worker list
                     self.paused_worker_threads = []
 
-                # Record metrics for each worker
+                # Record metrics for each worker (slow down when all workers are idle)
                 workers_info = self.get_all_worker_status()
-                for worker_info in workers_info:
-                    UnmanicLogging.metric("worker_info",
-                                          worker_name=worker_info.get('name'),
-                                          idle=worker_info.get('idle'),
-                                          paused=worker_info.get('paused'),
-                                          start_time=worker_info.get('start_time'),
-                                          current_task=worker_info.get('current_task'),
-                                          current_file=worker_info.get('current_file'),
-                                          current_command=worker_info.get('current_command'),
-                                          worker_log_tail=worker_info.get('worker_log_tail'),
-                                          runners_info=worker_info.get('runners_info'),
-                                          subprocess=worker_info.get('subprocess'),
-                                          )
+                any_busy = any(not worker_info.get('idle') for worker_info in workers_info)
+                metrics_interval = 2 if any_busy else 10
+                now = time.time()
+                if now - last_metrics_time >= metrics_interval:
+                    for worker_info in workers_info:
+                        UnmanicLogging.metric("worker_info",
+                                              worker_name=worker_info.get('name'),
+                                              idle=worker_info.get('idle'),
+                                              paused=worker_info.get('paused'),
+                                              start_time=worker_info.get('start_time'),
+                                              current_task=worker_info.get('current_task'),
+                                              current_file=worker_info.get('current_file'),
+                                              current_command=worker_info.get('current_command'),
+                                              worker_log_tail=worker_info.get('worker_log_tail'),
+                                              runners_info=worker_info.get('runners_info'),
+                                              subprocess=worker_info.get('subprocess'),
+                                              )
+                    last_metrics_time = now
 
                 # Manage worker event schedules
                 self.manage_event_schedules()

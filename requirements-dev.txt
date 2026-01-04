@@ -4,6 +4,7 @@ pytest>=7.4.3           # Note: Highest supporting Py 3.7
 wheel>=0.42.0
 setuptools>=68.0.0      # Note: Highest supporting Py 3.7
 build>=0.10.0           # Note: Highest supporting Py 3.7
+yappi>=1.6.0            # Thread-aware profiler for dev profiling
 
 # API schema exporting
 apispec>=6.3.1

@@ -169,8 +169,8 @@ class EventMonitorManager(threading.Thread):
                 # If not enabled, ensure the EventProcessor is not running and stop it if it is
                 if self.event_observer_thread:
                     self.stop_event_processor()
-            # Add delay
-            self.event.wait(2)
+            # Add delay (longer when no libraries are being monitored)
+            self.event.wait(2 if enable_inotify else 20)
 
         self.stop_event_processor()
         self.logger.info("Leaving EventMonitorManager loop...")

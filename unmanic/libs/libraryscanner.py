@@ -121,6 +121,7 @@ class LibraryScannerManager(threading.Thread):
                     # Check if library scanner is enabled
                     if not self.settings.get_enable_library_scanner():
                         # The library scanner is not enabled. Dont run anything
+                        self.event.wait(20)
                         continue
 
                     # Check if scheduled task is due

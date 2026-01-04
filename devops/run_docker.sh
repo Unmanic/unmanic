@@ -39,6 +39,7 @@ PUID=$(id -u)
 PGID=$(id -g)
 DEBUG="false"
 USE_TEST_SUPPORT_API="false"
+CONFIG_PREFIX=""
 CACHE_PATH="$PROJECT_BASE/dev_environment/cache"
 EXT_PORT=8888
 IMAGE_TAG="staging"
@@ -48,10 +49,15 @@ CONFIG_LABEL="com.unmanic.run_config"
 CPUS=""
 MEMORY=""
 FORCE_RECREATE="false"
+COMMAND="run"
+COMMAND_ARGS=()
+EXEC_ROOT="false"
+RUN_COMMAND=""
+ENABLE_PROFILING="false"
 
 usage() {
     cat <<EOF
-Usage: $(basename "$0") [OPTIONS]
+Usage: $(basename "$0") [OPTIONS] [COMMAND] [COMMAND_ARGS...]
 
 Options:
     --help, -h                  Show this help message and exit
@@ -61,9 +67,21 @@ Options:
     --cpus=<value>              Limit container CPUs (e.g. "2.5")
     --memory=<value>            Limit container memory (e.g. "4g")
     --cache=<path>              Override cache directory (default: $CACHE_PATH)
+    --config-prefix=<value>     Use dev_environment/config-<value> for /config mount
     --port=<port>               Map host port to container 8888 (default: $EXT_PORT)
     --tag=<image-tag>           Docker image tag to run (default: $IMAGE_TAG)
     --force-recreate            Recreate container even if settings match
+    --root                      Run exec commands as root (uid 0)
+    --run-cmd=<value>           Override container run command (supports {cmd} placeholder)
+
+Commands:
+    run                         Start the container (default)
+    build                       Build the staging image from ./docker/Dockerfile
+    pull                        Pull the staging image from Docker Hub
+    stop                        Stop the container
+    shell                       Run an interactive shell inside the container
+    exec                        Run a command inside the container
+    logs                        Print container logs (pass extra docker args, e.g. -f)
 EOF
 }
 
@@ -94,6 +112,9 @@ while [[ $# -gt 0 ]]; do
     --cache=*)
         CACHE_PATH="${1#*=}"
         ;;
+    --config-prefix=*)
+        CONFIG_PREFIX="${1#*=}"
+        ;;
     --port=*)
         EXT_PORT="${1#*=}"
         ;;
@@ -103,10 +124,26 @@ while [[ $# -gt 0 ]]; do
     --force-recreate)
         FORCE_RECREATE=true
         ;;
+    --root)
+        EXEC_ROOT=true
+        ;;
+    --run-cmd=*)
+        RUN_COMMAND="${1#*=}"
+        ;;
+    --profiling)
+        ENABLE_PROFILING=true
+        ;;
+    run | build | pull | stop | shell | exec | logs)
+        COMMAND="$1"
+        shift
+        COMMAND_ARGS=("$@")
+        break
+        ;;
     *)
-        echo "Unknown option: $1" >&2
-        usage
-        exit 1
+        COMMAND="$1"
+        shift
+        COMMAND_ARGS=("$@")
+        break
         ;;
     esac
     shift
@@ -134,7 +171,18 @@ else
     DOCKER_CMD="sudo docker"
 fi
 
-config_string="debug=$DEBUG;use_test_support_api=$USE_TEST_SUPPORT_API;hw=${HW:-};cpus=$CPUS;memory=$MEMORY;cache=$CACHE_PATH;port=$EXT_PORT;tag=$IMAGE_TAG;puid=$PUID;pgid=$PGID"
+CONFIG_PATH="$PROJECT_BASE/dev_environment/config"
+if [[ -n $CONFIG_PREFIX ]]; then
+    CONFIG_PATH="$PROJECT_BASE/dev_environment/config-$CONFIG_PREFIX"
+fi
+IMAGE_ID="$($DOCKER_CMD image inspect -f '{{.Id}}' "josh5/unmanic:$IMAGE_TAG" 2>/dev/null || true)"
+config_string="debug=$DEBUG;use_test_support_api=$USE_TEST_SUPPORT_API;hw=${HW:-};cpus=$CPUS;memory=$MEMORY;cache=$CACHE_PATH;config_path=$CONFIG_PATH;port=$EXT_PORT;tag=$IMAGE_TAG;image_id=$IMAGE_ID;puid=$PUID;pgid=$PGID"
+if [[ -n $RUN_COMMAND ]]; then
+    config_string="${config_string};run_cmd=$RUN_COMMAND"
+fi
+if [[ "$ENABLE_PROFILING" == "true" ]]; then
+    config_string="${config_string};profiling=true"
+fi
 config_hash=$(printf '%s' "$config_string" | sha256sum | awk '{print $1}')
 
 start_container() {
@@ -146,15 +194,17 @@ start_container() {
         -e PGID="$PGID" \
         -e DEBUGGING="$DEBUG" \
         -e USE_TEST_SUPPORT_API="$USE_TEST_SUPPORT_API" \
+        -e UNMANIC_RUN_COMMAND="$RUN_COMMAND" \
+        -e PROFILE_UNMANIC="$ENABLE_PROFILING" \
         -p "$EXT_PORT":8888 \
         -v "$PROJECT_BASE":/app:Z \
-        -v "$PROJECT_BASE/dev_environment/config":/config:Z \
+        -v "$CONFIG_PATH":/config:Z \
         -v "$PROJECT_BASE/dev_environment/library":/library:Z \
         -v "$CACHE_PATH":/tmp/unmanic:Z \
         -v "$CACHE_PATH/remote_library":/tmp/unmanic/remote_library:Z \
         -v /run/user/"$PUID":/run/user:ro,Z \
         "${DOCKER_PARAMS[@]}" \
-        ghcr.io/unmanic/unmanic:"$IMAGE_TAG"
+        josh5/unmanic:"$IMAGE_TAG"
 }
 
 container_exists() {
@@ -167,21 +217,72 @@ container_running() {
 
 existing_hash="$($DOCKER_CMD inspect -f "{{ index .Config.Labels \"$CONFIG_LABEL\" }}" "$CONTAINER_NAME" 2>/dev/null || true)"
 
-if container_exists; then
-    if [[ "$FORCE_RECREATE" == "true" ]] || [[ "$existing_hash" != "$config_hash" ]] || ! container_running; then
-        echo "Recreating $CONTAINER_NAME container with updated settings..."
-        $DOCKER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-        start_container
-    else
-        echo "$CONTAINER_NAME container already running with matching settings."
+warn_container_state() {
+    if ! container_exists; then
+        echo "Warning: $CONTAINER_NAME container has not been created. Start it first with '$(basename "$0") run'." >&2
+        exit 1
     fi
-else
-    start_container
-fi
+    if ! container_running; then
+        echo "Warning: $CONTAINER_NAME container is not running. Start it first with '$(basename "$0") run'." >&2
+        exit 1
+    fi
+}
 
-if [[ -t 0 ]]; then
-    read -r -p "Shell into $CONTAINER_NAME now? [y/N] " RESP
-    if [[ "$RESP" =~ ^[Yy]$ ]]; then
-        $DOCKER_CMD exec -it "$CONTAINER_NAME" bash
+case "$COMMAND" in
+run)
+    if container_exists; then
+        if [[ "$FORCE_RECREATE" == "true" ]] || [[ "$existing_hash" != "$config_hash" ]] || ! container_running; then
+            echo "Recreating $CONTAINER_NAME container with updated settings..."
+            $DOCKER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+            start_container
+        else
+            echo "$CONTAINER_NAME container already running with matching settings."
+        fi
+    else
+        start_container
     fi
-fi
+    ;;
+build)
+    $DOCKER_CMD build -f "$PROJECT_BASE/docker/Dockerfile" -t josh5/unmanic:staging "$PROJECT_BASE"
+    ;;
+pull)
+    $DOCKER_CMD pull josh5/unmanic:staging
+    ;;
+stop)
+    if container_exists; then
+        if container_running; then
+            $DOCKER_CMD stop "$CONTAINER_NAME"
+        else
+            echo "Warning: $CONTAINER_NAME container is already stopped." >&2
+        fi
+    else
+        echo "Warning: $CONTAINER_NAME container has not been created." >&2
+    fi
+    ;;
+shell)
+    warn_container_state
+    $DOCKER_CMD exec -it "$CONTAINER_NAME" bash
+    ;;
+exec)
+    warn_container_state
+    if [[ ${#COMMAND_ARGS[@]} -eq 0 ]]; then
+        echo "Error: exec requires a command to run inside the container." >&2
+        usage
+        exit 1
+    fi
+    if [[ "$EXEC_ROOT" == "true" ]]; then
+        $DOCKER_CMD exec -it --user 0:0 "$CONTAINER_NAME" "${COMMAND_ARGS[@]}"
+    else
+        $DOCKER_CMD exec -it --user "$PUID:$PGID" "$CONTAINER_NAME" "${COMMAND_ARGS[@]}"
+    fi
+    ;;
+logs)
+    warn_container_state
+    $DOCKER_CMD logs "${COMMAND_ARGS[@]}" "$CONTAINER_NAME"
+    ;;
+*)
+    echo "Unknown command: $COMMAND" >&2
+    usage
+    exit 1
+    ;;
+esac

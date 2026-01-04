@@ -49,6 +49,11 @@ ensure_runtime_paths() {
 activate_venv() {
     local venv="${VIRTUAL_ENV:-/opt/venv}"
 
+    if [[ ! -d "${venv}" ]]; then
+        log "Creating virtualenv at ${venv}"
+        python3 -m venv "${venv}" --clear
+    fi
+
     if [[ -f "${venv}/bin/activate" ]]; then
         export VIRTUAL_ENV="${venv}"
         log "Activating virtualenv at ${VIRTUAL_ENV}"
@@ -79,9 +84,24 @@ update_source_symlink() {
     ln -sf /app/unmanic "${target}"
 }
 
+install_custom_venv_requirements() {
+    local venv="${VIRTUAL_ENV:-/opt/venv}"
+
+    if [[ -e /app/requirements.txt ]]; then
+        log "Installing /app/requirements.txt into ${venv}"
+        "${venv}/bin/python3" -m pip install -r /app/requirements.txt
+    fi
+
+    if [[ -e /app/requirements-dev.txt ]]; then
+        log "Installing /app/requirements-dev.txt into ${venv}"
+        "${venv}/bin/python3" -m pip install -r /app/requirements-dev.txt
+    fi
+}
+
 main() {
     ensure_runtime_paths
     activate_venv
+    install_custom_venv_requirements
     run_init_scripts
 
     update_source_symlink
@@ -94,7 +114,23 @@ main() {
         if [[ "${USE_TEST_SUPPORT_API:-}" == 'true' ]]; then
             unmanic_params+=(--dev-api=https://support-api.test.streamingtech.co.nz)
         fi
-        set -- "$1" "${unmanic_params[@]}" "${@:2}"
+        unmanic_cmd=("$1" "${unmanic_params[@]}" "${@:2}")
+        if [[ -n "${UNMANIC_RUN_COMMAND:-}" ]]; then
+            unmanic_cmd_str=$(printf '%q ' "${unmanic_cmd[@]}")
+            unmanic_cmd_str=${unmanic_cmd_str% }
+            run_cmd="${UNMANIC_RUN_COMMAND//\{cmd\}/${unmanic_cmd_str}}"
+            log "Using custom run command: ${run_cmd}"
+            if [[ "${EUID}" -eq 0 ]]; then
+                if command -v gosu >/dev/null 2>&1; then
+                    if [[ -n "${PUID:-}" && -n "${PGID:-}" ]]; then
+                        exec gosu "${PUID}:${PGID}" /bin/bash -lc "${run_cmd}"
+                    fi
+                    exec gosu "${RUN_USER:-ubuntu}" /bin/bash -lc "${run_cmd}"
+                fi
+            fi
+            exec /bin/bash -lc "${run_cmd}"
+        fi
+        set -- "${unmanic_cmd[@]}"
     fi
 
     log "Starting: $*"

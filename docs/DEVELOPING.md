@@ -47,7 +47,7 @@ You can also just install the module natively in your home directory in "develop
 Start by creating a venv.
 ```
 python3 -m venv venv
-echo 'export HOME_DIR=$(readlink -e ${VIRTUAL_ENV}/../)/dev_environment' >> ./venv/bin/activate
+echo 'export HOME_DIR=$(readlink -e ${VIRTUAL_ENV}/../)/dev_environment/config-venv' >> ./venv/bin/activate
 source ./venv/bin/activate
 ```
 
@@ -96,6 +96,51 @@ devops/frontend_install.sh
 ```
 
 This will install the NPM modules and build the frontend package. The end result will be located in `unmanic/webserver/public`
+
+## Profiling and testing
+
+### Profiling (Docker)
+
+Use a clean profile config prefix and enable profiling with `--profiling`.
+
+```
+./devops/run_docker.sh --force-recreate --config-prefix=profiling --profiling
+```
+
+Wait for the container logs to show Unmanic is running before opening the UI:
+
+```
+./devops/run_docker.sh logs --tail 200
+```
+
+The profile output is written to the host path:
+`dev_environment/config-profiling/unmanic-yappi.pstat`
+
+To summarize the results:
+
+```
+python - <<'PY'
+import pstats
+p = pstats.Stats('dev_environment/config-profiling/unmanic-yappi.pstat')
+p.strip_dirs().sort_stats('tottime').print_stats(40)
+PY
+```
+
+### Profiling (Chrome DevTools)
+
+Open Unmanic in Chrome at `http://localhost:8888`, then open DevTools:
+
+1. Performance tab: record 10-30 seconds while idle.
+2. Network tab: check for repeated polling/websocket traffic.
+3. Memory tab: take heap snapshots if you suspect a leak.
+
+### Testing
+
+Run the Python test suite from a host venv:
+
+```
+python3 -m pytest
+```
 
 
 

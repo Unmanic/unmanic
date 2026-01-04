@@ -10,13 +10,99 @@ if [[ ! -x "${TARGET_BIN}" ]]; then
     TARGET_BIN="$(command -v unmanic || true)"
 fi
 
+PROFILE_UNMANIC=${PROFILE_UNMANIC:-false}
+PROFILE_DURATION=${PROFILE_DURATION:-}
+PROFILE_OUTPUT=${PROFILE_OUTPUT:-/config/unmanic-yappi.pstat}
+
+write_profile_script() {
+    local profile_script="$1"
+    cat >"${profile_script}" <<'PY'
+import os
+import runpy
+import signal
+import sys
+import threading
+import time
+
+import yappi
+
+output_path = os.environ.get("PROFILE_OUTPUT", "/config/unmanic-yappi.pstat")
+duration = os.environ.get("PROFILE_DURATION")
+
+has_saved = False
+
+
+def save_profile():
+    global has_saved
+    if has_saved:
+        return
+    has_saved = True
+    try:
+        yappi.stop()
+    except Exception:
+        pass
+    try:
+        yappi.get_func_stats().save(output_path, type="pstat")
+    except Exception:
+        pass
+
+
+def handle_signal(signum, frame):
+    save_profile()
+    raise SystemExit(0)
+
+
+signal.signal(signal.SIGTERM, handle_signal)
+signal.signal(signal.SIGINT, handle_signal)
+
+if duration:
+    try:
+        seconds = float(duration)
+    except ValueError:
+        seconds = None
+    if seconds and seconds > 0:
+        def stop_later():
+            time.sleep(seconds)
+            os.kill(os.getpid(), signal.SIGINT)
+
+        threading.Thread(target=stop_later, daemon=True).start()
+
+yappi.set_clock_type("cpu")
+yappi.start()
+
+sys.argv = ["unmanic"] + sys.argv[1:]
+
+try:
+    runpy.run_module("unmanic", run_name="__main__")
+except SystemExit:
+    raise
+except Exception:
+    save_profile()
+    raise
+finally:
+    save_profile()
+PY
+}
+
 if [[ "${EUID}" -eq 0 ]]; then
     if command -v gosu >/dev/null 2>&1; then
+        if [[ "${PROFILE_UNMANIC}" == "true" ]]; then
+            profile_script="/tmp/unmanic_profile.py"
+            write_profile_script "${profile_script}"
+            exec gosu "${RUN_USER}" \
+                "${VIRTUAL_ENV:-/opt/venv}/bin/python" "${profile_script}" "${@}"
+        fi
         exec gosu "${RUN_USER}" "${TARGET_BIN}" "${@}"
     fi
     echo "Requirement 'gosu' not available. You should not run Unmanic as root. EXIT!"
     sleep 5
     exit 1
+fi
+
+if [[ "${PROFILE_UNMANIC}" == "true" ]]; then
+    profile_script="/tmp/unmanic_profile.py"
+    write_profile_script "${profile_script}"
+    exec "${VIRTUAL_ENV:-/opt/venv}/bin/python" "${profile_script}" "${@}"
 fi
 
 echo "Not running as root, starting Unmanic without changing user"

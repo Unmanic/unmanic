@@ -35,6 +35,7 @@ import os
 import pickle
 import random
 import time
+from urllib.parse import urlparse
 
 import requests
 
@@ -270,10 +271,23 @@ class Session(object, metaclass=SingletonType):
                 name = inst.get("installation_name")
                 address = inst.get("installation_public_address")
                 if name and address:
+                    parsed_address = urlparse(address)
+                    if parsed_address.scheme not in ("http", "https") or not parsed_address.hostname:
+                        self.logger.info(
+                            "Skipping installation '%s' with invalid public address '%s'",
+                            name, address
+                        )
+                        continue
                     received_insts_by_name[name] = address
 
             # Now iterate our local links and update if name matches
             current_remote_installations = settings.get_remote_installations()
+            current_remote_installation_addresses = {
+                local_link.get("address") for local_link in current_remote_installations if local_link.get("address")
+            }
+            local_installation_name = settings.get_installation_name()
+
+            # Update any links that have a name but no address (may cause some overwriting of UUID)
             for local_link in current_remote_installations:
                 local_name = local_link.get("name")
                 if local_name in received_insts_by_name:
@@ -285,8 +299,62 @@ class Session(object, metaclass=SingletonType):
 
                     if is_invalid and local_link.get("address") != new_address:
                         # Update it
+                        self.logger.info(
+                            "Syncing remote installation address for '%s' from '%s' to '%s'",
+                            local_name, current_address, new_address
+                        )
                         local_link["address"] = new_address
                         links.update_single_remote_installation_link_config(local_link)
+
+            # Add any new links that do not yet exist by the address list received from the Unmanic API
+            for name, address in received_insts_by_name.items():
+                if name == local_installation_name:
+                    continue
+                if address in current_remote_installation_addresses:
+                    continue
+                try:
+                    validation = links.validate_remote_installation(address)
+                except Exception as e:
+                    self.logger.info(
+                        "Skipping creation of link config for '%s' at '%s' due to validation error: %s",
+                        name, address, e
+                    )
+                    continue
+                if not validation:
+                    self.logger.info(
+                        "Skipping creation of link config for '%s' at '%s' because it is unreachable",
+                        name, address
+                    )
+                    continue
+                remote_uuid = validation.get('session', {}).get('uuid')
+                if not remote_uuid:
+                    self.logger.info(
+                        "Skipping creation of link config for '%s' at '%s' because no remote UUID was returned",
+                        name, address
+                    )
+                    continue
+                new_link_config = {
+                    "uuid": remote_uuid,
+                    "name": name,
+                    "address": address,
+                    "auth": "None",
+                    "username": "",
+                    "password": "",
+                }
+                self.logger.info(
+                    "Creating remote installation link config for '%s' with address '%s'",
+                    name, address
+                )
+                links.update_single_remote_installation_link_config(new_link_config)
+            if not received_insts_by_name:
+                self.logger.info("No valid installation name/address pairs returned from Unmanic Central.")
+        else:
+            self.logger.info(
+                "Skipping remote installation address sync; status=%s success=%s installations=%s",
+                status_code,
+                installations_response.get("success"),
+                len(installations) if installations else 0
+            )
 
     def __reset_session_installation_data(self):
         """
@@ -598,6 +666,8 @@ class Session(object, metaclass=SingletonType):
                 # Fetch list of installations if supporter
                 if self.level > 1:
                     self.__sync_remote_installation_addresses()
+                else:
+                    self.logger.info("Skipping remote installation address sync; supporter level too low")
 
                 return True
             elif status_code > 403:

@@ -584,7 +584,7 @@ class Links(object, metaclass=SingletonType):
 
     def update_single_remote_installation_link_config(self, configuration: dict, distributed_worker_count_target=0):
         """
-        Returns the configuration of the remote installation
+        Returns the configuration of the remote installation after updating it
 
         :param configuration:
         :param distributed_worker_count_target:

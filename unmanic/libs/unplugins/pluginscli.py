@@ -460,6 +460,27 @@ class PluginsCLI(object):
 
         # Remove the selected Plugin by ID
         plugin_table_id = table_ids[selection.get('cli_action')]
+        self._uninstall_plugin_by_db_table_id(plugin_table_id)
+
+    def remove_plugin_by_id(self, plugin_id):
+        if not plugin_id:
+            print("ERROR! Missing plugin_id.")
+            return
+
+        plugin_results = self.__get_installed_plugins(plugin_id=plugin_id)
+        if not plugin_results:
+            print("ERROR! Plugin not found: '{}'".format(plugin_id))
+            return
+
+        plugin_table_id = plugin_results[0].get('id')
+        if not plugin_table_id:
+            print("ERROR! Plugin record missing id for '{}'.".format(plugin_id))
+            return
+
+        self._uninstall_plugin_by_db_table_id(plugin_table_id)
+
+    @staticmethod
+    def _uninstall_plugin_by_db_table_id(plugin_table_id):
         plugins = PluginsHandler()
         plugins.uninstall_plugins_by_db_table_id([plugin_table_id])
         print()
@@ -668,6 +689,9 @@ class PluginsCLI(object):
             return
         if args.reload_plugins:
             self.reload_plugin_from_disk()
+            return
+        if args.remove_plugin:
+            self.remove_plugin_by_id(args.plugin_id)
             return
         if args.install_test_data:
             self.install_test_data()

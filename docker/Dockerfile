@@ -158,6 +158,7 @@ RUN \
     && \
     echo "**** Install startup script requirements ****" \
         && apt-get install -y \
+            git \
             jq \
             nano \
             sqlite3 \

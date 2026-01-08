@@ -259,7 +259,7 @@ class EventMonitorManager(threading.Thread):
         # Test file to be added to task list. Add it if required
         try:
             file_test = FileTest(library_id)
-            result, issues, priority_score = file_test.should_file_be_added_to_task_list(pathname)
+            result, issues, priority_score, _ = file_test.should_file_be_added_to_task_list(pathname)
             # Log any error messages
             for issue in issues:
                 if type(issue) is dict:

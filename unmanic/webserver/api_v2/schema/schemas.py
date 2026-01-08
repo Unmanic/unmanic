@@ -553,6 +553,65 @@ class RequestPendingTaskCreateSchema(BaseSchema):
     )
 
 
+class RequestPendingTaskTestSchema(BaseSchema):
+    """Schema for requesting a file test without creating a pending task"""
+
+    path = fields.Str(
+        required=True,
+        description="The path to a file (absolute or relative to the selected library)",
+        example="/library/TEST_FILE.mkv",
+    )
+    library_id = fields.Int(
+        required=False,
+        description="The ID of the library to use for plugin configuration",
+        example=1,
+    )
+    library_name = fields.Str(
+        required=False,
+        description="The name of the library to use for plugin configuration",
+        example='Default',
+    )
+
+
+class PendingTaskTestResultSchema(BaseSchema):
+    """Schema for file test results without queueing a task"""
+
+    path = fields.Str(
+        required=True,
+        description="The absolute path to the tested file",
+        example="/library/TEST_FILE.mkv",
+    )
+    library_id = fields.Int(
+        required=True,
+        description="The library ID used to run the file tests",
+        example=1,
+    )
+    library_name = fields.Str(
+        required=True,
+        description="The library name used to run the file tests",
+        example="Default",
+    )
+    add_file_to_pending_tasks = fields.Boolean(
+        required=False,
+        allow_none=True,
+        description="Final decision after file tests (true: plugin requested queueing, false: plugin rejected, null: no plugin decided)",
+        example=True,
+    )
+    issues = fields.List(
+        fields.Dict(),
+        required=False,
+        description="Any issues that prevented the file from being queued",
+        example=[],
+    )
+    decision_plugin = fields.Dict(
+        required=False,
+        allow_none=True,
+        description="The plugin that set add_file_to_pending_tasks (null if no plugin decided)",
+        example={
+            "plugin_id": "example_library_management_file_test",
+            "plugin_name": "Example Library Test",
+        },
+    )
 class TaskDownloadLinkSchema(BaseSchema):
     """Schema for returning a download link ID"""
 

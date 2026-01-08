@@ -111,6 +111,7 @@ class FileTest(object):
         :return:
         """
         return_value = None
+        decision_plugin = None
         file_issues = []
 
         # TODO: Remove this
@@ -157,11 +158,15 @@ class FileTest(object):
                 # No need to continue.
                 if data.get('add_file_to_pending_tasks') is not None:
                     return_value = data.get('add_file_to_pending_tasks')
+                    decision_plugin = {
+                        'plugin_id':   plugin_module.get('plugin_id'),
+                        'plugin_name': plugin_module.get('name'),
+                    }
                     break
             # Set the priority score modification
             priority_score_modification = data.get('priority_score', 0)
 
-        return return_value, file_issues, priority_score_modification
+        return return_value, file_issues, priority_score_modification, decision_plugin
 
 
 class FileTesterThread(threading.Thread):
@@ -211,7 +216,7 @@ class FileTesterThread(threading.Thread):
 
             # Test file to be added to task list. Add it if required
             try:
-                result, issues, priority_score = file_test.should_file_be_added_to_task_list(next_file)
+                result, issues, priority_score, _ = file_test.should_file_be_added_to_task_list(next_file)
                 # Log any error messages
                 for issue in issues:
                     if type(issue) is dict:

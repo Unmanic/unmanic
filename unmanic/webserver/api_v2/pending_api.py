@@ -32,12 +32,14 @@
 import os.path
 
 import tornado.log
+from unmanic.libs.library import Library
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
 from unmanic.webserver.api_v2.schema.schemas import PendingTasksTableResultsSchema, RequestPendingTaskCreateSchema, \
     RequestPendingTasksLibraryUpdateSchema, RequestPendingTasksReorderSchema, PendingTasksSchema, \
-    RequestPendingTableDataSchema, RequestTableUpdateByIdList, TaskDownloadLinkSchema
+    RequestPendingTableDataSchema, RequestTableUpdateByIdList, TaskDownloadLinkSchema, RequestPendingTaskTestSchema, \
+    PendingTaskTestResultSchema
 from unmanic.webserver.downloads import DownloadsLinks
 from unmanic.webserver.helpers import pending_tasks
 
@@ -73,6 +75,11 @@ class ApiPendingHandler(BaseApiHandler):
             "path_pattern":      r"/pending/create",
             "supported_methods": ["POST"],
             "call_method":       "create_task_from_path",
+        },
+        {
+            "path_pattern":      r"/pending/test",
+            "supported_methods": ["POST"],
+            "call_method":       "test_task_from_path",
         },
         {
             "path_pattern":      r"/pending/library/update",
@@ -436,6 +443,113 @@ class ApiPendingHandler(BaseApiHandler):
 
             # Return the details of the generated task
             response = self.build_response(PendingTasksTableResultsSchema(), task_info)
+            self.write_success(response)
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    async def test_task_from_path(self):
+        """
+        Pending - test
+        ---
+        description: Run file test plugins for a path without creating a pending task
+        requestBody:
+            description: Specify path and library to run file tests against.
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestPendingTaskTestSchema
+        responses:
+            200:
+                description: 'Successful request; Returns file test results'
+                content:
+                    application/json:
+                        schema:
+                            PendingTaskTestResultSchema
+            400:
+                description: Bad request; Check `messages` for any validation errors
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Bad request; Requested endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Bad request; Requested method is not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error; Check `error` for exception
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            json_request = self.read_json_request(RequestPendingTaskTestSchema())
+
+            path = json_request.get('path', '')
+            library_id = json_request.get('library_id')
+            library_name = json_request.get('library_name')
+
+            if not library_id and not library_name:
+                self.set_status(self.STATUS_ERROR_EXTERNAL,
+                                reason="You must provide either a library_id or library_name")
+                self.write_error()
+                return
+
+            if library_id is None and library_name is not None:
+                library_id = None
+                for library in Library.get_all_libraries():
+                    if library_name == library.get('name'):
+                        library_id = library.get('id')
+                        break
+                if library_id is None:
+                    self.set_status(self.STATUS_ERROR_EXTERNAL,
+                                    reason="Library not found with name '{}'".format(library_name))
+                    self.write_error()
+                    return
+
+            try:
+                library = Library(library_id)
+            except Exception as e:
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason=str(e))
+                self.write_error()
+                return
+
+            if not os.path.isabs(path):
+                abspath = os.path.abspath(os.path.join(library.get_path(), path))
+            else:
+                abspath = os.path.abspath(path)
+
+            if not os.path.exists(abspath):
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="Path does not exist: '{}'".format(abspath))
+                self.write_error()
+                return
+
+            test_result = pending_tasks.test_path_for_pending_task(abspath, library_id=library.get_id())
+
+            response_data = {
+                'path':                    abspath,
+                'library_id':              library.get_id(),
+                'library_name':            library.get_name(),
+                'add_file_to_pending_tasks': test_result.get('add_file_to_pending_tasks'),
+                'issues':                  test_result.get('issues', []),
+                'decision_plugin':         test_result.get('decision_plugin'),
+            }
+
+            response = self.build_response(PendingTaskTestResultSchema(), response_data)
             self.write_success(response)
             return
         except BaseApiError as bae:

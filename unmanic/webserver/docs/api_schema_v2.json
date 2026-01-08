@@ -6,8 +6,8 @@
     },
     "servers": [
         {
-            "url": "http://localhost:8888/unmanic/api/v2/",
-            "description": "Local environment"
+            "url": "/unmanic/api/v2/",
+            "description": "Current environment"
         }
     ],
     "components": {
@@ -37,7 +37,8 @@
                 },
                 "required": [
                     "content"
-                ]
+                ],
+                "additionalProperties": false
             },
             "BadRequest": {
                 "type": "object",
@@ -73,7 +74,8 @@
                 "required": [
                     "error",
                     "messages"
-                ]
+                ],
+                "additionalProperties": false
             },
             "BadEndpoint": {
                 "type": "object",
@@ -86,7 +88,8 @@
                 },
                 "required": [
                     "error"
-                ]
+                ],
+                "additionalProperties": false
             },
             "BadMethod": {
                 "type": "object",
@@ -99,7 +102,8 @@
                 },
                 "required": [
                     "error"
-                ]
+                ],
+                "additionalProperties": false
             },
             "InternalError": {
                 "type": "object",
@@ -135,7 +139,8 @@
                 "required": [
                     "error",
                     "messages"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestDirectoryListingData": {
                 "type": "object",
@@ -150,7 +155,8 @@
                         "default": "all",
                         "example": "directories"
                     }
-                }
+                },
+                "additionalProperties": false
             },
             "DirectoryListingResults": {
                 "type": "object",
@@ -197,7 +203,8 @@
                 "required": [
                     "directories",
                     "files"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestHistoryTableData": {
                 "type": "object",
@@ -254,7 +261,8 @@
                         "description": "Order direction ('asc' or 'desc')",
                         "example": "desc"
                     }
-                }
+                },
+                "additionalProperties": false
             },
             "CompletedTasksTableResults": {
                 "type": "object",
@@ -285,7 +293,8 @@
                     "id",
                     "task_label",
                     "task_success"
-                ]
+                ],
+                "additionalProperties": false
             },
             "CompletedTasks": {
                 "type": "object",
@@ -324,7 +333,8 @@
                     "failedCount",
                     "results",
                     "successCount"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestTableUpdateByIdList": {
                 "type": "object",
@@ -341,7 +351,8 @@
                 },
                 "required": [
                     "id_list"
-                ]
+                ],
+                "additionalProperties": false
             },
             "BaseSuccess": {
                 "type": "object",
@@ -354,7 +365,8 @@
                 },
                 "required": [
                     "success"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestAddCompletedToPendingTasks": {
                 "type": "object",
@@ -376,7 +388,8 @@
                 },
                 "required": [
                     "id_list"
-                ]
+                ],
+                "additionalProperties": false
             },
             "CompletedTasksLogRequest": {
                 "type": "object",
@@ -389,7 +402,8 @@
                 },
                 "required": [
                     "task_id"
-                ]
+                ],
+                "additionalProperties": false
             },
             "CompletedTasksLog": {
                 "type": "object",
@@ -419,7 +433,8 @@
                 "required": [
                     "command_log",
                     "command_log_lines"
-                ]
+                ],
+                "additionalProperties": false
             },
             "NotificationData": {
                 "type": "object",
@@ -465,7 +480,8 @@
                     "navigation",
                     "type",
                     "uuid"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestNotificationsData": {
                 "type": "object",
@@ -481,7 +497,8 @@
                 },
                 "required": [
                     "notifications"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestTableUpdateByUuidList": {
                 "type": "object",
@@ -498,7 +515,8 @@
                 },
                 "required": [
                     "uuid_list"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestPendingTableData": {
                 "type": "object",
@@ -555,7 +573,8 @@
                         "description": "Order direction ('asc' or 'desc')",
                         "example": "desc"
                     }
-                }
+                },
+                "additionalProperties": false
             },
             "PendingTasksTableResults": {
                 "type": "object",
@@ -607,7 +626,8 @@
                     "priority",
                     "status",
                     "type"
-                ]
+                ],
+                "additionalProperties": false
             },
             "PendingTasks": {
                 "type": "object",
@@ -634,7 +654,8 @@
                 },
                 "required": [
                     "results"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestPendingTasksReorder": {
                 "type": "object",
@@ -661,7 +682,8 @@
                 "required": [
                     "id_list",
                     "position"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestPendingTaskCreate": {
                 "type": "object",
@@ -694,7 +716,83 @@
                 },
                 "required": [
                     "path"
-                ]
+                ],
+                "additionalProperties": false
+            },
+            "RequestPendingTaskTest": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "The path to a file (absolute or relative to the selected library)",
+                        "example": "/library/TEST_FILE.mkv"
+                    },
+                    "library_id": {
+                        "type": "integer",
+                        "description": "The ID of the library to use for plugin configuration",
+                        "example": 1
+                    },
+                    "library_name": {
+                        "type": "string",
+                        "description": "The name of the library to use for plugin configuration",
+                        "example": "Default"
+                    }
+                },
+                "required": [
+                    "path"
+                ],
+                "additionalProperties": false
+            },
+            "PendingTaskTestResult": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "The absolute path to the tested file",
+                        "example": "/library/TEST_FILE.mkv"
+                    },
+                    "library_id": {
+                        "type": "integer",
+                        "description": "The library ID used to run the file tests",
+                        "example": 1
+                    },
+                    "library_name": {
+                        "type": "string",
+                        "description": "The library name used to run the file tests",
+                        "example": "Default"
+                    },
+                    "add_file_to_pending_tasks": {
+                        "type": "boolean",
+                        "description": "Final decision after file tests (true: plugin requested queueing, false: plugin rejected, null: no plugin decided)",
+                        "example": true,
+                        "nullable": true
+                    },
+                    "issues": {
+                        "type": "array",
+                        "description": "Any issues that prevented the file from being queued",
+                        "example": [],
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        }
+                    },
+                    "decision_plugin": {
+                        "type": "object",
+                        "description": "The plugin that set add_file_to_pending_tasks (null if no plugin decided)",
+                        "example": {
+                            "plugin_id": "example_library_management_file_test",
+                            "plugin_name": "Example Library Test"
+                        },
+                        "additionalProperties": {},
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "library_id",
+                    "library_name",
+                    "path"
+                ],
+                "additionalProperties": false
             },
             "RequestPendingTasksLibraryUpdate": {
                 "type": "object",
@@ -716,7 +814,8 @@
                 "required": [
                     "id_list",
                     "library_name"
-                ]
+                ],
+                "additionalProperties": false
             },
             "TaskDownloadLink": {
                 "type": "object",
@@ -729,7 +828,8 @@
                 },
                 "required": [
                     "link_id"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestPluginsTableData": {
                 "type": "object",
@@ -786,7 +886,8 @@
                         "description": "Order direction ('asc' or 'desc')",
                         "example": "desc"
                     }
-                }
+                },
+                "additionalProperties": false
             },
             "PluginStatus": {
                 "type": "object",
@@ -801,7 +902,8 @@
                         "description": "Does the plugin have an update available",
                         "example": true
                     }
-                }
+                },
+                "additionalProperties": false
             },
             "PluginsTableResults": {
                 "type": "object",
@@ -875,7 +977,8 @@
                     "status",
                     "tags",
                     "version"
-                ]
+                ],
+                "additionalProperties": false
             },
             "PluginsData": {
                 "type": "object",
@@ -902,7 +1005,8 @@
                 },
                 "required": [
                     "results"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestPluginsInfo": {
                 "type": "object",
@@ -929,7 +1033,8 @@
                 },
                 "required": [
                     "plugin_id"
-                ]
+                ],
+                "additionalProperties": false
             },
             "PluginsConfigInputItem": {
                 "type": "object",
@@ -1021,7 +1126,8 @@
                     "sub_setting",
                     "tooltip",
                     "value"
-                ]
+                ],
+                "additionalProperties": false
             },
             "PluginsInfoResults": {
                 "type": "object",
@@ -1096,7 +1202,8 @@
                     "status",
                     "tags",
                     "version"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestPluginsSettingsSave": {
                 "type": "object",
@@ -1121,7 +1228,8 @@
                 "required": [
                     "plugin_id",
                     "settings"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestPluginsSettingsReset": {
                 "type": "object",
@@ -1138,7 +1246,8 @@
                 },
                 "required": [
                     "plugin_id"
-                ]
+                ],
+                "additionalProperties": false
             },
             "PluginsMetadataInstallableResults": {
                 "type": "object",
@@ -1226,7 +1335,8 @@
                     "status",
                     "tags",
                     "version"
-                ]
+                ],
+                "additionalProperties": false
             },
             "PluginsInstallableResults": {
                 "type": "object",
@@ -1242,7 +1352,8 @@
                 },
                 "required": [
                     "plugins"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestPluginsById": {
                 "type": "object",
@@ -1259,7 +1370,8 @@
                 },
                 "required": [
                     "plugin_id"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestPluginsFlowByPluginType": {
                 "type": "object",
@@ -1276,7 +1388,8 @@
                 },
                 "required": [
                     "plugin_type"
-                ]
+                ],
+                "additionalProperties": false
             },
             "PluginTypesResults": {
                 "type": "object",
@@ -1297,7 +1410,8 @@
                 },
                 "required": [
                     "results"
-                ]
+                ],
+                "additionalProperties": false
             },
             "PluginFlowDataResults": {
                 "type": "object",
@@ -1340,7 +1454,8 @@
                     "name",
                     "plugin_id",
                     "version"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestSavingPluginsFlowByPluginType": {
                 "type": "object",
@@ -1366,7 +1481,8 @@
                 "required": [
                     "plugin_flow",
                     "plugin_type"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestUpdatePluginReposList": {
                 "type": "object",
@@ -1385,7 +1501,8 @@
                 },
                 "required": [
                     "repos_list"
-                ]
+                ],
+                "additionalProperties": false
             },
             "PluginReposMetadataResults": {
                 "type": "object",
@@ -1416,7 +1533,8 @@
                     "id",
                     "name",
                     "path"
-                ]
+                ],
+                "additionalProperties": false
             },
             "PluginReposListResults": {
                 "type": "object",
@@ -1432,7 +1550,8 @@
                 },
                 "required": [
                     "repos"
-                ]
+                ],
+                "additionalProperties": false
             },
             "PluginsDataPanelTypesData": {
                 "type": "object",
@@ -1448,7 +1567,8 @@
                 },
                 "required": [
                     "results"
-                ]
+                ],
+                "additionalProperties": false
             },
             "SessionStateSuccess": {
                 "type": "object",
@@ -1487,7 +1607,8 @@
                 "required": [
                     "level",
                     "uuid"
-                ]
+                ],
+                "additionalProperties": false
             },
             "SessionAuthCode": {
                 "type": "object",
@@ -1524,7 +1645,8 @@
                     "user_code",
                     "verification_uri",
                     "verification_uri_complete"
-                ]
+                ],
+                "additionalProperties": false
             },
             "SettingsReadAndWrite": {
                 "type": "object",
@@ -1535,6 +1657,7 @@
                         "example": {
                             "ui_port": 8888,
                             "debugging": false,
+                            "log_buffer_retention": 0,
                             "library_path": "/library",
                             "enable_library_scanner": false,
                             "schedule_full_scan_minutes": 1440,
@@ -1547,7 +1670,8 @@
                 },
                 "required": [
                     "settings"
-                ]
+                ],
+                "additionalProperties": false
             },
             "SettingsSystemConfig": {
                 "type": "object",
@@ -1561,7 +1685,8 @@
                 },
                 "required": [
                     "configuration"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestSettingsRemoteInstallationAddressValidation": {
                 "type": "object",
@@ -1592,7 +1717,8 @@
                 },
                 "required": [
                     "address"
-                ]
+                ],
+                "additionalProperties": false
             },
             "SettingsRemoteInstallationData": {
                 "type": "object",
@@ -1606,7 +1732,8 @@
                 },
                 "required": [
                     "installation"
-                ]
+                ],
+                "additionalProperties": false
             },
             "WorkerEventScheduleResults": {
                 "type": "object",
@@ -1636,7 +1763,8 @@
                     "repetition",
                     "schedule_task",
                     "schedule_time"
-                ]
+                ],
+                "additionalProperties": false
             },
             "SettingsWorkerGroupConfig": {
                 "type": "object",
@@ -1689,7 +1817,8 @@
                     "number_of_workers",
                     "tags",
                     "worker_event_schedules"
-                ]
+                ],
+                "additionalProperties": false
             },
             "WorkerGroupsList": {
                 "type": "object",
@@ -1705,7 +1834,8 @@
                 },
                 "required": [
                     "worker_groups"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestDatabaseItemById": {
                 "type": "object",
@@ -1718,7 +1848,8 @@
                 },
                 "required": [
                     "id"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestRemoteInstallationLinkConfig": {
                 "type": "object",
@@ -1731,7 +1862,8 @@
                 },
                 "required": [
                     "uuid"
-                ]
+                ],
+                "additionalProperties": false
             },
             "SettingsRemoteInstallationLinkConfig": {
                 "type": "object",
@@ -1766,7 +1898,8 @@
                 },
                 "required": [
                     "link_config"
-                ]
+                ],
+                "additionalProperties": false
             },
             "LibraryResults": {
                 "type": "object",
@@ -1827,7 +1960,8 @@
                     "name",
                     "path",
                     "tags"
-                ]
+                ],
+                "additionalProperties": false
             },
             "SettingsLibrariesList": {
                 "type": "object",
@@ -1843,7 +1977,8 @@
                 },
                 "required": [
                     "libraries"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestLibraryById": {
                 "type": "object",
@@ -1856,7 +1991,8 @@
                 },
                 "required": [
                     "id"
-                ]
+                ],
+                "additionalProperties": false
             },
             "SettingsLibraryConfigReadAndWrite": {
                 "type": "object",
@@ -1894,7 +2030,8 @@
                 },
                 "required": [
                     "library_config"
-                ]
+                ],
+                "additionalProperties": false
             },
             "SettingsLibraryPluginConfigExport": {
                 "type": "object",
@@ -1956,7 +2093,8 @@
                 },
                 "required": [
                     "plugins"
-                ]
+                ],
+                "additionalProperties": false
             },
             "SettingsLibraryPluginConfigImport": {
                 "type": "object",
@@ -2023,7 +2161,8 @@
                 "required": [
                     "library_id",
                     "plugins"
-                ]
+                ],
+                "additionalProperties": false
             },
             "VersionReadSuccess": {
                 "type": "object",
@@ -2036,7 +2175,8 @@
                 },
                 "required": [
                     "version"
-                ]
+                ],
+                "additionalProperties": false
             },
             "RequestWorkerById": {
                 "type": "object",
@@ -2048,7 +2188,8 @@
                 },
                 "required": [
                     "worker_id"
-                ]
+                ],
+                "additionalProperties": false
             },
             "WorkerStatusResults": {
                 "type": "object",
@@ -2150,7 +2291,8 @@
                     "start_time",
                     "subprocess",
                     "worker_log_tail"
-                ]
+                ],
+                "additionalProperties": false
             },
             "WorkerStatusSuccess": {
                 "type": "object",
@@ -2166,7 +2308,8 @@
                 },
                 "required": [
                     "workers_status"
-                ]
+                ],
+                "additionalProperties": false
             }
         }
     },
@@ -3034,6 +3177,74 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/PendingTasksTableResults"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request; Check `messages` for any validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request; Requested endpoint not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadEndpoint"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Bad request; Requested method is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadMethod"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error; Check `error` for exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pending/test": {
+            "post": {
+                "description": "Run file test plugins for a path without creating a pending task",
+                "requestBody": {
+                    "description": "Specify path and library to run file tests against.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestPendingTaskTest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful request; Returns file test results",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PendingTaskTestResult"
                                 }
                             }
                         }

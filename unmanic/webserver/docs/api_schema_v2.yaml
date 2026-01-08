@@ -3,8 +3,8 @@ info:
   title: Unmanic API
   version: '2'
 servers:
-- url: http://localhost:8888/unmanic/api/v2/
-  description: Local environment
+- url: /unmanic/api/v2/
+  description: Current environment
 components:
   securitySchemes:
     BasicAuth:
@@ -32,6 +32,7 @@ components:
             type: string
       required:
       - content
+      additionalProperties: false
     BadRequest:
       type: object
       properties:
@@ -63,6 +64,7 @@ components:
       required:
       - error
       - messages
+      additionalProperties: false
     BadEndpoint:
       type: object
       properties:
@@ -72,6 +74,7 @@ components:
           example: '404: Endpoint not found'
       required:
       - error
+      additionalProperties: false
     BadMethod:
       type: object
       properties:
@@ -81,6 +84,7 @@ components:
           example: '405: Method ''GET'' not allowed'
       required:
       - error
+      additionalProperties: false
     InternalError:
       type: object
       properties:
@@ -102,6 +106,7 @@ components:
       required:
       - error
       - messages
+      additionalProperties: false
     RequestDirectoryListingData:
       type: object
       properties:
@@ -113,6 +118,7 @@ components:
           type: string
           default: all
           example: directories
+      additionalProperties: false
     DirectoryListingResults:
       type: object
       properties:
@@ -143,6 +149,7 @@ components:
       required:
       - directories
       - files
+      additionalProperties: false
     RequestHistoryTableData:
       type: object
       properties:
@@ -189,6 +196,7 @@ components:
           - desc
           description: Order direction ('asc' or 'desc')
           example: desc
+      additionalProperties: false
     CompletedTasksTableResults:
       type: object
       properties:
@@ -213,6 +221,7 @@ components:
       - id
       - task_label
       - task_success
+      additionalProperties: false
     CompletedTasks:
       type: object
       properties:
@@ -243,6 +252,7 @@ components:
       - failedCount
       - results
       - successCount
+      additionalProperties: false
     RequestTableUpdateByIdList:
       type: object
       properties:
@@ -255,6 +265,7 @@ components:
             type: integer
       required:
       - id_list
+      additionalProperties: false
     BaseSuccess:
       type: object
       properties:
@@ -264,6 +275,7 @@ components:
           example: true
       required:
       - success
+      additionalProperties: false
     RequestAddCompletedToPendingTasks:
       type: object
       properties:
@@ -280,6 +292,7 @@ components:
           example: 1
       required:
       - id_list
+      additionalProperties: false
     CompletedTasksLogRequest:
       type: object
       properties:
@@ -289,6 +302,7 @@ components:
           example: 1
       required:
       - task_id
+      additionalProperties: false
     CompletedTasksLog:
       type: object
       properties:
@@ -312,6 +326,7 @@ components:
       required:
       - command_log
       - command_log_lines
+      additionalProperties: false
     NotificationData:
       type: object
       properties:
@@ -348,6 +363,7 @@ components:
       - navigation
       - type
       - uuid
+      additionalProperties: false
     RequestNotificationsData:
       type: object
       properties:
@@ -359,6 +375,7 @@ components:
             $ref: '#/components/schemas/NotificationData'
       required:
       - notifications
+      additionalProperties: false
     RequestTableUpdateByUuidList:
       type: object
       properties:
@@ -371,6 +388,7 @@ components:
             type: string
       required:
       - uuid_list
+      additionalProperties: false
     RequestPendingTableData:
       type: object
       properties:
@@ -417,6 +435,7 @@ components:
           - desc
           description: Order direction ('asc' or 'desc')
           example: desc
+      additionalProperties: false
     PendingTasksTableResults:
       type: object
       properties:
@@ -458,6 +477,7 @@ components:
       - priority
       - status
       - type
+      additionalProperties: false
     PendingTasks:
       type: object
       properties:
@@ -478,6 +498,7 @@ components:
             $ref: '#/components/schemas/PendingTasksTableResults'
       required:
       - results
+      additionalProperties: false
     RequestPendingTasksReorder:
       type: object
       properties:
@@ -498,6 +519,7 @@ components:
       required:
       - id_list
       - position
+      additionalProperties: false
     RequestPendingTaskCreate:
       type: object
       properties:
@@ -524,6 +546,67 @@ components:
           example: 1000
       required:
       - path
+      additionalProperties: false
+    RequestPendingTaskTest:
+      type: object
+      properties:
+        path:
+          type: string
+          description: The path to a file (absolute or relative to the selected library)
+          example: /library/TEST_FILE.mkv
+        library_id:
+          type: integer
+          description: The ID of the library to use for plugin configuration
+          example: 1
+        library_name:
+          type: string
+          description: The name of the library to use for plugin configuration
+          example: Default
+      required:
+      - path
+      additionalProperties: false
+    PendingTaskTestResult:
+      type: object
+      properties:
+        path:
+          type: string
+          description: The absolute path to the tested file
+          example: /library/TEST_FILE.mkv
+        library_id:
+          type: integer
+          description: The library ID used to run the file tests
+          example: 1
+        library_name:
+          type: string
+          description: The library name used to run the file tests
+          example: Default
+        add_file_to_pending_tasks:
+          type: boolean
+          description: 'Final decision after file tests (true: plugin requested queueing,
+            false: plugin rejected, null: no plugin decided)'
+          example: true
+          nullable: true
+        issues:
+          type: array
+          description: Any issues that prevented the file from being queued
+          example: []
+          items:
+            type: object
+            additionalProperties: {}
+        decision_plugin:
+          type: object
+          description: The plugin that set add_file_to_pending_tasks (null if no plugin
+            decided)
+          example:
+            plugin_id: example_library_management_file_test
+            plugin_name: Example Library Test
+          additionalProperties: {}
+          nullable: true
+      required:
+      - library_id
+      - library_name
+      - path
+      additionalProperties: false
     RequestPendingTasksLibraryUpdate:
       type: object
       properties:
@@ -540,6 +623,7 @@ components:
       required:
       - id_list
       - library_name
+      additionalProperties: false
     TaskDownloadLink:
       type: object
       properties:
@@ -549,6 +633,7 @@ components:
           example: 2960645c-a4e2-4b05-8866-7bd469ee9ef8
       required:
       - link_id
+      additionalProperties: false
     RequestPluginsTableData:
       type: object
       properties:
@@ -595,6 +680,7 @@ components:
           - desc
           description: Order direction ('asc' or 'desc')
           example: desc
+      additionalProperties: false
     PluginStatus:
       type: object
       properties:
@@ -606,6 +692,7 @@ components:
           type: boolean
           description: Does the plugin have an update available
           example: true
+      additionalProperties: false
     PluginsTableResults:
       type: object
       properties:
@@ -664,6 +751,7 @@ components:
       - status
       - tags
       - version
+      additionalProperties: false
     PluginsData:
       type: object
       properties:
@@ -684,6 +772,7 @@ components:
             $ref: '#/components/schemas/PluginsTableResults'
       required:
       - results
+      additionalProperties: false
     RequestPluginsInfo:
       type: object
       properties:
@@ -704,6 +793,7 @@ components:
           example: 1
       required:
       - plugin_id
+      additionalProperties: false
     PluginsConfigInputItem:
       type: object
       properties:
@@ -776,6 +866,7 @@ components:
       - sub_setting
       - tooltip
       - value
+      additionalProperties: false
     PluginsInfoResults:
       type: object
       properties:
@@ -834,6 +925,7 @@ components:
       - status
       - tags
       - version
+      additionalProperties: false
     RequestPluginsSettingsSave:
       type: object
       properties:
@@ -852,6 +944,7 @@ components:
       required:
       - plugin_id
       - settings
+      additionalProperties: false
     RequestPluginsSettingsReset:
       type: object
       properties:
@@ -864,6 +957,7 @@ components:
           example: 1
       required:
       - plugin_id
+      additionalProperties: false
     PluginsMetadataInstallableResults:
       type: object
       properties:
@@ -933,6 +1027,7 @@ components:
       - status
       - tags
       - version
+      additionalProperties: false
     PluginsInstallableResults:
       type: object
       properties:
@@ -944,6 +1039,7 @@ components:
             $ref: '#/components/schemas/PluginsMetadataInstallableResults'
       required:
       - plugins
+      additionalProperties: false
     RequestPluginsById:
       type: object
       properties:
@@ -956,6 +1052,7 @@ components:
           example: '158899500680826593283708490873332175078'
       required:
       - plugin_id
+      additionalProperties: false
     RequestPluginsFlowByPluginType:
       type: object
       properties:
@@ -968,6 +1065,7 @@ components:
           example: 1
       required:
       - plugin_type
+      additionalProperties: false
     PluginTypesResults:
       type: object
       properties:
@@ -983,6 +1081,7 @@ components:
             type: string
       required:
       - results
+      additionalProperties: false
     PluginFlowDataResults:
       type: object
       properties:
@@ -1018,6 +1117,7 @@ components:
       - name
       - plugin_id
       - version
+      additionalProperties: false
     RequestSavingPluginsFlowByPluginType:
       type: object
       properties:
@@ -1037,6 +1137,7 @@ components:
       required:
       - plugin_flow
       - plugin_type
+      additionalProperties: false
     RequestUpdatePluginReposList:
       type: object
       properties:
@@ -1050,6 +1151,7 @@ components:
             type: string
       required:
       - repos_list
+      additionalProperties: false
     PluginReposMetadataResults:
       type: object
       properties:
@@ -1074,6 +1176,7 @@ components:
       - id
       - name
       - path
+      additionalProperties: false
     PluginReposListResults:
       type: object
       properties:
@@ -1085,6 +1188,7 @@ components:
             $ref: '#/components/schemas/PluginReposMetadataResults'
       required:
       - repos
+      additionalProperties: false
     PluginsDataPanelTypesData:
       type: object
       properties:
@@ -1096,6 +1200,7 @@ components:
             $ref: '#/components/schemas/PluginFlowDataResults'
       required:
       - results
+      additionalProperties: false
     SessionStateSuccess:
       type: object
       properties:
@@ -1126,6 +1231,7 @@ components:
       required:
       - level
       - uuid
+      additionalProperties: false
     SessionAuthCode:
       type: object
       properties:
@@ -1155,6 +1261,7 @@ components:
       - user_code
       - verification_uri
       - verification_uri_complete
+      additionalProperties: false
     SettingsReadAndWrite:
       type: object
       properties:
@@ -1164,6 +1271,7 @@ components:
           example:
             ui_port: 8888
             debugging: false
+            log_buffer_retention: 0
             library_path: /library
             enable_library_scanner: false
             schedule_full_scan_minutes: 1440
@@ -1173,6 +1281,7 @@ components:
           additionalProperties: {}
       required:
       - settings
+      additionalProperties: false
     SettingsSystemConfig:
       type: object
       properties:
@@ -1183,6 +1292,7 @@ components:
           additionalProperties: {}
       required:
       - configuration
+      additionalProperties: false
     RequestSettingsRemoteInstallationAddressValidation:
       type: object
       properties:
@@ -1207,6 +1317,7 @@ components:
           nullable: true
       required:
       - address
+      additionalProperties: false
     SettingsRemoteInstallationData:
       type: object
       properties:
@@ -1217,6 +1328,7 @@ components:
           additionalProperties: {}
       required:
       - installation
+      additionalProperties: false
     WorkerEventScheduleResults:
       type: object
       properties:
@@ -1240,6 +1352,7 @@ components:
       - repetition
       - schedule_task
       - schedule_time
+      additionalProperties: false
     SettingsWorkerGroupConfig:
       type: object
       properties:
@@ -1281,6 +1394,7 @@ components:
       - number_of_workers
       - tags
       - worker_event_schedules
+      additionalProperties: false
     WorkerGroupsList:
       type: object
       properties:
@@ -1292,6 +1406,7 @@ components:
             $ref: '#/components/schemas/SettingsWorkerGroupConfig'
       required:
       - worker_groups
+      additionalProperties: false
     RequestDatabaseItemById:
       type: object
       properties:
@@ -1301,6 +1416,7 @@ components:
           example: 1
       required:
       - id
+      additionalProperties: false
     RequestRemoteInstallationLinkConfig:
       type: object
       properties:
@@ -1310,6 +1426,7 @@ components:
           example: 7cd35429-76ab-4a29-8649-8c91236b5f8b
       required:
       - uuid
+      additionalProperties: false
     SettingsRemoteInstallationLinkConfig:
       type: object
       properties:
@@ -1340,6 +1457,7 @@ components:
           example: 4
       required:
       - link_config
+      additionalProperties: false
     LibraryResults:
       type: object
       properties:
@@ -1388,6 +1506,7 @@ components:
       - name
       - path
       - tags
+      additionalProperties: false
     SettingsLibrariesList:
       type: object
       properties:
@@ -1399,6 +1518,7 @@ components:
             $ref: '#/components/schemas/LibraryResults'
       required:
       - libraries
+      additionalProperties: false
     RequestLibraryById:
       type: object
       properties:
@@ -1408,6 +1528,7 @@ components:
           example: 1
       required:
       - id
+      additionalProperties: false
     SettingsLibraryConfigReadAndWrite:
       type: object
       properties:
@@ -1436,6 +1557,7 @@ components:
           additionalProperties: {}
       required:
       - library_config
+      additionalProperties: false
     SettingsLibraryPluginConfigExport:
       type: object
       properties:
@@ -1484,6 +1606,7 @@ components:
           additionalProperties: {}
       required:
       - plugins
+      additionalProperties: false
     SettingsLibraryPluginConfigImport:
       type: object
       properties:
@@ -1503,6 +1626,7 @@ components:
       required:
       - library_id
       - plugins
+      additionalProperties: false
     VersionReadSuccess:
       type: object
       properties:
@@ -1512,6 +1636,7 @@ components:
           example: 1.0.0
       required:
       - version
+      additionalProperties: false
     RequestWorkerById:
       type: object
       properties:
@@ -1520,6 +1645,7 @@ components:
           example: '1'
       required:
       - worker_id
+      additionalProperties: false
     WorkerStatusResults:
       type: object
       properties:
@@ -1610,6 +1736,7 @@ components:
       - start_time
       - subprocess
       - worker_log_tail
+      additionalProperties: false
     WorkerStatusSuccess:
       type: object
       properties:
@@ -1621,6 +1748,7 @@ components:
             $ref: '#/components/schemas/WorkerStatusResults'
       required:
       - workers_status
+      additionalProperties: false
 security:
 - BasicAuth: []
 paths:
@@ -2147,6 +2275,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PendingTasksTableResults'
+        '400':
+          description: Bad request; Check `messages` for any validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '404':
+          description: Bad request; Requested endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+        '405':
+          description: Bad request; Requested method is not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+        '500':
+          description: Internal error; Check `error` for exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+  /pending/test:
+    post:
+      description: Run file test plugins for a path without creating a pending task
+      requestBody:
+        description: Specify path and library to run file tests against.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestPendingTaskTest'
+      responses:
+        '200':
+          description: Successful request; Returns file test results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingTaskTestResult'
         '400':
           description: Bad request; Check `messages` for any validation errors
           content:

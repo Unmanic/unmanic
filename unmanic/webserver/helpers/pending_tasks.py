@@ -30,9 +30,13 @@
 
 """
 import os
-
 from unmanic.libs import task
+from unmanic.libs import filetest
 from unmanic.libs.library import Library
+from unmanic.libs.logs import UnmanicLogging
+
+
+logger = UnmanicLogging.get_logger(name=__name__)
 
 
 def prepare_filtered_pending_tasks_for_table(request_dict):
@@ -305,4 +309,31 @@ def create_task(abspath, library_id=1, library_name=None, task_type='local', pri
         "type":       task_info.get('type'),
         "status":     task_info.get('status'),
         "library_id": task_info.get('library_id'),
+    }
+
+
+def test_path_for_pending_task(abspath, library_id):
+    """
+    Test a file path against library file test plugins without queueing a task.
+
+    :param abspath:
+    :param library_id:
+    :return:
+    """
+    file_tester = filetest.FileTest(library_id)
+    add_file_to_pending_tasks, file_issues, priority_score_modification, decision_plugin = (
+        file_tester.should_file_be_added_to_task_list(abspath)
+    )
+
+    for issue in file_issues:
+        if isinstance(issue, dict):
+            logger.info(issue.get('message'))
+        else:
+            logger.info(issue)
+
+    return {
+        'add_file_to_pending_tasks': add_file_to_pending_tasks,
+        'issues':                   file_issues,
+        'priority_score':           priority_score_modification,
+        'decision_plugin':          decision_plugin,
     }

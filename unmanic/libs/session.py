@@ -664,7 +664,7 @@ class Session(object, metaclass=SingletonType):
                 self.__configure_log_forwarding(session_valid=True)
 
                 # Fetch list of installations if supporter
-                if self.level > 1:
+                if self.level in [2,3,4,5,6,7]:
                     self.__sync_remote_installation_addresses()
                 else:
                     self.logger.info("Skipping remote installation address sync; supporter level too low")

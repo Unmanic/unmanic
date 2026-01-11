@@ -1,0 +1,16 @@
+---
+
+blank_issues_enabled: false
+contact_links:
+  - name: Discord support
+    url: https://streamingtech.co.nz/discord
+    about: Ask questions in Discord.
+  - name: Documentation issues
+    url: https://github.com/Unmanic/unmanic-documentation/issues
+    about: Report documentation issues in the documentation repo.
+  - name: Plugin issues
+    url: https://github.com/Unmanic/unmanic-plugins/issues
+    about: New plugin requests only (Plugin bugs should be opened against the plugin's source repo).
+  - name: Frontend and translations issues
+    url: https://github.com/Unmanic/unmanic-frontend/issues
+    about: Report frontend and translations issues in the frontend repo.

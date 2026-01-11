@@ -1,0 +1,56 @@
+---
+name: Stale Issues / PRs
+
+on:
+  schedule:
+    - cron: "00 00 * * *"
+
+jobs:
+  stale:
+    name: Check Stale Issues / PRs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stale
+        uses: actions/stale@v5
+        with:
+          close-issue-message: >
+            This issue was closed because it has been stalled for 5 days with no activity.
+          close-pr-message: >
+            This PR was closed because it has been stalled for 10 days with no activity.
+          days-before-stale: 60
+          days-before-close: 10
+          exempt-all-assignees: true
+          exempt-issue-labels: "added,fixed,type:enhancement,status:awaiting-triage,status:in-progress"
+          exempt-pr-labels: "type:dependencies,status:in-progress,status:in-review"
+          stale-issue-label: "stale"
+          stale-issue-message: >
+            This issue is stale because it has been open for 30 days with no activity.
+            Comment or remove the stale label, otherwise this will be closed in 5 days.
+          stale-pr-label: "stale"
+          stale-pr-message: >
+            This PR is stale because it has been open for 60 days with no activity.
+            Comment or remove the stale label, otherwise this will be closed in 10 days.
+
+      - name: Plugin Issues
+        uses: actions/stale@v5
+        with:
+          close-issue-message: >
+            This issue was related to a plugin and not the core Unmanic project.
+            Please open issues against the plugin's source repo which can be found in
+            https://github.com/orgs/Unmanic/repositories and not against one of the core projects.
+          days-before-stale: 0
+          days-before-close: 0
+          only-issue-labels: "invalid:plugin"
+          stale-issue-label: "invalid:plugin"
+
+      - name: Documentation Issues
+        uses: actions/stale@v5
+        with:
+          close-issue-message: >
+            This issue was related to documentation and not the core Unmanic project.
+            Please open issues against the documentation repo at
+            https://github.com/Unmanic/unmanic-documentation and not against one of the core projects.
+          days-before-stale: 0
+          days-before-close: 0
+          only-issue-labels: "invalid:documentation"
+          stale-issue-label: "invalid:documentation"

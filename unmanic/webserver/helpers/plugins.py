@@ -259,6 +259,10 @@ def get_plugin_settings(plugin_id: str, library_id=None):
                 "checkbox",
                 "slider",
                 "browse_directory",
+                "section_header",
+                "section_subheader",
+                "section_details",
+                "section_admonition",
             ]
             if form_input['input_type'] not in supported_input_types:
                 form_input['input_type'] = "text"
@@ -435,6 +439,11 @@ def update_plugin_settings(plugin_id, settings, library_id=None):
         key = s.get('key')
         key_id = s.get('key_id')
         input_type = s.get('input_type')
+
+        # Skip section headers
+        if input_type in ['section_header', 'section_subheader', 'section_details', 'section_admonition']:
+            continue
+
         # Check if setting is in params
         value = s.get('value')
         # Check if value should be boolean

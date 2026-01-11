@@ -48,7 +48,7 @@ class PluginAPI(PluginType):
         uri                             - The request uri.
         query                           - The request query.
         arguments                       - A dictionary of GET arguments received.
-        body                            - A dictionary of body arguments received.
+        body                            - The raw request body (bytes).
 
     :param data:
     :return:
@@ -88,7 +88,7 @@ class PluginAPI(PluginType):
         },
         "body":         {
             "required": False,
-            "type":     dict,
+            "type":     bytes,
         },
     }
     test_data = {
@@ -97,6 +97,8 @@ class PluginAPI(PluginType):
         'status':       200,
         'method':       "GET",
         'path':         "/webhook",
+        'uri':          "/unmanic/plugin_api/test_plugin/webhook?param=true&foo=ba",
+        'query':        "param=true&foo=ba",
         'arguments':    {'param': [b'true'], 'foo': [b'ba']},
-        'body':         {'param': [b'true'], 'foo': [b'ba']},
+        'body':         b'{"param": "true", "foo": "ba"}',
     }

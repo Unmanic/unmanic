@@ -88,6 +88,7 @@ class Config(object, metaclass=SingletonType):
         self.run_full_scan_on_start = False
         self.clear_pending_tasks_on_restart = True
         self.auto_manage_completed_tasks = False
+        self.compress_completed_tasks_logs = False
         self.max_age_of_completed_tasks = 91
         self.always_keep_failed_tasks = True
 
@@ -449,6 +450,14 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.max_age_of_completed_tasks
+
+    def get_compress_completed_tasks_logs(self):
+        """
+        Get setting - compress_completed_tasks_logs
+
+        :return:
+        """
+        return self.compress_completed_tasks_logs
 
     def get_always_keep_failed_tasks(self):
         """

@@ -228,6 +228,27 @@ class History(object):
             # No historic entries exist yet
             self.logger.warning("No historic tasks exist yet.")
 
+    def delete_historic_task_command_logs(self, id_list=None):
+        """
+        Deletes command logs for a given list of historic task IDs.
+
+        :param id_list:
+        :return:
+        """
+        # Prevent running if no list of IDs was given
+        if not id_list:
+            return False
+
+        try:
+            query = CompletedTasksCommandLogs.delete().where(
+                CompletedTasksCommandLogs.completedtask_id.in_(id_list)
+            )
+            query.execute()
+            return True
+        except Exception:
+            self.logger.exception("An error occurred while deleting historic task command logs.")
+            return False
+
     def save_task_history(self, task_data):
         """
         Record a task's data and state to the database.

@@ -170,6 +170,7 @@ class ScheduledTasksManager(threading.Thread):
 
         self.logger.info("Running completed task cleanup for this installation")
         max_age_in_days = settings.get_max_age_of_completed_tasks()
+        compress_completed_tasks_logs = settings.get_compress_completed_tasks_logs()
         date_x_days_ago = datetime.now() - timedelta(days=int(max_age_in_days))
         before_time = date_x_days_ago.timestamp()
 
@@ -189,6 +190,16 @@ class ScheduledTasksManager(threading.Thread):
 
         if count == 0:
             self.logger.info("Found no %s completed tasks older than %s days", inc_status, max_age_in_days)
+            return
+
+        if compress_completed_tasks_logs:
+            self.logger.info("Found %s %s completed tasks older than %s days that should be compressed", count,
+                             inc_status, max_age_in_days)
+            task_ids = [historic_task.id for historic_task in results]
+            if not history_logging.delete_historic_task_command_logs(task_ids):
+                self.logger.error("Failed to compress %s %s completed tasks", count, inc_status)
+                return
+            self.logger.info("Compressed %s %s completed tasks", count, inc_status)
             return
 
         self.logger.info("Found %s %s completed tasks older than %s days that should be removed", count, inc_status,

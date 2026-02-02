@@ -1037,6 +1037,11 @@ class PluginReposMetadataResultsSchema(BaseSchema):
         description="The plugin repo URL path",
         example="https://raw.githubusercontent.com/Josh5/unmanic-plugins/repo/repo.json",
     )
+    repo_html_url = fields.Str(
+        required=False,
+        description="The plugin repo HTML URL (e.g. GitHub repository page)",
+        example="https://github.com/Josh5/unmanic-plugins",
+    )
 
 
 class RequestUpdatePluginReposListSchema(BaseSchema):

@@ -1171,6 +1171,10 @@ components:
           type: string
           description: The plugin repo URL path
           example: https://raw.githubusercontent.com/Josh5/unmanic-plugins/repo/repo.json
+        repo_html_url:
+          type: string
+          description: The plugin repo HTML URL (e.g. GitHub repository page)
+          example: https://github.com/Josh5/unmanic-plugins
       required:
       - icon
       - id
@@ -3132,6 +3136,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+  /plugins/repos/community:
+    get:
+      description: Returns a list of community plugin repos.
+      responses:
+        '200':
+          description: 'Success: Returns a list of community repos.'
+        '429':
+          description: Rate limit exceeded.
+        '401':
+          description: Unauthorized.
+        '403':
+          description: Forbidden.
+        '500':
+          description: Internal error; Check `error` for exception
   /plugins/repos/reload:
     post:
       description: Reload plugin repositories remote data.

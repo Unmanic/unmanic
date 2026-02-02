@@ -138,10 +138,10 @@ class PluginsHandler(object, metaclass=SingletonType):
         uuid = session.get_installation_uuid()
         level = session.get_supporter_level()
         repo = base64.b64encode(repo_path.encode('utf-8')).decode('utf-8')
-        api_path = f'plugin_repos/get_repo_data/uuid/{uuid}/level/{level}/repo/{repo}'
+        api_path = f'plugin_repos/repo_data/uuid/{uuid}/level/{level}/repo/{repo}'
         data, status_code = session.api_get(
             'unmanic-api',
-            1,
+            2,
             api_path,
         )
         if status_code == 401:
@@ -150,7 +150,7 @@ class PluginsHandler(object, metaclass=SingletonType):
             session.register_unmanic()
             data, status_code = session.api_get(
                 'unmanic-api',
-                1,
+                2,
                 api_path,
             )
         if status_code >= 500:
@@ -229,32 +229,42 @@ class PluginsHandler(object, metaclass=SingletonType):
             # Get URLs for plugin downloads
             repo_meta = repo_data.get("repo")
             repo_data_directory = repo_meta.get("repo_data_directory")
-            if not repo_data_directory:
-                return return_list
-            repo_data_directory = repo_data_directory.rstrip('/')
-            # if not repo_data_directory.endswith("/"):
-            #     repo_data_directory = repo_data_directory + "/"
+            repo_name = repo_meta.get('name') or repo_meta.get('repo_name')
 
             # Loop over
             for plugin in repo_data.get("plugins", []):
                 # Only show plugins that are compatible with this version
                 # Plugins will require a 'compatibility' entry in their info.json file.
                 #   This must list the plugin handler versions that it is compatible with
-                if self.version not in plugin.get('compatibility', []):
+                compatibility = plugin.get('compatibility', plugin.get('unmanic_compatibility', []))
+                if self.version not in compatibility:
                     continue
 
-                plugin_package_url = "{0}/{1}/{1}-{2}.zip".format(repo_data_directory, plugin.get('id'), plugin.get('version'))
-                plugin_changelog_url = "{0}/{1}/changelog.md".format(repo_data_directory, plugin.get('id'))
+                if repo_data_directory:
+                    repo_data_directory = repo_data_directory.rstrip('/')
+                    plugin_package_url = "{0}/{1}/{1}-{2}.zip".format(
+                        repo_data_directory,
+                        plugin.get('id'),
+                        plugin.get('version'),
+                    )
+                    plugin_changelog_url = "{0}/{1}/changelog.md".format(
+                        repo_data_directory,
+                        plugin.get('id'),
+                    )
+                else:
+                    plugin_package_url = plugin.get('plugin_download_url', '')
+                    plugin_changelog_url = ''
 
                 # Check if plugin is already installed:
                 plugin_status = {
                     'installed': False,
                 }
-                plugin_info = self.get_plugin_info(plugin.get('id'))
+                plugin_id = plugin.get('id', plugin.get('plugin_id'))
+                plugin_info = self.get_plugin_info(plugin_id)
                 if plugin_info:
                     local_version = plugin_info.get('version')
                     # Parse the currently installed version number and check if it matches
-                    remote_version = plugin.get('version')
+                    remote_version = plugin.get('version', plugin.get('plugin_version'))
                     if local_version == remote_version:
                         plugin_status = {
                             'installed':        True,
@@ -262,7 +272,7 @@ class PluginsHandler(object, metaclass=SingletonType):
                         }
                     else:
                         # There is an update available
-                        self.flag_plugin_for_update_by_id(plugin.get("id"))
+                        self.flag_plugin_for_update_by_id(plugin_id)
                         plugin_status = {
                             'installed':        True,
                             'update_available': True,
@@ -270,17 +280,17 @@ class PluginsHandler(object, metaclass=SingletonType):
 
                 return_list.append(
                     {
-                        'plugin_id':     plugin.get('id'),
-                        'name':          plugin.get('name'),
-                        'author':        plugin.get('author'),
-                        'description':   plugin.get('description'),
-                        'version':       plugin.get('version'),
-                        'icon':          plugin.get('icon', ''),
+                        'plugin_id':     plugin_id,
+                        'name':          plugin.get('name', plugin.get('plugin_name')),
+                        'author':        plugin.get('author', plugin.get('plugin_author')),
+                        'description':   plugin.get('description', plugin.get('plugin_description')),
+                        'version':       plugin.get('version', plugin.get('plugin_version')),
+                        'icon':          plugin.get('icon', plugin.get('plugin_icon_url', '')),
                         'tags':          plugin.get('tags'),
                         'status':        plugin_status,
                         'package_url':   plugin_package_url,
                         'changelog_url': plugin_changelog_url,
-                        'repo_name':     repo_meta.get('name'),
+                        'repo_name':     repo_name,
                     }
                 )
         return return_list
@@ -451,7 +461,8 @@ class PluginsHandler(object, metaclass=SingletonType):
         # Fetch remote zip file
         destination = self.get_plugin_download_cache_path(plugin.get("plugin_id"), plugin.get("version"))
         self.logger.debug("Downloading plugin '%s' to '%s'", plugin.get("package_url"), destination)
-        with requests.get(plugin.get("package_url"), stream=True, allow_redirects=True) as r:
+        session = Session()
+        with session.requests_session.get(plugin.get("package_url"), stream=True, allow_redirects=True) as r:
             r.raise_for_status()
             with open(destination, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=128):

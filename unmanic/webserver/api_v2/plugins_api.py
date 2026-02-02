@@ -30,7 +30,12 @@
 
 """
 
+import json
+import os
+import time
+
 import tornado.log
+from unmanic import config as unmanic_config
 from unmanic.libs import session
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
@@ -124,6 +129,11 @@ class ApiPluginsHandler(BaseApiHandler):
             "path_pattern":      r"/plugins/repos/list",
             "supported_methods": ["GET"],
             "call_method":       "get_repo_list",
+        },
+        {
+            "path_pattern":      r"/plugins/repos/community",
+            "supported_methods": ["GET"],
+            "call_method":       "get_community_repos",
         },
         {
             "path_pattern":      r"/plugins/repos/reload",
@@ -1111,6 +1121,70 @@ class ApiPluginsHandler(BaseApiHandler):
                 return
 
             self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    async def get_community_repos(self):
+        """
+        Plugins - Read community plugin repos from the Unmanic API
+        ---
+        description: Returns a list of community plugin repos.
+        responses:
+            200:
+                description: 'Success: Returns a list of community repos.'
+            429:
+                description: 'Rate limit exceeded.'
+            401:
+                description: 'Unauthorized.'
+            403:
+                description: 'Forbidden.'
+            500:
+                description: Internal error; Check `error` for exception
+        """
+        try:
+            cache_ttl_seconds = 2 * 60 * 60
+            cache_root = unmanic_config.Config().get_plugins_path()
+            os.makedirs(cache_root, exist_ok=True)
+            cache_path = os.path.join(cache_root, 'community-repos-cache.json')
+
+            if not self.settings.get("serve_traceback"):
+                if os.path.exists(cache_path):
+                    try:
+                        with open(cache_path) as f:
+                            cached = json.load(f)
+                        cached_at = cached.get('cached_at', 0)
+                        cached_response = cached.get('response')
+                        repos = cached_response.get('repos') if cached_response else None
+                        if repos:
+                            # Validate cached schema (repo_* keys) to avoid serving stale/old-format data.
+                            if not isinstance(repos, list) or not repos or not repos[0].get('repo_id'):
+                                repos = None
+                        if cached_response and repos and (time.time() - cached_at) < cache_ttl_seconds:
+                            self.write_success(cached_response)
+                            return
+                    except Exception:
+                        tornado.log.app_log.warning("Failed to read community repos cache", exc_info=True)
+
+            uuid = self.session.get_installation_uuid()
+            level = self.session.get_supporter_level()
+            api_path = f'plugin_repos/community_forks/uuid/{uuid}/level/{level}'
+            response, status_code = self.session.api_get('unmanic-api', 2, api_path)
+            if status_code != 200:
+                self.set_status(status_code)
+                self.finish(response)
+                return
+            if not self.settings.get("serve_traceback"):
+                try:
+                    with open(cache_path, 'w') as f:
+                        json.dump({'cached_at': time.time(), 'response': response}, f)
+                except Exception:
+                    tornado.log.app_log.warning("Failed to write community repos cache", exc_info=True)
+            self.write_success(response)
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

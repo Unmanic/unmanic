@@ -38,7 +38,7 @@ PROJECT_BASE=$(cd "$SCRIPT_DIR/.." && pwd)
 PUID=$(id -u)
 PGID=$(id -g)
 DEBUG="false"
-USE_TEST_SUPPORT_API="false"
+USE_CUSTOM_SUPPORT_API=""
 CONFIG_PREFIX=""
 CACHE_PATH="$PROJECT_BASE/dev_environment/cache"
 EXT_PORT=8888
@@ -62,7 +62,7 @@ Usage: $(basename "$0") [OPTIONS] [COMMAND] [COMMAND_ARGS...]
 Options:
     --help, -h                  Show this help message and exit
     --debug                     Enable debug mode inside container
-    --use-test-support-api      Set USE_TEST_SUPPORT_API=true inside container
+    --support-api=<dev|test>    Set USE_CUSTOM_SUPPORT_API inside container
     --hw=<nvidia|vaapi>         Enable hardware acceleration
     --cpus=<value>              Limit container CPUs (e.g. "2.5")
     --memory=<value>            Limit container memory (e.g. "4g")
@@ -95,8 +95,8 @@ while [[ $# -gt 0 ]]; do
     --debug)
         DEBUG=true
         ;;
-    --use-test-support-api)
-        USE_TEST_SUPPORT_API=true
+    --support-api=*)
+        USE_CUSTOM_SUPPORT_API="${1#*=}"
         ;;
     --hw=*)
         HW="${1#*=}"
@@ -164,6 +164,17 @@ if [[ -n $HW ]]; then
     esac
 fi
 
+if [[ -n $USE_CUSTOM_SUPPORT_API ]]; then
+    case $USE_CUSTOM_SUPPORT_API in
+    dev | test)
+        ;;
+    *)
+        echo "Unsupported --support-api=$USE_CUSTOM_SUPPORT_API (use dev or test)" >&2
+        exit 1
+        ;;
+    esac
+fi
+
 # detect if we need sudo
 if docker ps >/dev/null 2>&1; then
     DOCKER_CMD="docker"
@@ -176,7 +187,7 @@ if [[ -n $CONFIG_PREFIX ]]; then
     CONFIG_PATH="$PROJECT_BASE/dev_environment/config-$CONFIG_PREFIX"
 fi
 IMAGE_ID="$($DOCKER_CMD image inspect -f '{{.Id}}' "josh5/unmanic:$IMAGE_TAG" 2>/dev/null || true)"
-config_string="debug=$DEBUG;use_test_support_api=$USE_TEST_SUPPORT_API;hw=${HW:-};cpus=$CPUS;memory=$MEMORY;cache=$CACHE_PATH;config_path=$CONFIG_PATH;port=$EXT_PORT;tag=$IMAGE_TAG;image_id=$IMAGE_ID;puid=$PUID;pgid=$PGID"
+config_string="debug=$DEBUG;use_custom_support_api=$USE_CUSTOM_SUPPORT_API;hw=${HW:-};cpus=$CPUS;memory=$MEMORY;cache=$CACHE_PATH;config_path=$CONFIG_PATH;port=$EXT_PORT;tag=$IMAGE_TAG;image_id=$IMAGE_ID;puid=$PUID;pgid=$PGID"
 if [[ -n $RUN_COMMAND ]]; then
     config_string="${config_string};run_cmd=$RUN_COMMAND"
 fi
@@ -186,14 +197,15 @@ fi
 config_hash=$(printf '%s' "$config_string" | sha256sum | awk '{print $1}')
 
 start_container() {
-    $DOCKER_CMD run --rm -d \
+    local container_id
+    container_id=$($DOCKER_CMD run --rm -d \
         --name "$CONTAINER_NAME" \
         --label "$CONFIG_LABEL=$config_hash" \
         -e TZ=Pacific/Auckland \
         -e PUID="$PUID" \
         -e PGID="$PGID" \
         -e DEBUGGING="$DEBUG" \
-        -e USE_TEST_SUPPORT_API="$USE_TEST_SUPPORT_API" \
+        -e USE_CUSTOM_SUPPORT_API="$USE_CUSTOM_SUPPORT_API" \
         -e UNMANIC_RUN_COMMAND="$RUN_COMMAND" \
         -e PROFILE_UNMANIC="$ENABLE_PROFILING" \
         -p "$EXT_PORT":8888 \
@@ -204,7 +216,42 @@ start_container() {
         -v "$CACHE_PATH/remote_library":/tmp/unmanic/remote_library:Z \
         -v /run/user/"$PUID":/run/user:ro,Z \
         "${DOCKER_PARAMS[@]}" \
-        josh5/unmanic:"$IMAGE_TAG"
+        josh5/unmanic:"$IMAGE_TAG")
+    echo "Started container: ${container_id}"
+}
+
+print_access_info() {
+    local mapped_port
+    mapped_port=$($DOCKER_CMD port "$CONTAINER_NAME" 8888/tcp 2>/dev/null | head -n 1 | awk -F: '{print $NF}')
+    if [[ -z $mapped_port ]]; then
+        mapped_port="$EXT_PORT"
+    fi
+    echo "Container name: $CONTAINER_NAME"
+    echo "Access Unmanic at http://localhost:${mapped_port}"
+}
+
+ensure_dist_artifacts() {
+    local venv_python
+    if [[ -d "$PROJECT_BASE/dist" ]] && ls "$PROJECT_BASE"/dist/* >/dev/null 2>&1; then
+        return 0
+    fi
+
+    echo "--- Building Unmanic package artifacts (dist/) ---"
+    venv_python="$PROJECT_BASE/venv/bin/python3"
+    if [[ ! -x "$venv_python" ]]; then
+        echo "--- Creating venv at $PROJECT_BASE/venv ---"
+        python3 -m venv "$PROJECT_BASE/venv"
+    fi
+
+    echo "--- Ensuring venv dependencies ---"
+    "$venv_python" -m pip install -U pip setuptools wheel
+    "$venv_python" -m pip install -U -r "$PROJECT_BASE/requirements.txt" -r "$PROJECT_BASE/requirements-dev.txt"
+
+    rm -rf "$PROJECT_BASE/build"
+    rm -f "$PROJECT_BASE"/dist/unmanic-*
+    git submodule update --init --recursive
+    "$venv_python" -m build --no-isolation --skip-dependency-check --wheel
+    "$venv_python" -m build --no-isolation --skip-dependency-check --sdist
 }
 
 container_exists() {
@@ -241,12 +288,14 @@ run)
     else
         start_container
     fi
+    print_access_info
     ;;
 build)
-    $DOCKER_CMD build -f "$PROJECT_BASE/docker/Dockerfile" -t josh5/unmanic:staging "$PROJECT_BASE"
+    ensure_dist_artifacts
+    $DOCKER_CMD build -f "$PROJECT_BASE/docker/Dockerfile" -t josh5/unmanic:"$IMAGE_TAG" "$PROJECT_BASE"
     ;;
 pull)
-    $DOCKER_CMD pull josh5/unmanic:staging
+    $DOCKER_CMD pull josh5/unmanic:"$IMAGE_TAG"
     ;;
 stop)
     if container_exists; then

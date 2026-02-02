@@ -545,9 +545,13 @@ def prepare_plugin_repos_list():
         repo_id = plugins.get_plugin_repo_id(repo_path)
         repo_data = plugins.read_repo_data(repo_id)
         repo_metadata = repo_data.get('repo', {})
-        repo['id'] = repo_metadata.get('id')
-        repo['icon'] = repo_metadata.get('icon')
-        repo['name'] = repo_metadata.get('name')
+        repo['id'] = repo_metadata.get('id') or repo_metadata.get('repo_id') or ''
+        repo['icon'] = repo_metadata.get('icon') or repo_metadata.get('repo_icon_url') or ''
+        repo['name'] = repo_metadata.get('name') or repo_metadata.get('repo_name') or ''
+        repo['repo_html_url'] = repo_metadata.get('repo_html_url') or ''
+        if not repo['name']:
+            logger.warning("Repo metadata missing name for repo path '%s'", repo.get('path'))
+            repo['name'] = "Unknown Repo"
 
     return return_repos
 

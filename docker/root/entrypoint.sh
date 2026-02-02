@@ -111,9 +111,14 @@ main() {
         if [[ "${DEBUGGING:-}" == 'true' ]]; then
             unmanic_params+=(--dev)
         fi
-        if [[ "${USE_TEST_SUPPORT_API:-}" == 'true' ]]; then
+        case "${USE_CUSTOM_SUPPORT_API:-}" in
+        test)
             unmanic_params+=(--dev-api=https://support-api.test.streamingtech.co.nz)
-        fi
+            ;;
+        dev)
+            unmanic_params+=(--dev-api=http://api.unmanic.localhost)
+            ;;
+        esac
         unmanic_cmd=("$1" "${unmanic_params[@]}" "${@:2}")
         if [[ -n "${UNMANIC_RUN_COMMAND:-}" ]]; then
             unmanic_cmd_str=$(printf '%q ' "${unmanic_cmd[@]}")

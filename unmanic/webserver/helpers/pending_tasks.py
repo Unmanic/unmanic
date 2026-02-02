@@ -112,6 +112,7 @@ def prepare_filtered_pending_tasks(params, include_library=False):
     length = params.get('length', 0)
 
     search_value = params.get('search_value', '')
+    library_ids = params.get('library_ids') or []
 
     order = params.get('order', {
         "column": 'priority',
@@ -123,12 +124,23 @@ def prepare_filtered_pending_tasks(params, include_library=False):
     # Get total count
     records_total_count = task_handler.get_total_task_list_count()
     # Get quantity after filters (without pagination)
-    records_filtered_count = task_handler.get_task_list_filtered_and_sorted(order=order, start=0, length=0,
-                                                                            search_value=search_value,
-                                                                            status='pending').count()
+    records_filtered_count = task_handler.get_task_list_filtered_and_sorted(
+        order=order,
+        start=0,
+        length=0,
+        search_value=search_value,
+        status='pending',
+        library_ids=library_ids
+    ).count()
     # Get filtered/sorted results
-    pending_task_results = task_handler.get_task_list_filtered_and_sorted(order=order, start=start, length=length,
-                                                                          search_value=search_value, status='pending')
+    pending_task_results = task_handler.get_task_list_filtered_and_sorted(
+        order=order,
+        start=start,
+        length=length,
+        search_value=search_value,
+        status='pending',
+        library_ids=library_ids
+    )
 
     # Build return data
     return_data = {
@@ -156,6 +168,41 @@ def prepare_filtered_pending_tasks(params, include_library=False):
 
     # Return results
     return return_data
+
+
+def get_filtered_pending_task_ids(params, exclude_ids=None):
+    """
+    Returns a list of pending task IDs filtered according to the provided request.
+
+    :param params:
+    :param exclude_ids:
+    :return:
+    """
+    search_value = params.get('search_value', '')
+    library_ids = params.get('library_ids') or []
+
+    exclude_set = set(exclude_ids or [])
+
+    task_handler = task.Task()
+    query = task_handler.get_task_list_filtered_and_sorted(
+        order=None,
+        start=0,
+        length=0,
+        search_value=search_value,
+        status='pending',
+        library_ids=library_ids
+    )
+
+    id_list = []
+    for record in query:
+        task_id = record.get('id')
+        if task_id is None:
+            continue
+        if task_id in exclude_set:
+            continue
+        id_list.append(task_id)
+
+    return id_list
 
 
 def remove_pending_tasks(pending_task_ids):

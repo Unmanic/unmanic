@@ -337,7 +337,7 @@ class Task(object):
         return task_query.count()
 
     def get_task_list_filtered_and_sorted(self, order=None, start=0, length=None, search_value=None, id_list=None,
-                                          status=None, task_type=None):
+                                          status=None, task_type=None, library_ids=None):
         try:
             query = (Tasks.select())
 
@@ -352,6 +352,9 @@ class Task(object):
 
             if task_type:
                 query = query.where(Tasks.type.in_([task_type]))
+
+            if library_ids:
+                query = query.where(Tasks.library_id.in_(library_ids))
 
             # Get order by
             order_by = None

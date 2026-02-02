@@ -503,6 +503,54 @@ class RequestPendingTableDataSchema(RequestTableDataSchema):
         example="priority",
         load_default="priority",
     )
+    library_ids = fields.List(
+        cls_or_instance=fields.Int,
+        required=False,
+        description="Filter pending tasks by library IDs",
+        example=[1, 3],
+        load_default=[],
+        validate=validate.Length(min=0),
+    )
+
+
+class RequestPendingTasksBulkActionSchema(BaseSchema):
+    """Schema for bulk actions on pending tasks"""
+
+    selection_mode = fields.Str(
+        required=False,
+        load_default="explicit",
+        validate=validate.OneOf(["explicit", "all_filtered"]),
+        example="explicit",
+    )
+    id_list = fields.List(
+        cls_or_instance=fields.Int,
+        required=False,
+        description="List of table IDs",
+        example=[],
+        validate=validate.Length(min=1),
+    )
+    exclude_ids = fields.List(
+        cls_or_instance=fields.Int,
+        required=False,
+        description="List of table IDs to exclude when using a filtered selection",
+        example=[],
+        load_default=[],
+        validate=validate.Length(min=0),
+    )
+    search_value = fields.Str(
+        required=False,
+        description="String to filter search results by",
+        example="items with this text in the value",
+        load_default="",
+    )
+    library_ids = fields.List(
+        cls_or_instance=fields.Int,
+        required=False,
+        description="Filter pending tasks by library IDs",
+        example=[1, 3],
+        load_default=[],
+        validate=validate.Length(min=0),
+    )
 
 
 class PendingTasksTableResultsSchema(BaseSchema):
@@ -562,7 +610,7 @@ class PendingTasksSchema(TableRecordsSuccessSchema):
     )
 
 
-class RequestPendingTasksReorderSchema(RequestTableUpdateByIdList):
+class RequestPendingTasksReorderSchema(RequestPendingTasksBulkActionSchema):
     """Schema for moving pending items to top or bottom of table by ID"""
 
     position = fields.Str(

@@ -38,8 +38,8 @@ from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
 from unmanic.webserver.api_v2.schema.schemas import PendingTasksTableResultsSchema, RequestPendingTaskCreateSchema, \
     RequestPendingTasksLibraryUpdateSchema, RequestPendingTasksReorderSchema, PendingTasksSchema, \
-    RequestPendingTableDataSchema, RequestTableUpdateByIdList, TaskDownloadLinkSchema, RequestPendingTaskTestSchema, \
-    PendingTaskTestResultSchema
+    RequestPendingTableDataSchema, RequestPendingTasksBulkActionSchema, TaskDownloadLinkSchema, \
+    RequestPendingTaskTestSchema, PendingTaskTestResultSchema
 from unmanic.webserver.downloads import DownloadsLinks
 from unmanic.webserver.helpers import pending_tasks
 
@@ -165,6 +165,7 @@ class ApiPendingHandler(BaseApiHandler):
                 'start':        json_request.get('start', '0'),
                 'length':       json_request.get('length', '10'),
                 'search_value': json_request.get('search_value', ''),
+                'library_ids':  json_request.get('library_ids', []),
                 'order':        {
                     "column": json_request.get('order_by', 'priority'),
                     "dir":    json_request.get('order_direction', 'desc'),
@@ -200,7 +201,7 @@ class ApiPendingHandler(BaseApiHandler):
             content:
                 application/json:
                     schema:
-                        RequestTableUpdateByIdList
+                        RequestPendingTasksBulkActionSchema
         responses:
             200:
                 description: 'Successful request; Returns success status'
@@ -234,9 +235,24 @@ class ApiPendingHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            json_request = self.read_json_request(RequestTableUpdateByIdList())
+            json_request = self.read_json_request(RequestPendingTasksBulkActionSchema())
+            selection_mode = json_request.get('selection_mode', 'explicit')
+            if selection_mode == 'all_filtered':
+                filter_params = {
+                    'search_value': json_request.get('search_value'),
+                    'library_ids':  json_request.get('library_ids'),
+                }
+                exclude_ids = json_request.get('exclude_ids', [])
+                id_list = pending_tasks.get_filtered_pending_task_ids(filter_params, exclude_ids=exclude_ids)
+            else:
+                id_list = json_request.get('id_list', [])
 
-            if not pending_tasks.remove_pending_tasks(json_request.get('id_list', [])):
+            if not id_list:
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="No pending tasks selected")
+                self.write_error()
+                return
+
+            if not pending_tasks.remove_pending_tasks(id_list):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to delete the pending tasks by their IDs")
                 self.write_error()
                 return
@@ -353,8 +369,23 @@ class ApiPendingHandler(BaseApiHandler):
         """
         try:
             json_request = self.read_json_request(RequestPendingTasksReorderSchema())
+            selection_mode = json_request.get('selection_mode', 'explicit')
+            if selection_mode == 'all_filtered':
+                filter_params = {
+                    'search_value': json_request.get('search_value'),
+                    'library_ids':  json_request.get('library_ids'),
+                }
+                exclude_ids = json_request.get('exclude_ids', [])
+                id_list = pending_tasks.get_filtered_pending_task_ids(filter_params, exclude_ids=exclude_ids)
+            else:
+                id_list = json_request.get('id_list', [])
 
-            if not pending_tasks.reorder_pending_tasks(json_request.get('id_list', []), json_request.get('position', 'top')):
+            if not id_list:
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="No pending tasks selected")
+                self.write_error()
+                return
+
+            if not pending_tasks.reorder_pending_tasks(id_list, json_request.get('position', 'top')):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to save new order")
                 self.write_error()
                 return

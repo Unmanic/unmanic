@@ -383,7 +383,57 @@ class CompletedTasksLogSchema(BaseSchema):
     )
 
 
-class RequestAddCompletedToPendingTasksSchema(RequestTableUpdateByIdList):
+class RequestCompletedTasksBulkActionSchema(BaseSchema):
+    """Schema for bulk actions on completed tasks"""
+
+    selection_mode = fields.Str(
+        required=False,
+        load_default="explicit",
+        validate=validate.OneOf(["explicit", "all_filtered"]),
+        example="explicit",
+    )
+    id_list = fields.List(
+        cls_or_instance=fields.Int,
+        required=False,
+        description="List of table IDs",
+        example=[],
+        validate=validate.Length(min=1),
+    )
+    exclude_ids = fields.List(
+        cls_or_instance=fields.Int,
+        required=False,
+        description="List of table IDs to exclude when using a filtered selection",
+        example=[],
+        load_default=[],
+        validate=validate.Length(min=0),
+    )
+    search_value = fields.Str(
+        required=False,
+        description="String to filter search results by",
+        example="items with this text in the value",
+        load_default="",
+    )
+    status = fields.Str(
+        required=False,
+        description="Filter on the status",
+        example="all",
+        load_default="all",
+    )
+    after = fields.DateTime(
+        required=False,
+        description="Filter entries since datetime",
+        example="2022-04-07 01:45",
+        allow_none=True,
+    )
+    before = fields.DateTime(
+        required=False,
+        description="Filter entries prior to datetime",
+        example="2022-04-07 01:55",
+        allow_none=True,
+    )
+
+
+class RequestAddCompletedToPendingTasksSchema(RequestCompletedTasksBulkActionSchema):
     """Schema for adding a completed task to the pending task queue"""
 
     library_id = fields.Int(

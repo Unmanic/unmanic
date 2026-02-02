@@ -39,7 +39,7 @@ from unmanic.webserver.api_v2.base_api_handler import BaseApiError, BaseApiHandl
 from unmanic.webserver.api_v2.schema.schemas import CompletedTasksLogRequestSchema, CompletedTasksLogSchema, \
     CompletedTasksSchema, \
     RequestHistoryTableDataSchema, \
-    RequestAddCompletedToPendingTasksSchema, RequestTableUpdateByIdList
+    RequestAddCompletedToPendingTasksSchema, RequestCompletedTasksBulkActionSchema
 from unmanic.webserver.helpers import completed_tasks
 
 
@@ -204,9 +204,26 @@ class ApiHistoryHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            json_request = self.read_json_request(RequestTableUpdateByIdList())
+            json_request = self.read_json_request(RequestCompletedTasksBulkActionSchema())
+            selection_mode = json_request.get('selection_mode', 'explicit')
+            if selection_mode == 'all_filtered':
+                filter_params = {
+                    'search_value': json_request.get('search_value'),
+                    'status':       json_request.get('status'),
+                    'after':        json_request.get('after'),
+                    'before':       json_request.get('before'),
+                }
+                exclude_ids = json_request.get('exclude_ids', [])
+                id_list = completed_tasks.get_filtered_completed_task_ids(filter_params, exclude_ids=exclude_ids)
+            else:
+                id_list = json_request.get('id_list', [])
 
-            if not completed_tasks.remove_completed_tasks(json_request.get('id_list', [])):
+            if not id_list:
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="No completed tasks selected")
+                self.write_error()
+                return
+
+            if not completed_tasks.remove_completed_tasks(id_list):
                 self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to delete the completed tasks by their IDs")
                 self.write_error()
                 return
@@ -266,8 +283,24 @@ class ApiHistoryHandler(BaseApiHandler):
         """
         try:
             json_request = self.read_json_request(RequestAddCompletedToPendingTasksSchema())
-            id_list = json_request.get('id_list', [])
+            selection_mode = json_request.get('selection_mode', 'explicit')
+            if selection_mode == 'all_filtered':
+                filter_params = {
+                    'search_value': json_request.get('search_value'),
+                    'status':       json_request.get('status'),
+                    'after':        json_request.get('after'),
+                    'before':       json_request.get('before'),
+                }
+                exclude_ids = json_request.get('exclude_ids', [])
+                id_list = completed_tasks.get_filtered_completed_task_ids(filter_params, exclude_ids=exclude_ids)
+            else:
+                id_list = json_request.get('id_list', [])
             library_id = json_request.get('library_id')
+
+            if not id_list:
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="No completed tasks selected")
+                self.write_error()
+                return
 
             errors = completed_tasks.add_historic_tasks_to_pending_tasks_list(id_list, library_id=library_id)
             if errors:

@@ -371,6 +371,15 @@
             "RequestAddCompletedToPendingTasks": {
                 "type": "object",
                 "properties": {
+                    "selection_mode": {
+                        "type": "string",
+                        "default": "explicit",
+                        "enum": [
+                            "explicit",
+                            "all_filtered"
+                        ],
+                        "example": "explicit"
+                    },
                     "id_list": {
                         "type": "array",
                         "minItems": 1,
@@ -380,15 +389,48 @@
                             "type": "integer"
                         }
                     },
+                    "exclude_ids": {
+                        "type": "array",
+                        "default": [],
+                        "minItems": 0,
+                        "description": "List of table IDs to exclude when using a filtered selection",
+                        "example": [],
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "search_value": {
+                        "type": "string",
+                        "default": "",
+                        "description": "String to filter search results by",
+                        "example": "items with this text in the value"
+                    },
+                    "status": {
+                        "type": "string",
+                        "default": "all",
+                        "description": "Filter on the status",
+                        "example": "all"
+                    },
+                    "after": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Filter entries since datetime",
+                        "example": "2022-04-07 01:45",
+                        "nullable": true
+                    },
+                    "before": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Filter entries prior to datetime",
+                        "example": "2022-04-07 01:55",
+                        "nullable": true
+                    },
                     "library_id": {
                         "type": "integer",
                         "default": 0,
                         "example": 1
                     }
                 },
-                "required": [
-                    "id_list"
-                ],
                 "additionalProperties": false
             },
             "CompletedTasksLogRequest": {
@@ -572,6 +614,19 @@
                         ],
                         "description": "Order direction ('asc' or 'desc')",
                         "example": "desc"
+                    },
+                    "library_ids": {
+                        "type": "array",
+                        "default": [],
+                        "minItems": 0,
+                        "description": "Filter pending tasks by library IDs",
+                        "example": [
+                            1,
+                            3
+                        ],
+                        "items": {
+                            "type": "integer"
+                        }
                     }
                 },
                 "additionalProperties": false
@@ -657,14 +712,105 @@
                 ],
                 "additionalProperties": false
             },
-            "RequestPendingTasksReorder": {
+            "RequestPendingTasksBulkAction": {
                 "type": "object",
                 "properties": {
+                    "selection_mode": {
+                        "type": "string",
+                        "default": "explicit",
+                        "enum": [
+                            "explicit",
+                            "all_filtered"
+                        ],
+                        "example": "explicit"
+                    },
                     "id_list": {
                         "type": "array",
                         "minItems": 1,
                         "description": "List of table IDs",
                         "example": [],
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "exclude_ids": {
+                        "type": "array",
+                        "default": [],
+                        "minItems": 0,
+                        "description": "List of table IDs to exclude when using a filtered selection",
+                        "example": [],
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "search_value": {
+                        "type": "string",
+                        "default": "",
+                        "description": "String to filter search results by",
+                        "example": "items with this text in the value"
+                    },
+                    "library_ids": {
+                        "type": "array",
+                        "default": [],
+                        "minItems": 0,
+                        "description": "Filter pending tasks by library IDs",
+                        "example": [
+                            1,
+                            3
+                        ],
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "additionalProperties": false
+            },
+            "RequestPendingTasksReorder": {
+                "type": "object",
+                "properties": {
+                    "selection_mode": {
+                        "type": "string",
+                        "default": "explicit",
+                        "enum": [
+                            "explicit",
+                            "all_filtered"
+                        ],
+                        "example": "explicit"
+                    },
+                    "id_list": {
+                        "type": "array",
+                        "minItems": 1,
+                        "description": "List of table IDs",
+                        "example": [],
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "exclude_ids": {
+                        "type": "array",
+                        "default": [],
+                        "minItems": 0,
+                        "description": "List of table IDs to exclude when using a filtered selection",
+                        "example": [],
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "search_value": {
+                        "type": "string",
+                        "default": "",
+                        "description": "String to filter search results by",
+                        "example": "items with this text in the value"
+                    },
+                    "library_ids": {
+                        "type": "array",
+                        "default": [],
+                        "minItems": 0,
+                        "description": "Filter pending tasks by library IDs",
+                        "example": [
+                            1,
+                            3
+                        ],
                         "items": {
                             "type": "integer"
                         }
@@ -680,7 +826,6 @@
                     }
                 },
                 "required": [
-                    "id_list",
                     "position"
                 ],
                 "additionalProperties": false
@@ -2977,7 +3122,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/RequestTableUpdateByIdList"
+                                "$ref": "#/components/schemas/RequestPendingTasksBulkAction"
                             }
                         }
                     }

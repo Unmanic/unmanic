@@ -35,6 +35,38 @@ run_init_scripts() {
     shopt -u nullglob
 }
 
+sqlite_maintenance() {
+    local db_path="${UNMANIC_DB_PATH:-/config/.unmanic/config/unmanic.db}"
+    local maintenance_mode="${UNMANIC_SQLITE_MAINTENANCE:-basic}"
+
+    if [[ "${maintenance_mode}" == "off" ]]; then
+        return
+    fi
+
+    if [[ ! -f "${db_path}" ]]; then
+        log "SQLite maintenance skipped (db not found at ${db_path})"
+        return
+    fi
+
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        log "SQLite maintenance skipped (sqlite3 not installed)"
+        return
+    fi
+
+    log "SQLite maintenance (${maintenance_mode}) on ${db_path}"
+    case "${maintenance_mode}" in
+    basic)
+        sqlite3 "${db_path}" "PRAGMA wal_checkpoint(TRUNCATE); PRAGMA optimize;"
+        ;;
+    full)
+        sqlite3 "${db_path}" "PRAGMA wal_checkpoint(TRUNCATE); PRAGMA optimize; VACUUM;"
+        ;;
+    *)
+        log "Unknown UNMANIC_SQLITE_MAINTENANCE mode '${maintenance_mode}', skipping"
+        ;;
+    esac
+}
+
 ensure_runtime_paths() {
     mkdir -p \
         /config \
@@ -103,6 +135,7 @@ main() {
     activate_venv
     install_custom_venv_requirements
     run_init_scripts
+    sqlite_maintenance
 
     update_source_symlink
 

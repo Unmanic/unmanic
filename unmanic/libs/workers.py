@@ -638,6 +638,7 @@ class Worker(threading.Thread):
         # Execute event plugin runners
         plugin_handler.run_event_plugins_for_plugin_type('events.worker_process_started', {
             "library_id":          library_id,
+            "task_id":             self.current_task.get_task_id(),
             "task_type":           self.current_task.get_task_type(),
             "original_file_path":  original_abspath,
             "cache_directory":     cache_directory,
@@ -894,6 +895,7 @@ class Worker(threading.Thread):
         # Execute event plugin runners (only when added to queue)
         plugin_handler.run_event_plugins_for_plugin_type('events.worker_process_complete', {
             "library_id":          library_id,
+            "task_id":             self.current_task.get_task_id(),
             "task_type":           self.current_task.get_task_type(),
             "original_file_path":  original_abspath,
             "final_cache_path":    task_cache_path,

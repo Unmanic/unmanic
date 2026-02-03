@@ -200,6 +200,7 @@ class PostProcessor(threading.Thread):
             # - 'run_default_file_copy'     - Prevent the final Unmanic post-process file movement (if different from the original file name)
             data = {
                 'library_id':            library_id,
+                'task_id':               self.current_task.get_task_id(),
                 'source_data':           None,
                 'remove_source_file':    remove_source_file,
                 'copy_file':             None,

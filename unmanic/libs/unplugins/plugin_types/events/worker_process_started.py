@@ -51,6 +51,7 @@ class WorkerProcessStarted(PluginType):
     """
     data_schema = {
         "library_id":          {"required": False, "type": int},
+        "task_id":             {"required": False, "type": int},
         "task_type":           {"required": False, "type": str},
         "original_file_path":  {"required": False, "type": str},
         "task_cache_path":     {"required": False, "type": str},
@@ -58,6 +59,7 @@ class WorkerProcessStarted(PluginType):
     }
     test_data = {
         "library_id":          1,
+        "task_id":             4321,
         "task_type":           "local",
         "original_file_path":  "/path/to/media/file.mp4",
         "cache_directory":     "/path/to/cache/",

@@ -56,6 +56,10 @@ class FileMove(PluginType):
             "required": True,
             "type":     int,
         },
+        "task_id":               {
+            "required": False,
+            "type":     int,
+        },
         "source_data":           {
             "required": True,
             "type":     dict,
@@ -83,6 +87,7 @@ class FileMove(PluginType):
     }
     test_data = {
         'library_id':            1,
+        'task_id':               4321,
         'copy_file':             True,
         'file_in':               '{cache_path}/{test_file_out}',
         'file_out':              '{library_path}/{test_file_in}',

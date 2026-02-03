@@ -41,8 +41,8 @@ class CompletedTasks(BaseModel):
     CompletedTasks
     """
     task_label = TextField(null=False)
-    abspath = TextField(null=False, default='')
-    task_success = BooleanField(null=False)
+    abspath = TextField(null=False, default='', index=True)
+    task_success = BooleanField(null=False, index=True)
     start_time = DateTimeField(null=False, default=datetime.datetime.now)
-    finish_time = DateTimeField(null=False, default=datetime.datetime.now)
+    finish_time = DateTimeField(null=False, default=datetime.datetime.now, index=True)
     processed_by_worker = TextField(null=False)

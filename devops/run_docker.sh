@@ -218,6 +218,12 @@ start_container() {
         "${DOCKER_PARAMS[@]}" \
         josh5/unmanic:"$IMAGE_TAG")
     echo "Started container: ${container_id}"
+    sleep 1
+    if ! container_running; then
+        echo "Warning: $CONTAINER_NAME container exited shortly after start." >&2
+        $DOCKER_CMD logs --tail 200 "$CONTAINER_NAME" || true
+        exit 1
+    fi
 }
 
 print_access_info() {
@@ -326,7 +332,10 @@ exec)
     fi
     ;;
 logs)
-    warn_container_state
+    if ! container_exists; then
+        echo "Warning: $CONTAINER_NAME container has not been created. Start it first with '$(basename "$0") run'." >&2
+        exit 1
+    fi
     $DOCKER_CMD logs "${COMMAND_ARGS[@]}" "$CONTAINER_NAME"
     ;;
 *)

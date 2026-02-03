@@ -114,6 +114,7 @@ update_source_symlink() {
         mv "${target}" "${target}-installed"
     fi
     ln -sf /app/unmanic "${target}"
+    log "Source symlink set: ${target} -> $(readlink -f "${target}")"
 }
 
 install_custom_venv_requirements() {

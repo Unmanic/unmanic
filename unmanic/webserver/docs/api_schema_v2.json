@@ -286,10 +286,16 @@
                         "type": "integer",
                         "description": "Item finish time",
                         "example": 1627392616.6400812
+                    },
+                    "has_metadata": {
+                        "type": "boolean",
+                        "description": "Item has linked file metadata",
+                        "example": false
                     }
                 },
                 "required": [
                     "finish_time",
+                    "has_metadata",
                     "id",
                     "task_label",
                     "task_success"

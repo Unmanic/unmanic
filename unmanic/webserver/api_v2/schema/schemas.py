@@ -325,6 +325,11 @@ class CompletedTasksTableResultsSchema(BaseSchema):
         description="Item finish time",
         example=1627392616.6400812,
     )
+    has_metadata = fields.Boolean(
+        required=True,
+        description="Item has linked file metadata",
+        example=False,
+    )
 
 
 class CompletedTasksSchema(TableRecordsSuccessSchema):
@@ -380,6 +385,136 @@ class CompletedTasksLogSchema(BaseSchema):
             "",
             "...",
         ],
+    )
+
+
+class RequestMetadataByTaskSchema(BaseSchema):
+    """Schema for requesting metadata by task ID"""
+
+    task_id = fields.Int(
+        required=True,
+        description="The ID of the completed task",
+        example=1,
+    )
+
+
+class RequestMetadataSearchSchema(BaseSchema):
+    """Schema for searching metadata by file path"""
+
+    path = fields.Str(
+        required=False,
+        allow_none=True,
+        description="Absolute path to search for metadata",
+        example="/mnt/user/Movies/Example.mkv",
+    )
+    offset = fields.Int(
+        required=False,
+        allow_none=True,
+        description="Pagination offset",
+        example=0,
+    )
+    limit = fields.Int(
+        required=False,
+        allow_none=True,
+        description="Pagination limit",
+        example=50,
+    )
+
+
+class MetadataEntrySchema(BaseSchema):
+    """Schema for a metadata record"""
+
+    fingerprint = fields.Str(
+        required=True,
+        description="File fingerprint",
+        example="abc123",
+    )
+    fingerprint_algo = fields.Str(
+        required=True,
+        description="Fingerprint algorithm identifier",
+        example="sampled_sha256_v1",
+    )
+    metadata_json = fields.Dict(
+        required=True,
+        description="Metadata blob keyed by plugin ID",
+        example={
+            "example_plugin": {"status": "ignored"},
+        },
+    )
+    last_task_id = fields.Int(
+        required=False,
+        allow_none=True,
+        description="Most recent completed task ID that wrote metadata",
+        example=42,
+    )
+    paths = fields.List(
+        fields.Dict(),
+        required=False,
+        description="Associated file paths for this fingerprint",
+        example=[{"path": "/mnt/user/Movies/Example.mkv", "path_type": "destination"}],
+    )
+
+
+class MetadataSearchResultsSchema(BaseSchema):
+    """Schema for returning metadata search results"""
+
+    results = fields.Nested(
+        MetadataEntrySchema,
+        required=True,
+        description="Results",
+        many=True,
+        validate=validate.Length(min=0),
+    )
+    total_count = fields.Int(
+        required=True,
+        description="Total number of matching records",
+        example=120,
+    )
+
+
+class RequestMetadataUpdateSchema(BaseSchema):
+    """Schema for updating metadata for a fingerprint"""
+
+    fingerprint = fields.Str(
+        required=True,
+        description="File fingerprint",
+        example="abc123",
+    )
+    plugin_id = fields.Str(
+        required=True,
+        description="Plugin identifier",
+        example="mover2",
+    )
+    json_blob = fields.Dict(
+        required=True,
+        description="Plugin metadata dict to merge",
+        example={"status": "ignored"},
+    )
+
+
+class RequestMetadataByFingerprintSchema(BaseSchema):
+    """Schema for requesting metadata by fingerprint"""
+
+    fingerprint = fields.Str(
+        required=True,
+        description="File fingerprint",
+        example="abc123",
+    )
+
+
+class RequestMetadataDeleteSchema(BaseSchema):
+    """Schema for deleting metadata"""
+
+    fingerprint = fields.Str(
+        required=True,
+        description="File fingerprint",
+        example="abc123",
+    )
+    plugin_id = fields.Str(
+        required=False,
+        allow_none=True,
+        description="Plugin identifier to delete (omit to delete all)",
+        example="mover2",
     )
 
 
@@ -710,6 +845,8 @@ class PendingTaskTestResultSchema(BaseSchema):
             "plugin_name": "Example Library Test",
         },
     )
+
+
 class TaskDownloadLinkSchema(BaseSchema):
     """Schema for returning a download link ID"""
 

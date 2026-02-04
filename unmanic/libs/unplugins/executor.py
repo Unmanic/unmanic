@@ -41,6 +41,7 @@ from . import plugin_types
 from unmanic.libs import common
 from ..logs import UnmanicLogging
 from ..task import TaskDataStore
+from unmanic.libs.metadata import UnmanicFileMetadata
 
 
 class PluginExecutor(object):
@@ -292,18 +293,65 @@ class PluginExecutor(object):
                     runner=plugin_runner,
                 )
 
+            metadata_path = data.get("path") or data.get("file_path")
+            UnmanicFileMetadata.bind_runner_context(
+                plugin_id=plugin_id,
+                task_id=task_id,
+                path=metadata_path,
+            )
+
             sig = inspect.signature(runner)
-            # if runner declares two parameters, pass the store class as second arg
-            if len(sig.parameters) >= 2:
-                runner(data, TaskDataStore)
+            params = sig.parameters
+
+            def supports_kwarg(name):
+                if name in params:
+                    return True
+                for param in params.values():
+                    if param.kind == inspect.Parameter.VAR_KEYWORD:
+                        return True
+                return False
+
+            def has_required_positional_after_data():
+                positional = []
+                for param in params.values():
+                    if param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
+                        positional.append(param)
+                # First positional is expected to be `data`
+                remaining = positional[1:]
+                for param in remaining:
+                    if param.default is inspect._empty:
+                        return True
+                return False
+
+            kwargs = {}
+            if supports_kwarg("task_data_store"):
+                kwargs["task_data_store"] = TaskDataStore
+            if supports_kwarg("file_metadata"):
+                kwargs["file_metadata"] = UnmanicFileMetadata
+
+            if kwargs and not has_required_positional_after_data():
+                runner(data, **kwargs)
             else:
-                runner(data)
+                # Backward compatibility: positional helpers (legacy; will be removed in a future release)
+                self.logger.warning(
+                    "Plugin '%s' runner '%s' is using legacy positional helper args. "
+                    "Please update to keyword args (task_data_store, file_metadata).",
+                    plugin_id,
+                    plugin_runner,
+                )
+                if len(params) >= 3:
+                    runner(data, TaskDataStore, UnmanicFileMetadata)
+                elif len(params) >= 2:
+                    runner(data, TaskDataStore)
+                else:
+                    runner(data)
 
             run_successfully = True
         except Exception:
             self.logger.exception("Exception while carrying out '%s' plugin runner '%s'", plugin_type, plugin_id)
         finally:
             TaskDataStore.clear_context()
+            UnmanicFileMetadata.clear_context()
 
         return run_successfully
 
@@ -448,7 +496,8 @@ class PluginExecutor(object):
                 req_lev = plugin_setting_meta.get('req_lev', 0)
                 if s.level < req_lev:
                     # Set default
-                    self.logger.debug("Option '%s' is reserved for supporters of the project. Resetting to default.", key)
+                    self.logger.debug(
+                        "Option '%s' is reserved for supporters of the project. Resetting to default.", key)
                     value = plugin_settings.get_default_setting(key)
                 if not plugin_settings.set_setting(key, value):
                     save_result = False

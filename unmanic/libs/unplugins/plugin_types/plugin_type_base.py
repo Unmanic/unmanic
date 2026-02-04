@@ -34,6 +34,7 @@ import json
 from copy import deepcopy
 
 from unmanic.libs.task import TaskDataStore
+from unmanic.libs.metadata import UnmanicFileMetadata
 
 
 class PluginType(object):
@@ -131,7 +132,8 @@ class PluginType(object):
         errors = []
         if not isinstance(result_data, dict):
             # This runner function is not returning anything
-            error = "Plugin '{0} - {1}()' has failed to return any output data.".format(plugin_id, plugin_runner, data_tree)
+            error = "Plugin '{0} - {1}()' has failed to return any output data.".format(plugin_id,
+                                                                                        plugin_runner, data_tree)
             errors.append(error)
             return errors
         for key in data_schema:
@@ -211,11 +213,46 @@ class PluginType(object):
                     plugin_id=plugin_id,
                     runner=plugin_runner,
                 )
-            # if runner declares two parameters, pass the store class as second arg
-            if len(plugin_runner_sig.parameters) >= 2:
-                plugin_runner_function(test_data_copy, TaskDataStore)
+
+            metadata_path = test_data_copy.get("path") or test_data_copy.get("file_path")
+            UnmanicFileMetadata.bind_runner_context(
+                plugin_id=plugin_id,
+                task_id=task_id,
+                path=metadata_path,
+            )
+
+            params = plugin_runner_sig.parameters
+
+            def supports_kwarg(name):
+                if name in params:
+                    return True
+                for param in params.values():
+                    if param.kind == inspect.Parameter.VAR_KEYWORD:
+                        return True
+                return False
+
+            kwargs = {}
+            if supports_kwarg("task_data_store"):
+                kwargs["task_data_store"] = TaskDataStore
+            if supports_kwarg("file_metadata"):
+                kwargs["file_metadata"] = UnmanicFileMetadata
+
+            if kwargs:
+                plugin_runner_function(test_data_copy, **kwargs)
             else:
-                plugin_runner_function(test_data_copy)
+                # Backward compatibility: positional helpers (legacy; will be removed in a future release)
+                self.logger.warning(
+                    "Plugin '%s' runner '%s' is using legacy positional helper args. "
+                    "Please update to keyword args (task_data_store, file_metadata).",
+                    plugin_id,
+                    plugin_runner,
+                )
+                if len(params) >= 3:
+                    plugin_runner_function(test_data_copy, TaskDataStore, UnmanicFileMetadata)
+                elif len(params) >= 2:
+                    plugin_runner_function(test_data_copy, TaskDataStore)
+                else:
+                    plugin_runner_function(test_data_copy)
             # break loop if the plugin did not request to be run again
             if not test_data_copy.get('repeat', False):
                 break

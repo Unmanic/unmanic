@@ -35,12 +35,15 @@ from __future__ import absolute_import
 from .completedtaskscommandlogs import CompletedTasksCommandLogs
 from .completedtasks import CompletedTasks
 from .enabledplugins import EnabledPlugins
+from .filemetadata import FileMetadata
+from .filemetadatapaths import FileMetadataPaths
 from .installation import Installation
 from .pluginrepos import PluginRepos
 from .plugins import Plugins
 from .libraries import Libraries, LibraryTags
 from .librarypluginflow import LibraryPluginFlow
 from .tags import Tags
+from .taskmetadata import TaskMetadata
 from .tasks import Tasks
 from .workergroups import WorkerGroupTags, WorkerGroups
 from .workerschedules import WorkerSchedules

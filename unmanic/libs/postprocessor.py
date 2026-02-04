@@ -39,6 +39,7 @@ from unmanic.libs import common, history
 from unmanic.libs.frontend_push_messages import FrontendPushMessages
 from unmanic.libs.library import Library
 from unmanic.libs.logs import UnmanicLogging
+from unmanic.libs.metadata import UnmanicFileMetadata
 from unmanic.libs.notifications import Notifications
 from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.task import TaskDataStore
@@ -77,6 +78,7 @@ class PostProcessor(threading.Thread):
         self.task_queue = task_queue
         self.abort_flag = threading.Event()
         self.current_task = None
+        self._last_destination_files = []
         self.ffmpeg = None
         self.abort_flag.clear()
 
@@ -120,12 +122,18 @@ class PostProcessor(threading.Thread):
                             # Post processes the converted file (return it to original directory etc.)
                             self.post_process_file()
                         except Exception as e:
-                            self._log("Exception in post-processing local task file", message2=str(e), level="exception")
+                            self._log("Exception in post-processing local task file",
+                                      message2=str(e), level="exception")
                         try:
                             # Write source and destination data to historic log
                             self.write_history_log()
                         except Exception as e:
                             self._log("Exception in writing history log", message2=str(e), level="exception")
+                        try:
+                            # Commit task metadata to database after all plugin runners
+                            self.commit_task_metadata()
+                        except Exception as e:
+                            self._log("Exception in committing task metadata", message2=str(e), level="exception")
                         try:
                             # Remove file from task queue
                             self.current_task.delete()
@@ -136,17 +144,20 @@ class PostProcessor(threading.Thread):
                             # Post processes the remote converted file (return it to original directory etc.)
                             self.post_process_remote_file()
                         except Exception as e:
-                            self._log("Exception in post-processing remote task file", message2=str(e), level="exception")
+                            self._log("Exception in post-processing remote task file",
+                                      message2=str(e), level="exception")
                         try:
                             # Write source and destination data to historic log
                             self.dump_history_log()
                         except Exception as e:
-                            self._log("Exception in dumping history log for remote task", message2=str(e), level="exception")
+                            self._log("Exception in dumping history log for remote task",
+                                      message2=str(e), level="exception")
                         try:
                             # Update the task status to 'complete'
                             self.current_task.set_status('complete')
                         except Exception as e:
-                            self._log("Exception in marking remote task as complete", message2=str(e), level="exception")
+                            self._log("Exception in marking remote task as complete",
+                                      message2=str(e), level="exception")
 
         self._log("Leaving PostProcessor Monitor loop...")
 
@@ -231,7 +242,8 @@ class PostProcessor(threading.Thread):
                     if not self.__copy_file(file_in, file_out, destination_files, plugin_module.get('plugin_id')):
                         file_move_processes_success = False
                 else:
-                    self._log("Plugin did not request a file copy ({})".format(plugin_module.get('plugin_id')), level='debug')
+                    self._log("Plugin did not request a file copy ({})".format(
+                        plugin_module.get('plugin_id')), level='debug')
 
             # Unmanic's default file movement process
             # Only carry out final post-processor file moments if all others were successful
@@ -275,7 +287,8 @@ class PostProcessor(threading.Thread):
                       level='warning')
 
         # Fetch all 'postprocessor.task_result' plugin modules
-        plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type('postprocessor.task_result', library_id=library_id)
+        plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type(
+            'postprocessor.task_result', library_id=library_id)
 
         for plugin_module in plugin_modules:
             data = {
@@ -298,6 +311,7 @@ class PostProcessor(threading.Thread):
 
         # Cleanup cache files
         self.__cleanup_cache_files(cache_path)
+        self._last_destination_files = destination_files
 
     def post_process_remote_file(self):
         """
@@ -320,7 +334,8 @@ class PostProcessor(threading.Thread):
             remove_source_file = False
 
         self._log(f"Cache path: {def_cache_path}", level='debug')
-        self._log(f"Remote source: {source_data['abspath']}, destination file: {destination_data['abspath']}.", level='debug')
+        self._log(
+            f"Remote source: {source_data['abspath']}, destination file: {destination_data['abspath']}.", level='debug')
         self._log(f"Task cache path: {cache_path}", level='debug')
 
         # Remove the source
@@ -328,13 +343,15 @@ class PostProcessor(threading.Thread):
             self._log("Removing remote source: {}".format(source_data.get('abspath')))
             os.remove(source_data.get('abspath'))
         elif os.path.exists(source_data.get('abspath')) and not remove_source_file:
-            self._log("Keep remote source: {}, remote file source is in library and not cache.".format(source_data.get('abspath')))
+            self._log("Keep remote source: {}, remote file source is in library and not cache.".format(
+                source_data.get('abspath')))
         else:
             self._log("Remote source file '{}' does not exist!".format(source_data.get('abspath')), level="warning")
 
         # Copy final cache file to original directory
         random_string = '{}-{}'.format(common.random_string(), int(time.time()))
-        library_tdir =  os.path.join(os.path.dirname(source_data.get('abspath')), "unmanic_remote_pending_library-" + random_string)
+        library_tdir = os.path.join(os.path.dirname(source_data.get('abspath')),
+                                    "unmanic_remote_pending_library-" + random_string)
         cache_tdir = os.path.join(def_cache_path, "unmanic_remote_pending_library-" + random_string)
 
         if os.path.exists(cache_path) and remove_source_file:
@@ -344,12 +361,14 @@ class PostProcessor(threading.Thread):
             try:
                 tdir = library_tdir
                 os.mkdir(library_tdir)
-                capture_success = self.__copy_file(cache_path, os.path.join(library_tdir, os.path.basename(cache_path)), [], 'DEFAULT', move=True)
+                capture_success = self.__copy_file(cache_path, os.path.join(
+                    library_tdir, os.path.basename(cache_path)), [], 'DEFAULT', move=True)
                 if not capture_success:
                     raise Exception("Failed to copy back to network share")
             except:
                 os.mkdir(cache_tdir)
-                self.__copy_file(cache_path, os.path.join(cache_tdir, os.path.basename(cache_path)), [], 'DEFAULT', move=True)
+                self.__copy_file(cache_path, os.path.join(
+                    cache_tdir, os.path.basename(cache_path)), [], 'DEFAULT', move=True)
                 tdir = cache_tdir
             finally:
                 self._log(f"tdir: {tdir}", level='debug')
@@ -492,6 +511,26 @@ class PostProcessor(threading.Thread):
             'log':                 task_dump.get('log', ''),
         })
 
+    def commit_task_metadata(self):
+        """
+        Commit task metadata after all postprocessor runners have finished.
+        """
+        source_data = self.current_task.get_source_data()
+        destination_data = self.current_task.get_destination_data()
+        task_success = self.current_task.get_task_success()
+        destination_files = list(self._last_destination_files or [])
+        if not destination_files and destination_data:
+            destination_files = [destination_data.get('abspath')]
+        committed = UnmanicFileMetadata.commit_task(
+            task_id=self.current_task.get_task_id(),
+            task_success=task_success,
+            source_path=source_data.get('abspath'),
+            destination_paths=destination_files,
+        )
+        if committed:
+            self._log("Committed file metadata entries: {}".format(committed), level='debug')
+        return committed
+
     def dump_history_log(self):
         self._log("Dumping remote task history log.", level='debug')
         task_dump = self.current_task.task_dump()
@@ -511,8 +550,7 @@ class PostProcessor(threading.Thread):
                 'log':                 task_dump.get('log', ''),
                 'checksum':            'UNKNOWN',
                 'task_state':          task_state,
-            }
-            , tasks_data_file)
+            }, tasks_data_file)
         if not result['success']:
             for message in result['errors']:
                 self._log("Exception:", message2=str(message), level="exception")

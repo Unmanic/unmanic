@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-    unmanic.__init__.py
+    unmanic.taskmetadata.py
 
     Written by:               Josh.5 <jsunnex@gmail.com>
-    Date:                     25 Oct 2020, (9:07 PM)
+    Date:                     03 Feb 2026
 
     Copyright:
            Copyright (C) Josh Sunnex - All Rights Reserved
@@ -30,39 +30,20 @@
 
 """
 
-from __future__ import absolute_import
-import warnings
+import datetime
 
-from .docs_api import ApiDocsHandler
-from .filebrowser_api import ApiFilebrowserHandler
-from .history_api import ApiHistoryHandler
-from .metadata_api import ApiMetadataHandler
-from .notifications_api import ApiNotificationsHandler
-from .pending_api import ApiPendingHandler
-from .plugins_api import ApiPluginsHandler
-from .session_api import ApiSessionHandler
-from .settings_api import ApiSettingsHandler
-from .upload_api import ApiUploadHandler
-from .version_api import ApiVersionHandler
-from .workers_api import ApiWorkersHandler
-
-__author__ = 'Josh.5 (jsunnex@gmail.com)'
-
-__all__ = (
-    'ApiDocsHandler',
-    'ApiFilebrowserHandler',
-    'ApiHistoryHandler',
-    'ApiMetadataHandler',
-    'ApiNotificationsHandler',
-    'ApiPendingHandler',
-    'ApiPluginsHandler',
-    'ApiSessionHandler',
-    'ApiSettingsHandler',
-    'ApiUploadHandler',
-    'ApiVersionHandler',
-    'ApiWorkersHandler'
-)
+from peewee import *
+from unmanic.libs.unmodels.lib import BaseModel
+from unmanic.libs.unmodels.tasks import Tasks
 
 
-def list_all_handlers():
-    return __all__
+class TaskMetadata(BaseModel):
+    """
+    TaskMetadata
+    """
+    task = ForeignKeyField(Tasks, backref='task_metadata', on_delete='CASCADE', index=True)
+    json_blob = TextField(null=False, default='{}')
+    updated_at = DateTimeField(null=False, default=datetime.datetime.now)
+
+    class Meta:
+        table_name = 'task_metadata'

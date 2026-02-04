@@ -39,7 +39,7 @@ from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiErr
 from unmanic.webserver.api_v2.schema.schemas import PendingTasksTableResultsSchema, RequestPendingTaskCreateSchema, \
     RequestPendingTasksLibraryUpdateSchema, RequestPendingTasksReorderSchema, PendingTasksSchema, \
     RequestPendingTableDataSchema, RequestPendingTasksBulkActionSchema, TaskDownloadLinkSchema, \
-    RequestPendingTaskTestSchema, PendingTaskTestResultSchema
+    RequestPendingTaskTestSchema, PendingTaskTestResultSchema, RequestTableUpdateByIdList
 from unmanic.webserver.downloads import DownloadsLinks
 from unmanic.webserver.helpers import pending_tasks
 

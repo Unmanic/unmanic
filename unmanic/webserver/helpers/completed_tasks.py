@@ -34,6 +34,7 @@ import time
 from datetime import date, datetime
 
 from unmanic.libs import common, history, task
+from unmanic.libs.unmodels import FileMetadataPaths
 
 
 def _parse_datetime_to_timestamp(value):
@@ -108,6 +109,13 @@ def prepare_filtered_completed_tasks(params):
         "results":         []
     }
 
+    matched_paths = set()
+    task_paths = [task.get('abspath') for task in task_results if task.get('abspath')]
+    if task_paths:
+        query = FileMetadataPaths.select(FileMetadataPaths.path).where(FileMetadataPaths.path.in_(task_paths))
+        for row in query:
+            matched_paths.add(row.path)
+
     # Iterate over tasks and append them to the task data
     for task in task_results:
         # Set params as required in template
@@ -116,6 +124,7 @@ def prepare_filtered_completed_tasks(params):
             'task_label':   task['task_label'],
             'task_success': task['task_success'],
             'finish_time':  task['finish_time'],
+            'has_metadata': task.get('abspath') in matched_paths,
         }
         return_data["results"].append(item)
 

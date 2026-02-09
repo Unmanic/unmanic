@@ -36,6 +36,7 @@ import os
 import random
 import string
 import shutil
+import xxhash
 
 
 def get_home_dir():
@@ -295,15 +296,17 @@ def get_file_checksum(path):
     return copy.copy(file_hash.hexdigest())
 
 
-def get_file_fingerprint(path, algo="sampled_sha256_v1"):
+def get_file_fingerprint(path, algo="sampled_xxhash_v1"):
     """
     Create a content-based fingerprint for a file.
 
     Returns a tuple: (fingerprint, algo_used)
 
     Supported algos:
-        - "sampled_sha256_v1": size + 10x8MiB samples (includes first/last), full SHA256 for <=100MiB
-        - "full_sha256_v1": full-file SHA256
+        - "sampled_sha256_v1"
+        - "full_sha256_v1"
+        - "sampled_xxhash_v1"
+        - "full_xxhash_v1"
 
     :param path:
     :param algo:
@@ -314,8 +317,20 @@ def get_file_fingerprint(path, algo="sampled_sha256_v1"):
             "sample_size":     8 * 1024 * 1024,
             "sample_count":    10,
             "full_hash_limit": 100 * 1024 * 1024,
+            "fallback_algo":   "full_sha256_v1",
         },
         "full_sha256_v1": {
+            "sample_size":     None,
+            "sample_count":    None,
+            "full_hash_limit": 0,
+        },
+        "sampled_xxhash_v1": {
+            "sample_size":     8 * 1024 * 1024,
+            "sample_count":    10,
+            "full_hash_limit": 100 * 1024 * 1024,
+            "fallback_algo":   "full_xxhash_v1",
+        },
+        "full_xxhash_v1": {
             "sample_size":     None,
             "sample_count":    None,
             "full_hash_limit": 0,
@@ -323,20 +338,35 @@ def get_file_fingerprint(path, algo="sampled_sha256_v1"):
     }
 
     if algo not in algos:
-        algo = "sampled_sha256_v1"
+        algo = "sampled_xxhash_v1"
 
     file_size = os.path.getsize(path)
-    file_hash = hashlib.sha256()
-    file_hash.update(str(file_size).encode('utf-8'))
 
-    if algo == "full_sha256_v1" or file_size <= algos[algo]["full_hash_limit"]:
+    actual_algo_to_use = algo
+
+    if algo in ["sampled_sha256_v1", "sampled_xxhash_v1"]:
+        if file_size <= algos[algo]["full_hash_limit"]:
+            actual_algo_to_use = algos[algo]["fallback_algo"]
+
+    if actual_algo_to_use in ["full_xxhash_v1", "sampled_xxhash_v1"]:
+        file_hash_obj = xxhash.xxh64()
+    else:
+        file_hash_obj = hashlib.sha256()
+
+    file_hash_obj.update(str(file_size).encode('utf-8'))
+
+    perform_full_hash = False
+    if actual_algo_to_use in ["full_sha256_v1", "full_xxhash_v1"]:
+        perform_full_hash = True
+
+    if perform_full_hash:
         with open(path, "rb") as f:
             for chunk in iter(lambda: f.read(8192), b''):
-                file_hash.update(chunk)
-        return copy.copy(file_hash.hexdigest()), "full_sha256_v1"
+                file_hash_obj.update(chunk)
+        return file_hash_obj.hexdigest(), actual_algo_to_use
 
-    sample_size = algos[algo]["sample_size"]
-    sample_count = algos[algo]["sample_count"]
+    sample_size = algos[actual_algo_to_use]["sample_size"]
+    sample_count = algos[actual_algo_to_use]["sample_count"]
     max_offset = max(0, file_size - sample_size)
     if sample_count < 2:
         sample_count = 2
@@ -352,6 +382,6 @@ def get_file_fingerprint(path, algo="sampled_sha256_v1"):
     with open(path, "rb") as f:
         for offset in offsets:
             f.seek(offset)
-            file_hash.update(f.read(sample_size))
+            file_hash_obj.update(f.read(sample_size))
 
-    return copy.copy(file_hash.hexdigest()), algo
+    return file_hash_obj.hexdigest(), actual_algo_to_use

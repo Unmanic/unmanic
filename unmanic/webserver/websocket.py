@@ -127,6 +127,7 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
         self.stop_workers_info()
         self.stop_pending_tasks_info()
         self.stop_completed_tasks_info()
+        self.stop_system_logs()
 
     def on_remote_message(self, message):
         if message is None:

@@ -74,7 +74,7 @@ ensure_runtime_paths() {
         /tmp/unmanic
 
     if [[ "${EUID}" -eq 0 ]]; then
-        chown -R 1000:1000 /config /tmp/unmanic || true
+        chown -R "${PUID:-1000}:${PGID:-1000}" /config /tmp/unmanic || true
     fi
 }
 

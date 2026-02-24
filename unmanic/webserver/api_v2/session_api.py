@@ -68,6 +68,11 @@ class ApiSessionHandler(BaseApiHandler):
             "supported_methods": ["GET"],
             "call_method":       "get_app_auth_code",
         },
+        {
+            "path_pattern":      r"/session/funding_proposals",
+            "supported_methods": ["GET"],
+            "call_method":       "get_funding_proposals",
+        },
     ]
 
     def initialize(self, **kwargs):
@@ -321,6 +326,68 @@ class ApiSessionHandler(BaseApiHandler):
             self.write_success(response)
             return
 
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    async def get_funding_proposals(self):
+        """
+        Session - funding proposals
+        ---
+        description: Returns feature funding proposals from the support credit portal.
+        responses:
+            200:
+                description: Successful request; Returns funding proposals payload.
+                content:
+                    application/json:
+                        schema:
+                            BaseSuccessSchema
+            400:
+                description: Bad request
+                content:
+                    application/json:
+                        schema:
+                            BadRequestSchema
+            404:
+                description: Endpoint not found
+                content:
+                    application/json:
+                        schema:
+                            BadEndpointSchema
+            405:
+                description: Method not allowed
+                content:
+                    application/json:
+                        schema:
+                            BadMethodSchema
+            500:
+                description: Internal error
+                content:
+                    application/json:
+                        schema:
+                            InternalErrorSchema
+        """
+        try:
+            response, status_code = self.session.get_credit_portal_funding_proposals()
+            if status_code in [200, 201, 202] and response:
+                self.write_success(response)
+                return
+            if status_code == 401:
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="Authentication required to fetch funding proposals.")
+                self.write_error()
+                return
+
+            reason = "Failed to fetch funding proposals."
+            if response and isinstance(response, dict):
+                messages = response.get("messages", [])
+                if messages and isinstance(messages, list):
+                    reason = "; ".join(str(message) for message in messages)
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=reason)
+            self.write_error()
+            return
+        except BaseApiError as bae:
+            self.logger.error("BaseApiError.%s: %s", self.route.get('call_method'), str(bae))
+            return
         except Exception as e:
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()

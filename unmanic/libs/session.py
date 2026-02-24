@@ -844,3 +844,16 @@ class Session(object, metaclass=SingletonType):
         except Exception as e:
             self.logger.debug('Exception while fetching Patreon sponsor page - %s', e)
         return False
+
+    def get_credit_portal_funding_proposals(self):
+        """
+        Fetch credit portal funding proposals from support-auth-api.
+
+        :return:
+        """
+        try:
+            response, status_code = self.api_get('support-auth-api', 2, 'credit_portal/funding_proposals')
+            return response, status_code
+        except Exception as e:
+            self.logger.debug('Exception while fetching credit portal funding proposals - %s', e)
+        return None, 500

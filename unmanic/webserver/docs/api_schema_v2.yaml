@@ -3473,6 +3473,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+  /session/funding_proposals:
+    get:
+      description: Returns feature funding proposals from the support credit portal.
+      responses:
+        '200':
+          description: Successful request; Returns funding proposals payload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '404':
+          description: Endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
   /settings/read:
     get:
       description: Returns the application settings.

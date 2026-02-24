@@ -317,7 +317,7 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
 
     async def async_system_logs(self):
         while self.sending_system_logs:
-            system_logs = self.config.read_system_logs(lines=35)
+            system_logs = self.config.read_system_logs(lines=1000)
 
             # Send message to client
             await self.send(

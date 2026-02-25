@@ -12,22 +12,10 @@ if [[ ! -d "${buffer_dir}" ]]; then
     return 0
 fi
 
-shopt -s nullglob
-removed=0
-for legacy_path in "${buffer_dir}"/*.json; do
-    if [[ "$(basename "${legacy_path}")" == "${state_file}" ]]; then
-        continue
-    fi
-    if rm -f -- "${legacy_path}"; then
-        removed=$((removed + 1))
-    else
-        log_cleanup "Failed to remove legacy buffer file ${legacy_path}"
-    fi
-done
-shopt -u nullglob
+log_cleanup "Removing legacy log buffer JSON files (keeping ${state_file})"
 
-if [[ "${removed}" -gt 0 ]]; then
-    log_cleanup "Removed ${removed} legacy log buffer file(s)"
+if find "${buffer_dir}" -maxdepth 1 -type f -name '*.json' ! -name "${state_file}" -exec rm -f -- {} +; then
+    log_cleanup "Legacy log buffer cleanup complete"
 else
-    log_cleanup "No legacy log buffer files found"
+    log_cleanup "Legacy log buffer cleanup encountered errors"
 fi

@@ -1763,7 +1763,8 @@ class RequestWorkerByIdSchema(BaseSchema):
 
     worker_id = fields.Str(
         required=True,
-        example="1",
+        description="Worker ID in the format '{group_name}-{index}'",
+        example="Altoa-0",
     )
 
 

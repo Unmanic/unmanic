@@ -57,6 +57,8 @@ Some examples of how you may use Unmanic:
 
 [Install and Run](#install-and-run)
 
+[API Automation](#api-automation)
+
 [License and Contribution](#license-and-contribution)
 
 
@@ -95,6 +97,13 @@ To run from source:
     unmanic
     ```
 3) Open your web browser and navigate to http://localhost:8888/
+
+## API Automation
+
+Unmanic includes a REST API (v2) for scripting worker control and library settings.
+See the [API Automation Guide](docs/API_AUTOMATION.md) for curl examples, common
+pitfalls, and ready-made maintenance scripts. The interactive Swagger UI is available
+at `/unmanic/swagger` when Unmanic is running.
 
 ## License and Contribution
 

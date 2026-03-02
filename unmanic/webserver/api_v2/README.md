@@ -34,3 +34,8 @@
         self.write_error()
     ```
 1. All endpoint functions must be wrapped in a broad exception capture as in the example above.
+
+## External Documentation
+
+For user-facing API documentation with curl examples and automation recipes, see
+[API_AUTOMATION.md](../../../docs/API_AUTOMATION.md).

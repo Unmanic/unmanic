@@ -11,8 +11,8 @@ warn_if_risky_nonroot() {
     done
 }
 
-run_plugin_init_script() {
-    local plugin_script="$1"
+run_init_script() {
+    local script_path="$1"
     local had_errexit=0
     local had_nounset=0
     local had_pipefail=0
@@ -33,7 +33,7 @@ run_plugin_init_script() {
 
     (
         trap - ERR
-        source "${plugin_script}"
+        source "${script_path}"
     )
     status=$?
 
@@ -56,8 +56,41 @@ if [[ -f /config/startup.sh ]]; then
     if [[ "${EUID}" -ne 0 ]]; then
         warn_if_risky_nonroot "/config/startup.sh"
     fi
-    source /config/startup.sh
+    startup_status=0
+    if run_init_script "/config/startup.sh"; then
+        startup_status=0
+    else
+        startup_status=$?
+    fi
+
+    if [[ "${startup_status}" -ne 0 ]]; then
+        echo "**** (custom-setup-script) ERROR: /config/startup.sh failed with exit code ${startup_status}; continuing initialization ****"
+    fi
 fi
+
+for user_init_script in /config/init.d/*.sh; do
+
+    if [[ -e "${user_init_script}" ]]; then
+
+        echo "[60-custom-setup-script] ${user_init_script}: executing..."
+        sed -i 's/\r$//' "${user_init_script}"
+        if [[ "${EUID}" -ne 0 ]]; then
+            warn_if_risky_nonroot "${user_init_script}"
+        fi
+        user_init_status=0
+        if run_init_script "${user_init_script}"; then
+            user_init_status=0
+        else
+            user_init_status=$?
+        fi
+
+        if [[ "${user_init_status}" -ne 0 ]]; then
+            echo "**** (custom-setup-script) ERROR: ${user_init_script} failed with exit code ${user_init_status}; continuing initialization ****"
+        fi
+
+    fi
+
+done
 
 for plugin_script in /config/.unmanic/plugins/*/init.d/*.sh; do
 
@@ -69,7 +102,7 @@ for plugin_script in /config/.unmanic/plugins/*/init.d/*.sh; do
             warn_if_risky_nonroot "${plugin_script}"
         fi
         plugin_status=0
-        if run_plugin_init_script "${plugin_script}"; then
+        if run_init_script "${plugin_script}"; then
             plugin_status=0
         else
             plugin_status=$?

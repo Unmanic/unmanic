@@ -16,11 +16,46 @@ RUN \
     echo "**** Install build dependencies requirements ****" \
         && apt-get update \
         && apt-get install -y \
+            autoconf \
+            automake \
+            build-essential \
             ca-certificates \
+            cmake \
             curl \
+            g++ \
+            git \
             gnupg \
             gosu \
+            gzip \
+            libaom-dev \
+            libass-dev \
+            libdav1d-dev \
+            libdrm-dev \
+            libfdk-aac-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libmp3lame-dev \
+            libnuma-dev \
+            libopus-dev \
+            libssl-dev \
+            libsvtav1-dev \
+            libtool \
+            libv4l-dev \
+            libva-dev \
+            libvorbis-dev \
+            libvpl-dev \
+            libvpx-dev \
+            libx264-dev \
+            libx265-dev \
+            make \
+            meson \
+            nasm \
+            ninja-build \
+            pkg-config \
+            tar \
             wget \
+            xz-utils \
+            yasm \
     && \
     echo "**** Install runtime packages ****" \
         && apt-get install -y \

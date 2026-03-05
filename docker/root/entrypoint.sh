@@ -70,12 +70,23 @@ sqlite_maintenance() {
 ensure_runtime_paths() {
     mkdir -p \
         /config \
+        /config/.local/bin \
         /config/.unmanic \
         /tmp/unmanic
 
     if [[ "${EUID}" -eq 0 ]]; then
         chown -R "${PUID:-1000}:${PGID:-1000}" /config /tmp/unmanic || true
     fi
+}
+
+ensure_preferred_bin_path() {
+    local preferred_bin="/config/.local/bin"
+
+    mkdir -p "${preferred_bin}"
+    case ":${PATH:-}:" in
+    *":${preferred_bin}:"*) ;;
+    *) export PATH="${preferred_bin}:${PATH:-}" ;;
+    esac
 }
 
 activate_venv() {
@@ -133,6 +144,7 @@ install_custom_venv_requirements() {
 
 main() {
     ensure_runtime_paths
+    ensure_preferred_bin_path
     activate_venv
     install_custom_venv_requirements
     run_init_scripts

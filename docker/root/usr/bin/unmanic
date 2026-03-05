@@ -3,6 +3,13 @@
 RUN_USER=${RUN_USER:-ubuntu}
 export HOME_DIR="${HOME_DIR:-/config}"
 export HOME="${HOME_DIR}"
+PREFERRED_BIN="/config/.local/bin"
+
+mkdir -p "${PREFERRED_BIN}"
+case ":${PATH:-}:" in
+*":${PREFERRED_BIN}:"*) ;;
+*) export PATH="${PREFERRED_BIN}:${PATH:-}" ;;
+esac
 
 VENV_BIN="${VIRTUAL_ENV:-/opt/venv}/bin/unmanic"
 TARGET_BIN="${VENV_BIN}"

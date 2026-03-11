@@ -190,22 +190,23 @@ class PluginExecutor(object):
         # self.logger.debug("Reloading module '{}'".format(module_name))
 
         if module_name in sys.modules:
-            # Get all submodules
-            module_names = [module_name]
-            for m in sys.modules:
-                if plugin_id in m and m not in [plugin_id, module_name]:
-                    # Add to removal list
-                    module_names.append(m)
-            # Reload all imported modules or remove them if that fails
-            for mn in module_names:
-                try:
-                    importlib.reload(sys.modules[mn])
-                except ImportError:
-                    # The module's parent was probably not imported.
-                    # Delete it from sys.modules and carry on.
-                    # This will force it to be reloaded again
-                    self.logger.exception("Exception encountered while trying to reload module '%s'", module_name)
-                    del sys.modules[module_name]
+            # Unload all submodules
+            submodules = []
+            for mn in sys.modules:
+                if mn.startswith(plugin_id + ".") and mn != module_name:
+                    submodules.append(mn)
+            for mn in submodules:
+                del sys.modules[mn]
+
+            # Reload the plugin module, it will import its submodules as required.
+            try:
+                importlib.reload(sys.modules[module_name])
+            except ImportError:
+                # The module's parent was probably not imported.
+                # Delete it from sys.modules and carry on.
+                # This will force it to be reloaded again
+                self.logger.exception("Exception encountered while trying to reload module '%s'", module_name)
+                del sys.modules[module_name]
 
     @staticmethod
     def unload_plugin_module(plugin_id):

@@ -43,7 +43,6 @@ RUN \
             libv4l-dev \
             libva-dev \
             libvorbis-dev \
-            libvpl-dev \
             libvpx-dev \
             libx264-dev \
             libx265-dev \
@@ -107,6 +106,8 @@ RUN \
                 #   Similar to libmfx1, it's a part of the Intel Media SDK.
                 # libva-drm2 and libva2:
                 #   These are additional libraries needed for VAAPI to interface with the Direct Rendering Manager (DRM) and to provide the main API for VAAPI.
+                # libvpl-dev:
+                #   Development headers required when building the custom FFmpeg inside the container. On Ubuntu 24.04 this dev package is available for x86, but not arm64.
                 # libvpl2:
                 #   This is the successor to the Media SDK and provides a library for video processing.
                 && apt-get install -y \
@@ -116,6 +117,7 @@ RUN \
                     libmfxgen1 \
                     libva-drm2 \
                     libva2 \
+                    libvpl-dev \
                     libvpl2 \
             && \
             echo ; \

@@ -66,6 +66,7 @@ class WorkerSubprocessMonitor(threading.Thread):
         # Set current subprocess to None
         self.subprocess_pid = None
         self.subprocess = None
+        self._tracked_processes_by_pid = {}
         self.subprocess_start_time = 0
         self.subprocess_pause_time = 0
         self._pause_time_counter = None
@@ -83,6 +84,7 @@ class WorkerSubprocessMonitor(threading.Thread):
             if pid != self.subprocess_pid:
                 self.subprocess_pid = pid
                 self.subprocess = psutil.Process(pid=pid)
+                self._tracked_processes_by_pid = {pid: self.subprocess}
                 # Reset pause time
                 self.subprocess_start_time = time.time()
                 self.subprocess_pause_time = 0
@@ -102,6 +104,7 @@ class WorkerSubprocessMonitor(threading.Thread):
         try:
             self.subprocess_pid = None
             self.subprocess = None
+            self._tracked_processes_by_pid = {}
             # Reset subprocess progress
             self.subprocess_percent = 0
             self.subprocess_elapsed = 0
@@ -116,15 +119,44 @@ class WorkerSubprocessMonitor(threading.Thread):
         self.subprocess_vms_bytes = vms_bytes
         self.subprocess_mem_percent = mem_percent
 
+    def get_tracked_processes(self):
+        try:
+            if not self.subprocess or not self.subprocess.is_running():
+                return []
+
+            tracked_processes = []
+            current_pids = set()
+
+            for proc in [self.subprocess] + self.subprocess.children(recursive=True):
+                pid = proc.pid
+                current_pids.add(pid)
+                cached_proc = self._tracked_processes_by_pid.get(pid)
+                if cached_proc is None:
+                    cached_proc = proc
+                    # Prime CPU tracking once so subsequent monitor iterations return
+                    # usage for newly discovered descendants instead of a permanent 0.0.
+                    cached_proc.cpu_percent(interval=None)
+                    self._tracked_processes_by_pid[pid] = cached_proc
+                tracked_processes.append(cached_proc)
+
+            stale_pids = set(self._tracked_processes_by_pid) - current_pids
+            for pid in stale_pids:
+                self._tracked_processes_by_pid.pop(pid, None)
+
+            return tracked_processes
+        except psutil.NoSuchProcess:
+            return []
+        except Exception:
+            self.logger.exception("Exception in get_tracked_processes()")
+            return []
+
     def suspend_proc(self):
         # Stop the process if the worker is paused.
         # Resume is handled separately so the monitor loop can keep running.
         try:
-            if not self.subprocess or not self.subprocess.is_running():
+            procs = self.get_tracked_processes()
+            if not procs:
                 return
-
-            # Create list of all subprocesses - parent + all children
-            procs = [self.subprocess] + self.subprocess.children(recursive=True)
 
             # Suspend them all
             for p in procs:
@@ -141,11 +173,9 @@ class WorkerSubprocessMonitor(threading.Thread):
 
     def resume_proc(self):
         try:
-            if not self.subprocess or not self.subprocess.is_running():
+            procs = self.get_tracked_processes()
+            if not procs:
                 return
-
-            # Create list of all subprocesses - parent + all children
-            procs = [self.subprocess] + self.subprocess.children(recursive=True)
 
             # Resume in reverse order
             for p in reversed(procs):
@@ -307,7 +337,7 @@ class WorkerSubprocessMonitor(threading.Thread):
 
     def run(self):
         # First fetch the number of CPUs for normalising the CPU percent
-        cpu_count = psutil.cpu_count(logical=True)
+        cpu_count = psutil.cpu_count(logical=True) or 1
         # Loop while thread is expected to be running
         self.logger.warning("Starting WorkerMonitor loop")
         while True:
@@ -330,21 +360,27 @@ class WorkerSubprocessMonitor(threading.Thread):
                     self.event.wait(1)
                     continue
 
-                # Fetch CPU info
-                cpu_percent = self.subprocess.cpu_percent(interval=None)
-                normalised_cpu_percent = cpu_percent / cpu_count
+                # Aggregate resource usage across the full tracked process tree.
+                # This keeps PluginChildProcess reporting aligned with direct subprocess execution,
+                # where the worker's tracked PID may be a lightweight wrapper around a heavy child.
+                tracked_procs = self.get_tracked_processes()
+                if not tracked_procs:
+                    self.event.wait(1)
+                    continue
 
-                # Fetch Memory info
-                mem_info = self.subprocess.memory_info()
-                total_rss = mem_info.rss
-                total_vms = mem_info.vms
-                for child in self.subprocess.children(recursive=True):
+                # Fetch CPU info
+                total_cpu_percent = 0
+                total_rss = 0
+                total_vms = 0
+                for proc in tracked_procs:
                     try:
-                        mem = child.memory_info()
+                        total_cpu_percent += proc.cpu_percent(interval=None)
+                        mem = proc.memory_info()
                         total_rss += mem.rss
                         total_vms += mem.vms
                     except psutil.NoSuchProcess:
                         continue
+                normalised_cpu_percent = total_cpu_percent / cpu_count
 
                 # Calculate percentage of memory used relative to total system RAM
                 total_system_ram = psutil.virtual_memory().total

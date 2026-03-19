@@ -14,5 +14,5 @@ python3 -m build --no-isolation --skip-dependency-check --sdist
 ### Building the image
 Simply run this command from the root of the project:
 ```bash
-docker build -f ./docker/Dockerfile -t josh5/unmanic:staging .
+docker build -f ./docker/Dockerfile -t josh5/unmanic:staging -t ghcr.io/unmanic/unmanic:staging .
 ```

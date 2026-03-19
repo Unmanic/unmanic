@@ -68,12 +68,16 @@ class ProcessItem(PluginType):
     **Spawning your own child process**  
     Instead of setting `exec_command`, you can perform complex or Python‐only work in a separate process while still reporting logs & progress:
 
+        import time
+
         from unmanic.libs.unplugins.child_process import PluginChildProcess
 
         proc = PluginChildProcess(plugin_id="<your_plugin_id>", data=data)
 
-        def child_work(log_queue, prog_queue):
-            # any Python code here
+        def child_work(source_path, log_queue=None, prog_queue=None):
+            # PluginChildProcess injects log_queue and prog_queue as keyword args.
+            # any positional args should be passed to proc.run(...) first
+            log_queue.put(f"Starting work for {source_path}")
             for i in range(10):
                 # emit a UI log line:
                 log_queue.put(f"step {i}/10 completed")
@@ -82,14 +86,15 @@ class ProcessItem(PluginType):
                 time.sleep(1)
 
         # Runs child_work in its own process, returns True if exit code==0
-        success = proc.run(child_work)
+        success = proc.run(child_work, data["file_in"])
 
     In this mode the `PluginChildProcess` helper:
       1. Spawns the child via `multiprocessing.Process`.  
-      2. Registers its PID & start‐time with the worker’s `default_progress_parser`.  
-      3. Drains `log_queue` → `data["worker_log"]` for UI tail.  
-      4. Drains `prog_queue` → `command_progress_parser(line_text)` to update the progress bar.  
-      5. Will unset the child process PID on exit to reset all tracked subprocess metrics in the Unmanic Worker (CPU, memory, progress, etc.).
+      2. Calls your target with `target(*args, **kwargs)` after injecting `log_queue` and `prog_queue` into the keyword arguments.  
+      3. Registers its PID & start‐time with the worker’s `default_progress_parser`.  
+      4. Drains `log_queue` → `data["worker_log"]` for UI tail.  
+      5. Drains `prog_queue` → `command_progress_parser(line_text)` to update the progress bar.  
+      6. Will unset the child process PID on exit to reset all tracked subprocess metrics in the Unmanic Worker (CPU, memory, progress, etc.).
 
     :param data:
     :return:

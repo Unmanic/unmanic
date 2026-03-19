@@ -186,8 +186,9 @@ class PluginChildProcess:
 
     def run(self, target, *args, **kwargs):
         """
-        Launch `target(*args, **kwargs, log_queue, prog_queue)` in its own process.
-        Your `target` should accept two extra keyword args:
+        Launch `target(*args, **kwargs)` in its own process after injecting
+        `log_queue` and `prog_queue` into the keyword arguments.
+        Your `target` should accept two extra optional keyword args:
           log_queue  –> use log_queue.put(str) to emit log lines
           prog_queue –> use prog_queue.put(percentage:float) to emit progress
         """

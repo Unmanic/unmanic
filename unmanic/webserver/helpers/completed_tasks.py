@@ -123,6 +123,7 @@ def prepare_filtered_completed_tasks(params):
             'id':           task['id'],
             'task_label':   task['task_label'],
             'task_success': task['task_success'],
+            'start_time':   task['start_time'],
             'finish_time':  task['finish_time'],
             'has_metadata': task.get('abspath') in matched_paths,
         }

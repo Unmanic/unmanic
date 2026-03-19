@@ -37,6 +37,7 @@ import importlib.util
 import importlib
 import sys
 
+from unmanic import config
 from . import plugin_types
 from unmanic.libs import common
 from ..logs import UnmanicLogging
@@ -113,6 +114,7 @@ class PluginExecutor(object):
             },
         ]
         self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
+        self.settings = config.Config()
 
     def __get_plugin_directory(self, plugin_id):
         """
@@ -338,12 +340,13 @@ class PluginExecutor(object):
                 runner(data, **kwargs)
             else:
                 # Backward compatibility: positional helpers (legacy; will be removed in a future release)
-                self.logger.warning(
-                    "Plugin '%s' runner '%s' is using legacy positional helper args. "
-                    "Please update to keyword args (task_data_store, file_metadata).",
-                    plugin_id,
-                    plugin_runner,
-                )
+                if self.settings.get_debugging():
+                    self.logger.warning(
+                        "Plugin '%s' runner '%s' is using legacy positional helper args. "
+                        "Please update to keyword args (task_data_store, file_metadata).",
+                        plugin_id,
+                        plugin_runner,
+                    )
                 if len(params) >= 3:
                     runner(data, TaskDataStore, UnmanicFileMetadata)
                 elif len(params) >= 2:

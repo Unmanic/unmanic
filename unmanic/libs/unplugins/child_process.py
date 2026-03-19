@@ -29,10 +29,10 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-import signal
-import time
 import queue
+import signal
 import threading
+import time
 
 import psutil
 
@@ -163,7 +163,8 @@ class PluginChildProcess:
             daemon=True
         )
         self._proc.start()
-        _register_pid(self._proc.pid)
+        if self._proc.pid is not None:
+            _register_pid(self._proc.pid)
         self.logger.info("Started child PID %s", self._proc.pid)
 
         # Register PID & start time with WorkerSubprocessMonitor
@@ -178,7 +179,8 @@ class PluginChildProcess:
         success = self._monitor()
 
         # When the child process is done, unregister
-        _unregister_pid(self._proc.pid)
+        if self._proc.pid is not None:
+            _unregister_pid(self._proc.pid)
         self._clear_current_command()
 
         # Return success status
@@ -195,6 +197,7 @@ class PluginChildProcess:
             target(*args, **kwargs)
         except Exception:
             self.logger.exception("Exception in child target")
+            raise
 
     def _monitor(self):
         """
@@ -223,7 +226,7 @@ class PluginChildProcess:
                 pass
 
             # 3) if the child exited, we’re done. Unset parser PID
-            if not self._proc.is_alive():
+            if self._proc is not None and not self._proc.is_alive():
                 exit_ok = (self._proc.exitcode == 0)
                 if callable(parser):
                     # tell parser to unset its internal proc state

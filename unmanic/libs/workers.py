@@ -214,45 +214,79 @@ class WorkerSubprocessMonitor(threading.Thread):
         """
         Terminate the process tree (including grandchildren).
         Ensures any suspended processes are first resumed so that
-        terminate() will actually take effect.  Processes that
-        fail to stop with terminate() within 3s will be killed.
+        terminate() will actually take effect. Repeatedly rescans for
+        descendants until the root process is gone so children spawned
+        during shutdown do not escape the worker's process tree.
 
         :param proc:
         :return:
         """
         try:
-            # Build the full tree
-            all_procs = proc.children(recursive=True) + [proc]
+            term_deadline = time.time() + 3
+            kill_deadline = term_deadline + 3
 
-            # Resume all suspended processes so they can handle signals
-            for p in all_procs:
-                try:
-                    p.resume()
-                except (psutil.NoSuchProcess, NotImplementedError):
-                    pass
+            while True:
+                all_procs = self.__collect_live_proc_tree(proc)
+                if not all_procs:
+                    return
 
-            # Attempt graceful shutdown
-            for p in all_procs:
-                try:
-                    p.terminate()
-                except psutil.NoSuchProcess:
-                    pass
+                now = time.time()
+                should_kill = now >= term_deadline
 
-            # Wait up to 3s for them to exit
-            gone, alive = psutil.wait_procs(all_procs, timeout=3, callback=self.__log_proc_terminated)
+                # Resume all suspended processes so they can handle signals
+                for p in all_procs:
+                    try:
+                        p.resume()
+                    except (psutil.NoSuchProcess, NotImplementedError):
+                        pass
 
-            # Force-kill any remaining processes
-            for p in alive:
-                try:
-                    p.kill()
-                except psutil.NoSuchProcess:
-                    pass
+                for p in all_procs:
+                    try:
+                        if should_kill:
+                            p.kill()
+                        else:
+                            p.terminate()
+                    except psutil.NoSuchProcess:
+                        pass
 
-            # Final wait to reap
-            psutil.wait_procs(alive, timeout=3, callback=self.__log_proc_terminated)
+                if should_kill:
+                    _, alive = psutil.wait_procs(all_procs, timeout=0.3, callback=self.__log_proc_terminated)
+                    if not alive:
+                        return
+                    if time.time() >= kill_deadline:
+                        self.logger.warning(
+                            "Timed out waiting for process tree rooted at PID %s to exit",
+                            proc.pid,
+                        )
+                        return
+                else:
+                    psutil.wait_procs(all_procs, timeout=0.3, callback=self.__log_proc_terminated)
 
         except Exception:
             self.logger.exception("Exception in __terminate_proc_tree()")
+
+    def __collect_live_proc_tree(self, proc: psutil.Process):
+        try:
+            proc = psutil.Process(proc.pid)
+        except psutil.NoSuchProcess:
+            return []
+
+        all_procs = []
+        pending = [proc]
+        seen_pids = set()
+
+        while pending:
+            current_proc = pending.pop()
+            if current_proc.pid in seen_pids:
+                continue
+            seen_pids.add(current_proc.pid)
+            all_procs.append(current_proc)
+            try:
+                pending.extend(current_proc.children())
+            except psutil.NoSuchProcess:
+                continue
+
+        return all_procs
 
     def get_subprocess_elapsed(self):
         try:

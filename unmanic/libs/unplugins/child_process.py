@@ -45,6 +45,78 @@ _active_plugin_pids = set()
 _active_lock = threading.Lock()
 
 
+def _collect_process_tree(root_proc: psutil.Process):
+    try:
+        root_proc = psutil.Process(root_proc.pid)
+    except psutil.NoSuchProcess:
+        return []
+
+    process_tree = []
+    pending = [root_proc]
+    seen_pids = set()
+
+    while pending:
+        proc = pending.pop()
+        if proc.pid in seen_pids:
+            continue
+        seen_pids.add(proc.pid)
+        process_tree.append(proc)
+        try:
+            pending.extend(proc.children())
+        except psutil.NoSuchProcess:
+            continue
+
+    return process_tree
+
+
+def _terminate_process_tree(root_proc: psutil.Process, logger=None, term_timeout=3, kill_timeout=3):
+    """
+    Terminate a process tree, repeatedly rescanning for newly spawned descendants
+    until the root process is gone. This prevents descendants from escaping when a
+    parent handles SIGTERM by briefly continuing execution and spawning more work.
+    """
+    term_deadline = time.time() + term_timeout
+    kill_deadline = term_deadline + kill_timeout
+
+    while True:
+        process_tree = _collect_process_tree(root_proc)
+        if not process_tree:
+            return
+
+        now = time.time()
+        should_kill = now >= term_deadline
+
+        for proc in process_tree:
+            try:
+                proc.send_signal(signal.SIGCONT)
+            except Exception:
+                pass
+            try:
+                proc.resume()
+            except Exception:
+                pass
+
+        for proc in process_tree:
+            try:
+                if should_kill:
+                    proc.kill()
+                else:
+                    proc.terminate()
+            except psutil.NoSuchProcess:
+                continue
+
+        if should_kill:
+            _, alive = psutil.wait_procs(process_tree, timeout=0.3)
+            if not alive:
+                return
+            if time.time() >= kill_deadline:
+                if logger:
+                    logger.warning("Timed out waiting for process tree rooted at PID %s to exit", root_proc.pid)
+                return
+        else:
+            psutil.wait_procs(process_tree, timeout=0.3)
+
+
 def _register_pid(pid: int):
     with _active_lock:
         _active_plugin_pids.add(pid)
@@ -70,38 +142,7 @@ def kill_all_plugin_processes():
             root = psutil.Process(pid)
         except psutil.NoSuchProcess:
             continue
-
-        procs = root.children(recursive=True) + [root]
-
-        # Ensure no processes are left in SIGSTOP
-        for p in procs:
-            try:
-                # on Unix, unblock with SIGCONT
-                p.send_signal(signal.SIGCONT)
-            except Exception:
-                pass
-            try:
-                # on all platforms psutil.resume() works if supported
-                p.resume()
-            except Exception:
-                pass
-
-        # Attempt graceful shutdown
-        for p in procs:
-            try:
-                p.terminate()
-            except psutil.NoSuchProcess:
-                pass
-
-        gone, alive = psutil.wait_procs(procs, timeout=3)
-
-        # Finally, force kill any stragglers
-        for p in alive:
-            try:
-                p.kill()
-            except psutil.NoSuchProcess:
-                pass
-        psutil.wait_procs(alive, timeout=3)
+        _terminate_process_tree(root)
 
 
 def set_shared_manager(mgr):

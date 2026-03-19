@@ -251,6 +251,16 @@ RUN \
         echo "**** Create virtual environment ****" \
             && python3 -m venv /opt/venv \
         && \
+        echo "**** Configure pip packages constraint and update python package tools ****" \
+            && mkdir -p /etc/pip \
+            && printf 'setuptools<81\n' > /etc/pip/setuptools-constraint.txt \
+            && printf '[global]\nconstraint=/etc/pip/setuptools-constraint.txt\n' > /etc/pip.conf \
+            && /opt/venv/bin/pip install --no-cache-dir --upgrade \
+                pip \
+                setuptools \
+                uv \
+                wheel \
+        && \
         echo "**** Install pip packages into virtualenv ****" \
             && /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt \
     && \

@@ -192,7 +192,7 @@ class PluginExecutor(object):
         if module_name in sys.modules:
             # Unload all submodules
             submodules = []
-            for mn in sys.modules:
+            for mn in list(sys.modules):
                 if mn.startswith(plugin_id + ".") and mn != module_name:
                     submodules.append(mn)
             for mn in submodules:
@@ -219,11 +219,15 @@ class PluginExecutor(object):
         :param plugin_id:
         :return:
         """
-        # Set the module name
-        module_name = '{}.plugin'.format(plugin_id)
+        module_names = []
+        plugin_module_name = '{}.plugin'.format(plugin_id)
 
-        if module_name in sys.modules:
-            del sys.modules[module_name]
+        for mn in list(sys.modules):
+            if mn == plugin_id or mn == plugin_module_name or mn.startswith(plugin_id + "."):
+                module_names.append(mn)
+
+        for mn in module_names:
+            del sys.modules[mn]
 
     @staticmethod
     def get_plugin_type_meta(plugin_type):

@@ -49,6 +49,7 @@ class PostprocessorComplete(PluginType):
         destination_data     - Dict, information about the final output file after postprocessing for the task, e.g.:
                                  - abspath: String, absolute path to the file.
                                  - basename: String, file name.
+        destination_files    - List, all file paths created by postprocessor file movements. This includes what other plugins bay have done.
         task_success         - Boolean, True if the task succeeded.
         start_time           - Float, UNIX timestamp when the task began.
         finish_time          - Float, UNIX timestamp when the task completed.
@@ -64,6 +65,7 @@ class PostprocessorComplete(PluginType):
         "task_type":           {"required": False, "type": str},
         "source_data":         {"required": False, "type": dict},
         "destination_data":    {"required": False, "type": dict},
+        "destination_files":   {"required": False, "type": list},
         "task_success":        {"required": False, "type": bool},
         "start_time":          {"required": False, "type": float},
         "finish_time":         {"required": False, "type": float},
@@ -82,6 +84,10 @@ class PostprocessorComplete(PluginType):
             "abspath":  "/path/to/media/file.mkv",
             "basename": "file.mkv"
         },
+        "destination_files":   [
+            "/path/to/media/file.mkv",
+            "/path/to/media/alternate/file.mkv",
+        ],
         "task_success":        True,
         "start_time":          1625080000.0,
         "finish_time":         1625080050.0,

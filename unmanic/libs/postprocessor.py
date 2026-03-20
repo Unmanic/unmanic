@@ -504,6 +504,7 @@ class PostProcessor(threading.Thread):
             'task_type':           self.current_task.get_task_type(),
             'source_data':         self.current_task.get_source_data(),
             'destination_data':    self.current_task.get_destination_data(),
+            'destination_files':   list(self._last_destination_files or []),
             'task_success':        task_dump.get('task_success', False),
             'start_time':          task_dump.get('start_time', ''),
             'finish_time':         task_dump.get('finish_time', ''),

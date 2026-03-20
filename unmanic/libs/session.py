@@ -29,11 +29,10 @@ Copyright:
        OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-import base64
 import datetime
 import os
-import pickle
 import random
+import threading
 import time
 from urllib.parse import urlparse
 
@@ -130,6 +129,16 @@ class Session(object, metaclass=SingletonType):
     """
     application_token = None
 
+    """
+    background thread used to refresh cached plugin repos when supporter level changes
+    """
+    plugin_repo_refresh_thread = None
+
+    """
+    background retry thread used when the level changes during an active repo refresh
+    """
+    plugin_repo_refresh_retry_thread = None
+
     def __init__(self, *args, **kwargs):
         self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
         self.timeout = 30
@@ -218,7 +227,7 @@ class Session(object, metaclass=SingletonType):
         try:
             # Fetch a single row (get() will raise DoesNotExist exception if no results are found)
             current_installation = db_installation.select().order_by(Installation.id.asc()).limit(1).get()
-        except Exception as e:
+        except Exception:
             # Create settings (defaults will be applied)
             self.logger.debug("Unmanic session does not yet exist... Creating.")
             db_installation.delete().execute()
@@ -254,6 +263,79 @@ class Session(object, metaclass=SingletonType):
             if self.application_token or force_save_access_token:
                 db_installation.application_token = self.application_token
             db_installation.save()
+
+    def __refresh_plugin_repos_for_level_change(self, previous_level, new_level, source):
+        try:
+            from unmanic.libs.plugins import PluginsHandler
+
+            self.logger.info(
+                "Refreshing plugin repos after supporter level change %s -> %s (source=%s)",
+                previous_level,
+                new_level,
+                source,
+            )
+            plugin_handler = PluginsHandler()
+            plugin_handler.update_plugin_repos()
+            self.logger.info(
+                "Plugin repo refresh completed after supporter level change %s -> %s (source=%s)",
+                previous_level,
+                new_level,
+                source,
+            )
+        except Exception as e:
+            self.logger.error(
+                "Failed to refresh plugin repos after supporter level change %s -> %s (source=%s). %s",
+                previous_level,
+                new_level,
+                source,
+                e,
+            )
+        finally:
+            self.plugin_repo_refresh_thread = None
+
+    def __retry_plugin_repo_refresh_for_level_change(self, previous_level, new_level, source, delay_seconds=5):
+        time.sleep(delay_seconds)
+        self.plugin_repo_refresh_retry_thread = None
+        self.__trigger_plugin_repo_refresh_for_level_change(
+            previous_level,
+            new_level,
+            f"{source}_retry",
+        )
+
+    def __trigger_plugin_repo_refresh_for_level_change(self, previous_level, new_level, source):
+        if int(previous_level) == int(new_level):
+            return
+
+        existing_thread = self.plugin_repo_refresh_thread
+        if existing_thread and existing_thread.is_alive():
+            self.logger.info(
+                "Supporter level changed %s -> %s (source=%s) while a plugin repo refresh is already running. "
+                "Scheduling delayed retry.",
+                previous_level,
+                new_level,
+                source,
+            )
+            retry_thread = self.plugin_repo_refresh_retry_thread
+            if retry_thread and retry_thread.is_alive():
+                return
+            retry_thread = threading.Thread(
+                target=self.__retry_plugin_repo_refresh_for_level_change,
+                args=(previous_level, new_level, source),
+                name="SessionLevelPluginRepoRefreshRetry",
+                daemon=True,
+            )
+            self.plugin_repo_refresh_retry_thread = retry_thread
+            retry_thread.start()
+            return
+
+        refresh_thread = threading.Thread(
+            target=self.__refresh_plugin_repos_for_level_change,
+            args=(previous_level, new_level, source),
+            name="SessionLevelPluginRepoRefresh",
+            daemon=True,
+        )
+        self.plugin_repo_refresh_thread = refresh_thread
+        refresh_thread.start()
 
     def __configure_log_forwarding(self, session_valid=False):
         settings = config.Config()
@@ -389,6 +471,7 @@ class Session(object, metaclass=SingletonType):
         :return:
         """
         self.logger.debug("Resetting session installation data.")
+        previous_level = self.level
         self.level = 0
         self.picture_uri = ""
         self.name = ""
@@ -399,6 +482,7 @@ class Session(object, metaclass=SingletonType):
         self.__store_installation_data(force_save_access_token=True)
         self.__configure_log_forwarding(session_valid=False)
         self.__clear_session_auth()
+        self.__trigger_plugin_repo_refresh_for_level_change(previous_level, self.level, "reset_session")
 
     def __update_session_auth(self, access_token=None):
         # Update session headers
@@ -583,6 +667,7 @@ class Session(object, metaclass=SingletonType):
             # Get user data from response data
             user_data = response.get("data", {}).get("user")
             if user_data:
+                previous_level = self.level
                 # Set name from user data
                 self.name = user_data.get("name", "Valued Supporter")
                 # Set avatar from user data
@@ -591,6 +676,7 @@ class Session(object, metaclass=SingletonType):
                 self.email = user_data.get("email", "")
                 # Update level from response data (default back to 0)
                 self.level = int(user_data.get("supporter_level", 0))
+                self.__trigger_plugin_repo_refresh_for_level_change(previous_level, self.level, "fetch_user_data")
 
     def auth_user_account(self, force_checkin=False):
         # Don't bother if the user has never logged in
@@ -758,7 +844,7 @@ class Session(object, metaclass=SingletonType):
                 # The only way we can now log out is if the auth server response with true
                 # Save data
                 self.logger.debug("Remote registry logout response - Code: %s, Body: %s", status_code, response)
-        except RemoteApiException as e:
+        except RemoteApiException:
             self.logger.warning(
                 "Failed to reach remote server to request a logout. This is fine, we can continue to logout the app locally."
             )

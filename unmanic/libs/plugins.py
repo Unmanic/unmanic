@@ -322,7 +322,12 @@ class PluginsHandler(object, metaclass=SingletonType):
         return return_list
 
     def read_remote_changelog_file(self, changelog_url):
-        r = requests.get(changelog_url, timeout=1)
+        if not changelog_url:
+            return ''
+        try:
+            r = requests.get(changelog_url, timeout=1)
+        except requests.exceptions.RequestException:
+            return ''
         if r.status_code == 200:
             return r.text
         return ''

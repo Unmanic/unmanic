@@ -142,6 +142,8 @@ RUN \
 
 # Install commonly used command line tools
 ARG JELLYFIN_FFMPEG_VERSION="7"
+ARG BTBN_FFMPEG_RELEASE="autobuild-2026-03-19-13-03"
+ARG BTBN_FFMPEG_VERSION="8.0"
 ARG NODE_MAJOR="22"
 RUN \
     echo "**** Configure APT ****" \
@@ -168,6 +170,14 @@ RUN \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
             && \
+            echo "**** Install BtbN FFmpeg GPL build ****" \
+                && mkdir -p /usr/lib/btbn-ffmpeg \
+                && BTBN_FFMPEG_ASSET_URL="$(curl -fsSL "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${BTBN_FFMPEG_RELEASE}" | grep -oE "https://[^[:space:]\\\"]*ffmpeg-n${BTBN_FFMPEG_VERSION}[^[:space:]\\\"]*-linux64-gpl-${BTBN_FFMPEG_VERSION}\\.tar\\.xz" | head -n1)" \
+                && test -n "${BTBN_FFMPEG_ASSET_URL}" \
+                && wget -qO /tmp/btbn-ffmpeg.tar.xz "${BTBN_FFMPEG_ASSET_URL}" \
+                && tar -xJf /tmp/btbn-ffmpeg.tar.xz -C /usr/lib/btbn-ffmpeg --strip-components=1 \
+                && rm -f /tmp/btbn-ffmpeg.tar.xz \
+            && \
             echo ; \
         fi \
         && \
@@ -189,6 +199,14 @@ RUN \
                     jellyfin-ffmpeg${JELLYFIN_FFMPEG_VERSION} \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg \
                 && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe \
+            && \
+            echo "**** Install BtbN FFmpeg GPL build ****" \
+                && mkdir -p /usr/lib/btbn-ffmpeg \
+                && BTBN_FFMPEG_ASSET_URL="$(curl -fsSL "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${BTBN_FFMPEG_RELEASE}" | grep -oE "https://[^[:space:]\\\"]*ffmpeg-n${BTBN_FFMPEG_VERSION}[^[:space:]\\\"]*-linuxarm64-gpl-${BTBN_FFMPEG_VERSION}\\.tar\\.xz" | head -n1)" \
+                && test -n "${BTBN_FFMPEG_ASSET_URL}" \
+                && wget -qO /tmp/btbn-ffmpeg.tar.xz "${BTBN_FFMPEG_ASSET_URL}" \
+                && tar -xJf /tmp/btbn-ffmpeg.tar.xz -C /usr/lib/btbn-ffmpeg --strip-components=1 \
+                && rm -f /tmp/btbn-ffmpeg.tar.xz \
             && \
             echo ; \
         fi \

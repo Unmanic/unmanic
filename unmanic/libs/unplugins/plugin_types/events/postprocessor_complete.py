@@ -49,8 +49,9 @@ class PostprocessorComplete(PluginType):
         destination_data     - Dict, information about the final output file after postprocessing for the task, e.g.:
                                  - abspath: String, absolute path to the file.
                                  - basename: String, file name.
-        destination_files    - List, all file paths created by postprocessor file movements. This includes what other plugins bay have done.
+        destination_files    - List, all file paths created by postprocessor file movements. This includes what other plugins may have done.
         task_success         - Boolean, True if the task succeeded.
+        file_move_processes_success - Boolean, True if all postprocessor movement tasks completed successfully.
         start_time           - Float, UNIX timestamp when the task began.
         finish_time          - Float, UNIX timestamp when the task completed.
         processed_by_worker  - String, identifier of the worker that processed it.
@@ -67,6 +68,7 @@ class PostprocessorComplete(PluginType):
         "destination_data":    {"required": False, "type": dict},
         "destination_files":   {"required": False, "type": list},
         "task_success":        {"required": False, "type": bool},
+        "file_move_processes_success": {"required": False, "type": bool},
         "start_time":          {"required": False, "type": float},
         "finish_time":         {"required": False, "type": float},
         "processed_by_worker": {"required": False, "type": str},
@@ -89,6 +91,7 @@ class PostprocessorComplete(PluginType):
             "/path/to/media/alternate/file.mkv",
         ],
         "task_success":        True,
+        "file_move_processes_success": True,
         "start_time":          1625080000.0,
         "finish_time":         1625080050.0,
         "processed_by_worker": "worker-42",

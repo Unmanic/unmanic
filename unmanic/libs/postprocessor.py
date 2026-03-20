@@ -79,6 +79,7 @@ class PostProcessor(threading.Thread):
         self.abort_flag = threading.Event()
         self.current_task = None
         self._last_destination_files = []
+        self._last_file_move_processes_success = False
         self.ffmpeg = None
         self.abort_flag.clear()
 
@@ -312,6 +313,7 @@ class PostProcessor(threading.Thread):
         # Cleanup cache files
         self.__cleanup_cache_files(cache_path)
         self._last_destination_files = destination_files
+        self._last_file_move_processes_success = file_move_processes_success
 
     def post_process_remote_file(self):
         """
@@ -377,6 +379,8 @@ class PostProcessor(threading.Thread):
 
         # Cleanup cache files
         self.__cleanup_cache_files(cache_path)
+        self._last_destination_files = [self.current_task.get_destination_data().get('abspath')]
+        self._last_file_move_processes_success = True
 
         # Modify the task abspath - this may be different now
         if remove_source_file:
@@ -506,6 +510,7 @@ class PostProcessor(threading.Thread):
             'destination_data':    self.current_task.get_destination_data(),
             'destination_files':   list(self._last_destination_files or []),
             'task_success':        task_dump.get('task_success', False),
+            'file_move_processes_success': self._last_file_move_processes_success,
             'start_time':          task_dump.get('start_time', ''),
             'finish_time':         task_dump.get('finish_time', ''),
             'processed_by_worker': task_dump.get('processed_by_worker', ''),

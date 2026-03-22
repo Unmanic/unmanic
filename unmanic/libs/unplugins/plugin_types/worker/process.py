@@ -87,6 +87,12 @@ class ProcessItem(PluginType):
 
         # Runs child_work in its own process, returns True if exit code==0
         success = proc.run(child_work, data["file_in"])
+        if success:
+            repaired_cache_path = data["file_out"]
+            # Child-process plugins should publish the new cache artifact as
+            # both file_out and file_in when later worker plugins in the chain
+            # need to consume it.
+            data["file_in"] = repaired_cache_path
 
     In this mode the `PluginChildProcess` helper:
       1. Spawns the child via `multiprocessing.Process`.  
@@ -95,6 +101,12 @@ class ProcessItem(PluginType):
       4. Drains `log_queue` → `data["worker_log"]` for UI tail.  
       5. Drains `prog_queue` → `command_progress_parser(line_text)` to update the progress bar.  
       6. Will unset the child process PID on exit to reset all tracked subprocess metrics in the Unmanic Worker (CPU, memory, progress, etc.).
+
+    When using `PluginChildProcess`, Unmanic does not automatically promote a
+    newly created `file_out` into `file_in` for later worker plugins in the
+    chain. If your child process creates a new cache artifact that subsequent
+    worker plugins should process, update both `data["file_out"]` and
+    `data["file_in"]` to that new path.
 
     :param data:
     :return:

@@ -237,6 +237,8 @@ class TaskQueue(object):
         # Fetch Task item matching the filters specified
         task_item = fetch_next_task_filtered('pending', sort_by=self.sort_by, sort_order=self.sort_order,
                                              local_only=local_only, library_names=library_names, library_tags=library_tags)
+        if task_item:
+            self.mark_item_in_progress(task_item)
         return task_item
 
     def get_next_processed_tasks(self):

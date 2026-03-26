@@ -38,6 +38,7 @@ from tornado import iostream, web
 
 from unmanic.libs.singleton import SingletonType
 
+from urllib.parse import quote
 
 class DownloadsLinks(object, metaclass=SingletonType):
     _download_links = {}
@@ -90,7 +91,13 @@ class DownloadsHandler(web.RequestHandler):
             return
 
         self.set_header('Content-Type', 'application/octet-stream')
-        self.set_header('Content-Disposition', 'attachment; filename={}'.format(basename))
+        # self.set_header('Content-Disposition', 'attachment; filename={}'.format(basename))
+        ascii_basename = basename.encode('ascii', 'replace').decode()
+        self.set_header('Content-Disposition',
+            "attachment; filename=\"{}\"; filename*=UTF-8''{}".format(
+                ascii_basename,
+                quote(basename)
+            ))
 
         # Serve file download in 1MB chunks
         with open(abspath, 'rb') as f:

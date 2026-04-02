@@ -499,7 +499,12 @@ def prepare_installable_plugins_list():
     """
     plugins = PluginsHandler()
     # Fetch a list of plugin data cached locally
-    return plugins.get_installable_plugins_list()
+    return_list = []
+    for plugin in plugins.get_installable_plugins_list():
+        plugin_data = dict(plugin)
+        plugin_data.pop("package_url", None)
+        return_list.append(plugin_data)
+    return return_list
 
 
 def install_plugin_by_id(plugin_id, repo_id=None):

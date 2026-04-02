@@ -37,6 +37,7 @@ from unmanic.libs.plugins import PluginsHandler
 from unmanic.libs.uiserver import UnmanicDataQueues
 from unmanic.libs.unplugins import PluginExecutor
 from unmanic.webserver.api_v1.base_api_handler import BaseApiHandler
+from unmanic.webserver.helpers import plugins as plugin_helpers
 
 
 class ApiPluginsHandler(BaseApiHandler):
@@ -203,9 +204,7 @@ class ApiPluginsHandler(BaseApiHandler):
             self.write(json.dumps({"success": False}))
 
     def get_plugin_list(self, *args, **kwargs):
-        plugins = PluginsHandler()
-        # Fetch a list of plugin data cached locally
-        plugin_list = plugins.get_installable_plugins_list()
+        plugin_list = plugin_helpers.prepare_installable_plugins_list()
         self.write(json.dumps({"success": True, "plugins": plugin_list}))
 
     def install_plugin_by_id(self, *args, **kwargs):

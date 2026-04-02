@@ -1126,11 +1126,6 @@ class RequestPluginsSettingsResetSchema(BaseSchema):
 class PluginsMetadataInstallableResultsSchema(PluginsMetadataResultsSchema):
     """Schema for plugin metadata that will be returned when fetching installable plugins """
 
-    package_url = fields.Str(
-        required=False,
-        description="The plugin package download URL",
-        example="https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/plugin_id/plugin_id-1.0.0.zip",
-    )
     changelog_url = fields.Str(
         required=False,
         description="The plugin package download URL",

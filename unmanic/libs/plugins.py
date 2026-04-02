@@ -463,11 +463,31 @@ class PluginsHandler(object, metaclass=SingletonType):
         :param plugin:
         :return:
         """
+        def _request_download():
+            return session.requests_session.get(
+                plugin.get("package_url"),
+                stream=True,
+                allow_redirects=True,
+                timeout=session.timeout,
+            )
+
         # Fetch remote zip file
         destination = self.get_plugin_download_cache_path(plugin.get("plugin_id"), plugin.get("version"))
         self.logger.debug("Downloading plugin '%s' to '%s'", plugin.get("package_url"), destination)
         session = Session()
-        with session.requests_session.get(plugin.get("package_url"), stream=True, allow_redirects=True) as r:
+        r = _request_download()
+        if r.status_code in [401, 403]:
+            self.logger.info(
+                "Plugin download request returned HTTP %s. Attempting to refresh auth before retrying.",
+                r.status_code,
+            )
+            r.close()
+            token_verified = session.verify_token()
+            if not token_verified:
+                self.logger.info("Plugin download auth refresh failed. Attempting installation re-registration.")
+                session.register_unmanic(force=True)
+            r = _request_download()
+        with r:
             r.raise_for_status()
             with open(destination, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=128):

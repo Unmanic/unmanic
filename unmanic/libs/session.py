@@ -494,6 +494,19 @@ class Session(object, metaclass=SingletonType):
         self.requests_session.cookies.clear()
         self.requests_session.headers.update({"Authorization": ""})
 
+    def revoke_access_token(self, reason=""):
+        """
+        Revoke the current access token so the next authenticated request is
+        forced to fetch a fresh token from support-auth-api.
+        """
+        self.logger.info(
+            "Revoking cached access token%s",
+            f" ({reason})" if reason else "",
+        )
+        self.user_access_token = None
+        self.requests_session.headers.update({"Authorization": ""})
+        self.__store_installation_data(force_save_access_token=True)
+
     def get_installation_uuid(self):
         """
         Returns the installation UUID as a string.
@@ -676,6 +689,14 @@ class Session(object, metaclass=SingletonType):
                 self.email = user_data.get("email", "")
                 # Update level from response data (default back to 0)
                 self.level = int(user_data.get("supporter_level", 0))
+                if previous_level != self.level:
+                    # JWT scope is embedded in the access token, so a level change
+                    # requires a fresh token before making further privileged requests.
+                    self.revoke_access_token(
+                        reason=f"supporter level changed {previous_level} -> {self.level}"
+                    )
+                else:
+                    self.__store_installation_data()
                 self.__trigger_plugin_repo_refresh_for_level_change(previous_level, self.level, "fetch_user_data")
 
     def auth_user_account(self, force_checkin=False):

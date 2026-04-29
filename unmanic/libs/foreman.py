@@ -111,7 +111,7 @@ class Foreman(threading.Thread):
             try:
                 library_config = Library(library.get('id'))
             except Exception as e:
-                self.logger.exception('Unable to fetch library config for ID', library.get('id'))
+                self.logger.exception('Unable to fetch library config for id %s', library.get('id'))
                 continue
             # Get list of enabled plugins with their settings
             enabled_plugins = []
@@ -665,7 +665,7 @@ class Foreman(threading.Thread):
                     except queue.Empty:
                         continue
                     except Exception as e:
-                        self.logger.exception('Exception when fetching completed task report from worker', str(e))
+                        self.logger.exception('Exception when fetching completed task report from worker %s', e)
 
                 # Set up the correct number of workers
                 if not self.abort_flag.is_set():
@@ -786,7 +786,7 @@ class Foreman(threading.Thread):
                             source_abspath = next_item_to_process.get_source_abspath()
                             task_library_name = next_item_to_process.get_task_library_name()
                         except Exception as e:
-                            self.logger.exception('Exception in fetching task details', str(e))
+                            self.logger.exception('Exception in fetching task details %s', e)
                             self.event.wait(3)
                             continue
 

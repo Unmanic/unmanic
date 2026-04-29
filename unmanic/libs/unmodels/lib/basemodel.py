@@ -120,6 +120,7 @@ class Database:
                 pragmas=(
                     ('foreign_keys', 1),
                     ('journal_mode', 'wal'),
+                    ('busy_timeout', 5000)
                 )
             )
 

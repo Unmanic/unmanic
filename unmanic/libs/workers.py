@@ -1037,7 +1037,11 @@ class Worker(threading.Thread):
                     "Plugin returned 'exec_command' as a string; this is deprecated. "
                     "Plugins should return a list of arguments. The string will be "
                     "parsed with shlex.split and executed without a shell.")
-            return shlex.split(exec_command)
+            # POSIX mode treats backslash as an escape character, which would
+            # mangle Windows paths (``C:\\temp\\file.mkv`` -> ``C:tempfile.mkv``).
+            # Use Windows-style splitting on ``nt`` so backslash-bearing paths
+            # survive intact.
+            return shlex.split(exec_command, posix=(os.name != 'nt'))
         if isinstance(exec_command, list):
             return exec_command
         raise Exception(

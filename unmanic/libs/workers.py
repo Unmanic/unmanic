@@ -979,6 +979,29 @@ class Worker(threading.Thread):
             self.logger.warning("Failed to process task for file '%s'", original_abspath)
         return overall_success
 
+    @staticmethod
+    def _coerce_exec_command_to_argv(exec_command, logger=None):
+        """
+        Normalise a plugin-supplied exec_command into an argv list suitable
+        for ``subprocess.Popen`` without ``shell=True``.
+
+        Strings are accepted but deprecated; they are parsed with
+        ``shlex.split`` and a warning is emitted so plugin authors can
+        migrate to returning a list directly. Anything else raises.
+        """
+        if isinstance(exec_command, str):
+            if logger is not None:
+                logger.warning(
+                    "Plugin returned 'exec_command' as a string; this is deprecated. "
+                    "Plugins should return a list of arguments. The string will be "
+                    "parsed with shlex.split and executed without a shell.")
+            return shlex.split(exec_command)
+        if isinstance(exec_command, list):
+            return exec_command
+        raise Exception(
+            "Plugin's returned 'exec_command' object must be a list (or a string, deprecated). "
+            "Received type {}.".format(type(exec_command)))
+
     def __exec_command_subprocess(self, data):
         """
         Executes a command as a shell subprocess.
@@ -1019,17 +1042,14 @@ class Worker(threading.Thread):
 
         # Convert file
         try:
+            # Normalise to argv and always invoke without a shell. Plugins that
+            # build commands by concatenating filenames could otherwise expose
+            # shell metacharacters in those filenames as injection vectors.
+            exec_command = self._coerce_exec_command_to_argv(exec_command, self.logger)
+
             # Execute command
-            if isinstance(exec_command, list):
-                sub_proc = subprocess.Popen(exec_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                            universal_newlines=True, errors='replace')
-            elif isinstance(exec_command, str):
-                sub_proc = subprocess.Popen(exec_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                            universal_newlines=True, errors='replace', shell=True)
-            else:
-                raise Exception(
-                    "Plugin's returned 'exec_command' object must be either a list or a string. Received type {}.".format(
-                        type(exec_command)))
+            sub_proc = subprocess.Popen(exec_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                        universal_newlines=True, errors='replace')
 
             # Fetch process using psutil for control (sending SIGSTOP on windows will not work)
             proc = psutil.Process(pid=sub_proc.pid)

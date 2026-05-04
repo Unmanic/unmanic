@@ -331,62 +331,102 @@ class PostProcessor(threading.Thread):
         destination_data = self.current_task.get_destination_data()
         def_cache_path = self.settings.get_cache_path()
 
-        remove_source_file = True
-        if def_cache_path not in destination_data['abspath']:
-            remove_source_file = False
+        # ``remove_source_file`` is True when the destination is itself inside
+        # the cache (a fully cache-internal handoff). False when the destination
+        # lives in the user's library, in which case the staged source download
+        # must be preserved.
+        remove_source_file = def_cache_path in destination_data['abspath']
 
         self._log(f"Cache path: {def_cache_path}", level='debug')
         self._log(
             f"Remote source: {source_data['abspath']}, destination file: {destination_data['abspath']}.", level='debug')
         self._log(f"Task cache path: {cache_path}", level='debug')
 
-        # Remove the source
-        if os.path.exists(source_data.get('abspath')) and remove_source_file:
-            self._log("Removing remote source: {}".format(source_data.get('abspath')))
-            os.remove(source_data.get('abspath'))
-        elif os.path.exists(source_data.get('abspath')) and not remove_source_file:
+        # Attempt to deliver the processed file. Source removal is deferred until
+        # a delivery has succeeded so a failed copy can never leave us with
+        # neither the source nor the destination.
+        move_success = False
+        final_destination = None
+
+        if not os.path.exists(cache_path):
+            self._log(
+                "Final cache file '{}' does not exist; nothing to deliver.".format(cache_path),
+                level="warning")
+        elif remove_source_file:
+            if self.__copy_file(cache_path, destination_data.get('abspath'), [], 'DEFAULT', move=True):
+                move_success = True
+                final_destination = destination_data.get('abspath')
+            else:
+                self._log(
+                    "Failed to move processed file '{}' to '{}'. Source will be retained.".format(
+                        cache_path, destination_data.get('abspath')),
+                    level="error")
+        else:
+            # Destination is in the library. Stage into a library-adjacent
+            # directory first so the user can move the file into place; if the
+            # library is unavailable, fall back to a cache-side staging dir.
+            random_string = '{}-{}'.format(common.random_string(), int(time.time()))
+            library_tdir = os.path.join(os.path.dirname(source_data.get('abspath')),
+                                        "unmanic_remote_pending_library-" + random_string)
+            cache_tdir = os.path.join(def_cache_path, "unmanic_remote_pending_library-" + random_string)
+
+            try:
+                os.mkdir(library_tdir)
+                library_target = os.path.join(library_tdir, os.path.basename(cache_path))
+                if self.__copy_file(cache_path, library_target, [], 'DEFAULT', move=True):
+                    move_success = True
+                    final_destination = library_target
+                else:
+                    raise Exception("Failed to copy back to library staging dir")
+            except Exception as e:
+                self._log(
+                    "Library-side staging failed ({}); falling back to cache.".format(e),
+                    level="warning")
+                try:
+                    os.mkdir(cache_tdir)
+                    cache_target = os.path.join(cache_tdir, os.path.basename(cache_path))
+                    if self.__copy_file(cache_path, cache_target, [], 'DEFAULT', move=True):
+                        move_success = True
+                        final_destination = cache_target
+                    else:
+                        self._log(
+                            "Cache-side staging also failed for '{}'.".format(cache_path),
+                            level="error")
+                except Exception as e2:
+                    self._log(
+                        "Cache-side staging directory could not be created ({}).".format(e2),
+                        level="error")
+
+        # Now that the delivery has either succeeded or definitively failed it
+        # is safe to drop the source. Removing it earlier would risk losing the
+        # only remaining copy of the file.
+        if not os.path.exists(source_data.get('abspath')):
+            self._log("Remote source file '{}' does not exist!".format(source_data.get('abspath')), level="warning")
+        elif not remove_source_file:
             self._log("Keep remote source: {}, remote file source is in library and not cache.".format(
                 source_data.get('abspath')))
-        else:
-            self._log("Remote source file '{}' does not exist!".format(source_data.get('abspath')), level="warning")
-
-        # Copy final cache file to original directory
-        random_string = '{}-{}'.format(common.random_string(), int(time.time()))
-        library_tdir = os.path.join(os.path.dirname(source_data.get('abspath')),
-                                    "unmanic_remote_pending_library-" + random_string)
-        cache_tdir = os.path.join(def_cache_path, "unmanic_remote_pending_library-" + random_string)
-
-        if os.path.exists(cache_path) and remove_source_file:
-            self.__copy_file(cache_path, destination_data.get('abspath'), [], 'DEFAULT', move=True)
-            tdir = cache_tdir
-        elif os.path.exists(cache_path) and not remove_source_file:
+        elif move_success:
+            self._log("Removing remote source: {}".format(source_data.get('abspath')))
             try:
-                tdir = library_tdir
-                os.mkdir(library_tdir)
-                capture_success = self.__copy_file(cache_path, os.path.join(
-                    library_tdir, os.path.basename(cache_path)), [], 'DEFAULT', move=True)
-                if not capture_success:
-                    raise Exception("Failed to copy back to network share")
-            except:
-                os.mkdir(cache_tdir)
-                self.__copy_file(cache_path, os.path.join(
-                    cache_tdir, os.path.basename(cache_path)), [], 'DEFAULT', move=True)
-                tdir = cache_tdir
-            finally:
-                self._log(f"tdir: {tdir}", level='debug')
+                os.remove(source_data.get('abspath'))
+            except OSError as e:
+                self._log(
+                    "Failed to remove remote source '{}': {}".format(source_data.get('abspath'), e),
+                    level="error")
         else:
-            self._log("Final cache file '{}' does not exist!".format(cache_path), level="warning")
+            self._log(
+                "Retaining remote source '{}' because the processed file was not delivered.".format(
+                    source_data.get('abspath')),
+                level="warning")
 
         # Cleanup cache files
         self.__cleanup_cache_files(cache_path)
-        self._last_destination_files = [self.current_task.get_destination_data().get('abspath')]
-        self._last_file_move_processes_success = True
+        self._last_file_move_processes_success = move_success
+        self._last_destination_files = [final_destination] if final_destination else []
 
         # Modify the task abspath - this may be different now
-        if remove_source_file:
-            self.current_task.modify_path(destination_data.get('abspath'))
-        else:
-            self.current_task.modify_path(os.path.join(tdir, os.path.basename(cache_path)))
+        if final_destination:
+            self.current_task.modify_path(final_destination)
 
     def __cleanup_cache_files(self, cache_path):
         """

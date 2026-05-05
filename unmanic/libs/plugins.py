@@ -494,6 +494,32 @@ class PluginsHandler(object, metaclass=SingletonType):
                     f.write(chunk)
         return destination
 
+    @staticmethod
+    def _assert_zip_members_safe(zip_ref, dest_dir):
+        """
+        Validate every entry in a zip will extract to a path under ``dest_dir``.
+
+        Guards against zip-slip: archive members named with absolute paths,
+        ``..`` traversal, or symlinks that would let extraction escape the
+        plugin directory.
+        """
+        # Symlinks in zip archives are encoded in the upper 16 bits of
+        # external_attr as a Unix file mode. A symlink entry would let a
+        # later file be written through the link to an arbitrary path.
+        symlink_mode = 0o120000
+
+        dest_real = os.path.realpath(dest_dir)
+        for member in zip_ref.infolist():
+            name = member.filename
+            if (member.external_attr >> 16) & 0o170000 == symlink_mode:
+                raise Exception("Refusing to extract symlink entry from plugin zip: {}".format(name))
+            # Reject absolute paths and Windows drive-letter paths outright.
+            if name.startswith(('/', '\\')) or (len(name) >= 2 and name[1] == ':'):
+                raise Exception("Refusing to extract absolute path from plugin zip: {}".format(name))
+            target = os.path.realpath(os.path.join(dest_real, name))
+            if target != dest_real and not target.startswith(dest_real + os.sep):
+                raise Exception("Refusing to extract entry outside plugin directory: {}".format(name))
+
     def install_plugin(self, zip_file, plugin_id=None):
         """
         Install a given plugin from a zip file
@@ -516,6 +542,7 @@ class PluginsHandler(object, metaclass=SingletonType):
         # Extract zip file contents
         self.logger.debug("Extracting plugin to '{}'".format(plugin_directory))
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
+            self._assert_zip_members_safe(zip_ref, str(plugin_directory))
             zip_ref.extractall(str(plugin_directory))
         # Read plugin info
         plugin_info = self.get_plugin_info(plugin_id)

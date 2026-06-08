@@ -9,11 +9,17 @@ jobs:
   stale:
     name: Check Stale Issues / PRs
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     steps:
       - name: Stale
         uses: actions/stale@v5
         with:
           only-issues: true
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
+          stale-pr-message: ""
+          close-pr-message: ""
           close-issue-message: >
             This issue was closed because it has been stalled for 5 days with no activity.
           days-before-stale: 60
@@ -29,6 +35,10 @@ jobs:
         uses: actions/stale@v5
         with:
           only-issues: true
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
+          stale-pr-message: ""
+          close-pr-message: ""
           close-issue-message: >
             This issue was related to a plugin and not the core Unmanic project.
             Please open issues against the plugin's source repo which can be found in
@@ -42,6 +52,10 @@ jobs:
         uses: actions/stale@v5
         with:
           only-issues: true
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
+          stale-pr-message: ""
+          close-pr-message: ""
           close-issue-message: >
             This issue was related to documentation and not the core Unmanic project.
             Please open issues against the documentation repo at

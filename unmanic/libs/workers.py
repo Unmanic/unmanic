@@ -1023,8 +1023,8 @@ class Worker(threading.Thread):
 
     def __exec_command_subprocess(self, data):
         """
-        Executes a command as a shell subprocess.
-        Uses the given parser to record progress data from the shell STDOUT.
+        Executes a command subprocess.
+        Uses the given parser to record progress data from the command STDOUT.
 
         :param data:
         :return:
@@ -1037,41 +1037,51 @@ class Worker(threading.Thread):
             "command_progress_parser", self.worker_subprocess_monitor.default_progress_parser
         )
 
-        # Log the command for debugging
-        command_string = exec_command
-        if isinstance(exec_command, list):
-            command_string = shlex.join(exec_command)
-        self.logger.debug("Executing: %s", command_string)
-        current_command_ref = data.get("current_command")
-        if isinstance(current_command_ref, list):
-            current_command_ref.clear()
-            current_command_ref.append(command_string)
-
-        # Append start of command to worker subprocess stdout
-        self.worker_log += [
-            "\n\n",
-            "COMMAND:\n",
-            command_string,
-            "\n\n",
-            "LOG:\n",
-        ]
-
-        # Create output path if file_out is present and the path does not exists
-        if data.get("file_out"):
-            common.ensure_dir(data.get("file_out"))
-
-        # Convert file
         try:
-            # Execute command
-            if isinstance(exec_command, list):
-                sub_proc = subprocess.Popen(
-                    exec_command,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    universal_newlines=True,
-                    errors="replace",
+            string_command = False
+            if isinstance(exec_command, str):
+                string_command = True
+                deprecation_message = (
+                    "WARNING: Plugin returned 'exec_command' as a string. This compatibility mode is deprecated and "
+                    "will stop working in a future Unmanic update. Please contact the plugin author to have it "
+                    "updated. Plugins should return a list of arguments. If shell features are required, execute a "
+                    "wrapper script explicitly instead of relying on implicit shell execution in Unmanic."
                 )
-            elif isinstance(exec_command, str):
+                self.logger.warning(deprecation_message)
+            elif not isinstance(exec_command, list):
+                raise Exception(
+                    "Plugin's returned 'exec_command' object must be a list of arguments. "
+                    "Received type {}.".format(type(exec_command))
+                )
+
+            # Log the command for debugging
+            command_string = exec_command
+            if isinstance(exec_command, list):
+                command_string = shlex.join(exec_command)
+            self.logger.debug("Executing: %s", command_string)
+            current_command_ref = data.get("current_command")
+            if isinstance(current_command_ref, list):
+                current_command_ref.clear()
+                current_command_ref.append(command_string)
+
+            # Append start of command to worker subprocess stdout
+            self.worker_log += [
+                "\n\n",
+                "COMMAND:\n",
+                command_string,
+                "\n\n",
+                "LOG:\n",
+            ]
+            if string_command:
+                self.worker_log += [deprecation_message, "\n"]
+
+            # Create output path if file_out is present and the path does not exists
+            if data.get("file_out"):
+                common.ensure_dir(data.get("file_out"))
+
+            # Execute command. String commands are still run in a shell for
+            # compatibility during the deprecation period.
+            if string_command:
                 sub_proc = subprocess.Popen(
                     exec_command,
                     stdout=subprocess.PIPE,
@@ -1081,10 +1091,12 @@ class Worker(threading.Thread):
                     shell=True,
                 )
             else:
-                raise Exception(
-                    "Plugin's returned 'exec_command' object must be either a list or a string. Received type {}.".format(
-                        type(exec_command)
-                    )
+                sub_proc = subprocess.Popen(
+                    exec_command,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    universal_newlines=True,
+                    errors="replace",
                 )
 
             # Fetch process using psutil for control (sending SIGSTOP on windows will not work)

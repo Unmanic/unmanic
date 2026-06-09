@@ -142,8 +142,8 @@ RUN \
 
 # Install commonly used command line tools
 ARG JELLYFIN_FFMPEG_VERSION="7"
-ARG BTBN_FFMPEG_RELEASE="autobuild-2026-03-19-13-03"
-ARG BTBN_FFMPEG_VERSION="8.0"
+ARG BTBN_FFMPEG_RELEASE="autobuild-2026-06-08-14-24"
+ARG BTBN_FFMPEG_VERSION="8"
 ARG NODE_MAJOR="22"
 RUN \
     echo "**** Configure APT ****" \
@@ -172,11 +172,14 @@ RUN \
             && \
             echo "**** Install BtbN FFmpeg GPL build ****" \
                 && mkdir -p /usr/lib/btbn-ffmpeg \
-                && BTBN_FFMPEG_ASSET_URL="$(curl -fsSL "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${BTBN_FFMPEG_RELEASE}" | grep -oE "https://[^[:space:]\\\"]*ffmpeg-n${BTBN_FFMPEG_VERSION}[^[:space:]\\\"]*-linux64-gpl-${BTBN_FFMPEG_VERSION}\\.tar\\.xz" | head -n1)" \
-                && test -n "${BTBN_FFMPEG_ASSET_URL}" \
-                && wget -qO /tmp/btbn-ffmpeg.tar.xz "${BTBN_FFMPEG_ASSET_URL}" \
-                && tar -xJf /tmp/btbn-ffmpeg.tar.xz -C /usr/lib/btbn-ffmpeg --strip-components=1 \
-                && rm -f /tmp/btbn-ffmpeg.tar.xz \
+                && BTBN_FFMPEG_ASSET_URL="$(curl -fsSL "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${BTBN_FFMPEG_RELEASE}" | grep -oE "https://[^[:space:]\\\"]*linux64-gpl-${BTBN_FFMPEG_VERSION}(\\.[0-9]+)*\\.tar\\.xz" | head -n1)" \
+                && if [ -n "${BTBN_FFMPEG_ASSET_URL}" ]; then \
+                    wget -qO /tmp/btbn-ffmpeg.tar.xz "${BTBN_FFMPEG_ASSET_URL}" \
+                    && tar -xJf /tmp/btbn-ffmpeg.tar.xz -C /usr/lib/btbn-ffmpeg --strip-components=1 \
+                    && rm -f /tmp/btbn-ffmpeg.tar.xz; \
+                else \
+                    echo "**** BtbN FFmpeg GPL ${BTBN_FFMPEG_VERSION} build not found for ${BTBN_FFMPEG_RELEASE}; continuing with jellyfin-ffmpeg only ****"; \
+                fi \
             && \
             echo ; \
         fi \
@@ -202,11 +205,14 @@ RUN \
             && \
             echo "**** Install BtbN FFmpeg GPL build ****" \
                 && mkdir -p /usr/lib/btbn-ffmpeg \
-                && BTBN_FFMPEG_ASSET_URL="$(curl -fsSL "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${BTBN_FFMPEG_RELEASE}" | grep -oE "https://[^[:space:]\\\"]*ffmpeg-n${BTBN_FFMPEG_VERSION}[^[:space:]\\\"]*-linuxarm64-gpl-${BTBN_FFMPEG_VERSION}\\.tar\\.xz" | head -n1)" \
-                && test -n "${BTBN_FFMPEG_ASSET_URL}" \
-                && wget -qO /tmp/btbn-ffmpeg.tar.xz "${BTBN_FFMPEG_ASSET_URL}" \
-                && tar -xJf /tmp/btbn-ffmpeg.tar.xz -C /usr/lib/btbn-ffmpeg --strip-components=1 \
-                && rm -f /tmp/btbn-ffmpeg.tar.xz \
+                && BTBN_FFMPEG_ASSET_URL="$(curl -fsSL "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${BTBN_FFMPEG_RELEASE}" | grep -oE "https://[^[:space:]\\\"]*linuxarm64-gpl-${BTBN_FFMPEG_VERSION}(\\.[0-9]+)*\\.tar\\.xz" | head -n1)" \
+                && if [ -n "${BTBN_FFMPEG_ASSET_URL}" ]; then \
+                    wget -qO /tmp/btbn-ffmpeg.tar.xz "${BTBN_FFMPEG_ASSET_URL}" \
+                    && tar -xJf /tmp/btbn-ffmpeg.tar.xz -C /usr/lib/btbn-ffmpeg --strip-components=1 \
+                    && rm -f /tmp/btbn-ffmpeg.tar.xz; \
+                else \
+                    echo "**** BtbN FFmpeg GPL ${BTBN_FFMPEG_VERSION} build not found for ${BTBN_FFMPEG_RELEASE}; continuing with jellyfin-ffmpeg only ****"; \
+                fi \
             && \
             echo ; \
         fi \

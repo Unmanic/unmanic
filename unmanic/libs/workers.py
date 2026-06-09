@@ -713,6 +713,9 @@ class Worker(threading.Thread):
         runner_count = 0
         # Flag if a task has run a command
         no_exec_command_run = True
+        # Track whether plugin code still produced or selected a different output
+        # path without asking Unmanic to execute an external command.
+        plugin_managed_output_without_exec = False
 
         # Execute event plugin runners
         plugin_handler.run_event_plugins_for_plugin_type(
@@ -902,6 +905,10 @@ class Worker(threading.Thread):
                     # Ensure the current_file_out is set the currently set 'file_in'
                     current_file_out = data.get("file_in")
 
+                if no_exec_command_run and current_file_out:
+                    if os.path.abspath(current_file_out) != os.path.abspath(original_abspath):
+                        plugin_managed_output_without_exec = True
+
                 # Exec command was handled, clear shared command reference for the UI.
                 self.current_command_ref = None
                 data["current_command"] = []
@@ -944,11 +951,29 @@ class Worker(threading.Thread):
 
         # Log if no command was run by any Plugins
         if no_exec_command_run:
-            # If no jobs were carried out on this task
-            self.logger.warning("No Plugin requested for Unmanic to run commands for this file '%s'", original_abspath)
-            self.worker_log.append(
-                "\n\nNo Plugin requested for Unmanic to run commands for this file '{}'".format(original_abspath)
-            )
+            final_worker_path = current_file_out or original_abspath
+            if plugin_managed_output_without_exec:
+                self.logger.info(
+                    "No plugin requested for Unmanic to run an external command. Plugin code processed the task and "
+                    "selected output path '%s' for source '%s'",
+                    final_worker_path,
+                    original_abspath,
+                )
+                self.worker_log.append(
+                    "\n\nNo plugin requested for Unmanic to run an external command."
+                    "\nPlugin code processed this task without 'exec_command'."
+                    "\nWorker output path: '{}'".format(final_worker_path)
+                )
+            else:
+                # If no jobs were carried out on this task
+                self.logger.warning(
+                    "No plugin requested for Unmanic to run an external command and the worker path remained '%s'",
+                    final_worker_path,
+                )
+                self.worker_log.append(
+                    "\n\nNo plugin requested for Unmanic to run an external command."
+                    "\nThe worker path remained '{}'".format(final_worker_path)
+                )
 
         # Save the completed command log
         self.current_task.save_command_log(self.worker_log)

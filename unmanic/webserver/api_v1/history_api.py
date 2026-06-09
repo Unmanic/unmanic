@@ -154,14 +154,15 @@ class ApiHistoryHandler(BaseApiHandler):
         }
 
         # Iterate over historical tasks and append them to the task data
-        for task in task_results:
+        for task_result in task_results:
+            finish_time = common.get_unix_timestamp(task_result['finish_time'])
             # Set params as required in template
             item = {
-                'id':           task['id'],
+                'id':           task_result['id'],
                 'selected':     False,
-                'finish_time':  time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(task['finish_time'])),
-                'task_label':   task['task_label'],
-                'task_success': task['task_success'],
+                'finish_time':  time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(finish_time)),
+                'task_label':   task_result['task_label'],
+                'task_success': task_result['task_success'],
             }
             # Increment counters
             if item['task_success']:

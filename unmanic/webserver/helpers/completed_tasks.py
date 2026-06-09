@@ -31,24 +31,9 @@
 """
 import os
 import time
-from datetime import date, datetime
 
 from unmanic.libs import common, history, task
 from unmanic.libs.unmodels import FileMetadataPaths
-
-
-def _parse_datetime_to_timestamp(value):
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        return value.timestamp()
-    if isinstance(value, str):
-        for fmt in ('%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M'):
-            try:
-                return datetime.strptime(value, fmt).timestamp()
-            except ValueError:
-                continue
-    return None
 
 
 def prepare_filtered_completed_tasks(params):
@@ -77,8 +62,8 @@ def prepare_filtered_completed_tasks(params):
     elif status == 'failed':
         task_success = False
 
-    after_time = _parse_datetime_to_timestamp(params.get('after'))
-    before_time = _parse_datetime_to_timestamp(params.get('before'))
+    after_time = common.get_unix_timestamp(params.get('after'))
+    before_time = common.get_unix_timestamp(params.get('before'))
 
     # Fetch historical tasks
     history_logging = history.History()
@@ -123,8 +108,8 @@ def prepare_filtered_completed_tasks(params):
             'id':           task['id'],
             'task_label':   task['task_label'],
             'task_success': task['task_success'],
-            'start_time':   task['start_time'],
-            'finish_time':  task['finish_time'],
+            'start_time':   common.get_unix_timestamp(task['start_time']),
+            'finish_time':  common.get_unix_timestamp(task['finish_time']),
             'has_metadata': task.get('abspath') in matched_paths,
         }
         return_data["results"].append(item)
@@ -150,8 +135,8 @@ def get_filtered_completed_task_ids(params, exclude_ids=None):
     elif status == 'failed':
         task_success = False
 
-    after_time = _parse_datetime_to_timestamp(params.get('after'))
-    before_time = _parse_datetime_to_timestamp(params.get('before'))
+    after_time = common.get_unix_timestamp(params.get('after'))
+    before_time = common.get_unix_timestamp(params.get('before'))
 
     exclude_set = set(exclude_ids or [])
 

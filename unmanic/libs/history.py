@@ -298,10 +298,13 @@ class History(object):
             self.logger.debug('Task data param empty: %s', json.dumps(task_data))
             raise Exception('Task data param empty. This should not happen - Something has gone really wrong.')
 
+        start_time = common.get_utc_datetime(task_data['start_time'])
+        finish_time = common.get_utc_datetime(task_data['finish_time'])
+
         new_historic_task = CompletedTasks.create(task_label=task_data['task_label'],
                                                   abspath=task_data['abspath'],
                                                   task_success=task_data['task_success'],
-                                                  start_time=task_data['start_time'],
-                                                  finish_time=task_data['finish_time'],
+                                                  start_time=start_time,
+                                                  finish_time=finish_time,
                                                   processed_by_worker=task_data['processed_by_worker'])
         return new_historic_task

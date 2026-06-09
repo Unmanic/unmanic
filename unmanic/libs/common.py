@@ -93,6 +93,82 @@ def format_message(message, message2=''):
     return message
 
 
+def get_unix_timestamp(value):
+    """
+    Convert supported datetime-like values to a UNIX timestamp.
+
+    Accepts ints/floats, numeric strings, datetimes, and common serialized
+    datetime string formats. Naive datetimes are treated as UTC so legacy
+    values continue to resolve consistently after timezone changes.
+
+    :param value:
+    :return:
+    """
+    if value in [None, ""]:
+        return None
+
+    if isinstance(value, (int, float)):
+        return float(value)
+
+    if isinstance(value, datetime.datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=datetime.timezone.utc)
+        return value.timestamp()
+
+    if isinstance(value, datetime.date):
+        value = datetime.datetime.combine(
+            value,
+            datetime.time.min,
+            tzinfo=datetime.timezone.utc,
+        )
+        return value.timestamp()
+
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return None
+
+        try:
+            return float(stripped)
+        except ValueError:
+            pass
+
+        parse_formats = (
+            "%Y-%m-%d %H:%M:%S.%f",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S.%f",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M",
+        )
+        for fmt in parse_formats:
+            try:
+                parsed = datetime.datetime.strptime(stripped, fmt)
+                parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+                return parsed.timestamp()
+            except ValueError:
+                continue
+
+        try:
+            return datetime.datetime.fromisoformat(stripped).timestamp()
+        except ValueError:
+            return None
+
+    return None
+
+
+def get_utc_datetime(value):
+    """
+    Convert supported time values to a UTC datetime.
+
+    :param value:
+    :return:
+    """
+    timestamp = get_unix_timestamp(value)
+    if timestamp is None:
+        return None
+    return datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)
+
+
 def make_timestamp_human_readable(ts):
     """
     Accept a unix timestamp, return a human readable timedelta string.
@@ -319,7 +395,7 @@ def get_file_fingerprint(path, algo="sampled_xxhash_v1"):
             "full_hash_limit": 100 * 1024 * 1024,
             "fallback_algo":   "full_sha256_v1",
         },
-        "full_sha256_v1": {
+        "full_sha256_v1":    {
             "sample_size":     None,
             "sample_count":    None,
             "full_hash_limit": 0,
@@ -330,7 +406,7 @@ def get_file_fingerprint(path, algo="sampled_xxhash_v1"):
             "full_hash_limit": 100 * 1024 * 1024,
             "fallback_algo":   "full_xxhash_v1",
         },
-        "full_xxhash_v1": {
+        "full_xxhash_v1":    {
             "sample_size":     None,
             "sample_count":    None,
             "full_hash_limit": 0,

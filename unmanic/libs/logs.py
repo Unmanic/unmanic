@@ -38,7 +38,7 @@ import time
 from logging.handlers import RotatingFileHandler
 from queue import Queue, Empty, Full
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from json_log_formatter import JSONFormatter
 
 from unmanic.libs.notifications import Notifications
@@ -76,7 +76,7 @@ class ForwardJSONFormatter(JSONFormatter):
         if ts_str:
             try:
                 ts_float = float(ts_str)
-                extra['time'] = datetime.utcfromtimestamp(ts_float).isoformat()
+                extra['time'] = datetime.fromtimestamp(ts_float, tz=timezone.utc).isoformat()
             except Exception:
                 pass  # Ignore this. The default formatter will add a "time" record
         return super(ForwardJSONFormatter, self).json_record(message, extra, record)
@@ -875,7 +875,7 @@ class UnmanicLogging:
         """
         instance = UnmanicLogging()
         if not timestamp:
-            timestamp = datetime.now()
+            timestamp = datetime.now(timezone.utc)
         log_record = {
             'log_type':         'METRIC',
             'metric_name':      name,
@@ -896,7 +896,7 @@ class UnmanicLogging:
         """
         instance = UnmanicLogging()
         if not timestamp:
-            timestamp = datetime.now()
+            timestamp = datetime.now(timezone.utc)
         log_record = {
             'log_type':         'DATA',
             'data_primary_key': data_primary_key,

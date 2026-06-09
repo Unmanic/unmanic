@@ -320,12 +320,12 @@ class CompletedTasksTableResultsSchema(BaseSchema):
         description="Item success status",
         example=True,
     )
-    start_time = fields.Int(
+    start_time = fields.Float(
         required=True,
         description="Item start time",
         example=1627392550.123456,
     )
-    finish_time = fields.Int(
+    finish_time = fields.Float(
         required=True,
         description="Item finish time",
         example=1627392616.6400812,

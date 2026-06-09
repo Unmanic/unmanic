@@ -83,15 +83,101 @@ class PostProcessor(threading.Thread):
         self.ffmpeg = None
         self.abort_flag.clear()
 
-    def _log(self, message, message2='', level="info"):
-        message = common.format_message(message, message2)
-        getattr(self.logger, level)(message)
+    @staticmethod
+    def __path_is_within_directory(path, directory):
+        path_real = os.path.realpath(path)
+        directory_real = os.path.realpath(directory)
+        return path_real == directory_real or path_real.startswith(directory_real + os.sep)
+
+    def __deliver_remote_file(self, cache_path, source_path, destination_path, cache_root):
+        """
+        Deliver the processed remote-task output from this linked installation.
+
+        This runs on the linked/remote installation after worker processing has
+        completed and the final processed file already exists at ``cache_path``.
+
+        There are two delivery modes:
+        1. Cache-internal/direct delivery:
+           If the destination path is inside this installation's cache root, the
+           processed file is moved directly to that destination.
+        2. Library/network-share staging:
+           If the destination is outside the cache root, the processed file is
+           staged into a ``unmanic_remote_pending_library-*`` directory. The OG
+           installation can then retrieve it from there, or the staging path can
+           be used as a handoff location on a shared library/network path.
+
+        Returns a tuple of ``(move_success, final_destination)`` where
+        ``final_destination`` is the actual delivered/staged path on success.
+        """
+        if not os.path.exists(cache_path):
+            self.logger.warning("Final cache file '%s' does not exist!", cache_path)
+            return False, None
+
+        if self.__path_is_within_directory(destination_path, cache_root):
+            move_success = self.__copy_file(cache_path, destination_path, [], 'DEFAULT', move=True)
+            if not move_success:
+                self.logger.error(
+                    "Failed to deliver processed remote file '%s' to '%s'.", cache_path, destination_path
+                )
+            return move_success, destination_path if move_success else None
+
+        random_string = '{}-{}'.format(common.random_string(), int(time.time()))
+        staging_attempts = [
+            (
+                "library",
+                os.path.join(os.path.dirname(source_path), "unmanic_remote_pending_library-" + random_string)
+            ),
+            (
+                "cache",
+                os.path.join(cache_root, "unmanic_remote_pending_library-" + random_string)
+            ),
+        ]
+
+        for staging_name, staging_dir in staging_attempts:
+            staging_target = os.path.join(staging_dir, os.path.basename(cache_path))
+            if self.__stage_remote_file(cache_path, staging_name, staging_dir, staging_target):
+                return True, staging_target
+
+        return False, None
+
+    def __stage_remote_file(self, cache_path, staging_name, staging_dir, staging_target):
+        """
+        Stage a processed remote-task file into a temporary handoff directory.
+
+        This helper creates the ``unmanic_remote_pending_library-*`` directory
+        and then moves the processed cache file into that directory using the
+        standard ``__copy_file(..., move=True)`` logic, which still uses the
+        ``.unmanic.part`` temporary-file pattern before final rename.
+
+        ``staging_name`` is used only for logging to indicate whether this is a
+        library-adjacent handoff directory or a cache-side fallback handoff
+        directory.
+        """
+        self.logger.debug("Attempting remote staging in %s directory '%s'", staging_name, staging_dir)
+        try:
+            os.makedirs(staging_dir, exist_ok=False)
+        except Exception as e:
+            self.logger.warning("Failed to create %s staging directory '%s': %s", staging_name, staging_dir, e)
+            return False
+
+        move_success = self.__copy_file(cache_path, staging_target, [], 'DEFAULT', move=True)
+        if move_success:
+            self.logger.debug("Remote file staged to %s directory '%s'", staging_name, staging_target)
+            return True
+
+        self.logger.warning(
+            "Failed to deliver processed remote file '%s' to %s staging path '%s'.",
+            cache_path,
+            staging_name,
+            staging_target,
+        )
+        return False
 
     def stop(self):
         self.abort_flag.set()
 
     def run(self):
-        self._log("Starting PostProcessor Monitor loop...")
+        self.logger.info("Starting PostProcessor Monitor loop...")
         while not self.abort_flag.is_set():
             self.event.wait(1)
 
@@ -115,52 +201,48 @@ class PostProcessor(threading.Thread):
                     })
 
                     try:
-                        self._log("Post-processing task - {}".format(self.current_task.get_source_abspath()))
+                        self.logger.info("Post-processing task - %s", self.current_task.get_source_abspath())
                     except Exception as e:
-                        self._log("Exception in fetching task absolute path", message2=str(e), level="exception")
+                        self.logger.exception("Exception in fetching task absolute path: %s", e)
                     if self.current_task.get_task_type() == 'local':
                         try:
                             # Post processes the converted file (return it to original directory etc.)
                             self.post_process_file()
                         except Exception as e:
-                            self._log("Exception in post-processing local task file",
-                                      message2=str(e), level="exception")
+                            self.logger.exception("Exception in post-processing local task file: %s", e)
                         try:
                             # Write source and destination data to historic log
                             self.write_history_log()
                         except Exception as e:
-                            self._log("Exception in writing history log", message2=str(e), level="exception")
+                            self.logger.exception("Exception in writing history log: %s", e)
                         try:
                             # Commit task metadata to database after all plugin runners
                             self.commit_task_metadata()
                         except Exception as e:
-                            self._log("Exception in committing task metadata", message2=str(e), level="exception")
+                            self.logger.exception("Exception in committing task metadata: %s", e)
                         try:
                             # Remove file from task queue
                             self.current_task.delete()
                         except Exception as e:
-                            self._log("Exception in removing task from task list", message2=str(e), level="exception")
+                            self.logger.exception("Exception in removing task from task list: %s", e)
                     else:
                         try:
                             # Post processes the remote converted file (return it to original directory etc.)
                             self.post_process_remote_file()
                         except Exception as e:
-                            self._log("Exception in post-processing remote task file",
-                                      message2=str(e), level="exception")
+                            self.logger.exception("Exception in post-processing remote task file: %s", e)
                         try:
                             # Write source and destination data to historic log
                             self.dump_history_log()
                         except Exception as e:
-                            self._log("Exception in dumping history log for remote task",
-                                      message2=str(e), level="exception")
+                            self.logger.exception("Exception in dumping history log for remote task: %s", e)
                         try:
                             # Update the task status to 'complete'
                             self.current_task.set_status('complete')
                         except Exception as e:
-                            self._log("Exception in marking remote task as complete",
-                                      message2=str(e), level="exception")
+                            self.logger.exception("Exception in marking remote task as complete: %s", e)
 
-        self._log("Leaving PostProcessor Monitor loop...")
+        self.logger.info("Leaving PostProcessor Monitor loop...")
 
     def system_configuration_is_valid(self):
         """
@@ -243,8 +325,9 @@ class PostProcessor(threading.Thread):
                     if not self.__copy_file(file_in, file_out, destination_files, plugin_module.get('plugin_id')):
                         file_move_processes_success = False
                 else:
-                    self._log("Plugin did not request a file copy ({})".format(
-                        plugin_module.get('plugin_id')), level='debug')
+                    self.logger.debug(
+                        "Plugin did not request a file copy (%s)", plugin_module.get('plugin_id')
+                    )
 
             # Unmanic's default file movement process
             # Only carry out final post-processor file moments if all others were successful
@@ -271,21 +354,26 @@ class PostProcessor(threading.Thread):
                 if data.get('remove_source_file'):
                     # Only carry out a source removal if the file exists and the final copy was also successful
                     if file_move_processes_success and os.path.exists(source_data.get('abspath')):
-                        self._log("Removing source: {}".format(source_data.get('abspath')))
+                        self.logger.info("Removing source: %s", source_data.get('abspath'))
                         os.remove(source_data.get('abspath'))
                     else:
-                        self._log("Keeping source file '{}'. Not all postprocessor file movement functions completed.".format(
-                            source_data.get('abspath')), level="warning")
+                        self.logger.warning(
+                            "Keeping source file '%s'. Not all postprocessor file movement functions completed.",
+                            source_data.get('abspath'),
+                        )
 
             # Log a final error if not all file moments were successful
             if not file_move_processes_success:
-                self._log(
-                    "Error while running postprocessor file movement on file '{}'. Not all postprocessor file movement functions completed.".format(
-                        cache_path), level="error")
+                self.logger.error(
+                    "Error while running postprocessor file movement on file '%s'. "
+                    "Not all postprocessor file movement functions completed.",
+                    cache_path,
+                )
 
         else:
-            self._log("Skipping file movement post-processor as the task was not successful '{}'".format(cache_path),
-                      level='warning')
+            self.logger.warning(
+                "Skipping file movement post-processor as the task was not successful '%s'", cache_path
+            )
 
         # Fetch all 'postprocessor.task_result' plugin modules
         plugin_modules = plugin_handler.get_enabled_plugin_modules_by_type(
@@ -317,11 +405,31 @@ class PostProcessor(threading.Thread):
 
     def post_process_remote_file(self):
         """
-        Process remote files.
-        Remote files are not processed by plugins. They are just sent back to the OG installation and then the cache files are cleaned up here.
-        A remote file's source_data will be the download path where this installation initial received and stored it.
+        Post-process a task that was executed on a linked/remote installation.
 
-        TODO: Should we move remote tasks to a permanent download location within the cache path? Possibly not...
+        This function runs on the linked/remote installation after the worker
+        has completed processing for a task that originated on the OG installation.
+
+        Its job is not to run postprocessor plugins. Instead, it is responsible
+        for safely handing the processed file back toward the OG installation:
+
+        The destination path is derived from the remote task's ``abspath`` plus
+        the processed output extension. In practice this reflects how the OG
+        installation created the remote task in the first place:
+
+        - If the task file was uploaded to this linked installation, the task
+          ``abspath`` lives under this installation's cache area, so the
+          derived destination is also inside the cache root. In that case the
+          processed file is moved directly to that cache-based destination.
+        - If the task was created against a shared library/network path on this
+          linked installation, the task ``abspath`` lives on that library/share
+          path, so the derived destination is outside the cache root. In that case
+          the processed file is staged into a ``unmanic_remote_pending_library-*``
+          handoff directory so the OG installation can retrieve it from the
+          shared path or fall back to an HTTP download if that fails.
+
+        The remote source file is only removed after a successful cache-internal
+        delivery. If delivery fails, the source is retained to avoid data loss.
 
         :return:
         """
@@ -331,62 +439,38 @@ class PostProcessor(threading.Thread):
         destination_data = self.current_task.get_destination_data()
         def_cache_path = self.settings.get_cache_path()
 
-        remove_source_file = True
-        if def_cache_path not in destination_data['abspath']:
-            remove_source_file = False
+        destination_path = destination_data.get('abspath')
+        source_path = source_data.get('abspath')
+        remove_source_file = self.__path_is_within_directory(destination_path, def_cache_path)
 
-        self._log(f"Cache path: {def_cache_path}", level='debug')
-        self._log(
-            f"Remote source: {source_data['abspath']}, destination file: {destination_data['abspath']}.", level='debug')
-        self._log(f"Task cache path: {cache_path}", level='debug')
+        self.logger.debug("Cache path: %s", def_cache_path)
+        self.logger.debug("Remote source: %s, destination file: %s.", source_path, destination_path)
+        self.logger.debug("Task cache path: %s", cache_path)
 
-        # Remove the source
-        if os.path.exists(source_data.get('abspath')) and remove_source_file:
-            self._log("Removing remote source: {}".format(source_data.get('abspath')))
-            os.remove(source_data.get('abspath'))
-        elif os.path.exists(source_data.get('abspath')) and not remove_source_file:
-            self._log("Keep remote source: {}, remote file source is in library and not cache.".format(
-                source_data.get('abspath')))
-        else:
-            self._log("Remote source file '{}' does not exist!".format(source_data.get('abspath')), level="warning")
+        move_success, final_destination = self.__deliver_remote_file(
+            cache_path, source_path, destination_path, def_cache_path)
 
-        # Copy final cache file to original directory
-        random_string = '{}-{}'.format(common.random_string(), int(time.time()))
-        library_tdir = os.path.join(os.path.dirname(source_data.get('abspath')),
-                                    "unmanic_remote_pending_library-" + random_string)
-        cache_tdir = os.path.join(def_cache_path, "unmanic_remote_pending_library-" + random_string)
-
-        if os.path.exists(cache_path) and remove_source_file:
-            self.__copy_file(cache_path, destination_data.get('abspath'), [], 'DEFAULT', move=True)
-            tdir = cache_tdir
-        elif os.path.exists(cache_path) and not remove_source_file:
+        if not os.path.exists(source_path):
+            self.logger.warning("Remote source file '%s' does not exist!", source_path)
+        elif not remove_source_file:
+            self.logger.info("Keep remote source: %s, remote file source is in library and not cache.", source_path)
+        elif move_success:
+            self.logger.info("Removing remote source: %s", source_path)
             try:
-                tdir = library_tdir
-                os.mkdir(library_tdir)
-                capture_success = self.__copy_file(cache_path, os.path.join(
-                    library_tdir, os.path.basename(cache_path)), [], 'DEFAULT', move=True)
-                if not capture_success:
-                    raise Exception("Failed to copy back to network share")
-            except:
-                os.mkdir(cache_tdir)
-                self.__copy_file(cache_path, os.path.join(
-                    cache_tdir, os.path.basename(cache_path)), [], 'DEFAULT', move=True)
-                tdir = cache_tdir
-            finally:
-                self._log(f"tdir: {tdir}", level='debug')
+                os.remove(source_path)
+            except OSError as e:
+                self.logger.error("Failed to remove remote source '%s': %s", source_path, e)
         else:
-            self._log("Final cache file '{}' does not exist!".format(cache_path), level="warning")
+            self.logger.warning(
+                "Retaining remote source '%s' because processed file delivery did not succeed.", source_path
+            )
 
-        # Cleanup cache files
         self.__cleanup_cache_files(cache_path)
-        self._last_destination_files = [self.current_task.get_destination_data().get('abspath')]
-        self._last_file_move_processes_success = True
+        self._last_destination_files = [final_destination] if final_destination else []
+        self._last_file_move_processes_success = move_success
 
-        # Modify the task abspath - this may be different now
-        if remove_source_file:
-            self.current_task.modify_path(destination_data.get('abspath'))
-        else:
-            self.current_task.modify_path(os.path.join(tdir, os.path.basename(cache_path)))
+        if final_destination:
+            self.current_task.modify_path(final_destination)
 
     def __cleanup_cache_files(self, cache_path):
         """
@@ -399,59 +483,59 @@ class PostProcessor(threading.Thread):
         """
         task_cache_directory = os.path.dirname(cache_path)
         if os.path.exists(task_cache_directory) and "unmanic_file_conversion" in task_cache_directory:
-            self._log("Removing task cache directory '{}'".format(task_cache_directory))
+            self.logger.info("Removing task cache directory '%s'", task_cache_directory)
             try:
                 shutil.rmtree(task_cache_directory)
             except Exception as e:
-                self._log("Exception while clearing cache path '{}'".format(str(e)), level='error')
+                self.logger.error("Exception while clearing cache path: %s", e)
 
     def __copy_file(self, file_in, file_out, destination_files, plugin_id, move=False):
         if move:
-            self._log("Move file triggered by ({}) {} --> {}".format(plugin_id, file_in, file_out))
+            self.logger.info("Move file triggered by (%s) %s --> %s", plugin_id, file_in, file_out)
         else:
-            self._log("Copy file triggered by ({}) {} --> {}".format(plugin_id, file_in, file_out))
+            self.logger.info("Copy file triggered by (%s) %s --> %s", plugin_id, file_in, file_out)
 
         try:
             # Ensure the src and dst are not the same file
             if os.path.exists(file_out) and os.path.samefile(file_in, file_out):
-                self._log("The file_in and file_out path are the same file. Nothing will be done! '{}'".format(file_in),
-                          level="warning")
+                self.logger.warning(
+                    "The file_in and file_out path are the same file. Nothing will be done! '%s'", file_in
+                )
                 return False
 
             # Get a checksum prior to copy
             if not os.path.exists(file_in):
-                self._log("The file_in path does not exist! '{}'".format(file_in), level="warning")
+                self.logger.warning("The file_in path does not exist! '%s'", file_in)
                 self.event.wait(1)
-            self._log("Fetching checksum of source file '{}'.".format(file_in), level='debug')
+            self.logger.debug("Fetching checksum of source file '%s'.", file_in)
 
             # Use a '.part' suffix for the file movement, then rename it after
             part_file_out = os.path.join("{}.unmanic.part".format(file_out))
 
             # Carry out the file movement
             if move:
-                self._log("Moving file '{}' --> '{}'.".format(file_in, part_file_out), level='debug')
+                self.logger.debug("Moving file '%s' --> '%s'.", file_in, part_file_out)
                 if os.path.exists(part_file_out):
                     os.remove(part_file_out)
                 shutil.move(file_in, part_file_out, copy_function=shutil.copyfile)
             else:
-                self._log("Copying file '{}' --> '{}'.".format(file_in, part_file_out), level='debug')
+                self.logger.debug("Copying file '%s' --> '%s'.", file_in, part_file_out)
                 shutil.copyfile(file_in, part_file_out)
 
             # Remove dest file if it already exists (required only for moves)
             if os.path.exists(file_out):
-                self._log("The file_out path already exists. Removing file '{}'".format(file_out), level="debug")
+                self.logger.debug("The file_out path already exists. Removing file '%s'", file_out)
                 os.remove(file_out)
 
             # Move file from part to final destination
-            self._log("Renaming file '{}' --> '{}'.".format(part_file_out, file_out), level='debug')
+            self.logger.debug("Renaming file '%s' --> '%s'.", part_file_out, file_out)
             shutil.move(part_file_out, file_out, copy_function=shutil.copyfile)
             # Write final path to destination_files list
             destination_files.append(file_out)
             # Mark move process a success
             return True
         except Exception as e:
-            self._log("Exception while copying file {} to {}:".format(file_in, file_out),
-                      message2=str(e), level="exception")
+            self.logger.exception("Exception while copying file %s to %s: %s", file_in, file_out, e)
             file_move_processes_success = False
 
         return file_move_processes_success
@@ -462,7 +546,7 @@ class PostProcessor(threading.Thread):
 
         :return:
         """
-        self._log("Writing task history log.", level='debug')
+        self.logger.debug("Writing task history log.")
         history_logging = history.History()
         task_dump = self.current_task.task_dump()
         destination_data = self.current_task.get_destination_data()
@@ -503,18 +587,18 @@ class PostProcessor(threading.Thread):
         # Execute event plugin runners
         plugin_handler = PluginsHandler()
         plugin_handler.run_event_plugins_for_plugin_type('events.postprocessor_complete', {
-            'library_id':          self.current_task.get_task_library_id(),
-            'task_id':             self.current_task.get_task_id(),
-            'task_type':           self.current_task.get_task_type(),
-            'source_data':         self.current_task.get_source_data(),
-            'destination_data':    self.current_task.get_destination_data(),
-            'destination_files':   list(self._last_destination_files or []),
-            'task_success':        task_dump.get('task_success', False),
+            'library_id':                  self.current_task.get_task_library_id(),
+            'task_id':                     self.current_task.get_task_id(),
+            'task_type':                   self.current_task.get_task_type(),
+            'source_data':                 self.current_task.get_source_data(),
+            'destination_data':            self.current_task.get_destination_data(),
+            'destination_files':           list(self._last_destination_files or []),
+            'task_success':                task_dump.get('task_success', False),
             'file_move_processes_success': self._last_file_move_processes_success,
-            'start_time':          task_dump.get('start_time', ''),
-            'finish_time':         task_dump.get('finish_time', ''),
-            'processed_by_worker': task_dump.get('processed_by_worker', ''),
-            'log':                 task_dump.get('log', ''),
+            'start_time':                  task_dump.get('start_time', ''),
+            'finish_time':                 task_dump.get('finish_time', ''),
+            'processed_by_worker':         task_dump.get('processed_by_worker', ''),
+            'log':                         task_dump.get('log', ''),
         })
 
     def commit_task_metadata(self):
@@ -534,11 +618,11 @@ class PostProcessor(threading.Thread):
             destination_paths=destination_files,
         )
         if committed:
-            self._log("Committed file metadata entries: {}".format(committed), level='debug')
+            self.logger.debug("Committed file metadata entries: %s", committed)
         return committed
 
     def dump_history_log(self):
-        self._log("Dumping remote task history log.", level='debug')
+        self.logger.debug("Dumping remote task history log.")
         task_dump = self.current_task.task_dump()
         destination_data = self.current_task.get_destination_data()
 
@@ -559,7 +643,7 @@ class PostProcessor(threading.Thread):
             }, tasks_data_file)
         if not result['success']:
             for message in result['errors']:
-                self._log("Exception:", message2=str(message), level="exception")
+                self.logger.error("Exception: %s", message)
             raise Exception("Exception in dumping completed task data to file")
 
     def _log_completed_task_data(self, task_dump, source_data, destination_data):

@@ -119,17 +119,17 @@ class UnmanicFileMetadata:
         entry = cls._task_cache.get(task_id)
         if entry is None:
             entry = {
-                'staged': {},
-                'staged_loaded': False,
-                'file': {},
-                'file_loaded': False,
-                'source_path': None,
-                'fingerprint': None,
-                'fingerprint_algo': None,
-                'source_plugins': set(),
-                'source_fingerprint': None,
+                'staged':                  {},
+                'staged_loaded':           False,
+                'file':                    {},
+                'file_loaded':             False,
+                'source_path':             None,
+                'fingerprint':             None,
+                'fingerprint_algo':        None,
+                'source_plugins':          set(),
+                'source_fingerprint':      None,
                 'source_fingerprint_algo': None,
-                'source_path_at_set': None,
+                'source_path_at_set':      None,
             }
             cls._task_cache[task_id] = entry
         return entry
@@ -242,6 +242,35 @@ class UnmanicFileMetadata:
             cls._prune_path_cache(now)
 
     @classmethod
+    def _invalidate_cached_fingerprint(cls, fingerprint, paths=None):
+        """
+        Remove cached metadata entries associated with the provided fingerprint.
+
+        The path cache is keyed by path, so deleting metadata needs to evict all
+        known paths for the fingerprint. We also clear any matching task cache
+        entries so in-memory task-scoped lookups do not continue serving stale
+        file metadata.
+        """
+        if not fingerprint:
+            return
+
+        with cls._lock:
+            cache_paths = set(paths or [])
+            for path, entry in list(cls._path_cache.items()):
+                if entry.get('fingerprint') == fingerprint:
+                    cache_paths.add(path)
+
+            for path in cache_paths:
+                cls._path_cache.pop(path, None)
+
+            for task_entry in cls._task_cache.values():
+                if task_entry.get('fingerprint') == fingerprint:
+                    task_entry['file'] = {}
+                    task_entry['file_loaded'] = False
+                    task_entry['fingerprint'] = None
+                    task_entry['fingerprint_algo'] = None
+
+    @classmethod
     def get(cls, plugin_id_override=None):
         cls._ensure_main_process()
         plugin_id, task_id, path = cls._get_context()
@@ -275,9 +304,9 @@ class UnmanicFileMetadata:
             metadata = {}
 
         entry = {
-            'fingerprint': fingerprint,
+            'fingerprint':      fingerprint,
             'fingerprint_algo': algo,
-            'metadata': metadata,
+            'metadata':         metadata,
         }
         cls._set_cached_path_entry(path, entry)
         return deepcopy(metadata.get(plugin_id, {}))
@@ -325,7 +354,7 @@ class UnmanicFileMetadata:
             entry['staged_loaded'] = True
 
             row, created = TaskMetadata.get_or_create(task=task_id, defaults={
-                'json_blob': cls._dump_json_dict(staged_scoped),
+                'json_blob':  cls._dump_json_dict(staged_scoped),
                 'updated_at': datetime.now(),
             })
             if not created:
@@ -466,18 +495,18 @@ class UnmanicFileMetadata:
         path_map = {}
         for row in FileMetadataPaths.select().where(FileMetadataPaths.file_metadata.in_(metadata_ids)):
             path_map.setdefault(row.file_metadata.id, []).append({
-                'path': row.path,
+                'path':      row.path,
                 'path_type': row.path_type,
             })
 
         results = []
         for row in FileMetadata.select().where(FileMetadata.id.in_(metadata_ids)):
             results.append({
-                'fingerprint': row.fingerprint,
+                'fingerprint':      row.fingerprint,
                 'fingerprint_algo': row.fingerprint_algo,
-                'metadata_json': cls._load_json_dict(row.metadata_json),
-                'last_task_id': row.last_task_id,
-                'paths': path_map.get(row.id, []),
+                'metadata_json':    cls._load_json_dict(row.metadata_json),
+                'last_task_id':     row.last_task_id,
+                'paths':            path_map.get(row.id, []),
             })
         return results
 
@@ -487,18 +516,18 @@ class UnmanicFileMetadata:
         path_map = {}
         for row in FileMetadataPaths.select():
             path_map.setdefault(row.file_metadata.id, []).append({
-                'path': row.path,
+                'path':      row.path,
                 'path_type': row.path_type,
             })
 
         results = []
         for row in FileMetadata.select():
             results.append({
-                'fingerprint': row.fingerprint,
+                'fingerprint':      row.fingerprint,
                 'fingerprint_algo': row.fingerprint_algo,
-                'metadata_json': cls._load_json_dict(row.metadata_json),
-                'last_task_id': row.last_task_id,
-                'paths': path_map.get(row.id, []),
+                'metadata_json':    cls._load_json_dict(row.metadata_json),
+                'last_task_id':     row.last_task_id,
+                'paths':            path_map.get(row.id, []),
             })
         return results
 
@@ -512,8 +541,12 @@ class UnmanicFileMetadata:
         except FileMetadata.DoesNotExist:
             return False
 
+        path_rows = FileMetadataPaths.select(FileMetadataPaths.path).where(FileMetadataPaths.file_metadata == row.id)
+        paths = [path_row.path for path_row in path_rows]
+
         if not plugin_id:
             row.delete_instance()
+            cls._invalidate_cached_fingerprint(fingerprint, paths=paths)
             return True
 
         data = cls._load_json_dict(row.metadata_json)
@@ -521,4 +554,5 @@ class UnmanicFileMetadata:
         row.metadata_json = cls._dump_json_dict(data)
         row.updated_at = datetime.now()
         row.save()
+        cls._invalidate_cached_fingerprint(fingerprint, paths=paths)
         return True

@@ -170,7 +170,7 @@ class FileTest(object):
 
 
 class FileTesterThread(threading.Thread):
-    def __init__(self, name, files_to_test, files_to_process, status_updates, library_id, event):
+    def __init__(self, name, files_to_test, files_to_process, status_updates, library_id, event, pause_flag=None):
         super(FileTesterThread, self).__init__(name=name)
         self.settings = config.Config()
         self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
@@ -181,6 +181,7 @@ class FileTesterThread(threading.Thread):
         self.status_updates = status_updates
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
+        self.pause_flag = pause_flag
         self._testing_lock = threading.Lock()
         self._currently_testing = False
 
@@ -200,6 +201,10 @@ class FileTesterThread(threading.Thread):
         file_test = FileTest(self.library_id)
         plugin_handler = PluginsHandler()
         while not self.abort_flag.is_set():
+            if self.pause_flag is not None and self.pause_flag.is_set():
+                self._set_testing_state(False)
+                self.event.wait(.2)
+                continue
             try:
                 # Pending task queue has an item available. Fetch it.
                 next_file = self.files_to_test.get_nowait()

@@ -82,6 +82,9 @@ class UnmanicRunningTreads(object, metaclass=SingletonType):
     def set_unmanic_running_threads(self, unmanic_threads):
         self._unmanic_threads = unmanic_threads
 
+    def get_unmanic_running_threads(self):
+        return dict(self._unmanic_threads)
+
     def get_unmanic_running_thread(self, name):
         return self._unmanic_threads.get(name)
 
@@ -109,11 +112,9 @@ class UIServer(threading.Thread):
         udq = UnmanicDataQueues()
         udq.set_unmanic_data_queues(unmanic_data_queues)
         urt = UnmanicRunningTreads()
-        urt.set_unmanic_running_threads(
-            {
-                'foreman': foreman
-            }
-        )
+        running_threads = urt.get_unmanic_running_threads()
+        running_threads['foreman'] = foreman
+        urt.set_unmanic_running_threads(running_threads)
 
     def _log(self, message, message2='', level="info"):
         message = common.format_message(message, message2)

@@ -34,12 +34,12 @@ import os.path
 import tornado.log
 from unmanic.libs.library import Library
 from unmanic.libs import session
-from unmanic.libs.uiserver import UnmanicDataQueues
+from unmanic.libs.uiserver import UnmanicDataQueues, UnmanicRunningTreads
 from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiError
 from unmanic.webserver.api_v2.schema.schemas import PendingTasksTableResultsSchema, RequestPendingTaskCreateSchema, \
     RequestPendingTasksLibraryUpdateSchema, RequestPendingTasksReorderSchema, PendingTasksSchema, \
     RequestPendingTableDataSchema, RequestPendingTasksBulkActionSchema, TaskDownloadLinkSchema, \
-    RequestPendingTaskTestSchema, PendingTaskTestResultSchema, RequestTableUpdateByIdList
+    RequestPendingTaskTestSchema, PendingTaskTestResultSchema, RequestTableUpdateByIdList, LibraryScanStatusSchema
 from unmanic.webserver.downloads import DownloadsLinks
 from unmanic.webserver.helpers import pending_tasks
 
@@ -65,6 +65,26 @@ class ApiPendingHandler(BaseApiHandler):
             "path_pattern":      r"/pending/rescan",
             "supported_methods": ["POST"],
             "call_method":       "trigger_library_rescan",
+        },
+        {
+            "path_pattern":      r"/pending/rescan",
+            "supported_methods": ["DELETE"],
+            "call_method":       "cancel_library_rescan",
+        },
+        {
+            "path_pattern":      r"/pending/rescan/pause",
+            "supported_methods": ["POST"],
+            "call_method":       "pause_library_rescan",
+        },
+        {
+            "path_pattern":      r"/pending/rescan/resume",
+            "supported_methods": ["POST"],
+            "call_method":       "resume_library_rescan",
+        },
+        {
+            "path_pattern":      r"/pending/rescan/status",
+            "supported_methods": ["GET"],
+            "call_method":       "get_library_rescan_status",
         },
         {
             "path_pattern":      r"/pending/reorder",
@@ -112,7 +132,14 @@ class ApiPendingHandler(BaseApiHandler):
         self.session = session.Session()
         self.params = kwargs.get("params")
         udq = UnmanicDataQueues()
+        urt = UnmanicRunningTreads()
         self.unmanic_data_queues = udq.get_unmanic_data_queues()
+        self.library_scanner = urt.get_unmanic_running_thread('library_scanner_manager')
+
+    def _get_library_scan_status(self):
+        if self.library_scanner is None:
+            raise RuntimeError("Library scanner is unavailable")
+        return self.library_scanner.get_scan_status()
 
     async def get_pending_tasks(self):
         """
@@ -304,17 +331,95 @@ class ApiPendingHandler(BaseApiHandler):
                             InternalErrorSchema
         """
         try:
-            # Fetch library scan queue. If it is full, then a library scan has already been requested.
-            library_scanner_triggers = self.unmanic_data_queues.get('library_scanner_triggers')
-            if library_scanner_triggers.full():
-                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Failed to queue library scan")
+            if self.library_scanner is None:
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Library scanner is unavailable")
                 self.write_error()
                 return
 
-            # Add library scan to queue
-            library_scanner_triggers.put('library_scan')
+            if not self.library_scanner.request_scan():
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="A library scan is already scheduled or running")
+                self.write_error()
+                return
 
             self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    async def pause_library_rescan(self):
+        try:
+            if self.library_scanner is None:
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Library scanner is unavailable")
+                self.write_error()
+                return
+
+            if not self.library_scanner.pause_scan():
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="Library scan cannot be paused in its current state")
+                self.write_error()
+                return
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    async def resume_library_rescan(self):
+        try:
+            if self.library_scanner is None:
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Library scanner is unavailable")
+                self.write_error()
+                return
+
+            if not self.library_scanner.resume_scan():
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="Library scan is not paused")
+                self.write_error()
+                return
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    async def cancel_library_rescan(self):
+        try:
+            if self.library_scanner is None:
+                self.set_status(self.STATUS_ERROR_INTERNAL, reason="Library scanner is unavailable")
+                self.write_error()
+                return
+
+            if not self.library_scanner.cancel_scan():
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="Library scan is not scheduled or running")
+                self.write_error()
+                return
+
+            self.write_success()
+            return
+        except BaseApiError as bae:
+            tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
+            return
+        except Exception as e:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
+            self.write_error()
+
+    async def get_library_rescan_status(self):
+        try:
+            response = self.build_response(
+                LibraryScanStatusSchema(),
+                self._get_library_scan_status(),
+            )
+            self.write_success(response)
             return
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))

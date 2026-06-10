@@ -46,7 +46,7 @@ from unmanic.libs.scheduler import ScheduledTasksManager
 from unmanic.libs.taskqueue import TaskQueue
 from unmanic.libs.postprocessor import PostProcessor
 from unmanic.libs.taskhandler import TaskHandler
-from unmanic.libs.uiserver import UIServer
+from unmanic.libs.uiserver import UIServer, UnmanicRunningTreads
 from unmanic.libs.foreman import Foreman
 
 
@@ -240,7 +240,11 @@ class RootService:
         self.start_handler(data_queues, task_queue)
 
         # Start scheduled thread
-        self.start_library_scanner_manager(data_queues)
+        library_scanner_manager = self.start_library_scanner_manager(data_queues)
+        urt = UnmanicRunningTreads()
+        urt.set_unmanic_running_threads({
+            'library_scanner_manager': library_scanner_manager,
+        })
 
         # Start inotify watch manager
         self.start_inotify_watch_manager(data_queues, settings)

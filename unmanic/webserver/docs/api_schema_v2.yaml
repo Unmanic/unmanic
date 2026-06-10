@@ -549,6 +549,57 @@ components:
       required:
       - results
       additionalProperties: false
+    LibraryScanStatus:
+      type: object
+      properties:
+        state:
+          type: string
+          description: The current library scan state
+          enum:
+          - idle
+          - scheduled
+          - scanning
+          - paused
+          - cancelling
+          example: idle
+        current_library_id:
+          type: integer
+          nullable: true
+          description: The ID of the library currently being scanned
+          example: 1
+        current_library_name:
+          type: string
+          nullable: true
+          description: The name of the library currently being scanned
+          example: Default
+        current_library_path:
+          type: string
+          nullable: true
+          description: The path of the library currently being scanned
+          example: /library
+        can_rescan:
+          type: boolean
+          description: Whether a new library scan can be scheduled
+          example: true
+        can_pause:
+          type: boolean
+          description: Whether the current library scan can be paused
+          example: false
+        can_resume:
+          type: boolean
+          description: Whether the current library scan can be resumed
+          example: false
+        can_cancel:
+          type: boolean
+          description: Whether the current library scan can be cancelled
+          example: false
+      required:
+      - can_cancel
+      - can_pause
+      - can_rescan
+      - can_resume
+      - state
+      additionalProperties: false
     RequestPendingTasksBulkAction:
       type: object
       properties:
@@ -2315,6 +2366,141 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseSuccess'
+        '400':
+          description: Bad request; Check `messages` for any validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '404':
+          description: Bad request; Requested endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+        '405':
+          description: Bad request; Requested method is not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+        '500':
+          description: Internal error; Check `error` for exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+    delete:
+      description: Cancels a scheduled or running library scan.
+      responses:
+        '200':
+          description: Successful request; Returns success status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+        '400':
+          description: Bad request; Check `messages` for any validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '404':
+          description: Bad request; Requested endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+        '405':
+          description: Bad request; Requested method is not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+        '500':
+          description: Internal error; Check `error` for exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+  /pending/rescan/pause:
+    post:
+      description: Pauses a scheduled or running library scan.
+      responses:
+        '200':
+          description: Successful request; Returns success status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+        '400':
+          description: Bad request; Check `messages` for any validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '404':
+          description: Bad request; Requested endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+        '405':
+          description: Bad request; Requested method is not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+        '500':
+          description: Internal error; Check `error` for exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+  /pending/rescan/resume:
+    post:
+      description: Resumes a paused library scan.
+      responses:
+        '200':
+          description: Successful request; Returns success status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseSuccess'
+        '400':
+          description: Bad request; Check `messages` for any validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '404':
+          description: Bad request; Requested endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadEndpoint'
+        '405':
+          description: Bad request; Requested method is not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadMethod'
+        '500':
+          description: Internal error; Check `error` for exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+  /pending/rescan/status:
+    get:
+      description: Returns the current library scan status.
+      responses:
+        '200':
+          description: Successful request; Returns the current library scan status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryScanStatus'
         '400':
           description: Bad request; Check `messages` for any validation errors
           content:

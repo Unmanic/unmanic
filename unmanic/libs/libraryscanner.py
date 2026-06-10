@@ -59,6 +59,17 @@ class LibraryScannerManager(threading.Thread):
         self.library_scanner_triggers = data_queues["library_scanner_triggers"]
         self.abort_flag = threading.Event()
         self.abort_flag.clear()
+        self.scan_pause_flag = threading.Event()
+        self.scan_pause_flag.clear()
+        self.scan_cancel_flag = threading.Event()
+        self.scan_cancel_flag.clear()
+        self.scan_state_lock = threading.RLock()
+        self.scan_state = 'idle'
+        self.scan_requested = False
+        self.scan_active = False
+        self.current_library_id = None
+        self.current_library_name = None
+        self.current_library_path = None
         self.scheduler = schedule.Scheduler()
 
         self.file_test_managers = {}
@@ -67,6 +78,7 @@ class LibraryScannerManager(threading.Thread):
 
     def stop(self):
         self.abort_flag.set()
+        self.scan_cancel_flag.set()
         # Stop all child threads
         self.stop_all_file_test_managers()
 
@@ -88,6 +100,10 @@ class LibraryScannerManager(threading.Thread):
             # Main loop to configure the scheduler
             if int(self.settings.get_schedule_full_scan_minutes()) != self.interval:
                 self.interval = int(self.settings.get_schedule_full_scan_minutes())
+            self.process_trigger_queue()
+            if self.should_start_scan():
+                self.execute_scan_request()
+                continue
             if self.interval and self.interval != 0:
                 self.logger.info("Setting LibraryScanner schedule to scan every %s mins...", self.interval)
                 # Configure schedule
@@ -107,16 +123,7 @@ class LibraryScannerManager(threading.Thread):
                     self.event.wait(1)
 
                     # Check if a manual library scan was triggered
-                    try:
-                        if not self.library_scanner_triggers.empty():
-                            trigger = self.library_scanner_triggers.get_nowait()
-                            if trigger == "library_scan":
-                                self.scheduled_job()
-                                break
-                    except queue.Empty:
-                        continue
-                    except Exception as e:
-                        self.logger.exception("Exception in retrieving library scanner trigger %s: %s", self.name, e)
+                    self.process_trigger_queue()
 
                     # Check if library scanner is enabled
                     if not self.settings.get_enable_library_scanner():
@@ -126,6 +133,9 @@ class LibraryScannerManager(threading.Thread):
 
                     # Check if scheduled task is due
                     self.scheduler.run_pending()
+
+                    if self.should_start_scan():
+                        self.execute_scan_request()
 
                     # If the settings have changed, then break this loop and clear
                     # the scheduled job resetting to the new interval
@@ -142,6 +152,148 @@ class LibraryScannerManager(threading.Thread):
 
         :return:
         """
+        if not self.request_scan():
+            self.logger.info("Skipping scheduled library scan request while scanner state is '%s'",
+                             self.get_scan_status().get('state'))
+
+    def process_trigger_queue(self):
+        try:
+            if not self.library_scanner_triggers.empty():
+                trigger = self.library_scanner_triggers.get_nowait()
+                if trigger == "library_scan":
+                    if not self.request_scan():
+                        self.logger.info("Skipping manual library scan request while scanner state is '%s'",
+                                         self.get_scan_status().get('state'))
+                elif trigger == "pause":
+                    self.pause_scan()
+                elif trigger == "resume":
+                    self.resume_scan()
+                elif trigger == "cancel":
+                    self.cancel_scan()
+        except queue.Empty:
+            return
+        except Exception as e:
+            self.logger.exception("Exception in retrieving library scanner trigger %s: %s", self.name, e)
+
+    def get_scan_status(self):
+        with self.scan_state_lock:
+            state = self.scan_state
+            return {
+                "state":                state,
+                "current_library_id":   self.current_library_id,
+                "current_library_name": self.current_library_name,
+                "current_library_path": self.current_library_path,
+                "can_rescan":           state == 'idle',
+                "can_pause":            state in ('scheduled', 'scanning'),
+                "can_resume":           state == 'paused',
+                "can_cancel":           state in ('scheduled', 'scanning', 'paused', 'cancelling'),
+            }
+
+    def request_scan(self):
+        with self.scan_state_lock:
+            if self.scan_state != 'idle':
+                return False
+            self.scan_requested = True
+            self.scan_pause_flag.clear()
+            self.scan_cancel_flag.clear()
+            self.scan_state = 'scheduled'
+            self.current_library_id = None
+            self.current_library_name = None
+            self.current_library_path = None
+            return True
+
+    def pause_scan(self):
+        with self.scan_state_lock:
+            if self.scan_state not in ('scheduled', 'scanning'):
+                return False
+            self.scan_pause_flag.set()
+            self.scan_state = 'paused'
+            return True
+
+    def resume_scan(self):
+        with self.scan_state_lock:
+            if self.scan_state != 'paused':
+                return False
+            self.scan_pause_flag.clear()
+            self.scan_state = 'scanning' if self.scan_active else 'scheduled'
+            return True
+
+    def cancel_scan(self):
+        with self.scan_state_lock:
+            if self.scan_state == 'idle':
+                return False
+            self.scan_requested = False
+            self.scan_pause_flag.clear()
+            self.scan_cancel_flag.set()
+            if self.scan_active:
+                self.scan_state = 'cancelling'
+            else:
+                self.scan_state = 'idle'
+                self.current_library_id = None
+                self.current_library_name = None
+                self.current_library_path = None
+                self.scan_cancel_flag.clear()
+            return True
+
+    def should_start_scan(self):
+        with self.scan_state_lock:
+            return self.scan_requested and self.scan_state == 'scheduled' and not self.scan_pause_flag.is_set()
+
+    def execute_scan_request(self):
+        with self.scan_state_lock:
+            if not self.scan_requested or self.scan_state != 'scheduled':
+                return
+            self.scan_requested = False
+            self.scan_active = True
+            self.scan_state = 'scanning'
+            self.scan_cancel_flag.clear()
+
+        try:
+            self.run_scheduled_scan()
+        finally:
+            self.clear_queue(self.files_to_test)
+            self.clear_queue(self.files_to_process)
+            with self.scan_state_lock:
+                self.scan_active = False
+                self.scan_requested = False
+                self.scan_pause_flag.clear()
+                self.scan_cancel_flag.clear()
+                self.scan_state = 'idle'
+                self.current_library_id = None
+                self.current_library_name = None
+                self.current_library_path = None
+
+    @staticmethod
+    def clear_queue(target_queue):
+        while True:
+            try:
+                target_queue.get_nowait()
+            except queue.Empty:
+                break
+
+    def wait_if_paused_or_cancelled(self, frontend_messages=None, paused_message='Library scan paused'):
+        while not self.abort_flag.is_set():
+            if self.scan_cancel_flag.is_set():
+                return False
+            if not self.scan_pause_flag.is_set():
+                if self.scan_active:
+                    with self.scan_state_lock:
+                        self.scan_state = 'scanning'
+                return True
+            with self.scan_state_lock:
+                self.scan_state = 'paused'
+            if frontend_messages is not None:
+                self.update_scan_progress(frontend_messages, paused_message)
+            self.event.wait(.2)
+        return False
+
+    def set_current_library(self, library_id=None, library_name=None, library_path=None):
+        with self.scan_state_lock:
+            self.current_library_id = library_id
+            self.current_library_name = library_name
+            self.current_library_path = library_path
+
+    def run_scheduled_scan(self):
         if not self.system_configuration_is_valid():
             self.logger.warning("Skipping library scanner due invalid system configuration.")
             return
@@ -149,6 +301,8 @@ class LibraryScannerManager(threading.Thread):
         # For each configured library, check if a library scan is required
         no_libraries_configured = True
         for lib_info in Library.get_all_libraries():
+            if not self.wait_if_paused_or_cancelled():
+                break
             no_libraries_configured = False
             try:
                 library = Library(lib_info['id'])
@@ -164,9 +318,13 @@ class LibraryScannerManager(threading.Thread):
                 # Run library scan
                 library_name = library.get_name()
                 self.logger.info("Running full library scan on library '%s'", library_name)
+                self.set_current_library(library.get_id(), library_name, library.get_path())
                 self.scan_library_path(library_name, library.get_path(), library.get_id())
+                if self.scan_cancel_flag.is_set() or self.abort_flag.is_set():
+                    break
         if no_libraries_configured:
             self.logger.info("No libraries are configured to run a library scan")
+        self.set_current_library()
 
     def system_configuration_is_valid(self):
         """
@@ -191,7 +349,8 @@ class LibraryScannerManager(threading.Thread):
 
     def start_results_manager_thread(self, manager_id, status_updates, library_id):
         manager = FileTesterThread("FileTesterThread-{}".format(manager_id), self.files_to_test,
-                                   self.files_to_process, status_updates, library_id, self.event)
+                                   self.files_to_process, status_updates, library_id, self.event,
+                                   pause_flag=self.scan_pause_flag)
         manager.daemon = True
         manager.start()
         self.file_test_managers[manager_id] = manager
@@ -240,6 +399,8 @@ class LibraryScannerManager(threading.Thread):
 
         # Push status notification to frontend
         frontend_messages = FrontendPushMessages()
+        self.clear_queue(self.files_to_test)
+        self.clear_queue(self.files_to_process)
 
         # Start X number of FileTesterThread threads
         concurrent_file_testers = self.settings.get_concurrent_file_testers()
@@ -265,13 +426,13 @@ class LibraryScannerManager(threading.Thread):
         current_file = ''
         percent_completed_string = ''
         for root, subFolders, files in os.walk(library_path, followlinks=follow_symlinks):
-            if self.abort_flag.is_set():
+            if not self.wait_if_paused_or_cancelled(frontend_messages, percent_completed_string or 'Library scan paused'):
                 break
             if self.settings.get_debugging():
                 self.logger.debug(json.dumps(files, indent=2))
             # Add all files in this path that match our container filter
             for file_path in files:
-                if self.abort_flag.is_set():
+                if not self.wait_if_paused_or_cancelled(frontend_messages, percent_completed_string or 'Library scan paused'):
                     break
 
                 # Place file's full path in queue to be tested
@@ -287,6 +448,8 @@ class LibraryScannerManager(threading.Thread):
         # Loop while waiting for all threads to finish
         double_check = 0
         while not self.abort_flag.is_set():
+            if not self.wait_if_paused_or_cancelled(frontend_messages, percent_completed_string or 'Library scan paused'):
+                break
             self.update_scan_progress(frontend_messages, percent_completed_string)
             # Check if all files have been tested
             if self.files_to_test.empty() and self.files_to_process.empty() and status_updates.empty():
@@ -337,6 +500,9 @@ class LibraryScannerManager(threading.Thread):
             if self.file_test_managers[manager_id].is_alive():
                 self.logger.error("Completing Library scan, but thread %s is still alive. Files tested by this thread will be ignored.", manager_id)
 
+        self.clear_queue(self.files_to_test)
+        self.clear_queue(self.files_to_process)
+
         scan_end_time = time.time()
         scan_duration = str((scan_end_time - scan_start_time))
         self.logger.warning("Library scan completed in %s seconds", scan_duration)
@@ -357,18 +523,19 @@ class LibraryScannerManager(threading.Thread):
                             scan_duration=scan_duration,
                             files_scanned_count=total_file_count)
 
-        # Execute event plugin runners
-        data = {
-            "library_id":          library_id,
-            "library_name":        library_name,
-            "library_path":        library_path,
-            "scan_start_time":     scan_start_time,
-            "scan_end_time":       scan_end_time,
-            "scan_duration":       scan_duration,
-            "files_scanned_count": total_file_count,
-        }
-        plugin_handler = PluginsHandler()
-        plugin_handler.run_event_plugins_for_plugin_type('events.scan_complete', data)
+        if not self.scan_cancel_flag.is_set() and not self.abort_flag.is_set():
+            # Execute event plugin runners
+            data = {
+                "library_id":          library_id,
+                "library_name":        library_name,
+                "library_path":        library_path,
+                "scan_start_time":     scan_start_time,
+                "scan_end_time":       scan_end_time,
+                "scan_duration":       scan_duration,
+                "files_scanned_count": total_file_count,
+            }
+            plugin_handler = PluginsHandler()
+            plugin_handler.run_event_plugins_for_plugin_type('events.scan_complete', data)
 
         # Run a manual garbage collection
         gc.collect()

@@ -750,6 +750,55 @@ class PendingTasksSchema(TableRecordsSuccessSchema):
     )
 
 
+class LibraryScanStatusSchema(BaseSchema):
+    """Schema for returning the current library scan state"""
+
+    state = fields.Str(
+        required=True,
+        description="The current library scan state",
+        example="idle",
+        validate=validate.OneOf(["idle", "scheduled", "scanning", "paused", "cancelling"]),
+    )
+    current_library_id = fields.Int(
+        required=False,
+        allow_none=True,
+        description="The ID of the library currently being scanned",
+        example=1,
+    )
+    current_library_name = fields.Str(
+        required=False,
+        allow_none=True,
+        description="The name of the library currently being scanned",
+        example="Default",
+    )
+    current_library_path = fields.Str(
+        required=False,
+        allow_none=True,
+        description="The path of the library currently being scanned",
+        example="/library",
+    )
+    can_rescan = fields.Boolean(
+        required=True,
+        description="Whether a new library scan can be scheduled",
+        example=True,
+    )
+    can_pause = fields.Boolean(
+        required=True,
+        description="Whether the current library scan can be paused",
+        example=False,
+    )
+    can_resume = fields.Boolean(
+        required=True,
+        description="Whether the current library scan can be resumed",
+        example=False,
+    )
+    can_cancel = fields.Boolean(
+        required=True,
+        description="Whether the current library scan can be cancelled",
+        example=False,
+    )
+
+
 class RequestPendingTasksReorderSchema(RequestPendingTasksBulkActionSchema):
     """Schema for moving pending items to top or bottom of table by ID"""
 

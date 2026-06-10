@@ -123,6 +123,7 @@ class Links(object, metaclass=SingletonType):
             "preloading_count":                config_dict.get('preloading_count', 2),
             "enable_checksum_validation":      config_dict.get('enable_checksum_validation', False),
             "enable_config_missing_libraries": config_dict.get('enable_config_missing_libraries', False),
+            "enable_update_library_config":    config_dict.get('enable_update_library_config', False),
             "enable_distributed_worker_count": config_dict.get('enable_distributed_worker_count', False),
             "name":                            config_dict.get('name', '???'),
             "version":                         config_dict.get('version', '???'),
@@ -519,38 +520,11 @@ class Links(object, metaclass=SingletonType):
 
                 # Push library configurations for missing remote libraries (if configured to do so)
                 if local_config.get('enable_sending_tasks') and local_config.get('enable_config_missing_libraries'):
-                    # Fetch remote installation library name list
-                    results = self.remote_api_get(local_config, '/unmanic/api/v2/settings/libraries')
-                    existing_library_names = []
-                    for library in results.get('libraries', []):
-                        existing_library_names.append(library.get('name'))
-                    # Loop over local libraries and create an import object for each one that is missing
                     for library in Library.get_all_libraries():
                         # Ignore local libraries that are configured for remote only
                         if library.get('enable_remote_only'):
                             continue
-                        # For each of the missing libraries, create a new remote library with that config.
-                        if library.get('name') not in existing_library_names:
-                            # Export library config
-                            import_data = Library.export(library.get('id'))
-                            # Set library ID to 0 to generate new library from this import
-                            import_data['library_id'] = 0
-                            # Configure remote library to be fore remote files only
-                            import_data['library_config']['enable_remote_only'] = True
-                            import_data['library_config']['enable_scanner'] = False
-                            import_data['library_config']['enable_inotify'] = False
-                            # Import library on remote installation
-                            self._log("Importing remote library config '{}'".format(library.get('name')), message2=import_data,
-                                      level='debug')
-                            result = self.import_remote_library_config(local_config, import_data)
-                            if result is None:
-                                # There was a connection issue of some kind. This was already logged.
-                                continue
-                            if result.get('success'):
-                                self._log("Successfully imported library '{}'".format(library.get('name')), level='debug')
-                                continue
-                            self._log("Failed to import library config '{}'".format(library.get('name')),
-                                      message2=result.get('error'), level='error')
+                        self.sync_remote_library_config(local_config, library.get('id'))
 
             # Only save to file if the settings have been updated
             remote_installations.append(updated_config)
@@ -729,6 +703,59 @@ class Links(object, metaclass=SingletonType):
                       message2=json_data.get('traceback', []), level='error')
         return False
 
+    def generate_remote_library_import_data(self, library_id: int, remote_library_id=0):
+        """
+        Build an import payload for a remote library managed by this installation link.
+
+        :param library_id:
+        :param remote_library_id:
+        :return:
+        """
+        import_data = Library.export(library_id)
+        import_data['library_id'] = remote_library_id
+        import_data['library_config']['enable_remote_only'] = True
+        import_data['library_config']['enable_scanner'] = False
+        import_data['library_config']['enable_inotify'] = False
+        return import_data
+
+    def sync_remote_library_config(self, remote_config: dict, library_id: int, force_update=False):
+        """
+        Ensure a remote installation has the requested library config.
+        If force_update is True, overwrite the existing remote library config as well.
+
+        :param remote_config:
+        :param library_id:
+        :param force_update:
+        :return:
+        """
+        try:
+            library = Library(library_id)
+        except Exception as e:
+            self._log("Unable to fetch library config for ID {}".format(library_id), message2=str(e), level='error')
+            return {}
+
+        if library.get_enable_remote_only():
+            return {}
+
+        remote_library_config = self.get_the_remote_library_config_by_name(remote_config, library.get_name())
+        remote_library_id = 0
+        if remote_library_config:
+            if not force_update:
+                return remote_library_config
+            remote_library_id = remote_library_config.get('id', 0)
+
+        import_data = self.generate_remote_library_import_data(library_id, remote_library_id=remote_library_id)
+        self._log("Importing remote library config '{}'".format(library.get_name()), message2=import_data, level='debug')
+        result = self.import_remote_library_config(remote_config, import_data)
+        if result is None:
+            return None
+        if result.get('success'):
+            self._log("Successfully imported library '{}'".format(library.get_name()), level='debug')
+            return self.get_the_remote_library_config_by_name(remote_config, library.get_name())
+        self._log("Failed to import library config '{}'".format(library.get_name()),
+                  message2=result.get('error'), level='error')
+        return {}
+
     def check_remote_installation_for_available_workers(self):
         """
         Return a list of installations with workers available for a remote task.
@@ -789,14 +816,16 @@ class Links(object, metaclass=SingletonType):
                 # Ensure that worker count is more than 0
                 if len(worker_list):
                     installations_with_info[local_config.get('uuid')] = {
-                        "address":                local_config.get('address'),
-                        "auth":                   local_config.get('auth'),
-                        "username":               local_config.get('username'),
-                        "password":               local_config.get('password'),
-                        "enable_task_preloading": local_config.get('enable_task_preloading'),
-                        "preloading_count":       local_config.get('preloading_count'),
-                        "library_names":          library_names,
-                        "available_slots":        0,
+                        "address":                         local_config.get('address'),
+                        "auth":                            local_config.get('auth'),
+                        "username":                        local_config.get('username'),
+                        "password":                        local_config.get('password'),
+                        "enable_task_preloading":          local_config.get('enable_task_preloading'),
+                        "preloading_count":                local_config.get('preloading_count'),
+                        "enable_config_missing_libraries": local_config.get('enable_config_missing_libraries'),
+                        "enable_update_library_config":    local_config.get('enable_update_library_config'),
+                        "library_names":                   library_names,
+                        "available_slots":                 0,
                     }
 
                 available_workers = False
@@ -1379,6 +1408,12 @@ class RemoteTaskManager(threading.Thread):
             return False
         library_name = library.get_name()
         library_path = library.get_path()
+
+        if (
+            self.installation_info.get('enable_config_missing_libraries')
+            and self.installation_info.get('enable_update_library_config')
+        ):
+            self.links.sync_remote_library_config(self.installation_info, library_id, force_update=True)
 
         # Check if we can create the remote task with just a relative path
         #   only create checksum and send file if the remote library path cannot accept relative paths, or

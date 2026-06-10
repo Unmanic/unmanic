@@ -2105,7 +2105,8 @@
                             "enable_distributed_worker_count": false,
                             "preloading_count": 2,
                             "enable_checksum_validation": false,
-                            "enable_config_missing_libraries": false
+                            "enable_config_missing_libraries": false,
+                            "enable_update_library_config": false
                         },
                         "additionalProperties": {}
                     },

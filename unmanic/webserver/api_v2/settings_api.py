@@ -721,6 +721,7 @@ class ApiSettingsHandler(BaseApiHandler):
                         "preloading_count":                data.get('preloading_count'),
                         "enable_checksum_validation":      data.get('enable_checksum_validation'),
                         "enable_config_missing_libraries": data.get('enable_config_missing_libraries'),
+                        "enable_update_library_config":    data.get('enable_update_library_config', False),
                         "enable_distributed_worker_count": data.get('enable_distributed_worker_count', False),
                     },
                     "distributed_worker_count_target": data.get('distributed_worker_count_target', 0),

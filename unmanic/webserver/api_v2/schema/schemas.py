@@ -1613,6 +1613,7 @@ class SettingsRemoteInstallationLinkConfigSchema(BaseSchema):
             "preloading_count":                2,
             "enable_checksum_validation":      False,
             "enable_config_missing_libraries": False,
+            "enable_update_library_config":    False,
         },
     )
     distributed_worker_count_target = fields.Int(

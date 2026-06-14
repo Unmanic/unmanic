@@ -48,6 +48,21 @@ class PostprocessorStarted(PluginType):
                               - abspath: String, absolute source path.
                               - basename: String, filename of the source.
 
+    If this runner needs shared task state or persisted file metadata, update the function signature
+    to accept the injected keyword helpers:
+
+        from unmanic.libs.metadata import UnmanicFileMetadata
+        from unmanic.libs.task import TaskDataStore
+
+        def emit_postprocessor_started(
+            data,
+            task_data_store: type[TaskDataStore] | None = None,
+            file_metadata: type[UnmanicFileMetadata] | None = None,
+        ):
+            pass
+
+    Declare only the helpers you use.
+
     :param data:
     :return:
     """

@@ -47,6 +47,19 @@ class FileTest(PluginType):
         priority_score                  - Integer, an additional score that can be added to set the position of the new task in the task queue.
         shared_info                     - Dictionary, information provided by previous plugin runners. This can be appended to for subsequent runners.
 
+    If this runner needs persisted file metadata, update the function signature to accept the injected
+    `file_metadata` keyword helper:
+
+        from unmanic.libs.metadata import UnmanicFileMetadata
+
+        def on_library_management_file_test(
+            data,
+            file_metadata: type[UnmanicFileMetadata] | None = None,
+        ):
+            pass
+
+    Only declare this helper if you actually use it.
+
     :param data:
     :return:
     """

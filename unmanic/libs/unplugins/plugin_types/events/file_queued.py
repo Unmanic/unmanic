@@ -45,6 +45,19 @@ class FileQueued(PluginType):
         priority_score  - Integer, the priority score assigned to this task.
         issues          - List, any file issues that were raised.
 
+    If this runner needs persisted file metadata, update the function signature to accept the injected
+    `file_metadata` keyword helper:
+
+        from unmanic.libs.metadata import UnmanicFileMetadata
+
+        def emit_file_queued(
+            data,
+            file_metadata: type[UnmanicFileMetadata] | None = None,
+        ):
+            pass
+
+    Only declare this helper if you actually use it.
+
     :param data:
     :return:
     """

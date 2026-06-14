@@ -51,6 +51,21 @@ class TaskResult(PluginType):
         start_time                      - Float, UNIX timestamp when the task began.
         finish_time                     - Float, UNIX timestamp when the task completed.
 
+    If this runner needs shared task state or persisted file metadata, update the function signature
+    to accept the injected keyword helpers:
+
+        from unmanic.libs.metadata import UnmanicFileMetadata
+        from unmanic.libs.task import TaskDataStore
+
+        def on_postprocessor_task_results(
+            data,
+            task_data_store: type[TaskDataStore] | None = None,
+            file_metadata: type[UnmanicFileMetadata] | None = None,
+        ):
+            pass
+
+    Declare only the helpers you use.
+
     :param data:
     :return:
     """

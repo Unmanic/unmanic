@@ -48,6 +48,21 @@ class FileMove(PluginType):
         file_out                - String, the destination file that the file will be copied to.
         run_default_file_copy   - Boolean, should Unmanic run the default post-process file movement. (default: 'True')
 
+    If this runner needs shared task state or persisted file metadata, update the function signature
+    to accept the injected keyword helpers:
+
+        from unmanic.libs.metadata import UnmanicFileMetadata
+        from unmanic.libs.task import TaskDataStore
+
+        def on_postprocessor_file_movement(
+            data,
+            task_data_store: type[TaskDataStore] | None = None,
+            file_metadata: type[UnmanicFileMetadata] | None = None,
+        ):
+            pass
+
+    Declare only the helpers you use.
+
     :param data:
     :return:
     """

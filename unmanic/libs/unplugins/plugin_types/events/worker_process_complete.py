@@ -48,6 +48,19 @@ class WorkerProcessComplete(PluginType):
         worker_runners_info   - Dict, per-runner metadata including status and success.
         worker_log            - List, the accumulated log lines for this task.
 
+    If this runner needs shared task state, update the function signature to accept the injected
+    `task_data_store` keyword helper:
+
+        from unmanic.libs.task import TaskDataStore
+
+        def emit_worker_process_complete(
+            data,
+            task_data_store: type[TaskDataStore] | None = None,
+        ):
+            pass
+
+    Only declare this helper if you actually use it.
+
     :param data:
     :return:
     """

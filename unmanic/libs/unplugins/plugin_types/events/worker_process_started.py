@@ -46,6 +46,19 @@ class WorkerProcessStarted(PluginType):
         task_cache_path       - String, the target cache path for this task.
         worker_runners_info   - Dict, per-runner metadata with initial status ("pending") and success (False).
 
+    If this runner needs shared task state, update the function signature to accept the injected
+    `task_data_store` keyword helper:
+
+        from unmanic.libs.task import TaskDataStore
+
+        def emit_worker_process_started(
+            data,
+            task_data_store: type[TaskDataStore] | None = None,
+        ):
+            pass
+
+    Only declare this helper if you actually use it.
+
     :param data:
     :return:
     """

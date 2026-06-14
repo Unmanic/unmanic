@@ -51,6 +51,21 @@ class ProcessItem(PluginType):
         original_file_path      - String, the absolute path to the original file.
         repeat                  - Boolean, should this runner be executed again once completed with the same variables.
 
+    If this runner needs shared task state or persisted file metadata, update the function signature
+    to accept the injected keyword helpers:
+
+        from unmanic.libs.metadata import UnmanicFileMetadata
+        from unmanic.libs.task import TaskDataStore
+
+        def on_worker_process(
+            data,
+            task_data_store: type[TaskDataStore] | None = None,
+            file_metadata: type[UnmanicFileMetadata] | None = None,
+        ):
+            pass
+
+    Declare only the helpers you use. If you only need shared task state, omit `file_metadata`.
+
     **Shared task & runner state**  
     Plugins can store shared, cross‐plugin and even cross‐process state via `TaskDataStore`:
     

@@ -122,20 +122,7 @@ class LibraryScannerManager(threading.Thread):
                     # Delay for 1 second before checking again.
                     self.event.wait(1)
 
-                    # Check if a manual library scan was triggered
-                    self.process_trigger_queue()
-
-                    # Check if library scanner is enabled
-                    if not self.settings.get_enable_library_scanner():
-                        # The library scanner is not enabled. Dont run anything
-                        self.event.wait(20)
-                        continue
-
-                    # Check if scheduled task is due
-                    self.scheduler.run_pending()
-
-                    if self.should_start_scan():
-                        self.execute_scan_request()
+                    self.process_active_schedule_iteration()
 
                     # If the settings have changed, then break this loop and clear
                     # the scheduled job resetting to the new interval
@@ -174,6 +161,23 @@ class LibraryScannerManager(threading.Thread):
             return
         except Exception as e:
             self.logger.exception("Exception in retrieving library scanner trigger %s: %s", self.name, e)
+
+    def process_active_schedule_iteration(self):
+        self.process_trigger_queue()
+
+        # Manual scans should still run when periodic scheduling is disabled.
+        if self.should_start_scan():
+            self.execute_scan_request()
+            return
+
+        if not self.settings.get_enable_library_scanner():
+            self.event.wait(20)
+            return
+
+        self.scheduler.run_pending()
+
+        if self.should_start_scan():
+            self.execute_scan_request()
 
     def get_scan_status(self):
         with self.scan_state_lock:

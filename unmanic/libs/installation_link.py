@@ -1415,15 +1415,12 @@ class RemoteTaskManager(threading.Thread):
         ):
             self.links.sync_remote_library_config(self.installation_info, library_id, force_update=True)
 
-        # Check if we can create the remote task with just a relative path
-        #   only create checksum and send file if the remote library path cannot accept relative paths, or
-        #   it is configured for only receiving remote files
+        # Check if we can create the remote task with just a relative path.
+        # If the remote installation can resolve the file under its own library path,
+        # prefer that shared-storage flow even for remote-only libraries.
+        # Fall back to an HTTP upload only when the path cannot be resolved remotely.
         send_file = False
         library_config = self.links.get_the_remote_library_config_by_name(self.installation_info, library_name)
-
-        # Check if remote library is configured only for receiving remote files
-        if library_config.get('enable_remote_only'):
-            send_file = True
 
         # First attempt to create a task with an abspath on the remote installation
         remote_task_id = None

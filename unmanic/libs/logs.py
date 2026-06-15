@@ -35,6 +35,7 @@ import logging
 import threading
 import json
 import time
+import re
 from logging.handlers import RotatingFileHandler
 from queue import Queue, Empty, Full
 import requests
@@ -90,6 +91,8 @@ class ForwardLogHandler(logging.Handler):
     STATE_FILENAME = "buffer_state.json"
     _BATCH_MAX_ITEMS = 256
     _CLEANUP_INTERVAL_SECONDS = 600
+    _TRANSIENT_RETRY_DELAY_SECONDS = 180
+    _TRANSIENT_FAILURES_BEFORE_NOTIFY = 3
 
     def __init__(self, buffer_path, installation_name, labels=None, flush_interval=5, max_chunk_size=5 * 1024 * 1024):
         """Initialise buffering paths, runtime state, and background threads."""
@@ -116,6 +119,8 @@ class ForwardLogHandler(logging.Handler):
         self._last_cleanup = time.monotonic()
         self.previous_connection_failed = False
         self._notified_failures = set()
+        self._transient_failure_count = 0
+        self._retry_paused_until = 0.0
 
         self._sync_state_with_disk()
 
@@ -274,6 +279,11 @@ class ForwardLogHandler(logging.Handler):
     def _sender_loop(self):
         """Continuously attempt to forward buffered logs, oldest first."""
         while not self.stop_event.is_set():
+            if self._retry_paused_until > time.monotonic():
+                remaining = max(0.2, self._retry_paused_until - time.monotonic())
+                self.stop_event.wait(timeout=min(remaining, 5))
+                continue
+
             processed = False
 
             if self._send_next_disk_batch():
@@ -667,6 +677,7 @@ class ForwardLogHandler(logging.Handler):
             )
 
             if response.status_code == 204:
+                self._reset_transient_failure_state()
                 if self.previous_connection_failed:
                     self.previous_connection_failed = False
                     self._notified_failures.clear()
@@ -674,55 +685,191 @@ class ForwardLogHandler(logging.Handler):
                 return True
 
             self.previous_connection_failed = True
-            message_text = "Failed to forward logs to remote host {}: {} {}".format(
+            failure = self._build_remote_failure_message(response)
+            message_text = failure["message"]
+            status_key = failure["notification_key"]
+
+            if failure["transient"]:
+                self._handle_transient_failure(status_key, message_text)
+                return False
+
+            self._reset_transient_failure_state()
+            self._notify_forwarding_failure(
+                status_key,
+                message_text,
+                frontend_type='error',
+                logger_method='error',
+            )
+        except requests.exceptions.ConnectionError:
+            self.previous_connection_failed = True
+            self._handle_transient_failure(
+                'CONNECTION_ERROR',
+                "Log forwarding to {} is temporarily unavailable. Retrying automatically in {} seconds.".format(
+                    self.endpoint,
+                    self._TRANSIENT_RETRY_DELAY_SECONDS,
+                ),
+            )
+        except Exception as exc:
+            self.previous_connection_failed = True
+            self._handle_transient_failure(
+                'EXCEPTION',
+                "Exception while trying to forward logs to {}. Retrying automatically in {} seconds.".format(
+                    self.endpoint,
+                    self._TRANSIENT_RETRY_DELAY_SECONDS,
+                ),
+                log_message=(
+                    "Exception while trying to forward logs from %s: %s",
+                    buffer_label,
+                    exc,
+                ),
+                log_exception=True,
+            )
+        return False
+
+    def _reset_transient_failure_state(self):
+        """Clear transient retry state after a successful send."""
+        self._transient_failure_count = 0
+        self._retry_paused_until = 0.0
+
+    def _handle_transient_failure(self, status_key, message_text, log_message=None, log_exception=False):
+        """Pause retries for transient failures and only notify after repeated failures."""
+        self._transient_failure_count += 1
+        self._retry_paused_until = time.monotonic() + self._TRANSIENT_RETRY_DELAY_SECONDS
+
+        if log_message is not None:
+            if log_exception:
+                logging.getLogger("Unmanic.ForwardLogHandler").exception(*log_message)
+            else:
+                logging.getLogger("Unmanic.ForwardLogHandler").warning(*log_message)
+
+        if self._transient_failure_count < self._TRANSIENT_FAILURES_BEFORE_NOTIFY:
+            logging.getLogger("Unmanic.ForwardLogHandler").warning(
+                "%s Consecutive transient failures: %s/%s Retrying in %s seconds.",
+                message_text,
+                self._transient_failure_count,
+                self._TRANSIENT_FAILURES_BEFORE_NOTIFY,
+                self._TRANSIENT_RETRY_DELAY_SECONDS,
+            )
+        else:
+            self._notify_forwarding_failure(
+                status_key,
+                "{} Consecutive transient failures: {}.".format(
+                    message_text,
+                    self._transient_failure_count,
+                ),
+                frontend_type='warning',
+                logger_method='error',
+            )
+
+    def _notify_forwarding_failure(self, status_key, message_text, frontend_type='warning', logger_method='warning'):
+        """Emit a deduplicated user-facing failure notification."""
+        if status_key in self._notified_failures:
+            return
+
+        notification_id = "forwardLogHandlerError_{}".format(status_key)
+        notifications = Notifications()
+        notifications.update({
+            'uuid':       notification_id,
+            'type':       'warning',
+            'icon':       'report_problem',
+            'label':      'forwardLogHandlerErrorLabel',
+            'message':    message_text,
+            'navigation': {
+                'push': '/ui/settings-support',
+            },
+        })
+
+        frontend_messages = FrontendPushMessages()
+        frontend_messages.add(
+            {
+                'id':      notification_id,
+                'type':    frontend_type,
+                'code':    'forwardLogHandlerError',
+                'message': message_text,
+                'timeout': 20000
+            }
+        )
+        getattr(logging.getLogger("Unmanic.ForwardLogHandler"), logger_method)(message_text)
+        self._notified_failures.add(status_key)
+
+    def _build_remote_failure_message(self, response):
+        """Summarise remote failures for logs/UI without dumping raw HTML pages."""
+        code = None
+        remote_message = None
+        retry_after = response.headers.get("Retry-After")
+
+        try:
+            response_json = response.json()
+        except ValueError:
+            response_json = None
+
+        if isinstance(response_json, dict):
+            code = response_json.get("code")
+            remote_message = response_json.get("message")
+            retry_after = response_json.get("retry_after", retry_after)
+
+        response_summary = self._summarize_remote_response_body(response)
+        if not remote_message:
+            remote_message = response_summary
+
+        transient = (
+            response.status_code >= 500
+            or response.status_code == 425
+            or code in {"installation_registration_pending", "authorization_refresh_failed"}
+        )
+
+        if code == "installation_registration_pending":
+            message = (
+                "Log forwarding to {} is waiting for Unmanic Central authorization to propagate for this "
+                "installation. Retrying automatically{}."
+            ).format(
+                self.endpoint,
+                " in {} seconds".format(retry_after) if retry_after else "",
+            )
+        elif code == "authorization_refresh_failed":
+            message = (
+                "Log forwarding to {} is temporarily unavailable while Unmanic Central refreshes the list "
+                "of authorized installations. Retrying automatically{}."
+            ).format(
+                self.endpoint,
+                " in {} seconds".format(retry_after) if retry_after else "",
+            )
+        elif transient:
+            message = "Log forwarding to {} is temporarily unavailable (HTTP {}).".format(
                 self.endpoint,
                 response.status_code,
-                response.text,
             )
-
-            status_key = str(response.status_code)
-
-            if status_key not in self._notified_failures:
-                notifications = Notifications()
-                notifications.update({
-                    'uuid':       f'forwardLogHandlerError_{response.status_code}',
-                    'type':       'warning',
-                    'icon':       'report_problem',
-                    'label':      'forwardLogHandlerErrorLabel',
-                    'message':    message_text,
-                    'navigation': {
-                        'push': '/ui/settings-support',
-                    },
-                })
-
-                frontend_messages = FrontendPushMessages()
-                frontend_messages.add(
-                    {
-                        'id':      f'forwardLogHandlerError_{response.status_code}',
-                        'type':    'error',
-                        'code':    'forwardLogHandlerError',
-                        'message': message_text,
-                        'timeout': 20000
-                    }
-                )
-                logging.getLogger("Unmanic.ForwardLogHandler").error(message_text)
-                self._notified_failures.add(status_key)
-        except requests.exceptions.ConnectionError:
-            logging.getLogger("Unmanic.ForwardLogHandler").warning(
-                "ConnectionError on remote endpoint %s while sending %s. Ensure this URL is reachable by Unmanic.",
+            if remote_message:
+                message = "{} {}".format(message, remote_message)
+        else:
+            message = "Failed to forward logs to remote host {}: HTTP {}.".format(
                 self.endpoint,
-                buffer_label,
+                response.status_code,
             )
-            self.previous_connection_failed = True
-        except Exception as exc:
-            logging.getLogger("Unmanic.ForwardLogHandler").exception(
-                "Exception while trying to forward logs from %s: %s",
-                buffer_label,
-                exc,
-            )
-            self.previous_connection_failed = True
-            self._notified_failures.add('EXCEPTION')
-        return False
+            if remote_message:
+                message = "{} {}".format(message, remote_message)
+
+        return {
+            "message":          message,
+            "transient":        transient,
+            "notification_key": code or str(response.status_code),
+        }
+
+    @staticmethod
+    def _summarize_remote_response_body(response):
+        """Return a short plain-text summary of the remote error response."""
+        body = (response.text or "").strip()
+        if not body:
+            return ""
+
+        content_type = response.headers.get("Content-Type", "").lower()
+        if "text/html" in content_type or "<html" in body.lower():
+            return "Remote host returned an HTML error page."
+
+        body = re.sub(r"\s+", " ", body)
+        if len(body) > 240:
+            body = "{}...".format(body[:237])
+        return body
 
     def _create_payload(self, buffer):
         """Group entries by labels to produce the payload expected by the remote API."""

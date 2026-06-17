@@ -753,7 +753,8 @@ class Foreman(threading.Thread):
                     else:
                         allow_local_idle_worker_check = True
                         # All workers are currently busy
-                        self.logger.debug("No idle workers available; pending tasks waiting for worker availability")
+                        if self.get_total_worker_count() > 0:
+                            self.logger.debug("No idle workers available; pending tasks waiting for worker availability")
                         self.event.wait(1)
                         continue
 

@@ -30,6 +30,8 @@
 
 """
 
+import time
+
 from unmanic.libs import task
 from unmanic.libs import common
 from unmanic.libs.logs import UnmanicLogging
@@ -73,32 +75,48 @@ def build_tasks_query(status, sort_by='id', sort_order='asc', local_only=False, 
     :param library_tags:
     :return:
     """
-    # pick query based on sort params
-    query = Tasks.select().where((Tasks.status == status))
+    from peewee import OperationalError
+    logger = UnmanicLogging.get_logger(name='TaskQueue')
 
-    # Limit to one result
-    if local_only:
-        query = query.where((Tasks.type == 'local'))
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            # pick query based on sort params
+            query = Tasks.select().where((Tasks.status == status))
 
-    query = query.join(Libraries, on=(Libraries.id == Tasks.library_id))
-    if library_names is not None:
-        query = query.where(Libraries.name.in_(library_names))
-    if library_tags is not None:
-        query = query.join(LibraryTags, join_type='LEFT OUTER JOIN')
-        query = query.join(Tags, join_type='LEFT OUTER JOIN')
-        if library_tags:
-            query = query.where(Tags.name.in_(library_tags))
-        else:
-            # Handle a query where the list is empty. In this case we want to match for only libraries that have no tags
-            query = query.where(Tags.name.is_null())
+            # Limit to one result
+            if local_only:
+                query = query.where((Tasks.type == 'local'))
 
-    # Limit to one result
-    query = query.limit(1)
-    if sort_order == 'asc':
-        query = query.order_by(sort_by.asc())
-    else:
-        query = query.order_by(sort_by.desc())
-    return query.first()
+            query = query.join(Libraries, on=(Libraries.id == Tasks.library_id))
+            if library_names is not None:
+                query = query.where(Libraries.name.in_(library_names))
+            if library_tags is not None:
+                query = query.join(LibraryTags, join_type='LEFT OUTER JOIN')
+                query = query.join(Tags, join_type='LEFT OUTER JOIN')
+                if library_tags:
+                    query = query.where(Tags.name.in_(library_tags))
+                else:
+                    # Handle a query where the list is empty. In this case we want to match for only libraries that have no tags
+                    query = query.where(Tags.name.is_null())
+
+            # Limit to one result
+            query = query.limit(1)
+            if sort_order == 'asc':
+                query = query.order_by(sort_by.asc())
+            else:
+                query = query.order_by(sort_by.desc())
+            return query.first()
+        except OperationalError as e:
+            if 'database is locked' in str(e).lower():
+                if attempt < max_retries - 1:
+                    wait_time = 0.1 * (2 ** attempt)
+                    logger.warning(f"Database locked while querying tasks, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    logger.error(f"Database locked after {max_retries} attempts querying tasks, giving up")
+            raise
 
 
 def build_tasks_query_full_task_list(status, sort_by='id', sort_order='asc', limit=None):

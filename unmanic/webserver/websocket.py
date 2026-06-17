@@ -300,6 +300,10 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
 
     async def async_frontend_message(self):
         while self.sending_frontend_message:
+            # Exit immediately if close_event is set
+            if self.close_event.is_set():
+                break
+
             frontend_messages = FrontendPushMessages()
             frontend_message_items = frontend_messages.read_all_items()
             # Send message to client
@@ -312,11 +316,18 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
                 }
             )
 
-            # Sleep for X seconds
-            await gen.sleep(.2)
+            # Sleep for X seconds, checking close_event frequently
+            for _ in range(2):
+                if self.close_event.is_set():
+                    return
+                await gen.sleep(.1)
 
     async def async_system_logs(self):
         while self.sending_system_logs:
+            # Exit immediately if close_event is set
+            if self.close_event.is_set():
+                break
+
             system_logs = self.config.read_system_logs(lines=1000)
 
             # Send message to client
@@ -332,11 +343,18 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
                 }
             )
 
-            # Sleep for X seconds
-            await gen.sleep(1)
+            # Sleep for X seconds, checking close_event frequently
+            for _ in range(10):
+                if self.close_event.is_set():
+                    return
+                await gen.sleep(.1)
 
     async def async_workers_info(self):
         while self.sending_worker_info:
+            # Exit immediately if close_event is set
+            if self.close_event.is_set():
+                break
+
             workers_info = self.foreman.get_all_worker_status()
 
             # Send message to client
@@ -349,11 +367,18 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
                 }
             )
 
-            # Sleep for X seconds
-            await gen.sleep(.2)
+            # Sleep for X seconds, checking close_event frequently
+            for _ in range(2):
+                if self.close_event.is_set():
+                    return
+                await gen.sleep(.1)
 
     async def async_pending_tasks_info(self):
         while self.sending_pending_tasks_info:
+            # Exit immediately if close_event is set
+            if self.close_event.is_set():
+                break
+
             results = []
             params = {
                 'start':        '0',
@@ -389,11 +414,18 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
                 }
             )
 
-            # Sleep for X seconds
-            await gen.sleep(3)
+            # Sleep for X seconds, checking close_event frequently
+            for _ in range(30):
+                if self.close_event.is_set():
+                    return
+                await gen.sleep(.1)
 
     async def async_completed_tasks_info(self):
         while self.sending_completed_tasks_info:
+            # Exit immediately if close_event is set
+            if self.close_event.is_set():
+                break
+
             results = []
             params = {
                 'start':        '0',
@@ -436,5 +468,8 @@ class UnmanicWebsocketHandler(tornado.websocket.WebSocketHandler):
                 }
             )
 
-            # Sleep for X seconds
-            await gen.sleep(3)
+            # Sleep for X seconds, checking close_event frequently
+            for _ in range(30):
+                if self.close_event.is_set():
+                    return
+                await gen.sleep(.1)

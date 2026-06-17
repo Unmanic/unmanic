@@ -588,9 +588,14 @@ class Foreman(threading.Thread):
         self.remote_task_manager_threads[link_manager_id].redundant_flag.set()
 
     def hand_task_to_workers(self, item, local=True, library_name=None, worker_id=None):
+        task_id = item.get_task_id() if hasattr(item, 'get_task_id') else 'unknown'
+        task_path = item.get_source_abspath() if hasattr(item, 'get_source_abspath') else 'unknown'
+        self.logger.info(f"Handing task {task_id} to workers | type={'local' if local else 'remote'}, library={library_name}, worker_id={worker_id}")
+
         if local:
             # Assign the task to the worker id provided
             if worker_id in self.worker_threads and self.worker_threads[worker_id].is_alive():
+                self.logger.info(f"Task {task_id} assigned to worker '{worker_id}' - {task_path}")
                 self.worker_threads[worker_id].set_task(item)
                 if item.get_task_type() == "local":
                     # Execute event plugin runners (only for locally added tasks. Remote tasks are scheduled on the installation they were considered "local")
@@ -661,6 +666,8 @@ class Foreman(threading.Thread):
                     self.event.wait(.5)
                     try:
                         task_item = self.complete_queue.get_nowait()
+                        task_id = task_item.get_task_id() if hasattr(task_item, 'get_task_id') else 'unknown'
+                        self.logger.info(f"Task {task_id} completed by worker, marking as 'processed'")
                         task_item.set_status('processed')
                     except queue.Empty:
                         continue
@@ -708,6 +715,7 @@ class Foreman(threading.Thread):
                 self.manage_event_schedules()
 
                 if not self.abort_flag.is_set() and not self.task_queue.task_list_pending_is_empty():
+                    self.logger.debug(f"Found pending tasks in queue, checking for idle workers...")
 
                     # Check the status of all link manager threads (close dead ones)
                     self.link_manager_tread_heartbeat()
@@ -720,6 +728,7 @@ class Foreman(threading.Thread):
                         # In order to prevent a second thread starting and taking the first thread's task, we should not
                         # process any more pending tasks until that first thread is ready and has taken its task out of the
                         # queue.
+                        self.logger.debug("Pending task queue still has unprocessed item; waiting for pickup")
                         continue
 
                     # Check if there are any free workers
@@ -733,6 +742,7 @@ class Foreman(threading.Thread):
                         worker_ids = self.fetch_available_worker_ids()
                         # If not workers were available (possibly due to being recycled), just continue loop
                         if not worker_ids:
+                            self.logger.debug("Idle workers detected but none available for task assignment (workers recycled?)")
                             continue
                     elif self.check_for_idle_remote_workers():
                         allow_local_idle_worker_check = True
@@ -743,11 +753,13 @@ class Foreman(threading.Thread):
                     else:
                         allow_local_idle_worker_check = True
                         # All workers are currently busy
+                        self.logger.debug("No idle workers available; pending tasks waiting for worker availability")
                         self.event.wait(1)
                         continue
 
                     # Check if postprocessor task queue is full
                     if self.postprocessor_queue_full():
+                        self.logger.warning("Postprocessor queue full; halting new task pickups until queue drains")
                         self.event.wait(5)
                         continue
 
@@ -783,14 +795,16 @@ class Foreman(threading.Thread):
 
                     if next_item_to_process:
                         try:
+                            task_id = next_item_to_process.get_task_id()
                             source_abspath = next_item_to_process.get_source_abspath()
                             task_library_name = next_item_to_process.get_task_library_name()
+                            task_status = next_item_to_process.task.status if next_item_to_process.task else 'unknown'
                         except Exception as e:
-                            self.logger.exception('Exception in fetching task details %s', e)
+                            self.logger.exception('Exception in fetching task details: %s', str(e))
                             self.event.wait(3)
                             continue
 
-                        self.logger.info('Processing item - %s', str(source_abspath))
+                        self.logger.info(f'Fetched task {task_id} from queue (status={task_status}) - Processing item: {source_abspath}')
                         success = self.hand_task_to_workers(next_item_to_process, local=process_local,
                                                             library_name=task_library_name,
                                                             worker_id=available_worker_id)
@@ -800,7 +814,8 @@ class Foreman(threading.Thread):
                             # Re-queue item at the bottom
                             self.task_queue.requeue_tasks_at_bottom(next_item_to_process.get_task_id())
             except Exception as e:
-                raise Exception(e)
+                self.logger.exception('Foreman encountered an error: %s', str(e))
+                self.event.wait(5)
 
         self.logger.info('Leaving Foreman Monitor loop...')
 

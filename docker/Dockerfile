@@ -90,11 +90,14 @@ RUN \
         && sleep 2 \
         && \
         if uname -m | grep -q x86; then \
-            echo "**** Add Intel Graphics repository  ****" \
+            echo "**** Add Intel Graphics repository ****" \
+                && . /etc/os-release \
+                && INTEL_GPU_CODENAME="${VERSION_CODENAME:-noble}" \
+                && rm -f /etc/apt/sources.list.d/intel-gpu-*.list \
                 && wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg \
-                && echo "deb [arch=amd64,i386 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy client" | tee /etc/apt/sources.list.d/intel-gpu-jammy.list \
+                && echo "deb [arch=amd64,i386 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu ${INTEL_GPU_CODENAME} client" | tee /etc/apt/sources.list.d/intel-gpu.list \
             && \
-            echo "**** Install Intel Media Drivers  ****" \
+            echo "**** Install Intel Media Drivers ****" \
                 && apt-get update \
                 # intel-media-va-driver-non-free:
                 #   This is the primary driver for Intel's Video Acceleration API on Linux, which provides support for video encoding and decoding on Intel graphics hardware.

@@ -30,6 +30,8 @@
 
 """
 
+import time
+
 from unmanic.libs import task
 from unmanic.libs import common
 from unmanic.libs.logs import UnmanicLogging
@@ -73,32 +75,48 @@ def build_tasks_query(status, sort_by='id', sort_order='asc', local_only=False, 
     :param library_tags:
     :return:
     """
-    # pick query based on sort params
-    query = Tasks.select().where((Tasks.status == status))
+    from peewee import OperationalError
+    logger = UnmanicLogging.get_logger(name='TaskQueue')
 
-    # Limit to one result
-    if local_only:
-        query = query.where((Tasks.type == 'local'))
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            # pick query based on sort params
+            query = Tasks.select().where((Tasks.status == status))
 
-    query = query.join(Libraries, on=(Libraries.id == Tasks.library_id))
-    if library_names is not None:
-        query = query.where(Libraries.name.in_(library_names))
-    if library_tags is not None:
-        query = query.join(LibraryTags, join_type='LEFT OUTER JOIN')
-        query = query.join(Tags, join_type='LEFT OUTER JOIN')
-        if library_tags:
-            query = query.where(Tags.name.in_(library_tags))
-        else:
-            # Handle a query where the list is empty. In this case we want to match for only libraries that have no tags
-            query = query.where(Tags.name.is_null())
+            # Limit to one result
+            if local_only:
+                query = query.where((Tasks.type == 'local'))
 
-    # Limit to one result
-    query = query.limit(1)
-    if sort_order == 'asc':
-        query = query.order_by(sort_by.asc())
-    else:
-        query = query.order_by(sort_by.desc())
-    return query.first()
+            query = query.join(Libraries, on=(Libraries.id == Tasks.library_id))
+            if library_names is not None:
+                query = query.where(Libraries.name.in_(library_names))
+            if library_tags is not None:
+                query = query.join(LibraryTags, join_type='LEFT OUTER JOIN')
+                query = query.join(Tags, join_type='LEFT OUTER JOIN')
+                if library_tags:
+                    query = query.where(Tags.name.in_(library_tags))
+                else:
+                    # Handle a query where the list is empty. In this case we want to match for only libraries that have no tags
+                    query = query.where(Tags.name.is_null())
+
+            # Limit to one result
+            query = query.limit(1)
+            if sort_order == 'asc':
+                query = query.order_by(sort_by.asc())
+            else:
+                query = query.order_by(sort_by.desc())
+            return query.first()
+        except OperationalError as e:
+            if 'database is locked' in str(e).lower():
+                if attempt < max_retries - 1:
+                    wait_time = 0.1 * (2 ** attempt)
+                    logger.warning(f"Database locked while querying tasks, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    logger.error(f"Database locked after {max_retries} attempts querying tasks, giving up")
+            raise
 
 
 def build_tasks_query_full_task_list(status, sort_by='id', sort_order='asc', limit=None):
@@ -131,7 +149,10 @@ def build_tasks_query_full_task_list(status, sort_by='id', sort_order='asc', lim
 
 def fetch_next_task_filtered(status, sort_by='id', sort_order='asc', local_only=False, library_names=None, library_tags=None):
     """
-    Returns the next task in the task list for a given status
+    Returns the next task in the task list for a given status.
+
+    Uses atomic UPDATE...WHERE to prevent race conditions in multi-machine setups.
+    If another machine claims the task first, returns False and caller retries.
 
     :param status:
     :param sort_order:
@@ -139,17 +160,45 @@ def fetch_next_task_filtered(status, sort_by='id', sort_order='asc', local_only=
     :param local_only:
     :param library_names:
     :param library_tags:
-    :return:
+    :return: Task object if successfully claimed, False if no tasks or race lost
     """
-    # Fetch the task item first (to ensure it exists)
+    logger = UnmanicLogging.get_logger(name='TaskQueue')
+    logger.debug(f"Fetching next task with status='{status}', local_only={local_only}, library_names={library_names}, library_tags={library_tags}")
+
+    # Step 1: Find the first task matching all filters
     task_item = build_tasks_query(status, sort_by=sort_by, sort_order=sort_order, local_only=local_only,
                                   library_names=library_names, library_tags=library_tags)
     if not task_item:
+        logger.debug(f"No tasks found with status='{status}'")
         return False
-    # Set the task object by the abspath and return it
-    next_task = task.Task()
-    next_task.read_and_set_task_by_absolute_path(task_item.abspath)
-    return next_task
+
+    task_id = task_item.id
+    logger.debug(f"Found candidate task {task_id}: {task_item.abspath} (status={task_item.status})")
+
+    # Step 2: Atomically claim this task by updating status from 'pending' to 'in_progress'
+    # This UPDATE will only succeed if status is still 'pending' (another machine hasn't claimed it)
+    try:
+        updated_count = Tasks.update({
+            Tasks.status: 'in_progress'
+        }).where(
+            (Tasks.id == task_id) &
+            (Tasks.status == status)  # Only update if status hasn't changed
+        ).execute()
+
+        if updated_count == 0:
+            logger.info(f"Lost race for task {task_id}: Another machine claimed it first")
+            return False
+
+        logger.info(f"Successfully claimed task {task_id}: {task_item.abspath} (status={task_item.status}, type={task_item.type})")
+
+        # Step 3: Load the full Task object and return
+        next_task = task.Task()
+        next_task.read_and_set_task_by_absolute_path(task_item.abspath)
+        return next_task
+
+    except Exception as e:
+        logger.exception(f"Exception while claiming task {task_id}: {str(e)}")
+        return False
 
 
 class TaskQueue(object):
@@ -226,20 +275,48 @@ class TaskQueue(object):
 
     def get_next_pending_tasks(self, local_only=False, library_names=None, library_tags=None):
         """
-        Fetch the next pending task.
-        Set that task status as 'in_progress' and then return it.
+        Fetch the next pending task and atomically mark it as 'in_progress'.
+
+        Uses atomic UPDATE...WHERE to prevent race conditions where multiple Unmanic instances
+        (local and remote) could pick up the same task simultaneously.
+
+        Retries on database lock errors (transient concurrency issues).
 
         :param local_only:
         :param library_names:
         :param library_tags:
-        :return:
+        :return: Task object if successfully claimed, False if no pending tasks
         """
-        # Fetch Task item matching the filters specified
-        task_item = fetch_next_task_filtered('pending', sort_by=self.sort_by, sort_order=self.sort_order,
-                                             local_only=local_only, library_names=library_names, library_tags=library_tags)
-        if task_item:
-            self.mark_item_in_progress(task_item)
-        return task_item
+        import time
+        from peewee import OperationalError
+
+        self._log("Attempting to fetch next pending task", f"local_only={local_only}, library_names={library_names}, library_tags={library_tags}")
+
+        # Retry logic for transient database lock errors
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Fetch Task item and atomically claim it as 'in_progress'
+                # Note: fetch_next_task_filtered now does atomic UPDATE...WHERE internally
+                task_item = fetch_next_task_filtered('pending', sort_by=self.sort_by, sort_order=self.sort_order,
+                                                     local_only=local_only, library_names=library_names, library_tags=library_tags)
+                if task_item:
+                    self._log(f"Task {task_item.get_task_id()} successfully claimed and marked in_progress", task_item.get_source_abspath(), level='info')
+                else:
+                    self._log("No pending tasks found to process (or lost race to another machine)", level='debug')
+
+                return task_item
+            except OperationalError as e:
+                if 'database is locked' in str(e).lower():
+                    if attempt < max_retries - 1:
+                        wait_time = 0.1 * (2 ** attempt)  # Exponential backoff: 0.1s, 0.2s, 0.4s
+                        self._log(f"Database locked, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        self._log(f"Database locked after {max_retries} attempts, giving up", level='error')
+                # Re-raise if not a lock error or we've exhausted retries
+                raise
 
     def get_next_processed_tasks(self):
         # Fetch Task item matching the filters specified
@@ -285,12 +362,17 @@ class TaskQueue(object):
     @staticmethod
     def mark_item_in_progress(task_item):
         """
-        Set the given task status as 'in_progress' and then return it.
+        DEPRECATED: This method is no longer used.
+
+        Task status is now marked as 'in_progress' atomically in fetch_next_task_filtered()
+        to prevent race conditions in multi-machine setups where both local and remote
+        Unmanic instances could pick up the same task simultaneously.
+
+        Keeping this method for backward compatibility only.
 
         :param task_item:
         :return:
         """
-        # Set item as status = 'in_progress'
         task_item.set_status('in_progress')
         return task_item
 

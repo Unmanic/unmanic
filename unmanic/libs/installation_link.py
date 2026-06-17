@@ -174,15 +174,18 @@ class Links(object, metaclass=SingletonType):
             self._network_transfer_lock[lock_key] = {}
             return True
 
-    def remote_api_get(self, remote_config: dict, endpoint: str, timeout=2):
+    def remote_api_get(self, remote_config: dict, endpoint: str, timeout=None):
         """
-        GET to remote installation API
+        GET to remote installation API with retry logic
 
         :param remote_config:
         :param endpoint:
         :param timeout:
         :return:
         """
+        if timeout is None:
+            timeout = self.settings.remote_installation_request_timeout
+
         request_handler = RequestHandler(
             auth=remote_config.get('auth'),
             username=remote_config.get('username'),
@@ -190,20 +193,34 @@ class Links(object, metaclass=SingletonType):
         )
         address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
-        res = request_handler.get(url, timeout=timeout)
-        if res.status_code == 200:
-            return res.json()
-        elif res.status_code in [400, 404, 405, 500]:
-            json_data = res.json()
-            self._log("Error while executing GET on remote installation API - {}. Message: '{}'".format(
-                endpoint,
-                json_data.get('error')),
-                message2=json_data.get('traceback', []), level='error')
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                res = request_handler.get(url, timeout=timeout)
+                if res.status_code == 200:
+                    return res.json()
+                elif res.status_code in [400, 404, 405, 500]:
+                    json_data = res.json()
+                    self._log("Error while executing GET on remote installation API - {}. Message: '{}'".format(
+                        endpoint,
+                        json_data.get('error')),
+                        message2=json_data.get('traceback', []), level='error')
+                return {}
+            except (requests.Timeout, requests.ConnectionError) as e:
+                if attempt < max_retries - 1:
+                    wait_time = 0.5 * (2 ** attempt)
+                    self._log(f"Remote API request timeout/error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    self._log(f"Remote API request failed after {max_retries} attempts: {str(e)}", level='error')
+                    return {}
         return {}
 
-    def remote_api_post(self, remote_config: dict, endpoint: str, data: dict, timeout=2):
+    def remote_api_post(self, remote_config: dict, endpoint: str, data: dict, timeout=None):
         """
-        POST to remote installation API
+        POST to remote installation API with retry logic
 
         :param remote_config:
         :param endpoint:
@@ -211,6 +228,9 @@ class Links(object, metaclass=SingletonType):
         :param timeout:
         :return:
         """
+        if timeout is None:
+            timeout = self.settings.remote_installation_request_timeout
+
         request_handler = RequestHandler(
             auth=remote_config.get('auth'),
             username=remote_config.get('username'),
@@ -218,16 +238,30 @@ class Links(object, metaclass=SingletonType):
         )
         address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
-        res = request_handler.post(url, json=data, timeout=timeout)
-        if res.status_code == 200:
-            return res.json()
-        elif res.status_code in [400, 404, 405, 500]:
-            json_data = res.json()
-            self._log("Error while executing POST on remote installation API - {}. Message: '{}'".format(
-                endpoint,
-                json_data.get('error')),
-                message2=json_data.get('traceback', []), level='error')
-            return json_data
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                res = request_handler.post(url, json=data, timeout=timeout)
+                if res.status_code == 200:
+                    return res.json()
+                elif res.status_code in [400, 404, 405, 500]:
+                    json_data = res.json()
+                    self._log("Error while executing POST on remote installation API - {}. Message: '{}'".format(
+                        endpoint,
+                        json_data.get('error')),
+                        message2=json_data.get('traceback', []), level='error')
+                    return json_data
+                return {}
+            except (requests.Timeout, requests.ConnectionError) as e:
+                if attempt < max_retries - 1:
+                    wait_time = 0.5 * (2 ** attempt)
+                    self._log(f"Remote API request timeout/error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    self._log(f"Remote API request failed after {max_retries} attempts: {str(e)}", level='error')
+                    return {}
         return {}
 
     def remote_api_post_file(self, remote_config: dict, endpoint: str, path: str):
@@ -267,9 +301,9 @@ class Links(object, metaclass=SingletonType):
                 message2=json_data.get('traceback', []), level='error')
         return {}
 
-    def remote_api_delete(self, remote_config: dict, endpoint: str, data: dict, timeout=2):
+    def remote_api_delete(self, remote_config: dict, endpoint: str, data: dict, timeout=None):
         """
-        DELETE to remote installation API
+        DELETE to remote installation API with retry logic
 
         :param remote_config:
         :param endpoint:
@@ -277,6 +311,9 @@ class Links(object, metaclass=SingletonType):
         :param timeout:
         :return:
         """
+        if timeout is None:
+            timeout = self.settings.remote_installation_request_timeout
+
         request_handler = RequestHandler(
             auth=remote_config.get('auth'),
             username=remote_config.get('username'),
@@ -284,15 +321,29 @@ class Links(object, metaclass=SingletonType):
         )
         address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
-        res = request_handler.delete(url, json=data, timeout=timeout)
-        if res.status_code == 200:
-            return res.json()
-        elif res.status_code in [400, 404, 405, 500]:
-            json_data = res.json()
-            self._log("Error while executing DELETE on remote installation API - {}. Message: '{}'".format(
-                endpoint,
-                json_data.get('error')),
-                message2=json_data.get('traceback', []), level='error')
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                res = request_handler.delete(url, json=data, timeout=timeout)
+                if res.status_code == 200:
+                    return res.json()
+                elif res.status_code in [400, 404, 405, 500]:
+                    json_data = res.json()
+                    self._log("Error while executing DELETE on remote installation API - {}. Message: '{}'".format(
+                        endpoint,
+                        json_data.get('error')),
+                        message2=json_data.get('traceback', []), level='error')
+                return {}
+            except (requests.Timeout, requests.ConnectionError) as e:
+                if attempt < max_retries - 1:
+                    wait_time = 0.5 * (2 ** attempt)
+                    self._log(f"Remote API request timeout/error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    self._log(f"Remote API request failed after {max_retries} attempts: {str(e)}", level='error')
+                    return {}
         return {}
 
     def remote_api_get_download(self, remote_config: dict, endpoint: str, path: str):

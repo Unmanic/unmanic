@@ -194,6 +194,7 @@ class Links(object, metaclass=SingletonType):
         address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
 
+        remote_name = remote_config.get('name', 'Unknown')
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -210,11 +211,11 @@ class Links(object, metaclass=SingletonType):
             except (requests.Timeout, requests.ConnectionError) as e:
                 if attempt < max_retries - 1:
                     wait_time = 0.5 * (2 ** attempt)
-                    self._log(f"Remote API request timeout/error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
+                    self._log(f"Remote link '{remote_name}' ({address}) API request timeout/error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
                     time.sleep(wait_time)
                     continue
                 else:
-                    self._log(f"Remote API request failed after {max_retries} attempts: {str(e)}", level='error')
+                    self._log(f"Remote link '{remote_name}' ({address}) API request failed after {max_retries} attempts: {str(e)}", level='error')
                     return {}
         return {}
 
@@ -239,6 +240,7 @@ class Links(object, metaclass=SingletonType):
         address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
 
+        remote_name = remote_config.get('name', 'Unknown')
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -256,11 +258,11 @@ class Links(object, metaclass=SingletonType):
             except (requests.Timeout, requests.ConnectionError) as e:
                 if attempt < max_retries - 1:
                     wait_time = 0.5 * (2 ** attempt)
-                    self._log(f"Remote API request timeout/error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
+                    self._log(f"Remote link '{remote_name}' ({address}) API request timeout/error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
                     time.sleep(wait_time)
                     continue
                 else:
-                    self._log(f"Remote API request failed after {max_retries} attempts: {str(e)}", level='error')
+                    self._log(f"Remote link '{remote_name}' ({address}) API request failed after {max_retries} attempts: {str(e)}", level='error')
                     return {}
         return {}
 
@@ -322,6 +324,7 @@ class Links(object, metaclass=SingletonType):
         address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
 
+        remote_name = remote_config.get('name', 'Unknown')
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -338,11 +341,11 @@ class Links(object, metaclass=SingletonType):
             except (requests.Timeout, requests.ConnectionError) as e:
                 if attempt < max_retries - 1:
                     wait_time = 0.5 * (2 ** attempt)
-                    self._log(f"Remote API request timeout/error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
+                    self._log(f"Remote link '{remote_name}' ({address}) API request timeout/error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
                     time.sleep(wait_time)
                     continue
                 else:
-                    self._log(f"Remote API request failed after {max_retries} attempts: {str(e)}", level='error')
+                    self._log(f"Remote link '{remote_name}' ({address}) API request failed after {max_retries} attempts: {str(e)}", level='error')
                     return {}
         return {}
 

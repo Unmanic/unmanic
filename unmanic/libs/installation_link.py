@@ -494,8 +494,9 @@ class Links(object, metaclass=SingletonType):
                     except Exception:
                         pass
 
-                    # Check if file starts with HTML/XML markers (error pages)
-                    if file_content_sample.startswith((b'<!DOCTYPE', b'<html', b'<?xml', b'{')):
+                    # Check if file starts with HTML/XML markers (error pages).
+                    # Note: b'{' is intentionally excluded — JSON responses are valid for data downloads.
+                    if file_content_sample.startswith((b'<!DOCTYPE', b'<html', b'<?xml')):
                         self._log(
                             "Downloaded file appears to be an error page, not media ({}B)".format(file_size),
                             message2="Sample: {}".format(file_content_sample[:100]),

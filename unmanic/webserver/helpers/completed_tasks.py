@@ -210,7 +210,7 @@ def add_historic_tasks_to_pending_tasks_list(historic_task_ids, library_id=None)
     return errors
 
 
-def read_command_log_for_task(task_id):
+def read_command_log_for_task(task_id, head=None, tail=None):
     data = {
         'command_log':       '',
         'command_log_lines': [],
@@ -221,8 +221,13 @@ def read_command_log_for_task(task_id):
         return data
 
     for command_log in task_data.get('completedtaskscommandlogs_set', []):
-        data['command_log'] += command_log['dump']
-        data['command_log_lines'] += format_ffmpeg_log_text(command_log['dump'].split("\n"))
+        dump = command_log['dump'].split("\n")
+        head = len(dump) if head is None else head
+        tail = 0 if tail is None else tail
+        dump = dump[:head] + dump[len(dump)-tail:len(dump)]
+        
+        data['command_log'] += "\n".join(dump)
+        data['command_log_lines'] += format_ffmpeg_log_text(dump)
 
     return data
 

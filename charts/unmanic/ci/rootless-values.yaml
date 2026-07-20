@@ -1,0 +1,6 @@
+# Rootless scenario: pod-level securityContext, HOME=/config, no PUID/PGID.
+rootless:
+  enabled: true
+  runAsUser: 568
+  runAsGroup: 568
+  fsGroup: 568

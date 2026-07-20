@@ -1,0 +1,4 @@
+# In-app SSL scenario: port 8888 serves HTTPS directly; probes switch scheme.
+ssl:
+  enabled: true
+  existingSecret: unmanic-tls

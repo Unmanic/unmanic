@@ -1,0 +1,51 @@
+# Example ApplicationSet deploying a federated pair of Unmanic instances:
+# one "main" instance holding the libraries and one worker-only instance.
+# Both mount the same RWX media claim at the same path so linked tasks are
+# read directly from storage instead of transferred over HTTP.
+#
+# After sync, finish the link in the main instance's web UI
+# (Settings > Link) — link state lives in each instance's own database.
+# Task routing between linked installs matches on library NAME, so create
+# identically named libraries on both instances.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: unmanic-federation
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - list:
+        elements:
+          - instance: main
+            publicAddress: http://unmanic-main.media.svc.cluster.local:8888
+          - instance: worker-1
+            publicAddress: http://unmanic-worker-1.media.svc.cluster.local:8888
+  template:
+    metadata:
+      name: "unmanic-{{ .instance }}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/Unmanic/unmanic.git
+        targetRevision: master
+        path: charts/unmanic
+        helm:
+          valuesObject:
+            fullnameOverride: "unmanic-{{ .instance }}"
+            config:
+              installation_name: "unmanic-{{ .instance }}"
+              installation_public_address: "{{ .publicAddress }}"
+            libraries:
+              - name: library
+                mountPath: /library
+                existingClaim: media-library-rwx
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: media
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

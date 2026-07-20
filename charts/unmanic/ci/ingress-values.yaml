@@ -1,0 +1,14 @@
+# Ingress scenario: ingress-nginx with websocket-friendly, unlimited-body
+# annotations (required for linked-installation file transfers).
+ingress:
+  enabled: true
+  className: nginx
+  host: unmanic.example.com
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  tls:
+    - hosts:
+        - unmanic.example.com
+      secretName: unmanic-tls

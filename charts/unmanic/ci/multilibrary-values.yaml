@@ -1,0 +1,62 @@
+# Kitchen-sink scenario: multiple libraries (NFS + existing PVC + hostPath),
+# tmpfs cache, declarative settings, secret-backed settings, NetworkPolicy,
+# Gateway API HTTPRoute, custom scheduling.
+libraries:
+  - name: movies
+    mountPath: /library/movies
+    nfs:
+      server: nas.example.lan
+      path: /volume1/movies
+  - name: tv
+    mountPath: /library/tv
+    existingClaim: media-tv
+  - name: music
+    mountPath: /library/music
+    readOnly: true
+    hostPath: /mnt/music
+
+persistence:
+  cache:
+    type: memory
+    sizeLimit: 8Gi
+
+config:
+  enable_library_scanner: "true"
+  schedule_full_scan_minutes: "720"
+  installation_name: "unmanic-main"
+  installation_public_address: "http://unmanic.media.svc.cluster.local:8888"
+  distributed_worker_count_target: "5"
+
+configSecret:
+  log_buffer_retention: "7"
+
+networkPolicy:
+  enabled: true
+  ingressRules:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 8888
+          protocol: TCP
+
+httpRoute:
+  enabled: true
+  parentRefs:
+    - name: main-gateway
+      namespace: infra
+  hostnames:
+    - unmanic.example.com
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    memory: 12Gi
+
+tolerations:
+  - key: media
+    operator: Exists
+    effect: NoSchedule

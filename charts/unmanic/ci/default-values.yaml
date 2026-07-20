@@ -1,0 +1,3 @@
+# Default scenario: PUID/PGID mode, chart-created config PVC, emptyDir cache,
+# placeholder library volume.
+{}

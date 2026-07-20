@@ -1,0 +1,21 @@
+{{- if and (eq .Values.persistence.cache.type "pvc") (not .Values.persistence.cache.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "unmanic.fullname" . }}-cache
+  labels:
+    {{- include "unmanic.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    {{- toYaml .Values.persistence.cache.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.cache.size }}
+  {{- if .Values.persistence.cache.storageClass }}
+  {{- if eq .Values.persistence.cache.storageClass "-" }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.persistence.cache.storageClass }}
+  {{- end }}
+  {{- end }}
+{{- end }}

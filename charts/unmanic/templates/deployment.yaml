@@ -1,0 +1,287 @@
+{{- if gt (int .Values.replicaCount) 1 }}
+{{- fail "replicaCount must be 1: Unmanic uses a single-writer SQLite database in /config. Scale out by installing additional releases and linking them via Unmanic installation links (see the chart README, section 'Federation')." }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "unmanic.fullname" . }}
+  labels:
+    {{- include "unmanic.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "unmanic.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include "unmanic.configChecksum" . }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "unmanic.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "unmanic.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- if and (eq .Values.gpu.mode "nvidia") .Values.gpu.nvidia.useRuntimeClass }}
+      runtimeClassName: {{ .Values.gpu.nvidia.runtimeClassName }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      {{- $podSec := dict }}
+      {{- if .Values.rootless.enabled }}
+      {{- $_ := set $podSec "runAsNonRoot" true }}
+      {{- $_ := set $podSec "runAsUser" (int .Values.rootless.runAsUser) }}
+      {{- $_ := set $podSec "runAsGroup" (int .Values.rootless.runAsGroup) }}
+      {{- $_ := set $podSec "fsGroup" (int .Values.rootless.fsGroup) }}
+      {{- end }}
+      {{- if eq .Values.gpu.mode "intel" }}
+      {{- $_ := set $podSec "supplementalGroups" .Values.gpu.intel.supplementalGroups }}
+      {{- else if eq .Values.gpu.mode "amd" }}
+      {{- $_ := set $podSec "supplementalGroups" .Values.gpu.amd.supplementalGroups }}
+      {{- end }}
+      {{- $podSec = mergeOverwrite $podSec (deepCopy .Values.podSecurityContext) }}
+      {{- with $podSec }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- $affinity := deepCopy .Values.affinity }}
+      {{- if and (eq .Values.gpu.mode "intel") .Values.gpu.intel.nodeAffinityLabel (not (hasKey $affinity "nodeAffinity")) }}
+      {{- $term := dict "matchExpressions" (list (dict "key" .Values.gpu.intel.nodeAffinityLabel "operator" "In" "values" (list "true"))) }}
+      {{- $_ := set $affinity "nodeAffinity" (dict "requiredDuringSchedulingIgnoredDuringExecution" (dict "nodeSelectorTerms" (list $term))) }}
+      {{- end }}
+      {{- with $affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: unmanic
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: TZ
+              value: {{ .Values.timezone | quote }}
+            {{- if .Values.rootless.enabled }}
+            - name: HOME
+              value: /config
+            {{- else }}
+            - name: PUID
+              value: {{ .Values.puid | quote }}
+            - name: PGID
+              value: {{ .Values.pgid | quote }}
+            {{- end }}
+            {{- if .Values.debugging }}
+            - name: DEBUGGING
+              value: "true"
+            {{- end }}
+            {{- with .Values.sqliteMaintenance }}
+            - name: UNMANIC_SQLITE_MAINTENANCE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if eq .Values.gpu.mode "nvidia" }}
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: {{ .Values.gpu.nvidia.visibleDevices | quote }}
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: {{ .Values.gpu.nvidia.driverCapabilities | quote }}
+            {{- with .Values.gpu.nvidia.patchVersion }}
+            - name: NVIDIA_PATCH_VERSION
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if and (eq .Values.gpu.mode "intel") .Values.gpu.intel.libvaDriverName }}
+            - name: LIBVA_DRIVER_NAME
+              value: {{ .Values.gpu.intel.libvaDriverName | quote }}
+            {{- end }}
+            {{- if .Values.ssl.enabled }}
+            - name: ssl_enabled
+              value: "true"
+            - name: ssl_certfilepath
+              value: /etc/ssl/unmanic/tls.crt
+            - name: ssl_keyfilepath
+              value: /etc/ssl/unmanic/tls.key
+            {{- end }}
+            {{- range $key := (keys .Values.config | sortAlpha) }}
+            - name: {{ $key }}
+              value: {{ get $.Values.config $key | quote }}
+            {{- end }}
+            {{- range $key := (keys .Values.configSecret | sortAlpha) }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "unmanic.fullname" $ }}-config
+                  key: {{ $key }}
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ include "unmanic.uiPort" . }}
+              protocol: TCP
+          {{- if .Values.probes.startup.enabled }}
+          startupProbe:
+            httpGet:
+              path: /unmanic/api/v2/version/read
+              port: http
+              scheme: {{ include "unmanic.probeScheme" . }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+          {{- end }}
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /unmanic/api/v2/version/read
+              port: http
+              scheme: {{ include "unmanic.probeScheme" . }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          {{- end }}
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /unmanic/api/v2/version/read
+              port: http
+              scheme: {{ include "unmanic.probeScheme" . }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+          {{- end }}
+          {{- $resources := deepCopy .Values.resources }}
+          {{- $gpuResource := "" }}
+          {{- if and (eq .Values.gpu.mode "nvidia") .Values.gpu.nvidia.useResourceLimit }}
+          {{- $gpuResource = "nvidia.com/gpu" }}
+          {{- else if eq .Values.gpu.mode "intel" }}
+          {{- $gpuResource = .Values.gpu.intel.resourceName }}
+          {{- else if and (eq .Values.gpu.mode "amd") (not .Values.gpu.amd.useHostPath) }}
+          {{- $gpuResource = .Values.gpu.amd.resourceName }}
+          {{- end }}
+          {{- if $gpuResource }}
+          {{- $limits := default dict (get $resources "limits") }}
+          {{- $_ := set $limits $gpuResource (int .Values.gpu.count) }}
+          {{- $_ := set $resources "limits" $limits }}
+          {{- end }}
+          {{- with $resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: cache
+              mountPath: {{ include "unmanic.cachePath" . }}
+            {{- range .Values.libraries }}
+            - name: library-{{ .name }}
+              mountPath: {{ .mountPath }}
+              {{- if .readOnly }}
+              readOnly: true
+              {{- end }}
+            {{- end }}
+            {{- if .Values.ssl.enabled }}
+            - name: ssl-certs
+              mountPath: /etc/ssl/unmanic
+              readOnly: true
+            {{- end }}
+            {{- if and (eq .Values.gpu.mode "amd") .Values.gpu.amd.useHostPath }}
+            - name: dev-dri
+              mountPath: /dev/dri
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          {{- if .Values.persistence.config.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.config.existingClaim | default (printf "%s-config" (include "unmanic.fullname" .)) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: cache
+          {{- if eq .Values.persistence.cache.type "pvc" }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.cache.existingClaim | default (printf "%s-cache" (include "unmanic.fullname" .)) }}
+          {{- else if .Values.persistence.cache.sizeLimit }}
+          emptyDir:
+            {{- if eq .Values.persistence.cache.type "memory" }}
+            medium: Memory
+            {{- end }}
+            sizeLimit: {{ .Values.persistence.cache.sizeLimit }}
+          {{- else if eq .Values.persistence.cache.type "memory" }}
+          emptyDir:
+            medium: Memory
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- range .Values.libraries }}
+        {{- $sources := 0 }}
+        {{- if .existingClaim }}{{ $sources = add1 $sources }}{{ end }}
+        {{- if and .nfs .nfs.server }}{{ $sources = add1 $sources }}{{ end }}
+        {{- if .hostPath }}{{ $sources = add1 $sources }}{{ end }}
+        {{- if gt (int $sources) 1 }}
+        {{- fail (printf "libraries[%s]: define at most one of existingClaim, nfs or hostPath" .name) }}
+        {{- end }}
+        - name: library-{{ .name }}
+          {{- if .existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .existingClaim }}
+            {{- if .readOnly }}
+            readOnly: true
+            {{- end }}
+          {{- else if and .nfs .nfs.server }}
+          nfs:
+            server: {{ .nfs.server }}
+            path: {{ .nfs.path }}
+            {{- if .readOnly }}
+            readOnly: true
+            {{- end }}
+          {{- else if .hostPath }}
+          hostPath:
+            path: {{ .hostPath }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.ssl.enabled }}
+        {{- if not .Values.ssl.existingSecret }}
+        {{- fail "ssl.enabled=true requires ssl.existingSecret (a kubernetes.io/tls Secret with tls.crt and tls.key)" }}
+        {{- end }}
+        - name: ssl-certs
+          secret:
+            secretName: {{ .Values.ssl.existingSecret }}
+        {{- end }}
+        {{- if and (eq .Values.gpu.mode "amd") .Values.gpu.amd.useHostPath }}
+        - name: dev-dri
+          hostPath:
+            path: /dev/dri
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}

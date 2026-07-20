@@ -1,0 +1,266 @@
+# Default values for the Unmanic Helm chart.
+#
+# IMPORTANT CONSTRAINT: Unmanic stores its state in a single-writer SQLite
+# database under /config. One release == one Unmanic instance == one replica.
+# To scale out, install this chart multiple times and federate the instances
+# with Unmanic "installation links" (see README, "Federation").
+
+# -- Must remain 1. The chart refuses to render anything greater.
+replicaCount: 1
+
+image:
+  repository: docker.io/josh5/unmanic
+  # -- Defaults to the chart appVersion. Never use "latest" with ArgoCD.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# ------------------------------------------------------------------------
+# Runtime identity
+# ------------------------------------------------------------------------
+# Mode A (default): the container starts as root and drops privileges to
+# PUID/PGID via gosu (the image's stock behaviour).
+puid: 1000
+pgid: 1000
+
+# Mode B: rootless. The pod runs with the securityContext below and the chart
+# sets HOME=/config (a hard requirement per the Unmanic docs) and omits
+# PUID/PGID. Caveat: plugins that install apt packages will fail rootless.
+rootless:
+  enabled: false
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# -- Merged over the chart-generated pod securityContext (escape hatch).
+podSecurityContext: {}
+# -- Container-level securityContext. Note: readOnlyRootFilesystem is not
+# supported by the image (it writes to /tmp and its venv at runtime).
+securityContext: {}
+
+# ------------------------------------------------------------------------
+# Application environment
+# ------------------------------------------------------------------------
+timezone: "Etc/UTC"
+# -- Sets DEBUGGING=true (runs Unmanic with --dev).
+debugging: false
+# -- UNMANIC_SQLITE_MAINTENANCE: "off", "basic" or "full". Empty = image default.
+sqliteMaintenance: ""
+
+# -- Declarative Unmanic settings, rendered as environment variables.
+# Keys are the lowercase Unmanic setting names (ui_port, library_path,
+# cache_path, enable_library_scanner, schedule_full_scan_minutes,
+# installation_name, installation_public_address,
+# distributed_worker_count_target, ...). Values must be strings.
+#
+# CAVEAT: once a key has been written to /config/settings.json (which the
+# web UI does when you save settings), the file value OVERRIDES the
+# environment variable. Env vars are authoritative only on first boot and
+# for keys never touched in the UI. See README, "Declarative configuration
+# limits".
+config: {}
+  # ui_port: "8888"
+  # library_path: "/library"
+  # enable_library_scanner: "true"
+  # schedule_full_scan_minutes: "1440"
+  # installation_name: "unmanic-main"
+  # installation_public_address: "http://unmanic.media.svc.cluster.local:8888"
+
+# -- Same as `config`, but stored in a Secret (for sensitive values).
+configSecret: {}
+
+# -- Verbatim envFrom entries (configMapRef / secretRef).
+envFrom: []
+# -- Verbatim EnvVar objects, appended last (valueFrom supported).
+extraEnv: []
+
+# ------------------------------------------------------------------------
+# In-app SSL (the single port 8888 switches to HTTPS)
+# ------------------------------------------------------------------------
+ssl:
+  enabled: false
+  # -- Name of an existing kubernetes.io/tls Secret (tls.crt / tls.key).
+  # Mounted at /etc/ssl/unmanic. Required when ssl.enabled=true.
+  existingSecret: ""
+
+# ------------------------------------------------------------------------
+# Networking
+# ------------------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 8888
+  # -- Only used when type=NodePort.
+  nodePort: null
+  annotations: {}
+
+ingress:
+  enabled: false
+  className: ""
+  # Unmanic must be served at the root path of a host (no base-URL/subpath
+  # support). The proxy must allow websocket upgrades and very large request
+  # bodies (linked-installation file transfers). For ingress-nginx:
+  #   nginx.ingress.kubernetes.io/proxy-body-size: "0"
+  #   nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+  #   nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  annotations: {}
+  host: unmanic.example.com
+  # -- Standard ingress TLS list.
+  tls: []
+
+# Gateway API alternative to Ingress.
+httpRoute:
+  enabled: false
+  annotations: {}
+  # -- Required when enabled, e.g. [{name: my-gateway, namespace: infra}].
+  parentRefs: []
+  hostnames: []
+
+networkPolicy:
+  enabled: false
+  # -- Allow ingress on the UI port from pods in the same namespace.
+  allowSameNamespace: true
+  # -- Extra verbatim ingress rules (e.g. allow federated Unmanic peers or
+  # your ingress controller namespace).
+  ingressRules: []
+  # -- Verbatim egress rules. NOTE: setting any restricts egress to exactly
+  # these rules (plugin installs need internet + DNS). Empty = egress open.
+  extraEgress: []
+
+# ------------------------------------------------------------------------
+# Storage
+# ------------------------------------------------------------------------
+persistence:
+  # /config — settings.json, SQLite database, plugins, logs, userdata.
+  # The chart-created PVC carries helm.sh/resource-policy: keep and ArgoCD
+  # Prune=false so it survives uninstall/prune.
+  config:
+    enabled: true
+    existingClaim: ""
+    # -- "" = cluster default StorageClass; "-" = disable dynamic provisioning.
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 2Gi
+    annotations: {}
+  # /tmp/unmanic — scratch space for in-progress encodes, wiped at startup.
+  # Size it >= largest_file_size x 2 x number_of_workers.
+  cache:
+    # -- One of: emptyDir, memory (tmpfs), pvc.
+    type: emptyDir
+    # -- sizeLimit for emptyDir/memory. With type=memory this counts against
+    # the pod's memory limit.
+    sizeLimit: 20Gi
+    # Only used when type=pvc:
+    existingClaim: ""
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 50Gi
+
+# -- Media libraries. Each entry becomes a volume + mount. Define AT MOST one
+# source per entry (existingClaim | nfs | hostPath); with no source an
+# emptyDir placeholder is mounted (useful only for smoke tests).
+# When federating instances over shared storage, keep the in-app library
+# names identical across installs (task routing matches by library name).
+libraries:
+  - name: library
+    mountPath: /library
+    readOnly: false
+    # -- Option 1: pre-provisioned PVC (incl. NFS/CIFS via a CSI driver).
+    existingClaim: ""
+    # -- Option 2: inline NFS mount, e.g. {server: nas.lan, path: /volume1/media}
+    nfs: {}
+    # -- Option 3: node-local path.
+    hostPath: ""
+
+# -- Verbatim Volume objects.
+extraVolumes: []
+# -- Verbatim VolumeMount objects.
+extraVolumeMounts: []
+
+# ------------------------------------------------------------------------
+# GPU / hardware-accelerated transcoding
+# ------------------------------------------------------------------------
+gpu:
+  # -- One of: none, nvidia, intel, amd, custom.
+  # "custom": chart adds nothing; wire it yourself via resources/extraEnv/
+  # extraVolumes.
+  mode: none
+  # -- Quantity requested for the vendor GPU resource.
+  count: 1
+  nvidia:
+    # -- Set runtimeClassName on the pod (NVIDIA device plugin / gpu-operator).
+    useRuntimeClass: true
+    runtimeClassName: nvidia
+    # -- Add an nvidia.com/gpu resource limit.
+    useResourceLimit: true
+    # -- NVIDIA_VISIBLE_DEVICES: all, a GPU index, or a GPU UUID.
+    visibleDevices: all
+    driverCapabilities: compute,video,utility
+    # -- NVIDIA_PATCH_VERSION for the keylase NVENC session-limit patch.
+    patchVersion: ""
+  intel:
+    # -- Requires the Intel GPU device plugin.
+    resourceName: gpu.intel.com/i915
+    # -- 44 = video, 109 = render (per the Unmanic k8s docs).
+    supplementalGroups: [44, 109]
+    # -- Optional NFD label for required node affinity,
+    # e.g. "intel.feature.node.kubernetes.io/gpu". Empty = no affinity added.
+    nodeAffinityLabel: ""
+    # -- Optional LIBVA_DRIVER_NAME (e.g. iHD or i965).
+    libvaDriverName: ""
+  amd:
+    # -- Requires the AMD GPU device plugin (unless useHostPath).
+    resourceName: amd.com/gpu
+    supplementalGroups: [44, 109]
+    # -- Mount /dev/dri from the host instead of using the device plugin.
+    useHostPath: false
+
+# ------------------------------------------------------------------------
+# Probes — all hit GET /unmanic/api/v2/version/read (unauthenticated).
+# Scheme switches to HTTPS automatically when ssl.enabled=true.
+# ------------------------------------------------------------------------
+probes:
+  startup:
+    enabled: true
+    # -- First boot migrates the DB and installs plugin repos; allow ~2.5 min.
+    failureThreshold: 30
+    periodSeconds: 5
+  liveness:
+    enabled: true
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    enabled: true
+    periodSeconds: 10
+    timeoutSeconds: 5
+
+# ------------------------------------------------------------------------
+# Scheduling / misc
+# ------------------------------------------------------------------------
+resources: {}
+  # requests:
+  #   cpu: 500m
+  #   memory: 512Mi
+  # limits:
+  #   memory: 4Gi
+
+nodeSelector: {}
+affinity: {}
+tolerations: []
+priorityClassName: ""
+podAnnotations: {}
+podLabels: {}
+# -- Give in-flight worker state time to flush on shutdown.
+terminationGracePeriodSeconds: 30
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  # -- Unmanic needs no Kubernetes API access.
+  automountServiceAccountToken: false

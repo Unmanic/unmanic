@@ -1,0 +1,44 @@
+Unmanic {{ .Chart.AppVersion }} deployed as release "{{ .Release.Name }}".
+
+Access:
+{{- if .Values.ingress.enabled }}
+  http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.host }}/
+{{- else if .Values.httpRoute.enabled }}
+  Via your Gateway ({{ .Values.httpRoute.hostnames | join ", " | default "no hostnames set" }}).
+{{- else if eq .Values.service.type "NodePort" }}
+  http{{ if .Values.ssl.enabled }}s{{ end }}://<any-node-ip>:{{ .Values.service.nodePort | default "<assigned-node-port>" }}/
+  (kubectl get svc {{ include "unmanic.fullname" . }} -n {{ .Release.Namespace }})
+{{- else if eq .Values.service.type "LoadBalancer" }}
+  kubectl get svc {{ include "unmanic.fullname" . }} -n {{ .Release.Namespace }} -w   # wait for EXTERNAL-IP
+{{- else }}
+  kubectl port-forward svc/{{ include "unmanic.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+  then open http{{ if .Values.ssl.enabled }}s{{ end }}://localhost:{{ .Values.service.port }}/
+{{- end }}
+
+IMPORTANT NOTES
+
+* Single instance only: Unmanic uses a single-writer SQLite database in
+  /config. Never scale this Deployment. Scale out with additional releases
+  federated via Unmanic installation links (README, "Federation").
+
+* Declarative config limits: values under `config:` are passed as env vars.
+  Once you save a setting in the web UI it is written to
+  /config/settings.json, which OVERRIDES the env var from then on.
+
+* Cache sizing: each worker can hold ~2 full-size copies of a file in
+  {{ include "unmanic.cachePath" . }}. Size the cache volume to at least
+  largest_file_size x 2 x number_of_workers (workers are configured in the
+  web UI, Settings > Workers).
+{{- if not .Values.persistence.config.enabled }}
+
+* WARNING: persistence.config.enabled=false — /config is an emptyDir. Your
+  database, settings and plugins WILL BE LOST when the pod restarts.
+{{- end }}
+{{- if .Values.rootless.enabled }}
+
+* Rootless mode: plugins that install extra apt packages will fail, since
+  the container cannot escalate privileges.
+{{- end }}
+
+* Unmanic ships no authentication. Do not expose it directly to untrusted
+  networks — front it with an authenticating proxy (see README).

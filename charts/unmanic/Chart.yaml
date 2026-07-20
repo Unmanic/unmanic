@@ -1,0 +1,19 @@
+apiVersion: v2
+name: unmanic
+description: Unmanic - Library Optimiser. A simple tool for optimising your file library through automated, plugin-driven processing tasks.
+type: application
+version: 0.1.0
+appVersion: "0.4.0"
+kubeVersion: ">=1.24.0-0"
+home: https://docs.unmanic.app/
+icon: https://raw.githubusercontent.com/Unmanic/unmanic/master/icon.png
+sources:
+  - https://github.com/Unmanic/unmanic
+keywords:
+  - unmanic
+  - media
+  - transcoding
+  - ffmpeg
+  - library
+annotations:
+  artifacthub.io/license: GPL-3.0

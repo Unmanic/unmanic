@@ -1,0 +1,7 @@
+# Intel VAAPI/QSV scenario: Intel GPU device plugin resource, video/render
+# supplemental groups, NFD node affinity.
+gpu:
+  mode: intel
+  intel:
+    nodeAffinityLabel: intel.feature.node.kubernetes.io/gpu
+    libvaDriverName: iHD

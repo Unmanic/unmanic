@@ -1,0 +1,91 @@
+name: Helm Chart CI
+
+on:
+  pull_request:
+    paths:
+      - "charts/**"
+      - ".github/workflows/helm_chart_ci.yml"
+  push:
+    branches:
+      - master
+      - staging
+      - helm-chart
+    paths:
+      - "charts/**"
+      - ".github/workflows/helm_chart_ci.yml"
+
+jobs:
+  lint-and-validate:
+    name: Lint and validate chart
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        kubernetes-version: ["1.27.0", "1.30.0"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install helm
+        uses: azure/setup-helm@v4
+
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
+            | tar xz -C /usr/local/bin kubeconform
+
+      - name: Helm lint (default + all scenarios)
+        run: |
+          set -e
+          helm lint charts/unmanic
+          for values in charts/unmanic/ci/*.yaml; do
+            echo "==> lint with ${values}"
+            helm lint charts/unmanic -f "${values}"
+          done
+
+      - name: Helm template + kubeconform (all scenarios)
+        run: |
+          set -e
+          for values in charts/unmanic/ci/*.yaml; do
+            echo "==> template + kubeconform with ${values} (k8s ${{ matrix.kubernetes-version }})"
+            helm template unmanic charts/unmanic -f "${values}" \
+              | kubeconform -strict -summary \
+                  -kubernetes-version "${{ matrix.kubernetes-version }}" \
+                  -schema-location default \
+                  -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+          done
+
+      - name: Assert no Helm hooks (ArgoCD contract)
+        run: |
+          set -e
+          for values in charts/unmanic/ci/*.yaml; do
+            if helm template unmanic charts/unmanic -f "${values}" | grep -q 'helm.sh/hook'; then
+              echo "ERROR: helm.sh/hook found in output for ${values}"
+              exit 1
+            fi
+          done
+          echo "OK: no hooks rendered"
+
+      - name: Assert deterministic rendering
+        run: |
+          set -e
+          a=$(helm template unmanic charts/unmanic -f charts/unmanic/ci/multilibrary-values.yaml | sha256sum)
+          b=$(helm template unmanic charts/unmanic -f charts/unmanic/ci/multilibrary-values.yaml | sha256sum)
+          [ "$a" = "$b" ] && echo "OK: deterministic" || { echo "ERROR: non-deterministic output"; exit 1; }
+
+      - name: Negative tests (guard rails must fail)
+        run: |
+          set -e
+          if helm template unmanic charts/unmanic --set replicaCount=2 >/dev/null 2>&1; then
+            echo "ERROR: replicaCount=2 did not fail"; exit 1
+          fi
+          if helm template unmanic charts/unmanic \
+              --set libraries[0].name=x \
+              --set libraries[0].mountPath=/x \
+              --set libraries[0].existingClaim=a \
+              --set libraries[0].hostPath=/b >/dev/null 2>&1; then
+            echo "ERROR: library with two sources did not fail"; exit 1
+          fi
+          if helm template unmanic charts/unmanic --set ssl.enabled=true >/dev/null 2>&1; then
+            echo "ERROR: ssl.enabled without existingSecret did not fail"; exit 1
+          fi
+          echo "OK: guard rails hold"

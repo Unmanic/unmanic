@@ -1,0 +1,41 @@
+# Example ArgoCD Application deploying Unmanic from this repository.
+# The chart uses no Helm hooks and renders deterministically, so plain
+# automated sync works. The chart-created config PVC is annotated with
+# Prune=false + helm.sh/resource-policy: keep and will survive pruning.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: unmanic
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Unmanic/unmanic.git
+    targetRevision: master
+    path: charts/unmanic
+    helm:
+      valuesObject:
+        persistence:
+          config:
+            size: 2Gi
+        libraries:
+          - name: library
+            mountPath: /library
+            existingClaim: media-library
+        ingress:
+          enabled: true
+          className: nginx
+          host: unmanic.example.com
+          annotations:
+            nginx.ingress.kubernetes.io/proxy-body-size: "0"
+            nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+            nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: media
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,29 @@
+{{- if and .Values.persistence.config.enabled (not .Values.persistence.config.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "unmanic.fullname" . }}-config
+  labels:
+    {{- include "unmanic.labels" . | nindent 4 }}
+  annotations:
+    # Protect the SQLite database, plugins and settings from helm uninstall
+    # and ArgoCD pruning.
+    helm.sh/resource-policy: keep
+    argocd.argoproj.io/sync-options: Prune=false
+    {{- with .Values.persistence.config.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  accessModes:
+    {{- toYaml .Values.persistence.config.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.config.size }}
+  {{- if .Values.persistence.config.storageClass }}
+  {{- if eq .Values.persistence.config.storageClass "-" }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.persistence.config.storageClass }}
+  {{- end }}
+  {{- end }}
+{{- end }}

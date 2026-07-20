@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Must be 1 (or 0 to pause). Unmanic uses single-writer SQLite."
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": { "type": "string" },
+        "tag": { "type": "string" },
+        "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
+      }
+    },
+    "imagePullSecrets": { "type": "array" },
+    "nameOverride": { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+    "puid": { "type": "integer" },
+    "pgid": { "type": "integer" },
+    "rootless": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "runAsUser": { "type": "integer" },
+        "runAsGroup": { "type": "integer" },
+        "fsGroup": { "type": "integer" }
+      }
+    },
+    "podSecurityContext": { "type": "object" },
+    "securityContext": { "type": "object" },
+    "timezone": { "type": "string" },
+    "debugging": { "type": "boolean" },
+    "sqliteMaintenance": { "type": "string", "enum": ["", "off", "basic", "full"] },
+    "config": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Lowercase Unmanic setting name -> string value, passed as env vars."
+    },
+    "configSecret": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "envFrom": { "type": "array" },
+    "extraEnv": { "type": "array" },
+    "ssl": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "existingSecret": { "type": "string" }
+      }
+    },
+    "service": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer"] },
+        "port": { "type": "integer" },
+        "nodePort": { "type": ["integer", "null"] },
+        "annotations": { "type": "object" }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "className": { "type": "string" },
+        "annotations": { "type": "object" },
+        "host": { "type": "string" },
+        "tls": { "type": "array" }
+      }
+    },
+    "httpRoute": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "annotations": { "type": "object" },
+        "parentRefs": { "type": "array" },
+        "hostnames": { "type": "array" }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "allowSameNamespace": { "type": "boolean" },
+        "ingressRules": { "type": "array" },
+        "extraEgress": { "type": "array" }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "existingClaim": { "type": "string" },
+            "storageClass": { "type": "string" },
+            "accessModes": { "type": "array", "items": { "type": "string" } },
+            "size": { "type": "string" },
+            "annotations": { "type": "object" }
+          }
+        },
+        "cache": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["emptyDir", "memory", "pvc"] },
+            "sizeLimit": { "type": "string" },
+            "existingClaim": { "type": "string" },
+            "storageClass": { "type": "string" },
+            "accessModes": { "type": "array", "items": { "type": "string" } },
+            "size": { "type": "string" }
+          }
+        }
+      }
+    },
+    "libraries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "mountPath"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$" },
+          "mountPath": { "type": "string" },
+          "readOnly": { "type": "boolean" },
+          "existingClaim": { "type": "string" },
+          "nfs": {
+            "type": "object",
+            "properties": {
+              "server": { "type": "string" },
+              "path": { "type": "string" }
+            }
+          },
+          "hostPath": { "type": "string" }
+        }
+      }
+    },
+    "extraVolumes": { "type": "array" },
+    "extraVolumeMounts": { "type": "array" },
+    "gpu": {
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string", "enum": ["none", "nvidia", "intel", "amd", "custom"] },
+        "count": { "type": "integer", "minimum": 1 },
+        "nvidia": {
+          "type": "object",
+          "properties": {
+            "useRuntimeClass": { "type": "boolean" },
+            "runtimeClassName": { "type": "string" },
+            "useResourceLimit": { "type": "boolean" },
+            "visibleDevices": { "type": "string" },
+            "driverCapabilities": { "type": "string" },
+            "patchVersion": { "type": "string" }
+          }
+        },
+        "intel": {
+          "type": "object",
+          "properties": {
+            "resourceName": { "type": "string" },
+            "supplementalGroups": { "type": "array", "items": { "type": "integer" } },
+            "nodeAffinityLabel": { "type": "string" },
+            "libvaDriverName": { "type": "string" }
+          }
+        },
+        "amd": {
+          "type": "object",
+          "properties": {
+            "resourceName": { "type": "string" },
+            "supplementalGroups": { "type": "array", "items": { "type": "integer" } },
+            "useHostPath": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "probes": {
+      "type": "object",
+      "properties": {
+        "startup": { "type": "object" },
+        "liveness": { "type": "object" },
+        "readiness": { "type": "object" }
+      }
+    },
+    "resources": { "type": "object" },
+    "nodeSelector": { "type": "object" },
+    "affinity": { "type": "object" },
+    "tolerations": { "type": "array" },
+    "priorityClassName": { "type": "string" },
+    "podAnnotations": { "type": "object" },
+    "podLabels": { "type": "object" },
+    "terminationGracePeriodSeconds": { "type": "integer" },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "create": { "type": "boolean" },
+        "name": { "type": "string" },
+        "annotations": { "type": "object" },
+        "automountServiceAccountToken": { "type": "boolean" }
+      }
+    }
+  }
+}

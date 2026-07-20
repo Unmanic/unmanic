@@ -1,0 +1,7 @@
+# NVIDIA NVENC/NVDEC scenario: runtimeClass + nvidia.com/gpu resource limit,
+# NVENC session-limit patch enabled.
+gpu:
+  mode: nvidia
+  nvidia:
+    visibleDevices: all
+    patchVersion: "1.0"

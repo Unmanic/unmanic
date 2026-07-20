@@ -1,0 +1,5 @@
+# AMD VAAPI scenario using hostPath /dev/dri (no device plugin).
+gpu:
+  mode: amd
+  amd:
+    useHostPath: true

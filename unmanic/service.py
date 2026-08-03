@@ -2,33 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-unmanic.service.py
+Copyright (C) Josh Sunnex
 
-Written by:               Josh.5 <jsunnex@gmail.com>
-Date:                     06 Dec 2018, (7:21 AM)
-
-Copyright:
-       Copyright (C) Josh Sunnex - All Rights Reserved
-
-       Permission is hereby granted, free of charge, to any person obtaining a copy
-       of this software and associated documentation files (the "Software"), to deal
-       in the Software without restriction, including without limitation the rights
-       to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-       copies of the Software, and to permit persons to whom the Software is
-       furnished to do so, subject to the following conditions:
-
-       The above copyright notice and this permission notice shall be included in all
-       copies or substantial portions of the Software.
-
-       THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-       EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-       MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-       IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-       DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-       OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
-       OR OTHER DEALINGS IN THE SOFTWARE.
-
+SPDX-License-Identifier: GPL-3.0-only
 """
+
 import argparse
 import os
 import queue
@@ -37,6 +15,11 @@ import time
 import threading
 
 import psutil
+
+from unmanic.libs.sentry import initialise_sentry
+
+# Initialise Sentry as early as possible before loading application modules
+initialise_sentry()
 
 from unmanic import config, metadata
 from unmanic.libs import libraryscanner, common, eventmonitor
@@ -80,7 +63,6 @@ def init_db(config_path):
 
 
 class RootService:
-
     def __init__(self):
         self.threads = []
         self.run_threads = True
@@ -242,9 +224,11 @@ class RootService:
         # Start scheduled thread
         library_scanner_manager = self.start_library_scanner_manager(data_queues)
         urt = UnmanicRunningTreads()
-        urt.set_unmanic_running_threads({
-            'library_scanner_manager': library_scanner_manager,
-        })
+        urt.set_unmanic_running_threads(
+            {
+                "library_scanner_manager": library_scanner_manager,
+            }
+        )
 
         # Start inotify watch manager
         self.start_inotify_watch_manager(data_queues, settings)
@@ -332,6 +316,9 @@ class RootService:
 
 
 def main():
+    # Initialise Sentry as early as possible before configuration or startup
+    initialise_sentry()
+
     parser = argparse.ArgumentParser(description="Unmanic")
     parser.add_argument(
         "--version", action="version", version="%(prog)s {version}".format(version=metadata.read_version_string("long"))

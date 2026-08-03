@@ -172,7 +172,11 @@ class PluginsHandler(object, metaclass=SingletonType):
             repo_id = self.get_plugin_repo_id(repo_path)
 
             # Fetch remote JSON file
-            repo_data = self.fetch_remote_repo_data(repo_path)
+            try:
+                repo_data = self.fetch_remote_repo_data(repo_path)
+            except Exception as e:
+                self.logger.error("Unable to update plugin repo '%s'. %s", repo_path, str(e))
+                continue
 
             # Dumb object to local JSON file
             repo_cache = self.get_repo_cache_file(repo_id)

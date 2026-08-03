@@ -81,7 +81,10 @@ class ScheduledTasksManager(threading.Thread):
         while not self.abort_flag.is_set():
             self.event.wait(2)
             # Check if scheduled task is due
-            self.scheduler.run_pending()
+            try:
+                self.scheduler.run_pending()
+            except Exception as e:
+                self.logger.error("Error running scheduled task: %s", str(e), exc_info=True)
 
         # Clear any tasks and exit
         self.scheduler.clear()

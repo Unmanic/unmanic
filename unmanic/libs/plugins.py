@@ -58,6 +58,7 @@ class PluginsHandler(object, metaclass=SingletonType):
     Plugins must be compatible with this version to be installed.
     """
     version: int = 2
+    DEFAULT_REPO_URL = "https://raw.githubusercontent.com/Unmanic/unmanic-plugins/repo/repo.json"
 
     def __init__(self, *args, **kwargs):
         self.settings = config.Config()
@@ -133,51 +134,62 @@ class PluginsHandler(object, metaclass=SingletonType):
         return True
 
     def fetch_remote_repo_data(self, repo_path):
-        # Fetch remote JSON file
         session = Session()
         uuid = session.get_installation_uuid()
         level = session.get_supporter_level()
         repo = base64.b64encode(repo_path.encode('utf-8')).decode('utf-8')
         api_path = f'plugin_repos/repo_data/uuid/{uuid}/level/{level}/repo/{repo}'
-        data, status_code = session.api_get(
-            'unmanic-api',
-            2,
-            api_path,
-        )
-        if status_code == 401:
-            # Something is wrong with registration. Let's resend it and try again.
-            self.logger.debug(f"Plugin repo returned a request to register. Code:{status_code}")
-            session.register_unmanic()
+        data = None
+        status_code = None
+        try:
             data, status_code = session.api_get(
                 'unmanic-api',
                 2,
                 api_path,
             )
-        if status_code >= 500:
-            self.logger.debug(f"Failed to fetch plugin repo from '{api_path}'. Code:{status_code}")
+            if status_code == 401:
+                self.logger.debug(f"Plugin repo returned a request to register. Code:{status_code}")
+                session.register_unmanic()
+                data, status_code = session.api_get(
+                    'unmanic-api',
+                    2,
+                    api_path,
+                )
+        except Exception as e:
+            self.logger.warning("Plugin repo relay failed for '%s': %s", repo_path, e)
 
-        if status_code >= 400:
-            remote_error = None
-            if isinstance(data, dict):
-                remote_error = data.get('error') or data.get('message')
-                if not remote_error and data.get('messages'):
-                    remote_error = data.get('messages')
-            remote_error = remote_error or f"HTTP {status_code}"
-            self.logger.error(
-                "Failed to fetch plugin repo '%s'. Code: %s. %s",
+        if self._valid_repo_data(data):
+            return data
+
+        remote_error = None
+        if isinstance(data, dict):
+            remote_error = data.get('error') or data.get('message')
+            if not remote_error and data.get('messages'):
+                remote_error = data.get('messages')
+        remote_error = remote_error or (f"HTTP {status_code}" if status_code else "invalid response")
+        direct_repo_path = self.DEFAULT_REPO_URL if repo_path == self.get_default_repo() else repo_path
+        if isinstance(direct_repo_path, str) and direct_repo_path.startswith(('http://', 'https://')):
+            self.logger.warning(
+                "Plugin repo relay returned no usable data for '%s' (%s); trying direct fetch.",
                 repo_path,
-                status_code,
                 remote_error,
             )
-            return False
+            try:
+                response = requests.get(direct_repo_path, timeout=10)
+                response.raise_for_status()
+                direct_data = response.json()
+                if self._valid_repo_data(direct_data):
+                    return direct_data
+                remote_error = "direct response did not contain valid repository data"
+            except Exception as e:
+                remote_error = f"direct fetch failed: {e}"
 
-        if not isinstance(data, dict) or not data.get('repo') or 'plugins' not in data:
-            self.logger.error(
-                "Failed to fetch plugin repo '%s'. Response did not contain valid repository data.",
-                repo_path,
-            )
-            return False
-        return data
+        self.logger.error("Failed to fetch plugin repo '%s': %s", repo_path, remote_error)
+        return False
+
+    @staticmethod
+    def _valid_repo_data(data):
+        return isinstance(data, dict) and data.get('repo') and 'plugins' in data
 
     def update_plugin_repos(self):
         """

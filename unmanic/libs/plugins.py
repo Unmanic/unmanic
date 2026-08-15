@@ -155,7 +155,23 @@ class PluginsHandler(object, metaclass=SingletonType):
             )
         if status_code >= 500:
             self.logger.debug(f"Failed to fetch plugin repo from '{api_path}'. Code:{status_code}")
+        if not self.is_valid_repo_data(data):
+            self.logger.warning(
+                "Plugin repo relay returned invalid data for '%s'. Code:%s",
+                repo_path,
+                status_code,
+            )
+            return False
         return data
+
+    @staticmethod
+    def is_valid_repo_data(repo_data):
+        """Return whether a relay response can safely replace a cached repository."""
+        return (
+            isinstance(repo_data, dict) and
+            isinstance(repo_data.get('repo'), dict) and
+            isinstance(repo_data.get('plugins'), list)
+        )
 
     def update_plugin_repos(self):
         """
@@ -167,6 +183,7 @@ class PluginsHandler(object, metaclass=SingletonType):
         if not os.path.exists(plugins_directory):
             os.makedirs(plugins_directory)
         current_repos_list = self.get_plugin_repos()
+        update_successful = True
         for repo in current_repos_list:
             repo_path = repo.get('path')
             repo_id = self.get_plugin_repo_id(repo_path)
@@ -175,18 +192,26 @@ class PluginsHandler(object, metaclass=SingletonType):
             try:
                 repo_data = self.fetch_remote_repo_data(repo_path)
             except Exception as e:
+                update_successful = False
                 self.logger.error("Unable to update plugin repo '%s'. %s", repo_path, str(e))
                 continue
 
-            # Dumb object to local JSON file
+            if not repo_data:
+                # Keep the existing cache. A relay error must never replace a
+                # known-good repository document with an error response.
+                update_successful = False
+                continue
+
+            # Dump object to local JSON file
             repo_cache = self.get_repo_cache_file(repo_id)
             self.logger.info("Repo cache file '%s'.", repo_cache)
             try:
                 with open(repo_cache, 'w') as f:
                     json.dump(repo_data, f, indent=4)
-            except json.JSONDecodeError as e:
+            except (OSError, TypeError) as e:
+                update_successful = False
                 self.logger.error("Unable to update plugin repo '%s'. %s", repo_path, str(e))
-        return True
+        return update_successful
 
     def get_settings_of_all_installed_plugins(self):
         all_settings = {}

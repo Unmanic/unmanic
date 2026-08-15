@@ -369,11 +369,13 @@ class CompletedTasksLogRequestSchema(BaseSchema):
     )
     head = fields.Int(
         required=False,
+        validate=validate.Range(min=0),
         description="Head rows to be included in log",
         example=10,
     )
     tail = fields.Int(
         required=False,
+        validate=validate.Range(min=0),
         description="Tail rows to be included in log",
         example=10,
     )

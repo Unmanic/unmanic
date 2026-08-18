@@ -1,8 +1,15 @@
 # Authentication
 
 Unmanic can require a username and password before anything on the web UI or API can be
-reached. It is **disabled by default**; enabling it is entirely opt-in, and no existing
-installation changes behaviour until you turn it on.
+reached.
+
+**A new installation has this on.** The first time you open the web UI you are asked to choose
+a username and password, and nothing else is reachable until you do.
+
+**An existing installation is left alone.** If Unmanic has run before, it already has a
+settings file, and upgrading does not turn authentication on. Enabling it underneath a working
+installation would lock you out of your own system and break any remote instance links, so it
+stays off until you ask for it. Turning it on is described below.
 
 ## What this protects against, and what it does not
 
@@ -50,10 +57,13 @@ environment variables are visible to anyone able to run `docker inspect` on the 
 
 ### From a browser
 
-Set `auth_enabled` to `true` and restart. Unmanic will serve a one-time setup page at
-`/unmanic/setup` for you to choose a username and password, and every other page redirects
-to it until you do. Until you complete it, anyone who can reach the installation can claim
-it, so do this straight away.
+A new installation does this for you: authentication is already on, so the first page you open
+is the setup page at `/unmanic/setup`, and every other page redirects to it until you choose a
+username and password.
+
+On an existing installation, set `auth_enabled` to `true` and restart to get the same setup
+page. Until you complete it, anyone who can reach the installation can claim it, so do it
+straight away.
 
 ## If you lock yourself out
 
@@ -88,7 +98,7 @@ use a browser. Doing so will break remote installation links.
 
 | Setting | Default | Purpose |
 |---|---|---|
-| `auth_enabled` | `false` | Master switch |
+| `auth_enabled` | `true` on a new install, `false` on an upgrade | Master switch |
 | `auth_allow_basic` | `true` | Accept HTTP Basic on API requests |
 | `auth_session_idle_timeout_days` | `7` | Sign out after this long without activity |
 | `auth_session_max_age_days` | `30` | Absolute session lifetime |

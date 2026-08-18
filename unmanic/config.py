@@ -123,7 +123,7 @@ class Config(object, metaclass=SingletonType):
             self.set_config_item('userdata_path', os.path.join(kwargs.get('unmanic_path'), 'userdata'), save_settings=False)
 
         # Finally, re-read config from file and override all previous settings.
-        self.__import_settings_from_file(config_path)
+        self.__import_settings_from_file(config_path, first_load=True)
 
         # Overwrite current settings with given args
         if config_path:
@@ -173,10 +173,12 @@ class Config(object, metaclass=SingletonType):
             if setting in os.environ:
                 self.set_config_item(setting, os.environ.get(setting), save_settings=False)
 
-    def __import_settings_from_file(self, config_path=None):
+    def __import_settings_from_file(self, config_path=None, first_load=False):
         """
         Read configuration from the settings JSON file.
 
+        :param config_path:
+        :param first_load:
         :return:
         """
         # If config path was not passed as variable, use the default one
@@ -195,6 +197,15 @@ class Config(object, metaclass=SingletonType):
                 logger.exception("Exception in reading saved settings from file: %s", e)
             # Set data to Config class
             self.set_bulk_config_items(data, save_settings=False)
+        elif first_load and 'auth_enabled' not in os.environ:
+            # No settings file has ever been written, so this is a fresh installation rather
+            # than an upgrade. Require authentication by default so a new install is not left
+            # open on the network, and let the setup page collect the credentials.
+            #
+            # An upgrade takes the 'auth_enabled = False' default set in __init__ instead, so
+            # that an existing installation keeps working exactly as it did. An explicit
+            # 'auth_enabled' environment variable always wins over both.
+            self.auth_enabled = True
 
     def reload(self):
         """

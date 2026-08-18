@@ -62,6 +62,9 @@ class WebAuthServerTestBase(object):
         config.Config._instances = {}
         self.settings = config.Config(config_path=tempfile.mkdtemp(prefix="unmanic_tests_"))
         credentials.flush_verify_cache()
+        # State the starting condition rather than inheriting it: a fresh config directory
+        # now defaults to authentication enabled.
+        self.settings.set_config_item("auth_enabled", False, save_settings=False)
         self.server = BackgroundServer(lambda: UnmanicWebApplication(list(ROUTES)))
         self.base_url = self.server.start()
 
@@ -86,7 +89,7 @@ class WebAuthServerTestBase(object):
 
 @pytest.mark.integrationtest
 class TestEnforcement(WebAuthServerTestBase):
-    def test_disabled_auth_changes_nothing(self):
+    def test_behaviour_is_unchanged_when_authentication_is_disabled(self):
         assert self.get("/unmanic/api/v2/version/read").status_code == 200
 
     def test_enabled_auth_blocks_anonymous_api_access(self):

@@ -32,6 +32,9 @@ class TestAuthApi(object):
         config.Config._instances = {}
         self.settings = config.Config(config_path=tempfile.mkdtemp(prefix="unmanic_tests_"))
         credentials.flush_verify_cache()
+        # State the starting condition rather than inheriting it: a fresh config directory
+        # now defaults to authentication enabled.
+        self.settings.set_config_item("auth_enabled", False, save_settings=False)
         self.server = BackgroundServer(
             lambda: UnmanicWebApplication([(r"/unmanic/api/v2/auth/(.*)", ApiAuthHandler)])
         )
@@ -55,7 +58,7 @@ class TestAuthApi(object):
         kwargs.setdefault("allow_redirects", False)
         return requests.post(self.base_url + path, data=json.dumps(payload), **kwargs)
 
-    def test_state_reports_disabled_by_default(self):
+    def test_state_reports_when_authentication_is_disabled(self):
         response = self._get("/unmanic/api/v2/auth/state")
         assert response.status_code == 200
         assert response.json()["enabled"] is False

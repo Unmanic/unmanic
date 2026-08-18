@@ -28,13 +28,28 @@ class AuthTemplateMixin(object):
     """
     AuthTemplateMixin
 
-    The application-wide template_loader points at the built frontend directory and takes
-    precedence over get_template_path(), so the loader itself must be replaced. Overriding
-    get_template_path() alone silently has no effect.
+    Renders templates from unmanic/webserver/templates rather than from the built
+    frontend directory.
+
+    Both methods below must be overridden, for two separate reasons:
+
+    - create_template_loader, because the application-wide 'template_loader' setting
+      points at the built frontend and the default implementation returns it regardless
+      of the template path.
+    - get_template_path, because Tornado caches loaders in RequestHandler
+      ._template_loaders, a dict shared by every handler in the process and keyed by
+      template path. With no template path set, Tornado derives that key from the
+      calling module's directory - which for this module is unmanic/webserver, exactly
+      the same key MainUIRequestHandler in main.py derives. Without this override the
+      auth loader is cached under that shared key and the whole frontend starts looking
+      for index.html inside the auth template directory.
     """
 
+    def get_template_path(self):
+        return TEMPLATE_ROOT
+
     def create_template_loader(self, template_path):
-        return tornado.template.Loader(TEMPLATE_ROOT)
+        return tornado.template.Loader(template_path)
 
 
 def set_session_cookie(handler, token, max_age_days):

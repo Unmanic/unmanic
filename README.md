@@ -34,6 +34,7 @@ Unmanic provides you with the following main functions:
 - A file/directory monitor. When a file is modified, or a new file is added in your library, Unmanic is able to again test that against your configured file presets. Like the first function, if this file requires processing, it is added to a queue for processing.
 - A handler to manage running multiple file manipulation tasks at a time.
 - A Web UI to easily configure, manage and monitor the progress of your library optimisation.
+- Optional [authentication](docs/AUTHENTICATION.md) for the Web UI and API, to keep other devices on your network out. Disabled by default.
 
 You choose how you want your library to be.
 

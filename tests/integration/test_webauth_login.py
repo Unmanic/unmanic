@@ -157,3 +157,25 @@ class TestLoginFlow(object):
             last = self._login(password="wrong-password")
         assert last.status_code == 429
         assert last.headers.get("Retry-After") is not None
+
+    def test_rendering_auth_pages_does_not_hijack_the_shared_template_loader_cache(self):
+        # Tornado caches template loaders in RequestHandler._template_loaders, keyed by
+        # template path and shared by every handler in the process. With no template path
+        # set, the key is derived from the calling module's directory - which for
+        # webauth.py is unmanic/webserver, the same key main.py's MainUIRequestHandler
+        # derives. Caching the auth loader under that key makes the whole frontend look
+        # for index.html inside the auth template directory.
+        import os
+
+        import tornado.web
+
+        import unmanic.webserver.main as webserver_main
+
+        requests.get(self.base_url + "/unmanic/login", timeout=10)
+
+        shared_key = os.path.dirname(os.path.abspath(webserver_main.__file__))
+        cached = tornado.web.RequestHandler._template_loaders
+        assert shared_key not in cached, (
+            "the auth template loader was cached under {!r}, which MainUIRequestHandler "
+            "also uses - this breaks the entire frontend".format(shared_key)
+        )

@@ -257,6 +257,14 @@ class UIServer(threading.Thread):
             )),
         ], **tornado_settings)
 
+        # Add authentication routes
+        from unmanic.webserver.webauth import LoginActionHandler, LoginPageHandler, LogoutActionHandler
+        app.add_handlers(r'.*', [
+            (r"/unmanic/login", LoginPageHandler),
+            (r"/unmanic/auth/login", LoginActionHandler),
+            (r"/unmanic/auth/logout", LogoutActionHandler),
+        ])
+
         # Add API routes
         from unmanic.webserver.api_request_router import APIRequestRouter
         app.add_handlers(r'.*', [

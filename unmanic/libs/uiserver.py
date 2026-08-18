@@ -89,6 +89,28 @@ class UnmanicRunningTreads(object, metaclass=SingletonType):
         return self._unmanic_threads.get(name)
 
 
+class UnmanicWebApplication(tornado.web.Application):
+    """
+    UnmanicWebApplication
+
+    Applies the authentication guard to every request before routing it.
+
+    Doing this at the router rather than per handler means every route is covered by
+    construction - the REST API, the frontend, static assets, the WebSocket handshake,
+    the Swagger UI and dynamically registered plugin handlers alike. A new endpoint
+    cannot be added without authentication by forgetting a decorator.
+    """
+
+    def find_handler(self, request, **kwargs):
+        from unmanic.libs.webauth import guard
+        from unmanic.webserver.webauth import AuthFailureHandler
+
+        decision = guard.authorise(request)
+        if decision.allowed:
+            return super(UnmanicWebApplication, self).find_handler(request, **kwargs)
+        return self.get_handler_delegate(request, AuthFailureHandler, target_kwargs={"decision": decision})
+
+
 class UIServer(threading.Thread):
     config = None
     started = False
@@ -227,7 +249,7 @@ class UIServer(threading.Thread):
     def make_web_app(self):
         # Start with web application routes
         from unmanic.webserver.websocket import UnmanicWebsocketHandler
-        app = tornado.web.Application([
+        app = UnmanicWebApplication([
             (r"/unmanic/websocket", UnmanicWebsocketHandler),
             (r"/unmanic/downloads/(.*)", DownloadsHandler),
             (r"/(.*)", tornado.web.RedirectHandler, dict(

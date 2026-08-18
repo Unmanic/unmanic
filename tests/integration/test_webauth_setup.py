@@ -108,3 +108,17 @@ class TestSetupFlow(object):
         self._submit()
         self._submit(username="attacker", password="attacker-password")
         assert credentials.get_username() == "jordan"
+
+    def test_setup_page_is_self_contained(self):
+        # The page carries inline JS for live validation. Inline is fine; an external file
+        # would not be, because the guard allowlist deliberately opens no static paths.
+        body = requests.get(self.base_url + "/unmanic/setup", timeout=10).text
+        assert "<script src=" not in body
+        assert '<link rel="stylesheet"' not in body
+        assert "<img" not in body
+        assert "<script>" in body, "live validation script is missing"
+
+    def test_setup_page_advertises_the_length_rule_the_server_enforces(self):
+        body = requests.get(self.base_url + "/unmanic/setup", timeout=10).text
+        assert str(credentials.MIN_PASSWORD_LENGTH) in body
+        assert str(credentials.MAX_PASSWORD_LENGTH) in body

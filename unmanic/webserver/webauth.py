@@ -215,3 +215,68 @@ class LogoutActionHandler(tornado.web.RequestHandler):
             sessions.revoke_session(cookie.value)
         clear_session_cookie(self)
         self.redirect(guard.LOGIN_PATH)
+
+
+class SetupPageHandler(AuthTemplateMixin, tornado.web.RequestHandler):
+    """
+    SetupPageHandler
+
+    Serves the first-run credential setup page. The guard only routes here while no
+    credential exists; once one does it answers 404 without reaching this handler.
+    """
+
+    SUPPORTED_METHODS = ("GET", "HEAD")
+
+    def get(self):
+        self.set_header("Content-Type", "text/html; charset=UTF-8")
+        self.render("auth/setup.html", error=None)
+
+
+class SetupActionHandler(AuthTemplateMixin, tornado.web.RequestHandler):
+    """
+    SetupActionHandler
+
+    Creates the first credential and signs the browser in.
+    """
+
+    SUPPORTED_METHODS = ("POST",)
+
+    def post(self):
+        settings = config.Config()
+        key = throttle_key(self)
+
+        retry_after = login_throttle.retry_after(key)
+        if retry_after:
+            self.set_status(429)
+            self.set_header("Retry-After", str(retry_after))
+            self.render("auth/setup.html", error="Too many attempts. Try again later.")
+            return
+
+        username = self.get_argument("username", "")
+        password = self.get_argument("password", "")
+        confirm = self.get_argument("confirm", "")
+
+        if password != confirm:
+            login_throttle.record_failure(key)
+            self.set_status(400)
+            self.render("auth/setup.html", error="The passwords entered did not match")
+            return
+
+        try:
+            credentials.set_credential(username, password)
+        except ValueError as e:
+            login_throttle.record_failure(key)
+            self.set_status(400)
+            self.render("auth/setup.html", error=str(e))
+            return
+
+        login_throttle.record_success(key)
+        token = sessions.create_session(
+            self.request.remote_ip,
+            self.request.headers.get("User-Agent"),
+            settings.get_auth_session_idle_timeout_days(),
+            settings.get_auth_session_max_age_days(),
+        )
+        set_session_cookie(self, token, settings.get_auth_session_max_age_days())
+        logger.info("Web authentication credentials configured from %s", self.request.remote_ip)
+        self.redirect(guard.DEFAULT_LANDING_PATH)

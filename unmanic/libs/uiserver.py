@@ -228,6 +228,19 @@ class UIServer(threading.Thread):
                 self._log("SSL enabled but certificate/key files not provided", level="error")
                 raise SystemExit
 
+        # Warn loudly if authentication is enabled but not yet configured
+        if self.config.get_auth_enabled():
+            from unmanic.libs.webauth import credentials as webauth_credentials
+
+            if not webauth_credentials.credential_is_configured():
+                self._log(
+                    "Authentication is enabled but no credentials are configured. "
+                    "Open http://<this-host>:{}/unmanic/setup to set them, or run "
+                    "'unmanic --set-password'. Until that is done, anyone who can reach this "
+                    "installation can claim it.".format(self.config.get_ui_port()),
+                    level="warning",
+                )
+
         # Web Server
         self.server = tornado.httpserver.HTTPServer(
             self.app,
@@ -258,11 +271,19 @@ class UIServer(threading.Thread):
         ], **tornado_settings)
 
         # Add authentication routes
-        from unmanic.webserver.webauth import LoginActionHandler, LoginPageHandler, LogoutActionHandler
+        from unmanic.webserver.webauth import (
+            LoginActionHandler,
+            LoginPageHandler,
+            LogoutActionHandler,
+            SetupActionHandler,
+            SetupPageHandler,
+        )
         app.add_handlers(r'.*', [
             (r"/unmanic/login", LoginPageHandler),
             (r"/unmanic/auth/login", LoginActionHandler),
             (r"/unmanic/auth/logout", LogoutActionHandler),
+            (r"/unmanic/setup", SetupPageHandler),
+            (r"/unmanic/auth/setup", SetupActionHandler),
         ])
 
         # Add API routes

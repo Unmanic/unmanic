@@ -61,6 +61,13 @@ class Config(object, metaclass=SingletonType):
         self.ssl_certfilepath = None
         self.ssl_keyfilepath = None
 
+        # Web authentication settings
+        self.auth_enabled = False
+        self.auth_allow_basic = True
+        self.auth_session_idle_timeout_days = 7
+        self.auth_session_max_age_days = 30
+        self.auth_trusted_origins = []
+
         # Set default directories
         home_directory = common.get_home_dir()
         self.config_path = os.path.join(home_directory, '.unmanic', 'config')
@@ -609,3 +616,79 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.ssl_keyfilepath
+
+    @staticmethod
+    def __as_bool(value, default):
+        """
+        Coerce a configuration value to a boolean.
+
+        Values arriving from environment variables are always strings.
+
+        :param value:
+        :param default:
+        :return:
+        """
+        if value is None:
+            return default
+        if isinstance(value, str):
+            return value.strip().lower() in ('true', '1', 'yes', 'on')
+        return bool(value)
+
+    @staticmethod
+    def __as_int(value, default):
+        """
+        Coerce a configuration value to an integer, falling back to a default.
+
+        :param value:
+        :param default:
+        :return:
+        """
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    def get_auth_enabled(self):
+        """
+        Get setting - auth_enabled
+
+        :return:
+        """
+        return self.__as_bool(self.auth_enabled, False)
+
+    def get_auth_allow_basic(self):
+        """
+        Get setting - auth_allow_basic
+
+        :return:
+        """
+        return self.__as_bool(self.auth_allow_basic, True)
+
+    def get_auth_session_idle_timeout_days(self):
+        """
+        Get setting - auth_session_idle_timeout_days
+
+        :return:
+        """
+        return self.__as_int(self.auth_session_idle_timeout_days, 7)
+
+    def get_auth_session_max_age_days(self):
+        """
+        Get setting - auth_session_max_age_days
+
+        :return:
+        """
+        return self.__as_int(self.auth_session_max_age_days, 30)
+
+    def get_auth_trusted_origins(self):
+        """
+        Get setting - auth_trusted_origins
+
+        :return:
+        """
+        value = self.auth_trusted_origins
+        if isinstance(value, str):
+            value = value.split(',')
+        if not value:
+            return []
+        return [str(origin).strip() for origin in value if str(origin).strip()]

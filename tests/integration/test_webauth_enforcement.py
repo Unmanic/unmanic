@@ -21,6 +21,7 @@ from unmanic.libs.uiserver import UnmanicWebApplication
 from unmanic.libs.unmodels.webauthcredentials import WebAuthCredentials
 from unmanic.libs.unmodels.webauthsessions import WebAuthSessions
 from unmanic.libs.webauth import credentials, sessions
+from unmanic.libs.webauth.throttle import login_throttle
 
 MODELS = [WebAuthCredentials, WebAuthSessions]
 
@@ -62,6 +63,8 @@ class WebAuthServerTestBase(object):
         config.Config._instances = {}
         self.settings = config.Config(config_path=tempfile.mkdtemp(prefix="unmanic_tests_"))
         credentials.flush_verify_cache()
+        # Shared process-wide state; a lockout from one test would otherwise leak into the next
+        login_throttle.reset()
         # State the starting condition rather than inheriting it: a fresh config directory
         # now defaults to authentication enabled.
         self.settings.set_config_item("auth_enabled", False, save_settings=False)
@@ -242,3 +245,78 @@ class TestEveryRouteShapeIsCovered(WebAuthServerTestBase):
             cookies={sessions.COOKIE_NAME: token},
         )
         assert response.status_code == 101
+
+
+@pytest.mark.integrationtest
+class TestAuthRoutesAreClosedWhileAuthIsOff(WebAuthServerTestBase):
+    """
+    An installation that took the upgrade and never opted in must not be seizable.
+
+    With authentication off the guard used to return early, which left every route that
+    creates a credential or turns authentication on reachable by anyone who could reach the
+    port. Chained together those gave an unauthenticated caller full ownership of the
+    installation, and left the real owner locked out with no way back except shell access.
+    """
+
+    def test_setup_page_is_not_served(self):
+        assert self.get("/unmanic/setup").status_code == 404
+
+    def test_setup_cannot_plant_a_credential(self):
+        response = self.post(
+            "/unmanic/auth/setup",
+            data={
+                "username": "attacker",
+                "password": "i-claimed-your-box",
+                "confirm":  "i-claimed-your-box",
+            },
+        )
+        assert response.status_code == 404
+        assert credentials.credential_is_configured() is False
+
+    def test_setup_cannot_plant_a_credential_cross_origin(self):
+        response = self.post(
+            "/unmanic/auth/setup",
+            data={
+                "username": "attacker",
+                "password": "i-claimed-your-box",
+                "confirm":  "i-claimed-your-box",
+            },
+            headers={"Origin": "http://evil.example.com"},
+        )
+        assert response.status_code == 404
+        assert credentials.credential_is_configured() is False
+
+    def test_ordinary_routes_are_still_untouched(self):
+        # The whole point of leaving authentication off for upgrades is that nothing else
+        # changes for the owner.
+        assert self.get("/unmanic/api/v2/version/read").status_code == 200
+        assert self.get("/unmanic/ui/dashboard/").status_code == 200
+
+
+@pytest.mark.integrationtest
+class TestBasicAuthIsThrottled(WebAuthServerTestBase):
+    """
+    HTTP Basic is the machine-facing path and is on by default. Leaving it outside the
+    throttle left an unlimited, unlogged password oracle beside a rate limited login form.
+    """
+
+    def test_repeated_basic_failures_are_eventually_locked_out(self):
+        self.enable_auth()
+        seen_lockout = False
+        for _ in range(12):
+            response = self.get(
+                "/unmanic/api/v2/version/read", auth=("jordan", "not-the-password")
+            )
+            assert response.status_code in (401, 429)
+            if response.status_code == 429:
+                seen_lockout = True
+                assert response.headers.get("Retry-After") is not None
+                break
+        assert seen_lockout, "Basic auth accepted unlimited password guesses"
+
+    def test_a_valid_credential_still_works_before_any_lockout(self):
+        self.enable_auth()
+        response = self.get(
+            "/unmanic/api/v2/version/read", auth=("jordan", "a-good-password")
+        )
+        assert response.status_code == 200

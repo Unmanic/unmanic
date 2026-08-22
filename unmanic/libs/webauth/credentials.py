@@ -108,7 +108,10 @@ def verify_password(password: str, encoded: Optional[str]) -> bool:
     n, r, p, salt, expected = decoded
     try:
         candidate = _scrypt(password, salt, n, r, p)
-    except (ValueError, MemoryError):
+    except (ValueError, MemoryError, OverflowError):
+        # OverflowError belongs here because maxmem is derived from the stored n and r, so a
+        # hash row carrying an absurd n overflows the conversion to a C long before OpenSSL
+        # applies its own limit. This function promises never to raise on a malformed hash.
         return False
     return hmac.compare_digest(candidate, expected)
 

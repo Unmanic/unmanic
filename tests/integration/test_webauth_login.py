@@ -38,6 +38,8 @@ class TestLoginFlow(object):
         config.Config._instances = {}
         self.settings = config.Config(config_path=tempfile.mkdtemp(prefix="unmanic_tests_"))
         credentials.flush_verify_cache()
+        # Shared process-wide state; a lockout from one test would otherwise leak into the next
+        login_throttle.reset()
         login_throttle.record_success("login:127.0.0.1")
         self.server = BackgroundServer(
             lambda: UnmanicWebApplication([

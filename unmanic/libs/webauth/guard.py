@@ -11,7 +11,11 @@ from typing import List, Optional
 from urllib.parse import quote, urlsplit
 
 from unmanic import config
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.webauth import credentials, sessions
+from unmanic.libs.webauth.throttle import login_throttle
+
+logger = UnmanicLogging.get_logger(name="WebAuth")
 
 DEFAULT_LANDING_PATH = "/unmanic/ui/dashboard/"
 LOGIN_PATH = "/unmanic/login"
@@ -20,12 +24,36 @@ SETUP_PATH = "/unmanic/setup"
 PUBLIC_PATHS = frozenset({LOGIN_PATH, "/unmanic/auth/login"})
 SETUP_PATHS = frozenset({SETUP_PATH, "/unmanic/auth/setup"})
 
+# Routes that create or replace a credential, or turn authentication on.
+#
+# These stay closed while authentication is disabled. Without this, an installation that
+# never opted in to the feature can have an account planted on it, and authentication
+# switched on against its owner, by anyone able to reach the port. Turning authentication
+# on is a change of ownership, so it is deliberately restricted to the host: either
+# `unmanic --set-password` or the environment variables, both of which already require
+# the same level of access as owning the installation.
+AUTH_MUTATION_PATHS = frozenset(
+    {
+        SETUP_PATH,
+        "/unmanic/auth/setup",
+        "/unmanic/api/v2/auth/configure",
+        "/unmanic/api/v2/auth/password",
+        "/unmanic/api/v2/auth/sessions",
+        "/unmanic/api/v2/auth/sessions/revoke",
+    }
+)
+
 UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 # Prefixes a cross-site browser context has no legitimate reason to reach.
 # UI routes are deliberately excluded so the unmanic.app account flow, which returns
 # cross-site to /unmanic/ui/trigger/, keeps working.
-CSRF_GUARDED_PREFIXES = ("/unmanic/api/", "/unmanic/plugin_api/", "/unmanic/panel/")
+CSRF_GUARDED_PREFIXES = (
+    "/unmanic/api/",
+    "/unmanic/plugin_api/",
+    "/unmanic/panel/",
+    "/unmanic/downloads/",
+)
 
 
 class AuthDecision(object):
@@ -151,6 +179,41 @@ def session_from_request(request):
     return sessions.lookup_session(token, settings.get_auth_session_idle_timeout_days())
 
 
+def authorise_basic(request) -> Optional[AuthDecision]:
+    """
+    Verify an HTTP Basic header under the same throttle and logging as the login form.
+
+    Returns ALLOWED when the header verifies, a refusal while the client is locked out, and
+    None when there is nothing to act on, so the caller falls through to its normal refusal.
+
+    Basic is the machine-facing path and is enabled by default. Leaving it outside the
+    throttle left an unlimited and unlogged password oracle sitting beside a rate limited
+    login form, which made the limit on the form worth very little.
+
+    :param request:
+    :return:
+    """
+    header = request.headers.get("Authorization")
+    if not header:
+        return None
+
+    key = "login:{}".format(request.remote_ip)
+
+    retry_after = login_throttle.retry_after(key)
+    if retry_after:
+        return AuthDecision(
+            False, status=429, reason="Too many failed attempts", retry_after=retry_after
+        )
+
+    if credentials.verify_basic_header(header):
+        login_throttle.record_success(key)
+        return ALLOWED
+
+    login_throttle.record_failure(key)
+    logger.warning("Failed HTTP Basic authentication attempt from %s", request.remote_ip)
+    return None
+
+
 def authorise(request) -> AuthDecision:
     """
     Decide whether a request may proceed.
@@ -160,10 +223,15 @@ def authorise(request) -> AuthDecision:
     """
     settings = config.Config()
 
-    if not settings.get_auth_enabled():
-        return ALLOWED
-
     path = str(request.path)
+
+    if not settings.get_auth_enabled():
+        # Authentication is off, but the routes that could turn it on, or plant a
+        # credential to be used once it is on, must not be reachable. Anything else
+        # behaves exactly as it did before this feature existed.
+        if path in AUTH_MUTATION_PATHS:
+            return AuthDecision(False, status=404, reason="Not found")
+        return ALLOWED
 
     # CSRF layer 2: origin verification on state-changing requests. Placed above the setup
     # and public branches so it also covers the login and setup POSTs, which are the only
@@ -193,8 +261,10 @@ def authorise(request) -> AuthDecision:
     if session_from_request(request) is not None:
         return ALLOWED
 
-    if settings.get_auth_allow_basic() and credentials.verify_basic_header(request.headers.get("Authorization")):
-        return ALLOWED
+    if settings.get_auth_allow_basic():
+        basic_decision = authorise_basic(request)
+        if basic_decision is not None:
+            return basic_decision
 
     if wants_html(request):
         target = "{}?next={}".format(LOGIN_PATH, quote(safe_next_path(path), safe=""))

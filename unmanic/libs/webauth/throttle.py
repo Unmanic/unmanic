@@ -37,6 +37,15 @@ class LoginThrottle(object):
         self._lock = threading.Lock()
         self._state = {}  # type: Dict[str, Dict[str, float]]
 
+    def reset(self) -> None:
+        """
+        Forget every recorded failure and lockout.
+
+        :return:
+        """
+        with self._lock:
+            self._state.clear()
+
     def _entry(self, key: str) -> Dict[str, float]:
         return self._state.setdefault(
             key, {"failures": 0, "first_failure": 0.0, "locked_until": 0.0, "offences": 0}

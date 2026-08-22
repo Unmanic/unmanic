@@ -174,6 +174,15 @@ class ApiAuthHandler(BaseApiHandler):
             json_request = self.read_json_request(RequestAuthConfigureSchema())
             enabled = bool(json_request.get("enabled"))
 
+            # Defence in depth. The router refuses this route entirely while authentication
+            # is off, so that an installation which never opted in cannot be switched on
+            # against its owner. Reaching here in that state would mean the guard was
+            # bypassed, so fail rather than proceed.
+            if not self.config.get_auth_enabled():
+                self.set_status(self.STATUS_ERROR_EXTERNAL, reason="Authentication is not enabled")
+                self.write_error()
+                return
+
             if enabled:
                 username = json_request.get("username") or credentials.get_username()
                 password = json_request.get("password")
@@ -184,6 +193,9 @@ class ApiAuthHandler(BaseApiHandler):
                         self.set_status(self.STATUS_ERROR_EXTERNAL, reason=str(e))
                         self.write_error()
                         return
+                    # Every other credential change revokes; this path must match it, or a
+                    # session minted before the change outlives the password it belonged to.
+                    sessions.revoke_all_sessions()
                 elif not credentials.credential_is_configured():
                     self.set_status(
                         self.STATUS_ERROR_EXTERNAL, reason="A password is required to enable authentication"

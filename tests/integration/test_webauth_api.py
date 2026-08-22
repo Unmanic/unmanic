@@ -20,6 +20,7 @@ from unmanic.libs.uiserver import UnmanicWebApplication
 from unmanic.libs.unmodels.webauthcredentials import WebAuthCredentials
 from unmanic.libs.unmodels.webauthsessions import WebAuthSessions
 from unmanic.libs.webauth import credentials, sessions
+from unmanic.libs.webauth.throttle import login_throttle
 from unmanic.webserver.api_v2.auth_api import ApiAuthHandler
 
 MODELS = [WebAuthCredentials, WebAuthSessions]
@@ -32,6 +33,8 @@ class TestAuthApi(object):
         config.Config._instances = {}
         self.settings = config.Config(config_path=tempfile.mkdtemp(prefix="unmanic_tests_"))
         credentials.flush_verify_cache()
+        # Shared process-wide state; a lockout from one test would otherwise leak into the next
+        login_throttle.reset()
         # State the starting condition rather than inheriting it: a fresh config directory
         # now defaults to authentication enabled.
         self.settings.set_config_item("auth_enabled", False, save_settings=False)
@@ -63,26 +66,54 @@ class TestAuthApi(object):
         assert response.status_code == 200
         assert response.json()["enabled"] is False
 
-    def test_configure_can_enable_auth_while_it_is_off(self):
+    def test_configure_cannot_be_reached_while_authentication_is_off(self):
+        # An installation that never opted in must not be seizable by anyone who can reach
+        # the port. Before this was closed, an unauthenticated caller could enable
+        # authentication against the owner using a password of their own choosing, and the
+        # owner's only way back was shell access to the host.
         response = self._post(
             "/unmanic/api/v2/auth/configure",
-            {"enabled": True, "username": "jordan", "password": "a-good-password"},
+            {"enabled": True, "username": "attacker", "password": "a-good-password"},
         )
-        assert response.status_code == 200
-        assert self.settings.get_auth_enabled() is True
-        assert credentials.verify_credential("jordan", "a-good-password") is True
+        assert response.status_code == 404
+        assert self.settings.get_auth_enabled() is False
+        assert credentials.credential_is_configured() is False
+
+    def test_configure_cannot_plant_a_credential_while_authentication_is_off(self):
+        # The same route with a hostile Origin, which is how this would arrive in practice:
+        # a browser on the network loading an attacker's page.
+        response = self._post(
+            "/unmanic/api/v2/auth/configure",
+            {"enabled": True, "username": "attacker", "password": "a-good-password"},
+            headers={"Origin": "http://evil.example.com"},
+        )
+        assert response.status_code == 404
+        assert credentials.credential_is_configured() is False
 
     def test_configure_rejects_a_short_password(self):
+        credentials.set_credential("jordan", "a-good-password")
+        self.settings.set_config_item("auth_enabled", True, save_settings=False)
         response = self._post(
             "/unmanic/api/v2/auth/configure",
             {"enabled": True, "username": "jordan", "password": "short"},
+            cookies=self._cookies(),
         )
         assert response.status_code == 400
+        assert credentials.verify_credential("jordan", "a-good-password") is True
 
-    def test_configure_rejects_enabling_with_no_password_at_all(self):
-        response = self._post("/unmanic/api/v2/auth/configure", {"enabled": True})
-        assert response.status_code == 400
-        assert self.settings.get_auth_enabled() is False
+    def test_configure_revokes_existing_sessions_when_the_password_changes(self):
+        credentials.set_credential("jordan", "a-good-password")
+        self.settings.set_config_item("auth_enabled", True, save_settings=False)
+        cookies = self._cookies()
+        response = self._post(
+            "/unmanic/api/v2/auth/configure",
+            {"enabled": True, "username": "jordan", "password": "another-good-password"},
+            cookies=cookies,
+        )
+        assert response.status_code == 200
+        # The documentation promises that changing the password signs every device out.
+        # This was the one credential path that did not honour it.
+        assert sessions.lookup_session(cookies[sessions.COOKIE_NAME], 7) is None
 
     def test_state_never_returns_the_password_hash(self):
         credentials.set_credential("jordan", "a-good-password")

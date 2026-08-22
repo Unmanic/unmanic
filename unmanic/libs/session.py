@@ -1,34 +1,11 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
-unmanic.session.py
+Copyright (C) Josh Sunnex
 
-Written by:               Josh.5 <jsunnex@gmail.com>
-Date:                     10 Mar 2021, (5:20 PM)
-
-Copyright:
-       Copyright (C) Josh Sunnex - All Rights Reserved
-
-       Permission is hereby granted, free of charge, to any person obtaining a copy
-       of this software and associated documentation files (the "Software"), to deal
-       in the Software without restriction, including without limitation the rights
-       to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-       copies of the Software, and to permit persons to whom the Software is
-       furnished to do so, subject to the following conditions:
-
-       The above copyright notice and this permission notice shall be included in all
-       copies or substantial portions of the Software.
-
-       THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-       EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-       MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-       IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-       DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-       OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
-       OR OTHER DEALINGS IN THE SOFTWARE.
-
+SPDX-License-Identifier: GPL-3.0-only
 """
+
 import datetime
 import os
 import random
@@ -565,6 +542,8 @@ class Session(object, metaclass=SingletonType):
         if r.status_code > 403:
             # There is an issue with the remote API
             raise RemoteApiException(f"GET request failed for {u}", r.status_code)
+        if r.status_code == 403:
+            self.logger.warning("GET request to '%s' returned 403 Forbidden", u)
         if r.status_code == 401:
             # Verify the token. Refresh as required
             self.logger.debug("Auto exec token verification (api_get)")
@@ -594,6 +573,8 @@ class Session(object, metaclass=SingletonType):
         if r.status_code > 403:
             # There is an issue with the remote API
             raise RemoteApiException(f"POST request failed for {u}", r.status_code)
+        if r.status_code == 403:
+            self.logger.warning("POST request to '%s' returned 403 Forbidden", u)
         if r.status_code == 401:
             # Verify the token. Refresh as required
             self.logger.debug("Auto exec token verification (api_post)")
@@ -744,9 +725,21 @@ class Session(object, metaclass=SingletonType):
             self.__store_installation_data()
             self.__configure_log_forwarding(session_valid=True)  # TODO: Remove from here. It wont work with trials.
             return True
+        elif r.status_code == 401:
+            self.logger.info(
+                "Trial token expired or unavailable for this installation. Resetting to free tier (level 0)."
+            )
+            if self.level == 9:
+                self.level = 0
+                self.user_access_token = None
+                self.__store_installation_data(force_save_access_token=True)
+            return False
         elif r.status_code > 403:
             # Issue with server... Just carry on with current access token can't fix that here.
             raise RemoteApiException(f"Trial token verification request failed for {u}", r.status_code)
+        else:
+            self.logger.warning("Trial token request rejected with status code %s", r.status_code)
+            return False
 
     def register_unmanic(self, force=False):
         """

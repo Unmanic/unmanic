@@ -9,7 +9,7 @@ skip-magic-trailing-comma = false
 line-ending = "lf"
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "double"

@@ -89,6 +89,28 @@ class UnmanicRunningTreads(object, metaclass=SingletonType):
         return self._unmanic_threads.get(name)
 
 
+class UnmanicWebApplication(tornado.web.Application):
+    """
+    UnmanicWebApplication
+
+    Applies the authentication guard to every request before routing it.
+
+    Doing this at the router rather than per handler means every route is covered by
+    construction - the REST API, the frontend, static assets, the WebSocket handshake,
+    the Swagger UI and dynamically registered plugin handlers alike. A new endpoint
+    cannot be added without authentication by forgetting a decorator.
+    """
+
+    def find_handler(self, request, **kwargs):
+        from unmanic.libs.webauth import guard
+        from unmanic.webserver.webauth import AuthFailureHandler
+
+        decision = guard.authorise(request)
+        if decision.allowed:
+            return super(UnmanicWebApplication, self).find_handler(request, **kwargs)
+        return self.get_handler_delegate(request, AuthFailureHandler, target_kwargs={"decision": decision})
+
+
 class UIServer(threading.Thread):
     config = None
     started = False
@@ -206,6 +228,19 @@ class UIServer(threading.Thread):
                 self._log("SSL enabled but certificate/key files not provided", level="error")
                 raise SystemExit
 
+        # Warn loudly if authentication is enabled but not yet configured
+        if self.config.get_auth_enabled():
+            from unmanic.libs.webauth import credentials as webauth_credentials
+
+            if not webauth_credentials.credential_is_configured():
+                self._log(
+                    "Authentication is enabled but no credentials are configured. "
+                    "Open http://<this-host>:{}/unmanic/setup to set them, or run "
+                    "'unmanic --set-password'. Until that is done, anyone who can reach this "
+                    "installation can claim it.".format(self.config.get_ui_port()),
+                    level="warning",
+                )
+
         # Web Server
         self.server = tornado.httpserver.HTTPServer(
             self.app,
@@ -227,13 +262,29 @@ class UIServer(threading.Thread):
     def make_web_app(self):
         # Start with web application routes
         from unmanic.webserver.websocket import UnmanicWebsocketHandler
-        app = tornado.web.Application([
+        app = UnmanicWebApplication([
             (r"/unmanic/websocket", UnmanicWebsocketHandler),
             (r"/unmanic/downloads/(.*)", DownloadsHandler),
             (r"/(.*)", tornado.web.RedirectHandler, dict(
                 url="/unmanic/ui/dashboard/"
             )),
         ], **tornado_settings)
+
+        # Add authentication routes
+        from unmanic.webserver.webauth import (
+            LoginActionHandler,
+            LoginPageHandler,
+            LogoutActionHandler,
+            SetupActionHandler,
+            SetupPageHandler,
+        )
+        app.add_handlers(r'.*', [
+            (r"/unmanic/login", LoginPageHandler),
+            (r"/unmanic/auth/login", LoginActionHandler),
+            (r"/unmanic/auth/logout", LogoutActionHandler),
+            (r"/unmanic/setup", SetupPageHandler),
+            (r"/unmanic/auth/setup", SetupActionHandler),
+        ])
 
         # Add API routes
         from unmanic.webserver.api_request_router import APIRequestRouter

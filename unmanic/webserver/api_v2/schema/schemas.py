@@ -1924,3 +1924,94 @@ class WorkerStatusSuccessSchema(BaseSchema):
         many=True,
         validate=validate.Length(min=0),
     )
+
+
+class AuthStateSuccessSchema(BaseSchema):
+    """Schema for the current authentication state"""
+
+    enabled = fields.Boolean(
+        required=True,
+        description="Whether authentication is enabled on this installation",
+        example=False,
+    )
+    authenticated = fields.Boolean(
+        required=True,
+        description="Whether the current request is authenticated",
+        example=True,
+    )
+    username = fields.Str(
+        required=False,
+        allow_none=True,
+        description="The configured username",
+        example="jordan",
+    )
+    allow_basic = fields.Boolean(
+        required=True,
+        description="Whether HTTP Basic authentication is accepted for API requests",
+        example=True,
+    )
+
+
+class RequestAuthConfigureSchema(BaseSchema):
+    """Schema for enabling or disabling authentication"""
+
+    enabled = fields.Boolean(
+        required=True,
+        description="Enable or disable authentication",
+        example=True,
+    )
+    username = fields.Str(
+        required=False,
+        load_default="",
+        description="The username to configure",
+        example="jordan",
+    )
+    password = fields.Str(
+        required=False,
+        load_default="",
+        description="The password to configure",
+        example="a-good-password",
+    )
+
+
+class RequestAuthPasswordSchema(BaseSchema):
+    """Schema for changing the account password"""
+
+    current_password = fields.Str(
+        required=True,
+        description="The current password",
+        example="a-good-password",
+    )
+    new_password = fields.Str(
+        required=True,
+        description="The replacement password",
+        example="another-good-password",
+    )
+
+
+class AuthSessionsSuccessSchema(BaseSchema):
+    """Schema listing the live browser sessions"""
+
+    sessions = fields.List(
+        fields.Dict(),
+        required=True,
+        description="The live sessions for this installation",
+        example=[],
+    )
+
+
+class RequestAuthSessionRevokeSchema(BaseSchema):
+    """Schema for revoking sessions"""
+
+    id = fields.Int(
+        required=False,
+        allow_none=True,
+        description="The session id to revoke",
+        example=1,
+    )
+    all = fields.Boolean(
+        required=False,
+        load_default=False,
+        description="Revoke every session",
+        example=False,
+    )

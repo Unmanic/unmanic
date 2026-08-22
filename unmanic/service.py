@@ -289,6 +289,11 @@ class RootService:
         # Init the database
         self.db_connection = init_db(settings.get_config_path())
 
+        # Apply any web authentication credentials supplied via the environment
+        from unmanic.libs.webauth import bootstrap as webauth_bootstrap
+
+        webauth_bootstrap.apply_environment_credentials(settings)
+
         # Start all threads
         self.start_threads(settings)
 
@@ -353,6 +358,14 @@ def main():
     parser.add_argument(
         "--install-test-data", action="store_true", help="Install test data (use with --manage-plugins)"
     )
+    parser.add_argument(
+        "--set-password",
+        action="store_true",
+        help="Set the web UI username and password for this installation and enable authentication",
+    )
+    parser.add_argument(
+        "--disable-auth", action="store_true", help="Disable web UI authentication (lockout recovery)"
+    )
     parser.add_argument("--dev", action="store_true", help="Enable developer mode")
     parser.add_argument("--dev-api", nargs="?", help="Enable development against another unmanic support api")
     parser.add_argument("--port", nargs="?", help="Specify the port to run the webserver on")
@@ -365,6 +378,24 @@ def main():
 
     # Configure application from args
     settings = config.Config(port=args.port, address=args.address, unmanic_path=None)
+
+    if args.set_password or args.disable_auth:
+        # Init the DB connection
+        db_connection = init_db(settings.get_config_path())
+
+        from unmanic.libs.webauth import bootstrap as webauth_bootstrap
+
+        if args.set_password:
+            exit_code = webauth_bootstrap.run_set_password(settings)
+        else:
+            exit_code = webauth_bootstrap.run_disable_auth(settings)
+
+        # Stop the DB connection
+        db_connection.stop()
+        while not db_connection.is_stopped():
+            time.sleep(0.2)
+            continue
+        raise SystemExit(exit_code)
 
     if args.manage_plugins:
         # Init the DB connection

@@ -125,24 +125,74 @@ class TaskHandler(threading.Thread):
                 self._log("Exception in processing inotifytasks", str(e), level='exception')
 
     def clear_tasks_on_startup(self):
-        where_clause = None
-        if not self.settings.get_clear_pending_tasks_on_restart():
-            # Exclude all pending tasks except for those that are remote tasks... They need to be removed
-            where_clause = (Tasks.status != 'pending') | (Tasks.type == 'remote')
+        clear_pending = self.settings.get_clear_pending_tasks_on_restart()
+        self._log("Starting task cleanup on startup", f"clear_pending_tasks={clear_pending}", level='info')
+
         try:
-            # Get all task IDs to be deleted
-            select_query = Tasks.select(Tasks.id)
-            if where_clause is not None:
-                select_query = select_query.where(where_clause)
-            # Remove any task data associated with the tasks
-            for (task_id,) in select_query.tuples():
-                task.TaskDataStore.clear_task(task_id)
-            # Delete the tasks
+            # First, let's see what tasks exist before cleanup
+            all_tasks = Tasks.select()
+            self._log(f"Tasks before cleanup: total={all_tasks.count()}", level='debug')
+
+            # Log breakdown by status
+            for status in ['pending', 'in_progress', 'processed', 'complete']:
+                status_count = Tasks.select().where(Tasks.status == status).count()
+                self._log(f"  Status '{status}': {status_count} tasks", level='debug')
+
+            # Step 1: Reset in_progress tasks back to pending (worker crashed while processing)
+            self._log("Step 1: Resetting in_progress tasks to pending", level='info')
+            in_progress_tasks = Tasks.select().where(Tasks.status == 'in_progress')
+            if in_progress_tasks.count() > 0:
+                self._log(f"Found {in_progress_tasks.count()} in_progress tasks that will be reset to pending", level='warning')
+                for task_obj in in_progress_tasks:
+                    self._log(f"  Resetting task {task_obj.id}: {task_obj.abspath} (was in_progress)", level='debug')
+                    # Reset to pending so it can be picked up again
+                    task_obj.status = 'pending'
+                    task_obj.processed_by_worker = None  # Clear worker assignment
+                    task_obj.save()
+
+            # Step 2: Handle processed tasks based on configuration
+            self._log("Step 2: Cleaning processed and remote tasks", level='info')
             delete_query = Tasks.delete()
-            if where_clause is not None:
-                delete_query = delete_query.where(where_clause)
-            rows_deleted_count = delete_query.execute()
-            self._log("Deleted {} items from tasks list".format(rows_deleted_count), level='debug')
+
+            if not clear_pending:
+                # Delete processed tasks and remote tasks (they don't get reprocessed)
+                delete_where_clause = (Tasks.status == 'processed') | (Tasks.type == 'remote')
+                delete_query = delete_query.where(delete_where_clause)
+                self._log("Task cleanup will DELETE processed and remote tasks", level='warning')
+            else:
+                # Delete ALL remaining tasks except in_progress (which we just reset)
+                delete_where_clause = (Tasks.status != 'in_progress')  # Note: already reset to pending above
+                delete_query = delete_query.where(delete_where_clause)
+                self._log("Task cleanup will DELETE ALL tasks (clear_pending_tasks is enabled)", level='warning')
+
+            # Get all task IDs to be deleted
+            tasks_to_delete = list(Tasks.select(Tasks.id).where(delete_where_clause).tuples())
+            if tasks_to_delete:
+                self._log(f"Tasks to be deleted: {len(tasks_to_delete)}", level='warning')
+                for (task_id,) in tasks_to_delete:
+                    try:
+                        task_obj = Tasks.get_by_id(task_id)
+                        self._log(f"  Deleting task {task_id}: {task_obj.abspath} (status={task_obj.status}, type={task_obj.type})", level='debug')
+                    except:
+                        pass
+
+                # Remove any task data associated with the tasks
+                for (task_id,) in tasks_to_delete:
+                    task.TaskDataStore.clear_task(task_id)
+
+                # Delete the tasks
+                rows_deleted_count = delete_query.execute()
+                self._log(f"Deleted {rows_deleted_count} items from tasks list", level='info')
+            else:
+                self._log("No tasks marked for deletion", level='debug')
+
+            # Log final state
+            all_tasks_after = Tasks.select()
+            self._log(f"Tasks after cleanup: total={all_tasks_after.count()}", level='debug')
+            for status in ['pending', 'in_progress', 'processed', 'complete']:
+                status_count = Tasks.select().where(Tasks.status == status).count()
+                self._log(f"  Status '{status}': {status_count} tasks", level='debug')
+
         except OperationalError as error:
             self._log("Skipping task cleanup at startup; tasks table missing", str(error), level='debug')
 
@@ -155,9 +205,12 @@ class TaskHandler(threading.Thread):
         :return:
         """
         existing_task_query = Tasks.select().where((Tasks.abspath == abspath)).limit(1)
-        if existing_task_query.count() > 0:
-            return True
-        return False
+        exists = existing_task_query.count() > 0
+        if exists:
+            task_obj = existing_task_query.first()
+            logger = UnmanicLogging.get_logger(name='TaskHandler')
+            logger.debug(f"Task already exists for {abspath} (id={task_obj.id}, status={task_obj.status})")
+        return exists
 
     def add_path_to_task_queue(self, pathname, library_id, priority_score=0):
         """
@@ -170,12 +223,21 @@ class TaskHandler(threading.Thread):
         """
         # Check if file exists in task queue based on it's absolute path
         abspath = os.path.abspath(pathname)
+        self._log(f"Adding path to task queue", f"abspath={abspath}, library_id={library_id}, priority={priority_score}", level='debug')
+
         if self.check_if_task_exists_matching_path(abspath):
+            self._log(f"Skipping - task already exists", abspath, level='debug')
             return False
+
         # Create the new task from the provide path
+        self._log(f"Creating new task", abspath, level='debug')
         new_task = self.create_task_from_path(pathname, library_id, priority_score=priority_score)
         if not new_task:
+            self._log(f"Failed to create task", abspath, level='warning')
             return False
+
+        self._log(f"Successfully created task {new_task.get_task_id()}", abspath, level='info')
+
         # Execute event plugin runners
         plugin_handler = PluginsHandler()
         plugin_handler.run_event_plugins_for_plugin_type('events.task_queued', {

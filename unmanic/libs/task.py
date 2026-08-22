@@ -319,7 +319,23 @@ class Task(object):
         """
         if not self.task:
             raise Exception('Unable to save Task. Task has not been set!')
-        self.task.save()
+
+        from peewee import OperationalError
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                self.task.save()
+                return
+            except OperationalError as e:
+                if 'database is locked' in str(e).lower():
+                    if attempt < max_retries - 1:
+                        wait_time = 0.1 * (2 ** attempt)
+                        self.logger.warning(f"Database locked while saving task, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        self.logger.error(f"Database locked after {max_retries} attempts, giving up")
+                raise
 
     def delete(self):
         """

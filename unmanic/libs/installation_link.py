@@ -174,15 +174,18 @@ class Links(object, metaclass=SingletonType):
             self._network_transfer_lock[lock_key] = {}
             return True
 
-    def remote_api_get(self, remote_config: dict, endpoint: str, timeout=2):
+    def remote_api_get(self, remote_config: dict, endpoint: str, timeout=None):
         """
-        GET to remote installation API
+        GET to remote installation API with retry logic
 
         :param remote_config:
         :param endpoint:
         :param timeout:
         :return:
         """
+        if timeout is None:
+            timeout = self.settings.remote_installation_request_timeout
+
         request_handler = RequestHandler(
             auth=remote_config.get('auth'),
             username=remote_config.get('username'),
@@ -190,20 +193,35 @@ class Links(object, metaclass=SingletonType):
         )
         address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
-        res = request_handler.get(url, timeout=timeout)
-        if res.status_code == 200:
-            return res.json()
-        elif res.status_code in [400, 404, 405, 500]:
-            json_data = res.json()
-            self._log("Error while executing GET on remote installation API - {}. Message: '{}'".format(
-                endpoint,
-                json_data.get('error')),
-                message2=json_data.get('traceback', []), level='error')
+
+        remote_name = remote_config.get('name', 'Unknown')
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                res = request_handler.get(url, timeout=timeout)
+                if res.status_code == 200:
+                    return res.json()
+                elif res.status_code in [400, 404, 405, 500]:
+                    json_data = res.json()
+                    self._log("Error while executing GET on remote installation API - {}. Message: '{}'".format(
+                        endpoint,
+                        json_data.get('error')),
+                        message2=json_data.get('traceback', []), level='error')
+                return {}
+            except (requests.Timeout, requests.ConnectionError) as e:
+                if attempt < max_retries - 1:
+                    wait_time = 0.5 * (2 ** attempt)
+                    self._log(f"Remote link '{remote_name}' ({address}) API request timeout/error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    self._log(f"Remote link '{remote_name}' ({address}) API request failed after {max_retries} attempts: {str(e)}", level='error')
+                    return {}
         return {}
 
-    def remote_api_post(self, remote_config: dict, endpoint: str, data: dict, timeout=2):
+    def remote_api_post(self, remote_config: dict, endpoint: str, data: dict, timeout=None):
         """
-        POST to remote installation API
+        POST to remote installation API with retry logic
 
         :param remote_config:
         :param endpoint:
@@ -211,6 +229,9 @@ class Links(object, metaclass=SingletonType):
         :param timeout:
         :return:
         """
+        if timeout is None:
+            timeout = self.settings.remote_installation_request_timeout
+
         request_handler = RequestHandler(
             auth=remote_config.get('auth'),
             username=remote_config.get('username'),
@@ -218,16 +239,31 @@ class Links(object, metaclass=SingletonType):
         )
         address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
-        res = request_handler.post(url, json=data, timeout=timeout)
-        if res.status_code == 200:
-            return res.json()
-        elif res.status_code in [400, 404, 405, 500]:
-            json_data = res.json()
-            self._log("Error while executing POST on remote installation API - {}. Message: '{}'".format(
-                endpoint,
-                json_data.get('error')),
-                message2=json_data.get('traceback', []), level='error')
-            return json_data
+
+        remote_name = remote_config.get('name', 'Unknown')
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                res = request_handler.post(url, json=data, timeout=timeout)
+                if res.status_code == 200:
+                    return res.json()
+                elif res.status_code in [400, 404, 405, 500]:
+                    json_data = res.json()
+                    self._log("Error while executing POST on remote installation API - {}. Message: '{}'".format(
+                        endpoint,
+                        json_data.get('error')),
+                        message2=json_data.get('traceback', []), level='error')
+                    return json_data
+                return {}
+            except (requests.Timeout, requests.ConnectionError) as e:
+                if attempt < max_retries - 1:
+                    wait_time = 0.5 * (2 ** attempt)
+                    self._log(f"Remote link '{remote_name}' ({address}) API request timeout/error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    self._log(f"Remote link '{remote_name}' ({address}) API request failed after {max_retries} attempts: {str(e)}", level='error')
+                    return {}
         return {}
 
     def remote_api_post_file(self, remote_config: dict, endpoint: str, path: str):
@@ -267,9 +303,9 @@ class Links(object, metaclass=SingletonType):
                 message2=json_data.get('traceback', []), level='error')
         return {}
 
-    def remote_api_delete(self, remote_config: dict, endpoint: str, data: dict, timeout=2):
+    def remote_api_delete(self, remote_config: dict, endpoint: str, data: dict, timeout=None):
         """
-        DELETE to remote installation API
+        DELETE to remote installation API with retry logic
 
         :param remote_config:
         :param endpoint:
@@ -277,6 +313,9 @@ class Links(object, metaclass=SingletonType):
         :param timeout:
         :return:
         """
+        if timeout is None:
+            timeout = self.settings.remote_installation_request_timeout
+
         request_handler = RequestHandler(
             auth=remote_config.get('auth'),
             username=remote_config.get('username'),
@@ -284,25 +323,110 @@ class Links(object, metaclass=SingletonType):
         )
         address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
-        res = request_handler.delete(url, json=data, timeout=timeout)
-        if res.status_code == 200:
-            return res.json()
-        elif res.status_code in [400, 404, 405, 500]:
-            json_data = res.json()
-            self._log("Error while executing DELETE on remote installation API - {}. Message: '{}'".format(
-                endpoint,
-                json_data.get('error')),
-                message2=json_data.get('traceback', []), level='error')
+
+        remote_name = remote_config.get('name', 'Unknown')
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                res = request_handler.delete(url, json=data, timeout=timeout)
+                if res.status_code == 200:
+                    return res.json()
+                elif res.status_code in [400, 404, 405, 500]:
+                    json_data = res.json()
+                    self._log("Error while executing DELETE on remote installation API - {}. Message: '{}'".format(
+                        endpoint,
+                        json_data.get('error')),
+                        message2=json_data.get('traceback', []), level='error')
+                return {}
+            except (requests.Timeout, requests.ConnectionError) as e:
+                if attempt < max_retries - 1:
+                    wait_time = 0.5 * (2 ** attempt)
+                    self._log(f"Remote link '{remote_name}' ({address}) API request timeout/error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})", level='warning')
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    self._log(f"Remote link '{remote_name}' ({address}) API request failed after {max_retries} attempts: {str(e)}", level='error')
+                    return {}
         return {}
+
+    def __validate_media_file(self, path: str, min_size: int = 1048576):
+        """
+        Validate that a downloaded file is a legitimate media container
+
+        :param path: File path to validate
+        :param min_size: Minimum file size in bytes (default 1MB)
+        :return: tuple (is_valid, error_message)
+        """
+        if not os.path.exists(path):
+            return False, "File does not exist"
+
+        try:
+            file_size = os.path.getsize(path)
+        except OSError as e:
+            return False, f"Cannot access file: {e}"
+
+        if file_size == 0:
+            return False, "File is empty"
+
+        if file_size < min_size:
+            return False, f"File too small ({file_size}B, expected > {min_size}B)"
+
+        # Known media container magic bytes
+        media_signatures = {
+            b'\x1a\x45\xdf\xa3': 'mkv/webm',          # Matroska/WebM
+            b'\x00\x00\x00\x20ftyp': 'mp4/m4v',       # MP4/MOV/M4V
+            b'\x00\x00\x00\x18ftyp': 'mp4/m4v',       # MP4 variant
+            b'\x00\x00\x00\x14ftyp': 'mp4/m4v',       # MP4 variant
+            b'ftyp': 'mp4/m4v/3gp',                   # MP4-based formats
+            b'\xff\xfb': 'mp3',                        # MP3
+            b'\xff\xfa': 'mp3',                        # MP3 with CRC
+            b'ID3': 'mp3',                             # MP3 with ID3
+            b'RIFF': 'avi/wav',                        # AVI/WAV
+            b'PK\x03\x04': 'zip/mkv-related',         # ZIP-based (some containers)
+            b'\x00\x00\x00\x00\x18ftypMSNV': 'avi',   # AVI variant
+            b'\x4f\x67\x67\x53': 'ogg/ogv',           # Ogg/Theora
+            b'\xff\xd8\xff': 'jpeg',                   # JPEG (sometimes in containers)
+            b'\x89PNG': 'png',                         # PNG
+            b'GIF8': 'gif',                            # GIF
+            b'%PDF': 'pdf',                            # PDF (shouldn't be here, but check)
+            b'<?xml': 'xml',                           # XML (error marker)
+            b'<!DOCTYPE': 'html',                      # HTML (error marker)
+            b'<html': 'html',                          # HTML (error marker)
+            b'{': 'json',                              # JSON (error marker)
+        }
+
+        try:
+            with open(path, 'rb') as f:
+                header = f.read(12)
+        except Exception as e:
+            return False, f"Cannot read file: {e}"
+
+        # Check for known media signatures
+        is_valid_media = False
+        matched_format = None
+
+        for sig, fmt in media_signatures.items():
+            if header.startswith(sig):
+                if fmt in ['html', 'json', 'xml', 'pdf']:
+                    # These are error markers, not media
+                    return False, f"File appears to be {fmt}, not a media file"
+                is_valid_media = True
+                matched_format = fmt
+                break
+
+        if not is_valid_media:
+            return False, "File does not match known media container formats"
+
+        return True, f"Valid media file ({matched_format}, {file_size} bytes)"
 
     def remote_api_get_download(self, remote_config: dict, endpoint: str, path: str):
         """
-        Download a file from a remote installation
+        Download a file from a remote installation with validation
 
         :param remote_config:
         :param endpoint:
         :param path:
-        :return:
+        :return: bool - True if download succeeded and file is valid, False otherwise
         """
         request_handler = RequestHandler(
             auth=remote_config.get('auth'),
@@ -311,13 +435,91 @@ class Links(object, metaclass=SingletonType):
         )
         address = self.__format_address(remote_config.get('address'))
         url = "{}{}".format(address, endpoint)
-        with request_handler.get(url, stream=True) as r:
-            r.raise_for_status()
-            with open(path, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=None):
-                    if chunk:
-                        f.write(chunk)
-        return True
+
+        try:
+            with request_handler.get(url, stream=True, timeout=3600) as r:
+                # Validate HTTP status code
+                if r.status_code != 200:
+                    self._log(
+                        "Remote download failed with HTTP status {}".format(r.status_code),
+                        message2="URL: {} | Response: {}".format(url, r.text[:200] if r.text else 'empty'),
+                        level='error'
+                    )
+                    return False
+
+                # Check Content-Length header for suspiciously small files
+                content_length = r.headers.get('Content-Length')
+                if content_length:
+                    try:
+                        content_length = int(content_length)
+                        # Reject files smaller than 1MB (likely error pages)
+                        if content_length < 1048576:
+                            self._log(
+                                "Remote download rejected: file too small ({}B)".format(content_length),
+                                message2="Expected media file > 1MB. This may be an error page.",
+                                level='error'
+                            )
+                            return False
+                    except (ValueError, TypeError):
+                        pass
+
+                # Download file with size tracking
+                bytes_written = 0
+                with open(path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                            bytes_written += len(chunk)
+
+                # Validate downloaded file exists and has content
+                if not os.path.exists(path):
+                    self._log("Downloaded file does not exist at {}".format(path), level='error')
+                    return False
+
+                file_size = os.path.getsize(path)
+                if file_size == 0:
+                    self._log("Downloaded file is empty (0 bytes) at {}".format(path), level='error')
+                    try:
+                        os.remove(path)
+                    except OSError:
+                        pass
+                    return False
+
+                # Reject suspiciously small files (likely error pages/HTML responses)
+                if file_size < 1048576:
+                    file_content_sample = b''
+                    try:
+                        with open(path, 'rb') as f:
+                            file_content_sample = f.read(512)
+                    except Exception:
+                        pass
+
+                    # Check if file starts with HTML/XML markers (error pages).
+                    # Note: b'{' is intentionally excluded — JSON responses are valid for data downloads.
+                    if file_content_sample.startswith((b'<!DOCTYPE', b'<html', b'<?xml')):
+                        self._log(
+                            "Downloaded file appears to be an error page, not media ({}B)".format(file_size),
+                            message2="Sample: {}".format(file_content_sample[:100]),
+                            level='error'
+                        )
+                        try:
+                            os.remove(path)
+                        except OSError:
+                            pass
+                        return False
+
+                self._log("Download successful: {} ({} bytes)".format(path, file_size), level='debug')
+                return True
+
+        except requests.exceptions.Timeout:
+            self._log("Download request timed out for URL: {}".format(url), level='error')
+            return False
+        except requests.exceptions.RequestException as e:
+            self._log("Download request failed", message2=str(e), level='error')
+            return False
+        except Exception as e:
+            self._log("Unexpected error during download", message2=str(e), level='error')
+            return False
 
     def validate_remote_installation(self, address: str, **kwargs):
         """
@@ -1160,23 +1362,47 @@ class Links(object, metaclass=SingletonType):
 
     def fetch_remote_task_completed_file(self, remote_config: dict, remote_task_id: int, path: str):
         """
-        Fetch the completed remote task file
+        Fetch the completed remote task file with validation
 
-        :param remote_config:
-        :param remote_task_id:
-        :param path:
-        :return:
+        :param remote_config: Remote installation config
+        :param remote_task_id: Remote task ID
+        :param path: Destination path for downloaded file
+        :return: bool - True if download succeeded and file is valid, False otherwise
         """
         try:
             # Request API generate a DL link
             link_info = self.remote_api_get(remote_config,
                                             '/unmanic/api/v2/pending/download/file/id/{}'.format(remote_task_id))
-            if link_info.get('link_id'):
-                # Download the file
-                res = self.remote_api_get_download(remote_config, '/unmanic/downloads/{}'.format(link_info.get('link_id')),
-                                                   path)
-                if res and os.path.exists(path):
-                    return True
+            if not link_info.get('link_id'):
+                self._log("Remote task download link generation failed", level='error')
+                return False
+
+            # Download the file
+            download_url = '/unmanic/downloads/{}'.format(link_info.get('link_id'))
+            res = self.remote_api_get_download(remote_config, download_url, path)
+            if not res:
+                self._log("File download from remote installation failed", level='error')
+                return False
+
+            # Validate the downloaded file is a legitimate media container
+            is_valid, validation_msg = self.__validate_media_file(path)
+            if not is_valid:
+                self._log(
+                    "Downloaded file failed validation: {}".format(validation_msg),
+                    message2="Remote task ID: {} | Path: {}".format(remote_task_id, path),
+                    level='error'
+                )
+                # Clean up the invalid file
+                try:
+                    if os.path.exists(path):
+                        os.remove(path)
+                except OSError:
+                    pass
+                return False
+
+            self._log("Remote task file validated successfully: {}".format(validation_msg), level='debug')
+            return True
+
         except requests.exceptions.Timeout:
             self._log("Request to fetch remote task completed file timed out", level='warning')
         except requests.exceptions.RequestException as e:

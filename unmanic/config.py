@@ -100,6 +100,7 @@ class Config(object, metaclass=SingletonType):
         self.installation_public_address = ''
         self.remote_installations = []
         self.distributed_worker_count_target = 0
+        self.remote_installation_request_timeout = 10  # Timeout (in seconds) for remote installation API requests
 
         # Legacy config
         # TODO: Remove this before next major version bump

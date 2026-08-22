@@ -454,6 +454,12 @@ class PostProcessor(threading.Thread):
             self.logger.warning("Remote source file '%s' does not exist!", source_path)
         elif not remove_source_file:
             self.logger.info("Keep remote source: %s, remote file source is in library and not cache.", source_path)
+        elif move_success and source_path == final_destination:
+            # Delivery replaced the source in-place (cache-internal mode, source_path == destination_path).
+            # The encoded output is now at source_path — do not remove it.
+            self.logger.debug(
+                "Skipping remote source removal: delivery replaced source in-place at '%s'.", source_path
+            )
         elif move_success:
             self.logger.info("Removing remote source: %s", source_path)
             try:

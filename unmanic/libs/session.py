@@ -781,6 +781,11 @@ class Session(metaclass=SingletonType):
                 },
             }
 
+            # Register Unmanic before verifying user auth
+            registration_response, status_code = self.api_post(
+                "unmanic-api", 1, "installation_auth/register", post_data
+            )
+
             # Refresh user auth
             result = self.auth_user_account(force_checkin=force)
             # Fetch a trial token for clean installs (level < 2) or active trials (level 9)
@@ -792,11 +797,6 @@ class Session(metaclass=SingletonType):
             )
             if not result and should_attempt_trial:
                 result = self.auth_trial_account()
-
-            # Register Unmanic
-            registration_response, status_code = self.api_post(
-                "unmanic-api", 1, "installation_auth/register", post_data
-            )
 
             # Save data
             if status_code in [200, 201, 202] and registration_response.get("success"):

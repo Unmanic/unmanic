@@ -524,9 +524,9 @@ class Session(object, metaclass=SingletonType):
 
         :return:
         """
-        if not self.level:
+        if self.level is None:
             self.__fetch_installation_data()
-        return self.level
+        return self.level or 0
 
     def get_site_url(self):
         """

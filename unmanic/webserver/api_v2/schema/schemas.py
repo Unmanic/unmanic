@@ -1972,6 +1972,12 @@ class RequestAuthConfigureSchema(BaseSchema):
         description="The password to configure",
         example="a-good-password",
     )
+    current_password = fields.Str(
+        required=False,
+        load_default="",
+        description="The current password. Required when replacing an existing credential",
+        example="a-good-password",
+    )
 
 
 class RequestAuthPasswordSchema(BaseSchema):

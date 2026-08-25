@@ -25,7 +25,7 @@ class WebAuthSessions(BaseModel):
     """
 
     token_hash = CharField(null=False, unique=True, index=True, max_length=64)
-    created = DateTimeField(null=False, default=datetime.datetime.now)
+    created_at = DateTimeField(null=False, default=datetime.datetime.now)
     last_used = DateTimeField(null=False, default=datetime.datetime.now)
     expires = DateTimeField(null=False, default=datetime.datetime.now)
     remote_addr = TextField(null=True)

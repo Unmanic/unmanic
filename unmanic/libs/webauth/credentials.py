@@ -193,13 +193,28 @@ def set_credential(username: str, password: str) -> None:
 
     username = str(username).strip()
     encoded = hash_password(password)
-    WebAuthCredentials.delete().execute()
-    WebAuthCredentials.create(
-        username=username,
-        password_hash=encoded,
-        created=datetime.datetime.now(),
-        updated=datetime.datetime.now(),
-    )
+    now = datetime.datetime.now()
+
+    # Replace in place inside a transaction, rather than deleting and recreating. A delete
+    # that is followed by a failed create would leave authentication enabled with no
+    # account, which re-opens the unauthenticated setup flow. The working credential has to
+    # stay usable until its replacement is stored.
+    with WebAuthCredentials._meta.database.atomic():
+        existing = WebAuthCredentials.select().first()
+        if existing is None:
+            WebAuthCredentials.create(
+                username=username,
+                password_hash=encoded,
+                created_at=now,
+                updated_at=now,
+            )
+        else:
+            WebAuthCredentials.update(
+                username=username,
+                password_hash=encoded,
+                updated_at=now,
+            ).where(WebAuthCredentials.id == existing.id).execute()
+
     flush_verify_cache()
 
 
@@ -248,6 +263,33 @@ def _cache_key(header: str) -> str:
     :return:
     """
     return hmac.new(_process_secret, header.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def basic_header_is_cached(header: Optional[str]) -> bool:
+    """
+    Return True if this exact Authorization header was verified recently.
+
+    This is the cheap half of verify_basic_header, split out so a caller can answer an
+    already-verified client without consulting the failure throttle. A client presenting a
+    working credential should not be refused because another client sharing its address has
+    been guessing.
+
+    :param header:
+    :return:
+    """
+    if not header or not isinstance(header, str):
+        return False
+    if not header.startswith("Basic "):
+        return False
+
+    key = _cache_key(header)
+    expires = _verify_cache.get(key)
+    if expires is None:
+        return False
+    if expires > time.monotonic():
+        return True
+    _verify_cache.pop(key, None)
+    return False
 
 
 def verify_basic_header(header: Optional[str]) -> bool:

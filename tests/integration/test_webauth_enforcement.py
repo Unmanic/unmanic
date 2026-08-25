@@ -259,7 +259,10 @@ class TestAuthRoutesAreClosedWhileAuthIsOff(WebAuthServerTestBase):
     """
 
     def test_setup_page_is_not_served(self):
-        assert self.get("/unmanic/setup").status_code == 404
+        response = self.get("/unmanic/setup")
+        assert response.status_code == 403
+        # The refusal names the supported way in, rather than leaving the owner guessing.
+        assert "--set-password" in response.text
 
     def test_setup_cannot_plant_a_credential(self):
         response = self.post(
@@ -270,7 +273,7 @@ class TestAuthRoutesAreClosedWhileAuthIsOff(WebAuthServerTestBase):
                 "confirm":  "i-claimed-your-box",
             },
         )
-        assert response.status_code == 404
+        assert response.status_code == 403
         assert credentials.credential_is_configured() is False
 
     def test_setup_cannot_plant_a_credential_cross_origin(self):
@@ -283,7 +286,7 @@ class TestAuthRoutesAreClosedWhileAuthIsOff(WebAuthServerTestBase):
             },
             headers={"Origin": "http://evil.example.com"},
         )
-        assert response.status_code == 404
+        assert response.status_code == 403
         assert credentials.credential_is_configured() is False
 
     def test_ordinary_routes_are_still_untouched(self):
@@ -320,3 +323,41 @@ class TestBasicAuthIsThrottled(WebAuthServerTestBase):
             "/unmanic/api/v2/version/read", auth=("jordan", "a-good-password")
         )
         assert response.status_code == 200
+
+    def test_a_verified_client_is_not_locked_out_by_another_clients_guessing(self):
+        # The success cache is consulted before the throttle, so a client presenting a
+        # working credential keeps working even while its address is locked out by
+        # someone else's failed attempts. Without that ordering, one attacker behind a
+        # shared address or a reverse proxy takes every other client down with them.
+        self.enable_auth()
+        assert self.get(
+            "/unmanic/api/v2/version/read", auth=("jordan", "a-good-password")
+        ).status_code == 200
+
+        for _ in range(8):
+            self.get("/unmanic/api/v2/version/read", auth=("jordan", "not-the-password"))
+
+        # The address is now locked out for unverified headers...
+        assert self.get(
+            "/unmanic/api/v2/version/read", auth=("jordan", "still-not-the-password")
+        ).status_code == 429
+        # ...but the already-verified credential is still served.
+        assert self.get(
+            "/unmanic/api/v2/version/read", auth=("jordan", "a-good-password")
+        ).status_code == 200
+
+    def test_basic_failures_do_not_lock_out_the_login_form(self):
+        # Separate throttle keys, so machine traffic and browser sign-ins cannot trip or
+        # clear each other's lockout.
+        self.enable_auth()
+        for _ in range(8):
+            self.get("/unmanic/api/v2/version/read", auth=("jordan", "not-the-password"))
+        response = self.post(
+            "/unmanic/auth/login",
+            data={"username": "jordan", "password": "a-good-password"},
+            headers={"Origin": self.base_url},
+        )
+        # This harness registers stub handlers rather than the real login route, so the
+        # status reflects the guard's decision. What matters is that the guard let it
+        # through instead of refusing it under the Basic lockout.
+        assert response.status_code != 429

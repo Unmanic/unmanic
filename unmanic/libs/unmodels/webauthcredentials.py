@@ -26,5 +26,5 @@ class WebAuthCredentials(BaseModel):
 
     username = TextField(null=False, unique=True)
     password_hash = TextField(null=False)
-    created = DateTimeField(null=False, default=datetime.datetime.now)
-    updated = DateTimeField(null=False, default=datetime.datetime.now)
+    created_at = DateTimeField(null=False, default=datetime.datetime.now)
+    updated_at = DateTimeField(null=False, default=datetime.datetime.now)

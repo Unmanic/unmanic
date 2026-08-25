@@ -260,9 +260,11 @@ class SetupActionHandler(AuthTemplateMixin, tornado.web.RequestHandler):
         settings = config.Config()
 
         # Defence in depth. The router already refuses this route unless authentication is
-        # enabled and no account exists yet, but a handler that plants a credential should
+        # enabled and no account exists yet, but a handler that enrols a credential should
         # not depend on something upstream having checked first.
-        if not settings.get_auth_enabled() or credentials.credential_is_configured():
+        if not settings.get_auth_enabled():
+            raise tornado.web.HTTPError(403, reason="Authentication is disabled")
+        if credentials.credential_is_configured():
             raise tornado.web.HTTPError(404)
 
         key = throttle_key(self)

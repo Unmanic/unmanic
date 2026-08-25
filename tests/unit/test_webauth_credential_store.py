@@ -137,3 +137,59 @@ class TestBasicHeaderVerification(object):
         assert credentials.verify_basic_header(bad) is False
         credentials.set_credential("jordan", "wrong-password")
         assert credentials.verify_basic_header(bad) is True
+
+    def test_replacement_updates_in_place_rather_than_recreating(self):
+        # The old implementation deleted the row and created a new one. A failure between
+        # the two left authentication enabled with no account, which re-opens the
+        # unauthenticated setup flow.
+        credentials.set_credential("jordan", "a-good-password")
+        first_id = WebAuthCredentials.select().first().id
+        credentials.set_credential("jordan", "another-good-password")
+        rows = list(WebAuthCredentials.select())
+        assert len(rows) == 1
+        assert rows[0].id == first_id
+        assert credentials.verify_credential("jordan", "another-good-password") is True
+
+    def test_a_failed_replacement_leaves_the_working_credential_usable(self):
+        credentials.set_credential("jordan", "a-good-password")
+
+        original_update = WebAuthCredentials.update
+
+        def exploding_update(*args, **kwargs):
+            raise RuntimeError("simulated database failure mid-replacement")
+
+        WebAuthCredentials.update = exploding_update
+        try:
+            with pytest.raises(RuntimeError):
+                credentials.set_credential("jordan", "a-replacement-password")
+        finally:
+            WebAuthCredentials.update = original_update
+
+        credentials.flush_verify_cache()
+        assert credentials.credential_is_configured() is True
+        assert credentials.verify_credential("jordan", "a-good-password") is True
+
+    def test_validation_rejects_before_touching_the_stored_credential(self):
+        credentials.set_credential("jordan", "a-good-password")
+        with pytest.raises(ValueError):
+            credentials.set_credential("jordan", "short")
+        assert credentials.verify_credential("jordan", "a-good-password") is True
+
+    def test_cached_header_check_does_not_run_the_hash(self):
+        credentials.set_credential("jordan", "a-good-password")
+        header = "Basic " + base64.b64encode(b"jordan:a-good-password").decode()
+
+        # Nothing verified yet, so the cheap check must not report a hit.
+        assert credentials.basic_header_is_cached(header) is False
+        assert credentials.verify_basic_header(header) is True
+        # Now it is cached, and answering costs a dict lookup rather than scrypt.
+        assert credentials.basic_header_is_cached(header) is True
+
+        credentials.flush_verify_cache()
+        assert credentials.basic_header_is_cached(header) is False
+
+    def test_a_wrong_header_is_never_cached(self):
+        credentials.set_credential("jordan", "a-good-password")
+        header = "Basic " + base64.b64encode(b"jordan:wrong-password").decode()
+        assert credentials.verify_basic_header(header) is False
+        assert credentials.basic_header_is_cached(header) is False

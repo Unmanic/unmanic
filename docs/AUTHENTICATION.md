@@ -135,13 +135,30 @@ For anyone reviewing or extending this:
   be left unprotected by forgetting a decorator.
 - **Cross-site protection** is `SameSite=Lax`, plus an `Origin` check on state-changing
   requests, plus rejection of `Sec-Fetch-Site: cross-site` on `/unmanic/api/`,
-  `/unmanic/plugin_api/` and `/unmanic/panel/`. The third layer exists because `SameSite=Lax`
-  still attaches the cookie to top-level GET navigation and browsers do not send `Origin` on
-  those. An absent `Sec-Fetch-Site` header is allowed, because browsers do not send it on
-  WebSocket handshakes.
+  `/unmanic/plugin_api/`, `/unmanic/panel/` and `/unmanic/downloads/`. The third layer exists
+  because `SameSite=Lax` still attaches the cookie to top-level GET navigation and browsers do
+  not send `Origin` on those. An absent `Sec-Fetch-Site` header is allowed, because browsers do
+  not send it on WebSocket handshakes.
+
+  The `Origin` check compares against the request's own `Host`, which stops an attacker's page
+  driving your session from a different origin. It is not a defence against DNS rebinding: a
+  rebound request carries a matching `Origin` and `Host`, because the browser believes it is
+  talking to the attacker's hostname. What blocks that case is the session cookie being scoped
+  to the address you signed in at, so a rebound request simply arrives unauthenticated.
 - **`WWW-Authenticate` is never sent.** Browsers therefore never cache Basic credentials, so
   Basic never becomes an ambient credential and never becomes a cross-site request forgery
   vector. Machine clients such as `requests.HTTPBasicAuth` send credentials preemptively and
   never need the challenge.
 - **Failed attempts** are throttled per client address with an escalating lockout, and logged
   at warning level with the source address so tools like fail2ban have something to act on.
+  This covers HTTP Basic as well as the login form, under separate counters so that machine
+  traffic and browser sign-ins cannot trip or clear each other's lockout. A Basic header that
+  has already been verified is answered from a short-lived cache before the throttle is
+  consulted, so a working client is never refused because another client sharing its address
+  has been guessing. Refused requests return `429` with a `Retry-After` header.
+- **Enabling authentication requires access to the host.** Use `unmanic --set-password` or the
+  environment variables. It cannot be turned on over the network, and while it is off the
+  routes that enrol a credential return `403`. An installation with authentication disabled
+  has no way to tell its owner apart from anyone else who can reach it, so there is nothing it
+  could check. A one-time token would not help either: it would have to be readable through
+  the same unauthenticated interface, which serves a log viewer and a filesystem browser.

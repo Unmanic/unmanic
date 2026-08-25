@@ -24,14 +24,22 @@ SETUP_PATH = "/unmanic/setup"
 PUBLIC_PATHS = frozenset({LOGIN_PATH, "/unmanic/auth/login"})
 SETUP_PATHS = frozenset({SETUP_PATH, "/unmanic/auth/setup"})
 
-# Routes that create or replace a credential, or turn authentication on.
+# Routes that enrol a credential, or turn authentication on.
 #
-# These stay closed while authentication is disabled. Without this, an installation that
-# never opted in to the feature can have an account planted on it, and authentication
-# switched on against its owner, by anyone able to reach the port. Turning authentication
-# on is a change of ownership, so it is deliberately restricted to the host: either
-# `unmanic --set-password` or the environment variables, both of which already require
-# the same level of access as owning the installation.
+# These stay closed while authentication is disabled, because an installation with
+# authentication off cannot tell its owner apart from anyone else who can reach it. That
+# is not a gap in the check, it is the state itself: there is no credential to verify
+# against and no session to trust, so nothing presented in-band can prove ownership.
+#
+# An enrolment token would not fix it either. Any token this application could hand out
+# would have to be readable through this same unauthenticated interface, which serves a
+# log viewer and a filesystem browser, so an attacker able to reach the port could read it
+# just as easily as the owner.
+#
+# Enrolment is therefore proven out of band, from the host, where that proof already
+# exists: `unmanic --set-password`, or the auth_* environment variables. Both require the
+# level of access that already implies ownership of the installation. The refusal below
+# names them, so someone who tries the API is told where to go rather than left guessing.
 AUTH_MUTATION_PATHS = frozenset(
     {
         SETUP_PATH,
@@ -41,6 +49,14 @@ AUTH_MUTATION_PATHS = frozenset(
         "/unmanic/api/v2/auth/sessions",
         "/unmanic/api/v2/auth/sessions/revoke",
     }
+)
+
+ENROLMENT_REQUIRES_HOST_ACCESS = (
+    "Authentication is disabled. It is enabled from the host, either by running "
+    "'unmanic --set-password' or by setting the auth_enabled, auth_username and "
+    "auth_password environment variables. It cannot be enabled over the network, because "
+    "an installation with authentication disabled has no way to tell its owner apart from "
+    "anyone else who can reach it."
 )
 
 UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
@@ -181,14 +197,23 @@ def session_from_request(request):
 
 def authorise_basic(request) -> Optional[AuthDecision]:
     """
-    Verify an HTTP Basic header under the same throttle and logging as the login form.
+    Verify an HTTP Basic header, bounding how often the expensive verification can run.
 
     Returns ALLOWED when the header verifies, a refusal while the client is locked out, and
     None when there is nothing to act on, so the caller falls through to its normal refusal.
 
-    Basic is the machine-facing path and is enabled by default. Leaving it outside the
-    throttle left an unlimited and unlogged password oracle sitting beside a rate limited
-    login form, which made the limit on the form worth very little.
+    Basic is the machine-facing path and is enabled by default, so an unverified header
+    reaching scrypt on every request is both an unlimited password oracle and a way to
+    occupy the Tornado I/O thread without ever signing in. The order here matters:
+
+      1. An already-verified header is answered from the cache, so a working client is
+         never refused because of another client sharing its address.
+      2. The throttle is consulted before any verification, so a failing address is
+         refused without spending the work it was trying to make us spend.
+      3. Only then does the header reach scrypt.
+
+    Failures are counted under their own key, kept separate from the login form so that
+    machine traffic and browser sign-ins cannot clear or trip each other's lockout.
 
     :param request:
     :return:
@@ -197,7 +222,10 @@ def authorise_basic(request) -> Optional[AuthDecision]:
     if not header:
         return None
 
-    key = "login:{}".format(request.remote_ip)
+    if credentials.basic_header_is_cached(header):
+        return ALLOWED
+
+    key = "basic:{}".format(request.remote_ip)
 
     retry_after = login_throttle.retry_after(key)
     if retry_after:
@@ -226,11 +254,11 @@ def authorise(request) -> AuthDecision:
     path = str(request.path)
 
     if not settings.get_auth_enabled():
-        # Authentication is off, but the routes that could turn it on, or plant a
-        # credential to be used once it is on, must not be reachable. Anything else
-        # behaves exactly as it did before this feature existed.
+        # Authentication is off, but the routes that enrol a credential, or turn it on,
+        # must not be reachable. See AUTH_MUTATION_PATHS for why this cannot be solved
+        # in-band. Everything else behaves exactly as it did before this feature existed.
         if path in AUTH_MUTATION_PATHS:
-            return AuthDecision(False, status=404, reason="Not found")
+            return AuthDecision(False, status=403, reason=ENROLMENT_REQUIRES_HOST_ACCESS)
         return ALLOWED
 
     # CSRF layer 2: origin verification on state-changing requests. Placed above the setup

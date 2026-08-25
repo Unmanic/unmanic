@@ -187,14 +187,26 @@ class ApiAuthHandler(BaseApiHandler):
                 username = json_request.get("username") or credentials.get_username()
                 password = json_request.get("password")
                 if password:
+                    # Replacing a stored credential goes through the same two protections
+                    # as the dedicated password endpoint. Without them this route is a way
+                    # around both: a stolen session could take the account over and stay
+                    # signed in while doing it.
+                    if credentials.credential_is_configured():
+                        current_password = json_request.get("current_password")
+                        if not current_password or not credentials.verify_credential(
+                            credentials.get_username(), current_password
+                        ):
+                            self.set_status(
+                                self.STATUS_ERROR_EXTERNAL, reason="The current password is incorrect"
+                            )
+                            self.write_error()
+                            return
                     try:
                         credentials.set_credential(username, password)
                     except ValueError as e:
                         self.set_status(self.STATUS_ERROR_EXTERNAL, reason=str(e))
                         self.write_error()
                         return
-                    # Every other credential change revokes; this path must match it, or a
-                    # session minted before the change outlives the password it belonged to.
                     sessions.revoke_all_sessions()
                 elif not credentials.credential_is_configured():
                     self.set_status(

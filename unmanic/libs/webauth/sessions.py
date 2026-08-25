@@ -53,7 +53,7 @@ def create_session(
     now = datetime.datetime.now()
     WebAuthSessions.create(
         token_hash=hash_token(token),
-        created=now,
+        created_at=now,
         last_used=now,
         expires=now + datetime.timedelta(days=int(max_age_days)),
         remote_addr=remote_addr,
@@ -157,7 +157,7 @@ def list_sessions(current_token: Optional[str]) -> List[Dict[str, Any]]:
         results.append(
             {
                 "id": row.id,
-                "created": str(row.created),
+                "created_at": str(row.created_at),
                 "last_used": str(row.last_used),
                 "expires": str(row.expires),
                 "remote_addr": row.remote_addr,

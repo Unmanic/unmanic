@@ -1664,14 +1664,13 @@ class RemoteTaskManager(threading.Thread):
                 level='debug')
             if os.path.exists(data.get('abspath')):
                 # /library/tvshows/show_name/season/unmanic_remote_pending_library/file.mkv
-                task_cache_path = data.get('abspath')
-                self.current_task.cache_path = task_cache_path
-                self._log("abspath exists - task cache path: '{}'".format(task_cache_path), level='debug')
+                remote_staged_path = data.get('abspath')
+                self._log("abspath exists - remote staged path: '{}'".format(remote_staged_path), level='debug')
                 # need to get the file into the local instance /tmp/unmanic/unmanic_file_conversion... location
-                # the task_cache_path file is currently sitting in the library's unmanic_remote_pending_library directory
+                # the staged file is currently sitting in the library's unmanic_remote_pending_library directory
                 # with a different random string - reformulate the basename of the file with the correct random string
                 # and copy it to the local instance /tmp/unmanic/unmanic_file_conversion location
-                tcp_base = os.path.basename(task_cache_path)
+                tcp_base = os.path.basename(remote_staged_path)
                 match1 = re.search(r'-\w{5}-\d{10}', cache_directory)
                 if match1:
                     correct_random_string = match1.group()
@@ -1684,22 +1683,29 @@ class RemoteTaskManager(threading.Thread):
                 if match2:
                     incorrect_random_string = match2.group()
                 else:
-                    self._log("Unable to detect random_string pattern in remote library located directory named '{}'".format(task_cache_path), level='error')
+                    self._log("Unable to detect random_string pattern in remote library located directory named '{}'".format(remote_staged_path), level='error')
                     self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
                     self.__write_failure_to_worker_log()
                     return False
                 new_tcp_base = tcp_base.split(incorrect_random_string)[0]
                 sfx = tcp_base.split(incorrect_random_string)[1]
                 correct_cache_file_path = os.path.join(cache_directory, new_tcp_base + correct_random_string + sfx)
-                self._log(f"...copying {task_cache_path} to {correct_cache_file_path}", level='debug')
+                self._log(f"...copying {remote_staged_path} to {correct_cache_file_path}", level='debug')
                 try:
-                    output = shutil.copy(task_cache_path, correct_cache_file_path)
-                    if os.path.exists(output) and os.path.getsize(output) > 0:
-                        self._log("File successfully copied from remote library located cache to main instance cache at '{}'".format(output), level='info')
-                    else:
-                        self.__write_failure_to_worker_log()
-                except (FileNotFoundError, PermissionError, shutil.SameFileError):
+                    output = shutil.copy(remote_staged_path, correct_cache_file_path)
+                    if not (os.path.exists(output) and os.path.getsize(output) > 0):
+                        raise FileNotFoundError("Copied file missing or empty: '{}'".format(output))
+                    self._log("File successfully copied from remote library located cache to main instance cache at '{}'".format(output), level='info')
+                except (FileNotFoundError, PermissionError, shutil.SameFileError) as e:
+                    self._log("Failed to copy remote staged file to main instance cache: {}".format(e), level='error')
+                    self.links.remove_task_from_remote_installation(self.installation_info, remote_task_id)
                     self.__write_failure_to_worker_log()
+                    return False
+
+                # Point the task's DB model at the local cache copy so the postprocessor finds it
+                self.current_task.task.cache_path = correct_cache_file_path
+                self.current_task.save()
+                task_cache_path = correct_cache_file_path
             else:
                 # Set the new file out as the extension may have changed
                 split_file_name = os.path.splitext(data.get('abspath'))

@@ -46,6 +46,8 @@ from .tags import Tags
 from .taskmetadata import TaskMetadata
 from .tasks import Tasks
 from .workergroups import WorkerGroupTags, WorkerGroups
+from .webauthcredentials import WebAuthCredentials
+from .webauthsessions import WebAuthSessions
 from .workerschedules import WorkerSchedules
 
 __author__ = 'Josh.5 (jsunnex@gmail.com)'

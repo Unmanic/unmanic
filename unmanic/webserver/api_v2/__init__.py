@@ -33,6 +33,7 @@
 from __future__ import absolute_import
 import warnings
 
+from .auth_api import ApiAuthHandler
 from .docs_api import ApiDocsHandler
 from .filebrowser_api import ApiFilebrowserHandler
 from .history_api import ApiHistoryHandler
@@ -49,6 +50,7 @@ from .workers_api import ApiWorkersHandler
 __author__ = 'Josh.5 (jsunnex@gmail.com)'
 
 __all__ = (
+    'ApiAuthHandler',
     'ApiDocsHandler',
     'ApiFilebrowserHandler',
     'ApiHistoryHandler',

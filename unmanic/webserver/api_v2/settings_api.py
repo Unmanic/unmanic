@@ -259,6 +259,14 @@ class ApiSettingsHandler(BaseApiHandler):
                 if settings_dict.get(remove_setting):
                     del settings_dict[remove_setting]
 
+            # Authentication settings have their own endpoints, which apply the checks this
+            # one cannot. Allowing them through here would let a caller turn authentication
+            # on, or widen it, from a route that was never meant to manage credentials.
+            # Note the membership test rather than a truthy one, so that a false value is
+            # stripped too.
+            for setting_key in [key for key in settings_dict if str(key).startswith('auth_')]:
+                del settings_dict[setting_key]
+
             # Save settings - writing to file.
             # Throws exception if settings fail to save
             self.config.set_bulk_config_items(json_request.get('settings', {}))

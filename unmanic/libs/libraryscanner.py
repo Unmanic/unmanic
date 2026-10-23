@@ -44,6 +44,7 @@ from unmanic.libs.frontend_push_messages import FrontendPushMessages
 from unmanic.libs.library import Library
 from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.plugins import PluginsHandler
+from unmanic.libs import webscanner
 
 
 class LibraryScannerManager(threading.Thread):
@@ -318,7 +319,14 @@ class LibraryScannerManager(threading.Thread):
                 # This library is configured to receive remote files only... Never run a library scan on it
                 continue
             # Check if library scanner is enabled on any library
-            if library.get_enable_scanner():
+            web_scanner_enabled = library.get_enable_web_scanner()
+            if web_scanner_enabled:
+                try:
+                    self.scan_web_library(library)
+                except Exception:
+                    self.logger.exception("Unable to scan web directory for library '%s'", library.get_name())
+
+            if library.get_enable_scanner() or web_scanner_enabled:
                 # Run library scan
                 library_name = library.get_name()
                 self.logger.info("Running full library scan on library '%s'", library_name)
@@ -329,6 +337,25 @@ class LibraryScannerManager(threading.Thread):
         if no_libraries_configured:
             self.logger.info("No libraries are configured to run a library scan")
         self.set_current_library()
+
+    def scan_web_library(self, library):
+        state_path = os.path.join(
+            self.settings.get_config_path(),
+            'web_scanner',
+            '{}.json'.format(library.get_id()),
+        )
+        changed_count = webscanner.acquire(
+            library.get_web_url(),
+            library.get_path(),
+            state_path,
+            username=library.get_web_username(),
+            password=library.get_web_password(),
+        )
+        self.logger.info(
+            "Web scan downloaded %s changed files for library '%s'",
+            changed_count,
+            library.get_name(),
+        )
 
     def system_configuration_is_valid(self):
         """

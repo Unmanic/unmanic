@@ -1661,6 +1661,11 @@ class LibraryResultsSchema(BaseSchema):
         description="If the library is configured to monitor for file changes",
         example=False,
     )
+    enable_web_scanner = fields.Boolean(
+        required=True,
+        description="If the library is configured to scan a web directory",
+        example=False,
+    )
     tags = fields.List(
         cls_or_instance=fields.Str,
         required=True,
@@ -1703,6 +1708,10 @@ class SettingsLibraryConfigReadAndWriteSchema(BaseSchema):
             "path":           "/library",
             "enable_scanner": False,
             "enable_inotify": False,
+            "enable_web_scanner": False,
+            "web_url":        '',
+            "web_username":   '',
+            "web_password_set": False,
             "priority_score": 0,
             "tags":           [],
         },
@@ -1777,6 +1786,9 @@ class SettingsLibraryPluginConfigExportSchema(BaseSchema):
             "path":           "/library",
             "enable_scanner": False,
             "enable_inotify": False,
+            "enable_web_scanner": False,
+            "web_url":        '',
+            "web_username":   '',
             "priority_score": 0,
             "tags":           [],
         },

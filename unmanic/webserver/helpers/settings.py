@@ -35,6 +35,25 @@ from unmanic.libs.unplugins import PluginExecutor
 from unmanic.webserver.helpers import plugins
 
 
+def serialize_library_settings(library):
+    """Return library settings for the UI without returning the stored password."""
+    return {
+        'id': library.get_id(),
+        'name': library.get_name(),
+        'path': library.get_path(),
+        'locked': library.get_locked(),
+        'enable_remote_only': library.get_enable_remote_only(),
+        'enable_scanner': library.get_enable_scanner(),
+        'enable_inotify': library.get_enable_inotify(),
+        'enable_web_scanner': library.get_enable_web_scanner(),
+        'web_url': library.get_web_url(),
+        'web_username': library.get_web_username(),
+        'web_password_set': bool(library.get_web_password()),
+        'priority_score': library.get_priority_score(),
+        'tags': library.get_tags(),
+    }
+
+
 def save_library_config(library_id, library_config=None, plugin_config=None):
     """
     Save a complete library configuration
@@ -72,6 +91,13 @@ def save_library_config(library_id, library_config=None, plugin_config=None):
         library.set_enable_remote_only(library_config.get('enable_remote_only', library.get_enable_remote_only()))
         library.set_enable_scanner(library_config.get('enable_scanner', library.get_enable_scanner()))
         library.set_enable_inotify(library_config.get('enable_inotify', library.get_enable_inotify()))
+        library.set_enable_web_scanner(library_config.get('enable_web_scanner', library.get_enable_web_scanner()))
+        library.set_web_url(library_config.get('web_url', library.get_web_url()))
+        library.set_web_username(library_config.get('web_username', library.get_web_username()))
+        if library_config.get('clear_web_password'):
+            library.set_web_password('')
+        elif 'web_password' in library_config:
+            library.set_web_password(library_config['web_password'])
         library.set_priority_score(library_config.get('priority_score', library.get_priority_score()))
         library.set_tags(library_config.get('tags', library.get_tags()))
 

@@ -66,6 +66,10 @@ class LibraryScannerManager(threading.Thread):
         self.scan_state_lock = threading.RLock()
         self.scan_state = 'idle'
         self.scan_requested = False
+        self.scan_library_ids = None
+        self.pending_scan_library_ids = set()
+        self.scanned_library_ids = []
+        self.completed_scan_library_ids = set()
         self.scan_active = False
         self.current_library_id = None
         self.current_library_name = None
@@ -193,10 +197,30 @@ class LibraryScannerManager(threading.Thread):
                 "can_cancel":           state in ('scheduled', 'scanning', 'paused', 'cancelling'),
             }
 
-    def request_scan(self):
+    def request_scan(self, library_ids=None):
+        selected = None
+        if library_ids is not None:
+            from unmanic.libs.unmodels.libraries import Libraries
+            if (not isinstance(library_ids, list) or not library_ids
+                    or any(type(value) is not int or value <= 0 for value in library_ids)):
+                raise ValueError('library_ids must be a nonempty list of positive integer Library IDs')
+            selected = set(library_ids)
+            known = {library.id for library in Libraries.select(Libraries.id).where(Libraries.id.in_(selected))}
+            if selected != known:
+                raise ValueError('Unknown Library ID')
         with self.scan_state_lock:
-            if self.scan_state != 'idle':
+            if self.abort_flag.is_set():
                 return False
+            if self.scan_state != 'idle':
+                if selected is None or self.scan_state == 'cancelling':
+                    return False
+                if self.scan_active:
+                    self.pending_scan_library_ids.update(selected)
+                elif self.scan_library_ids is not None:
+                    self.scan_library_ids.update(selected)
+                return True
+            self.scan_library_ids = selected
+            self.pending_scan_library_ids = set()
             self.scan_requested = True
             self.scan_pause_flag.clear()
             self.scan_cancel_flag.clear()
@@ -227,12 +251,15 @@ class LibraryScannerManager(threading.Thread):
             if self.scan_state == 'idle':
                 return False
             self.scan_requested = False
+            self.pending_scan_library_ids = set()
+            self.completed_scan_library_ids = set()
             self.scan_pause_flag.clear()
             self.scan_cancel_flag.set()
             if self.scan_active:
                 self.scan_state = 'cancelling'
             else:
                 self.scan_state = 'idle'
+                self.scan_library_ids = None
                 self.current_library_id = None
                 self.current_library_name = None
                 self.current_library_path = None
@@ -249,6 +276,7 @@ class LibraryScannerManager(threading.Thread):
                 return
             self.scan_requested = False
             self.scan_active = True
+            self.scanned_library_ids = []
             self.scan_state = 'scanning'
             self.scan_cancel_flag.clear()
 
@@ -258,14 +286,28 @@ class LibraryScannerManager(threading.Thread):
             self.clear_queue(self.files_to_test)
             self.clear_queue(self.files_to_process)
             with self.scan_state_lock:
+                cancelled = self.scan_cancel_flag.is_set() or self.abort_flag.is_set()
+                pending = set() if cancelled else getattr(self, 'pending_scan_library_ids', set())
+                completed = getattr(self, 'completed_scan_library_ids', set()) | set(self.scanned_library_ids)
+                scanned = sorted(completed)
+                self.completed_scan_library_ids = completed if pending else set()
                 self.scan_active = False
-                self.scan_requested = False
+                self.scan_requested = bool(pending)
+                self.scan_library_ids = pending if pending else None
+                self.pending_scan_library_ids = set()
                 self.scan_pause_flag.clear()
                 self.scan_cancel_flag.clear()
-                self.scan_state = 'idle'
+                self.scan_state = 'scheduled' if pending else 'idle'
                 self.current_library_id = None
                 self.current_library_name = None
                 self.current_library_path = None
+
+            try:
+                from unmanic.libs.library_workload import notify_library_workload_idle
+                notify_library_workload_idle(scanner=self, reason='scan_cancelled' if cancelled else 'scan_complete',
+                                             scanned_library_ids=scanned)
+            except Exception:
+                self.logger.exception('Unable to notify plugins of idle Library workload')
 
     @staticmethod
     def clear_queue(target_queue):
@@ -298,6 +340,7 @@ class LibraryScannerManager(threading.Thread):
             self.current_library_path = library_path
 
     def run_scheduled_scan(self):
+        self.scanned_library_ids = []
         if not self.system_configuration_is_valid():
             self.logger.warning("Skipping library scanner due invalid system configuration.")
             return
@@ -305,6 +348,9 @@ class LibraryScannerManager(threading.Thread):
         # For each configured library, check if a library scan is required
         no_libraries_configured = True
         for lib_info in Library.get_all_libraries():
+            selected = getattr(self, 'scan_library_ids', None)
+            if selected is not None and lib_info['id'] not in selected:
+                continue
             if not self.wait_if_paused_or_cancelled():
                 break
             no_libraries_configured = False
@@ -323,6 +369,7 @@ class LibraryScannerManager(threading.Thread):
                 library_name = library.get_name()
                 self.logger.info("Running full library scan on library '%s'", library_name)
                 self.set_current_library(library.get_id(), library_name, library.get_path())
+                self.scanned_library_ids.append(library.get_id())
                 self.scan_library_path(library_name, library.get_path(), library.get_id())
                 if self.scan_cancel_flag.is_set() or self.abort_flag.is_set():
                     break

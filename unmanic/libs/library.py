@@ -29,6 +29,7 @@
            OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import json
 import random
 
 from unmanic.config import Config
@@ -64,6 +65,10 @@ def generate_random_library_name():
         "symptomatic", "tart", "turbulent", "tiresome", "typical", "xyloid", "xanthic", "zealous", "zany",
     ]
     return "{name}, the {adjective} library".format(name=random.choice(names), adjective=random.choice(adjectives))
+
+
+class LibraryDependencyError(ValueError):
+    """Invalid Library completion dependency selection."""
 
 
 class Library(object):
@@ -110,6 +115,7 @@ class Library(object):
                 "enable_scanner":     False,
                 "enable_inotify":     False,
                 'tags':               [],
+                'wait_for_library_ids': [],
             }
             Libraries.create(**default_library)
             return [default_library]
@@ -131,6 +137,7 @@ class Library(object):
                 'enable_remote_only': lib.enable_remote_only,
                 'enable_scanner':     lib.enable_scanner,
                 'enable_inotify':     lib.enable_inotify,
+                'wait_for_library_ids': json.loads(lib.wait_for_library_ids or '[]'),
                 'tags':               [],
             }
             # Append tags
@@ -229,6 +236,7 @@ class Library(object):
                 'enable_remote_only': library_config.get_enable_remote_only(),
                 'enable_scanner':     library_config.get_enable_scanner(),
                 'enable_inotify':     library_config.get_enable_inotify(),
+                'wait_for_library_ids': library_config.get_wait_for_library_ids(),
                 'tags':               library_config.get_tags(),
             },
         }
@@ -307,6 +315,24 @@ class Library(object):
 
     def set_enable_inotify(self, value):
         self.model.enable_inotify = value
+
+    def get_wait_for_library_ids(self):
+        return json.loads(self.model.wait_for_library_ids or '[]')
+
+    @staticmethod
+    def validate_wait_for_library_ids(library_id, values):
+        if not isinstance(values, list) or any(type(value) is not int or value <= 0 for value in values):
+            raise LibraryDependencyError('Wait for Libraries must contain positive integer Library IDs')
+        selected = sorted(set(values))
+        if library_id in selected:
+            raise LibraryDependencyError('A Library cannot wait for itself')
+        known = {library.id for library in Libraries.select(Libraries.id).where(Libraries.id.in_(selected))}
+        if set(selected) != known:
+            raise LibraryDependencyError('A selected Library no longer exists')
+        return selected
+
+    def set_wait_for_library_ids(self, values):
+        self.model.wait_for_library_ids = json.dumps(self.validate_wait_for_library_ids(self.get_id(), values))
 
     def get_priority_score(self):
         return self.model.priority_score

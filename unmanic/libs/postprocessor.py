@@ -242,6 +242,12 @@ class PostProcessor(threading.Thread):
                         except Exception as e:
                             self.logger.exception("Exception in marking remote task as complete: %s", e)
 
+                    try:
+                        from unmanic.libs.library_workload import notify_library_workload_idle
+                        notify_library_workload_idle([self.current_task.get_task_library_id()])
+                    except Exception:
+                        self.logger.exception('Unable to notify plugins of idle Library workload')
+
         self.logger.info("Leaving PostProcessor Monitor loop...")
 
     def system_configuration_is_valid(self):

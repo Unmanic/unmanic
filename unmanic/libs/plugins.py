@@ -13,6 +13,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import zipfile
 from operator import attrgetter
 
@@ -540,7 +541,23 @@ class PluginsHandler(metaclass=SingletonType):
         self.logger.debug(f"Extracting plugin to '{plugin_directory}'")
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
             self._assert_zip_members_safe(zip_ref, str(plugin_directory))
-            zip_ref.extractall(str(plugin_directory))
+            # Keep installed metadata readable while other threads check compatibility.
+            info_contents = zip_ref.read('info.json')
+            json.loads(info_contents)
+            info_file = os.path.realpath(os.path.join(plugin_directory, 'info.json'))
+            members = [member for member in zip_ref.infolist()
+                       if os.path.realpath(os.path.join(plugin_directory, member.filename)) != info_file]
+            zip_ref.extractall(str(plugin_directory), members=members)
+            temporary = None
+            try:
+                with tempfile.NamedTemporaryFile(dir=plugin_directory, delete=False) as stream:
+                    temporary = stream.name
+                    stream.write(info_contents)
+                os.chmod(temporary, 0o644)
+                os.replace(temporary, info_file)
+            finally:
+                if temporary and os.path.exists(temporary):
+                    os.unlink(temporary)
         # Read plugin info
         plugin_info = self.get_plugin_info(plugin_id)
         # Run through any required dependency installation

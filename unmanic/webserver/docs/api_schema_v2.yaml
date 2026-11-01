@@ -1623,6 +1623,10 @@ components:
           type: boolean
           description: If the library is configured to monitor for file changes
           example: false
+        enable_web_scanner:
+          type: boolean
+          description: If the library is configured to scan a web directory
+          example: false
         tags:
           type: array
           description: A list of tags associated with this library
@@ -1635,6 +1639,7 @@ components:
       - enable_inotify
       - enable_remote_only
       - enable_scanner
+      - enable_web_scanner
       - id
       - locked
       - name
@@ -1675,6 +1680,12 @@ components:
             path: /library
             enable_scanner: false
             enable_inotify: false
+            enable_web_scanner: false
+            web_url: ''
+            web_username: ''
+            web_write_url: ''
+            web_write_username: ''
+            web_write_credentials_same_as_read: true
             priority_score: 0
             tags: []
           additionalProperties: {}
@@ -1735,6 +1746,15 @@ components:
             path: /library
             enable_scanner: false
             enable_inotify: false
+            enable_web_scanner: false
+            web_url: ''
+            web_username: ''
+            web_password_set: false
+            web_connection_id: 5aaec515-53b1-4e7b-8448-12f2976e8c98
+            web_write_url: ''
+            web_write_username: ''
+            web_write_password_set: false
+            web_write_credentials_same_as_read: true
             priority_score: 0
             tags: []
           additionalProperties: {}

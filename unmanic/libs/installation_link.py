@@ -716,6 +716,14 @@ class Links(object, metaclass=SingletonType):
         import_data['library_config']['enable_remote_only'] = True
         import_data['library_config']['enable_scanner'] = False
         import_data['library_config']['enable_inotify'] = False
+        import_data['library_config']['enable_web_scanner'] = False
+        import_data['library_config']['web_url'] = ''
+        import_data['library_config']['web_username'] = ''
+        import_data['library_config']['web_password'] = ''
+        import_data['library_config']['web_write_url'] = ''
+        import_data['library_config']['web_write_username'] = ''
+        import_data['library_config']['web_write_password'] = ''
+        import_data['library_config']['web_write_credentials_same_as_read'] = True
         return import_data
 
     def sync_remote_library_config(self, remote_config: dict, library_id: int, force_update=False):

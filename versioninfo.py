@@ -164,7 +164,7 @@ def get_git_version_info():
     :return:
     """
     # Fetch the last tag
-    last_tag = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"]).strip().decode("utf-8")
+    last_tag = subprocess.check_output(["git", "describe", "--tags", "--match", "[0-9]*", "--abbrev=0"]).strip().decode("utf-8")
     # Fetch the current commit ID
     current_commit = subprocess.check_output(["git", "rev-parse", "--verify", "--short", "HEAD"]).strip().decode("utf-8")
 

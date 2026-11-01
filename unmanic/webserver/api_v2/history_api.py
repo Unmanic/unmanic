@@ -371,7 +371,7 @@ class ApiHistoryHandler(BaseApiHandler):
         try:
             json_request = self.read_json_request(CompletedTasksLogRequestSchema())
 
-            command_log = completed_tasks.read_command_log_for_task(json_request.get('task_id'))
+            command_log = completed_tasks.read_command_log_for_task(json_request.get('task_id'), json_request.get('head'), json_request.get('tail'))
 
             response = self.build_response(
                 CompletedTasksLogSchema(),

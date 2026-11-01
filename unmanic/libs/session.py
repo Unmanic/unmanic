@@ -1,34 +1,11 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
-unmanic.session.py
+Copyright (C) Josh Sunnex
 
-Written by:               Josh.5 <jsunnex@gmail.com>
-Date:                     10 Mar 2021, (5:20 PM)
-
-Copyright:
-       Copyright (C) Josh Sunnex - All Rights Reserved
-
-       Permission is hereby granted, free of charge, to any person obtaining a copy
-       of this software and associated documentation files (the "Software"), to deal
-       in the Software without restriction, including without limitation the rights
-       to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-       copies of the Software, and to permit persons to whom the Software is
-       furnished to do so, subject to the following conditions:
-
-       The above copyright notice and this permission notice shall be included in all
-       copies or substantial portions of the Software.
-
-       THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-       EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-       MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-       IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-       DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-       OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
-       OR OTHER DEALINGS IN THE SOFTWARE.
-
+SPDX-License-Identifier: GPL-3.0-only
 """
+
 import datetime
 import os
 import random
@@ -64,7 +41,7 @@ class InvalidApplicationTokenException(Exception):
         super().__init__(f"Session Error - Invalid Application Token [CODE: {status_code}]: {message}")
 
 
-class Session(object, metaclass=SingletonType):
+class Session(metaclass=SingletonType):
     """
     Session
 
@@ -142,7 +119,7 @@ class Session(object, metaclass=SingletonType):
     def __init__(self, *args, **kwargs):
         self.logger = UnmanicLogging.get_logger(name=__class__.__name__)
         self.timeout = 30
-        self.dev_api = kwargs.get("dev_api", None)
+        self.dev_api = kwargs.get("dev_api")
         self.requests_session = requests.Session()
         self.token_poll_task = None
         self.logger.info("Initialising new session object")
@@ -152,7 +129,7 @@ class Session(object, metaclass=SingletonType):
         self.web_connections_lock = threading.RLock()
 
     @staticmethod
-    def __normalise_token(token):
+    def __normalise_token(token: str | None) -> str | None:
         """
         Normalise persisted token values so legacy stringified nulls do not
         get treated as valid tokens.
@@ -214,7 +191,7 @@ class Session(object, metaclass=SingletonType):
             "session": client,
         }
 
-    def __created_older_than_x_days(self, days=1):
+    def __created_older_than_x_days(self, days: int = 1) -> bool:
         if not self.created:
             # There is no session created. How did we get here???
             return False
@@ -224,11 +201,9 @@ class Session(object, metaclass=SingletonType):
         time_now = time.time()
         time_when_session_expires = self.created + seconds
         # Check that the time create is less than X days old
-        if time_now < time_when_session_expires:
-            return False
-        return True
+        return time_now >= time_when_session_expires
 
-    def __check_session_valid(self):
+    def __check_session_valid(self) -> bool:
         """
         Ensure that the session is valid.
         A session is only valid for a limited amount of time.
@@ -546,7 +521,7 @@ class Session(object, metaclass=SingletonType):
         self.requests_session.cookies.clear()
         self.requests_session.headers.update({"Authorization": ""})
 
-    def revoke_access_token(self, reason=""):
+    def revoke_access_token(self, reason: str = ""):
         """
         Revoke the current access token so the next authenticated request is
         forced to fetch a fresh token from support-auth-api.
@@ -559,7 +534,7 @@ class Session(object, metaclass=SingletonType):
         self.requests_session.headers.update({"Authorization": ""})
         self.__store_installation_data(force_save_access_token=True)
 
-    def get_installation_uuid(self):
+    def get_installation_uuid(self) -> str:
         """
         Returns the installation UUID as a string.
         If it does not yet exist, it will create one.
@@ -570,17 +545,17 @@ class Session(object, metaclass=SingletonType):
             self.__fetch_installation_data()
         return self.uuid
 
-    def get_supporter_level(self):
+    def get_supporter_level(self) -> int:
         """
         Returns the supporter level
 
         :return:
         """
-        if not self.level:
+        if self.level is None:
             self.__fetch_installation_data()
-        return self.level
+        return self.level or 0
 
-    def get_site_url(self):
+    def get_site_url(self) -> str:
         """
         Set the Unmanic application site URL
         :return:
@@ -589,9 +564,9 @@ class Session(object, metaclass=SingletonType):
         api_domain = "api.unmanic.app"
         if self.dev_api:
             return self.dev_api
-        return "{0}://{1}".format(api_proto, api_domain)
+        return f"{api_proto}://{api_domain}"
 
-    def set_full_api_url(self, api_prefix, api_version, api_path):
+    def set_full_api_url(self, api_prefix: str, api_version: int | str, api_path: str) -> str:
         """
         Set the API path URL
 
@@ -600,10 +575,10 @@ class Session(object, metaclass=SingletonType):
         :param api_path:
         :return:
         """
-        api_versioned_path = "{}/v{}".format(api_prefix, api_version)
-        return "{0}/{1}/{2}".format(self.get_site_url(), api_versioned_path, api_path)
+        api_versioned_path = f"{api_prefix}/v{api_version}"
+        return f"{self.get_site_url()}/{api_versioned_path}/{api_path}"
 
-    def api_get(self, api_prefix, api_version, api_path):
+    def api_get(self, api_prefix: str, api_version: int | str, api_path: str) -> tuple[dict, int]:
         """
         Generate and execute a GET API call.
 
@@ -617,6 +592,8 @@ class Session(object, metaclass=SingletonType):
         if r.status_code > 403:
             # There is an issue with the remote API
             raise RemoteApiException(f"GET request failed for {u}", r.status_code)
+        if r.status_code == 403:
+            self.logger.warning("GET request to '%s' returned 403 Forbidden", u)
         if r.status_code == 401:
             # Verify the token. Refresh as required
             self.logger.debug("Auto exec token verification (api_get)")
@@ -631,7 +608,7 @@ class Session(object, metaclass=SingletonType):
                 self.logger.debug("Failed to verify auth (api_get)")
         return r.json(), r.status_code
 
-    def api_post(self, api_prefix, api_version, api_path, data):
+    def api_post(self, api_prefix: str, api_version: int | str, api_path: str, data: dict) -> tuple[dict, int]:
         """
         Generate and execute a POST API call.
 
@@ -646,6 +623,8 @@ class Session(object, metaclass=SingletonType):
         if r.status_code > 403:
             # There is an issue with the remote API
             raise RemoteApiException(f"POST request failed for {u}", r.status_code)
+        if r.status_code == 403:
+            self.logger.warning("POST request to '%s' returned 403 Forbidden", u)
         if r.status_code == 401:
             # Verify the token. Refresh as required
             self.logger.debug("Auto exec token verification (api_post)")
@@ -660,7 +639,7 @@ class Session(object, metaclass=SingletonType):
                 self.logger.debug("Failed to verify auth (api_post)")
         return r.json(), r.status_code
 
-    def get_access_token(self):
+    def get_access_token(self) -> bool:
         if not self.application_token:
             # No application token set
             return False
@@ -695,13 +674,9 @@ class Session(object, metaclass=SingletonType):
                 self.logger.info("Remote Message: %s", message)
         return False
 
-    def verify_token(self):
+    def verify_token(self) -> bool:
         if not self.user_access_token:
-            if self.get_access_token():
-                # Successfully refreshed access token
-                return True
-            # No valid tokens exist
-            return False
+            return bool(self.get_access_token())
         # Check if access token is valid
         u = self.set_full_api_url("support-auth-api", 1, "user_auth/verify_token")
         r = self.requests_session.get(u, timeout=self.timeout)
@@ -714,10 +689,7 @@ class Session(object, metaclass=SingletonType):
 
         # Access token is not valid. Refresh it.
         self.logger.debug("Unable to verify access token. Refreshing...")
-        if self.get_access_token():
-            # Successfully refreshed access token
-            return True
-        return False
+        return bool(self.get_access_token())
 
     def fetch_user_data(self):
         response, status_code = self.api_get("support-auth-api", 2, "user_info/get")
@@ -744,14 +716,17 @@ class Session(object, metaclass=SingletonType):
                 if previous_level != self.level:
                     # JWT scope is embedded in the access token, so a level change
                     # requires a fresh token before making further privileged requests.
-                    self.revoke_access_token(
-                        reason=f"supporter level changed {previous_level} -> {self.level}"
-                    )
+                    # Only revoke when authenticated via an application_token.
+                    # Trial tokens already carry the trial scope (level 9) and have no application token.
+                    if self.application_token:
+                        self.revoke_access_token(reason=f"supporter level changed {previous_level} -> {self.level}")
+                    else:
+                        self.__store_installation_data()
                 else:
                     self.__store_installation_data()
                 self.__trigger_plugin_repo_refresh_for_level_change(previous_level, self.level, "fetch_user_data")
 
-    def auth_user_account(self, force_checkin=False):
+    def auth_user_account(self, force_checkin: bool = False) -> bool:
         # Don't bother if the user has never logged in
         if not self.user_access_token and not force_checkin:
             self.logger.debug("The user access token is not set add we are not being forced to refresh for one.")
@@ -779,7 +754,7 @@ class Session(object, metaclass=SingletonType):
         self.logger.warning("Unable to verify user account during forced check-in. Preserving local session state.")
         return False
 
-    def auth_trial_account(self):
+    def auth_trial_account(self) -> bool:
         # Check if access token is valid
         d = {"uuid": self.get_installation_uuid()}
         u = self.set_full_api_url("support-auth-api", 1, "user_auth/trial_token")
@@ -796,11 +771,23 @@ class Session(object, metaclass=SingletonType):
             self.__store_installation_data()
             self.__configure_log_forwarding(session_valid=True)  # TODO: Remove from here. It wont work with trials.
             return True
+        elif r.status_code == 401:
+            self.logger.info(
+                "Trial token expired or unavailable for this installation. Resetting to free tier (level 0)."
+            )
+            if self.level == 9:
+                self.level = 0
+                self.user_access_token = None
+                self.__store_installation_data(force_save_access_token=True)
+            return False
         elif r.status_code > 403:
             # Issue with server... Just carry on with current access token can't fix that here.
             raise RemoteApiException(f"Trial token verification request failed for {u}", r.status_code)
+        else:
+            self.logger.warning("Trial token request rejected with status code %s", r.status_code)
+            return False
 
-    def register_unmanic(self, force=False):
+    def register_unmanic(self, force: bool = False) -> bool:
         """
         Register Unmanic with site.
         This sends information about the system that Unmanic is running on.
@@ -846,21 +833,22 @@ class Session(object, metaclass=SingletonType):
                 },
             }
 
-            # Refresh user auth
-            result = self.auth_user_account(force_checkin=force)
-            # Fetch a trial token for clean installs even when this check-in is
-            # not forced. This keeps first-run behavior while still requiring
-            # the remote API to issue a valid trial token.
-            should_attempt_trial = force or (
-                self.level < 2 and not self.user_access_token and not self.application_token
-            )
-            if not result and should_attempt_trial:
-                result = self.auth_trial_account()
-
-            # Register Unmanic
+            # Register Unmanic before verifying user auth
             registration_response, status_code = self.api_post(
                 "unmanic-api", 1, "installation_auth/register", post_data
             )
+
+            # Refresh user auth
+            result = self.auth_user_account(force_checkin=force)
+            # Fetch a trial token for clean installs (level < 2) or active trials (level 9)
+            # when not linked to an account (no application_token) and missing a user access token.
+            should_attempt_trial = (
+                (self.level < 2 or self.level == 9)
+                and not self.application_token
+                and (force or not self.user_access_token)
+            )
+            if not result and should_attempt_trial:
+                result = self.auth_trial_account()
 
             # Save data
             if status_code in [200, 201, 202] and registration_response.get("success"):
@@ -894,13 +882,11 @@ class Session(object, metaclass=SingletonType):
             )
         except Exception as e:
             self.logger.debug("Exception while registering Unmanic: %s", e, exc_info=True)
-            if self.__check_session_valid():
-                # If the session is still valid, just return true. Perhaps the internet is down and it timed out?
-                return True
-            return False
+            # If the session is still valid, just return true. Perhaps the internet is down and it timed out?
+            return self.__check_session_valid()
         return False
 
-    def sign_out(self, remote=True):
+    def sign_out(self, remote: bool = True) -> bool:
         """
         Remove any user auth
 
@@ -919,20 +905,21 @@ class Session(object, metaclass=SingletonType):
                 self.logger.debug("Remote registry logout response - Code: %s, Body: %s", status_code, response)
         except RemoteApiException:
             self.logger.warning(
-                "Failed to reach remote server to request a logout. This is fine, we can continue to logout the app locally."
+                "Failed to reach remote server to request a logout. "
+                "This is fine, we can continue to logout the app locally."
             )
         self.__reset_session_installation_data()
         return True
 
-    def get_sign_out_url(self):
+    def get_sign_out_url(self) -> str:
         """
         Fetch the application sign out URL
 
         :return:
         """
-        return "{0}/unmanic-api/v1/installation_auth/logout".format(self.get_site_url())
+        return f"{self.get_site_url()}/unmanic-api/v1/installation_auth/logout"
 
-    def init_device_auth_flow(self):
+    def init_device_auth_flow(self) -> dict | bool:
         """
         Starts the device authentication flow to obtain an application token.
         It sends a POST request for a device code and then polls until the app token is available.
@@ -945,7 +932,8 @@ class Session(object, metaclass=SingletonType):
         response, status_code = self.api_post("support-auth-api", 2, "app_auth/request_pin", post_data)
         if status_code >= 400:
             self.logger.error(
-                "The remote service returned an error (HTTP %s). We are unable to proceed at this time. Please try again later.",
+                "The remote service returned an error (HTTP %s). "
+                "We are unable to proceed at this time. Please try again later.",
                 status_code,
             )
             return False
@@ -976,7 +964,7 @@ class Session(object, metaclass=SingletonType):
             "verification_uri_complete": verification_uri_complete,
         }
 
-    def poll_for_app_token(self, device_code, interval, expires_in):
+    def poll_for_app_token(self, device_code: str, interval: int, expires_in: int) -> bool | None:
         """
         Polls the remote API for the application token.
         This function is intended to run in a background thread.
@@ -1011,31 +999,31 @@ class Session(object, metaclass=SingletonType):
         self.logger.info("Polling for app token timed out after %s seconds.", expires_in)
         return None
 
-    def get_patreon_login_url(self):
+    def get_patreon_login_url(self) -> str:
         """
         Fetch the Patreon Login URL
 
         :return:
         """
-        return "{0}/support-auth-api/v1/login_patreon/login".format(self.get_site_url())
+        return f"{self.get_site_url()}/support-auth-api/v1/login_patreon/login"
 
-    def get_github_login_url(self):
+    def get_github_login_url(self) -> str:
         """
         Fetch the GitHub Login URL
 
         :return:
         """
-        return "{0}/support-auth-api/v1/login_github/login".format(self.get_site_url())
+        return f"{self.get_site_url()}/support-auth-api/v1/login_github/login"
 
-    def get_discord_login_url(self):
+    def get_discord_login_url(self) -> str:
         """
         Fetch the Discord Login URL
 
         :return:
         """
-        return "{0}/support-auth-api/v1/login_discord/login".format(self.get_site_url())
+        return f"{self.get_site_url()}/support-auth-api/v1/login_discord/login"
 
-    def get_patreon_sponsor_page(self):
+    def get_patreon_sponsor_page(self) -> dict | bool:
         """
         Fetch the Patreon sponsor page
 
@@ -1051,7 +1039,7 @@ class Session(object, metaclass=SingletonType):
             self.logger.debug("Exception while fetching Patreon sponsor page - %s", e)
         return False
 
-    def get_credit_portal_funding_proposals(self):
+    def get_credit_portal_funding_proposals(self) -> tuple[dict | None, int]:
         """
         Fetch credit portal funding proposals from support-auth-api.
 

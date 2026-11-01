@@ -87,7 +87,7 @@ class DownloadsHandler(web.RequestHandler):
         # Return 404 on file not found
         if not os.path.exists(abspath):
             # Link ID must not be valid
-            self.write_error(404)
+            self.send_error(404)
             return
 
         self.set_header('Content-Type', 'application/octet-stream')

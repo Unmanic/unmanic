@@ -210,7 +210,7 @@ def add_historic_tasks_to_pending_tasks_list(historic_task_ids, library_id=None)
     return errors
 
 
-def read_command_log_for_task(task_id):
+def read_command_log_for_task(task_id, head=None, tail=None):
     data = {
         'command_log':       '',
         'command_log_lines': [],
@@ -220,9 +220,28 @@ def read_command_log_for_task(task_id):
     if not task_data:
         return data
 
-    for command_log in task_data.get('completedtaskscommandlogs_set', []):
-        data['command_log'] += command_log['dump']
-        data['command_log_lines'] += format_ffmpeg_log_text(command_log['dump'].split("\n"))
+    command_logs = task_data.get('completedtaskscommandlogs_set', [])
+
+    # Preserve the original response exactly when no truncation was requested.
+    # Existing API callers rely on this endpoint returning every command log.
+    if head is None and tail is None:
+        for command_log in command_logs:
+            dump = command_log['dump']
+            data['command_log'] += dump
+            data['command_log_lines'] += format_ffmpeg_log_text(dump.split("\n"))
+        return data
+
+    # Apply the requested limits to the complete task log, rather than to each
+    # individual command log. This prevents a tail-only request from returning
+    # the full first command log and ensures head/tail ranges never overlap.
+    all_log_lines = ''.join(command_log['dump'] for command_log in command_logs).split("\n")
+    head_count = head or 0
+    tail_count = tail or 0
+    tail_start = max(head_count, len(all_log_lines) - tail_count)
+    selected_log_lines = all_log_lines[:head_count] + all_log_lines[tail_start:]
+
+    data['command_log'] = "\n".join(selected_log_lines)
+    data['command_log_lines'] = format_ffmpeg_log_text(selected_log_lines)
 
     return data
 

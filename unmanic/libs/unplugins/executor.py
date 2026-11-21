@@ -81,6 +81,10 @@ class PluginExecutor(object):
                 'has_flow': False,
             },
             {
+                'id':       'events.library_workload_idle',
+                'has_flow': False,
+            },
+            {
                 'id':       'events.task_scheduled',
                 'has_flow': False,
             },

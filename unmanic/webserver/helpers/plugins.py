@@ -256,6 +256,7 @@ def get_plugin_settings(plugin_id: str, library_id=None):
                 "text",
                 "textarea",
                 "select",
+                "library_select",
                 "checkbox",
                 "slider",
                 "browse_directory",

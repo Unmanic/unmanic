@@ -50,6 +50,9 @@ def save_library_config(library_id, library_config=None, plugin_config=None):
     if library_config is None:
         library_config = {}
 
+    if 'wait_for_library_ids' in library_config:
+        Library.validate_wait_for_library_ids(int(library_id), library_config['wait_for_library_ids'])
+
     # Check if this save requires a new library entry
     if int(library_id) > 0:
         # Fetch existing library by ID
@@ -72,6 +75,8 @@ def save_library_config(library_id, library_config=None, plugin_config=None):
         library.set_enable_remote_only(library_config.get('enable_remote_only', library.get_enable_remote_only()))
         library.set_enable_scanner(library_config.get('enable_scanner', library.get_enable_scanner()))
         library.set_enable_inotify(library_config.get('enable_inotify', library.get_enable_inotify()))
+        if 'wait_for_library_ids' in library_config:
+            library.set_wait_for_library_ids(library_config['wait_for_library_ids'])
         library.set_priority_score(library_config.get('priority_score', library.get_priority_score()))
         library.set_tags(library_config.get('tags', library.get_tags()))
 

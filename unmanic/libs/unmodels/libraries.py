@@ -46,6 +46,7 @@ class Libraries(BaseModel):
     enable_remote_only = BooleanField(null=False, default=False)
     enable_scanner = BooleanField(null=False, default=False)
     enable_inotify = BooleanField(null=False, default=False)
+    wait_for_library_ids = TextField(null=True, default='[]')
     priority_score = BigIntegerField(null=False, default=0)
     # ManyToMany Linking field. Does not create a column in the DB. See linking table below
     tags = ManyToManyField(Tags, backref='tags')

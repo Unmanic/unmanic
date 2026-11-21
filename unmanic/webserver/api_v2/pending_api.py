@@ -39,7 +39,8 @@ from unmanic.webserver.api_v2.base_api_handler import BaseApiHandler, BaseApiErr
 from unmanic.webserver.api_v2.schema.schemas import PendingTasksTableResultsSchema, RequestPendingTaskCreateSchema, \
     RequestPendingTasksLibraryUpdateSchema, RequestPendingTasksReorderSchema, PendingTasksSchema, \
     RequestPendingTableDataSchema, RequestPendingTasksBulkActionSchema, TaskDownloadLinkSchema, \
-    RequestPendingTaskTestSchema, PendingTaskTestResultSchema, RequestTableUpdateByIdList, LibraryScanStatusSchema
+    RequestPendingTaskTestSchema, PendingTaskTestResultSchema, RequestTableUpdateByIdList, LibraryScanStatusSchema, \
+    RequestLibraryWorkloadSchema, LibraryWorkloadSchema, RequestLibraryScanSchema
 from unmanic.webserver.downloads import DownloadsLinks
 from unmanic.webserver.helpers import pending_tasks
 
@@ -51,6 +52,11 @@ class ApiPendingHandler(BaseApiHandler):
     unmanic_data_queues = None
 
     routes = [
+        {
+            "path_pattern": r"/pending/library/workload",
+            "supported_methods": ["POST"],
+            "call_method": "get_library_workload",
+        },
         {
             "path_pattern":      r"/pending/tasks",
             "supported_methods": ["POST"],
@@ -140,6 +146,39 @@ class ApiPendingHandler(BaseApiHandler):
         if self.library_scanner is None:
             raise RuntimeError("Library scanner is unavailable")
         return self.library_scanner.get_scan_status()
+
+    async def get_library_workload(self):
+        """
+        Library workload status
+        ---
+        description: Observe scan state and all outstanding task stages for selected Libraries.
+        requestBody:
+            required: True
+            content:
+                application/json:
+                    schema:
+                        RequestLibraryWorkloadSchema
+        responses:
+            200:
+                description: Current workload; idle does not imply successful processing.
+                content:
+                    application/json:
+                        schema:
+                            LibraryWorkloadSchema
+        """
+        try:
+            from unmanic.libs.library_workload import get_library_workload
+            request = self.read_json_request(RequestLibraryWorkloadSchema())
+            workload = get_library_workload(request['library_ids'], self.library_scanner)
+            self.write(workload)
+        except BaseApiError:
+            return
+        except ValueError as error:
+            self.set_status(self.STATUS_ERROR_EXTERNAL, reason=str(error))
+            self.write_error()
+        except Exception as error:
+            self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(error))
+            self.write_error()
 
     async def get_pending_tasks(self):
         """
@@ -297,7 +336,13 @@ class ApiPendingHandler(BaseApiHandler):
         """
         Pending - trigger a library scan
         ---
-        description: Triggers a library scan.
+        description: Scan selected Libraries, or all enabled scanner Libraries when IDs are omitted.
+        requestBody:
+            required: False
+            content:
+                application/json:
+                    schema:
+                        RequestLibraryScanSchema
         responses:
             200:
                 description: 'Successful request; Returns success status'
@@ -336,7 +381,10 @@ class ApiPendingHandler(BaseApiHandler):
                 self.write_error()
                 return
 
-            if not self.library_scanner.request_scan():
+            library_ids = None
+            if self.request.body:
+                library_ids = self.read_json_request(RequestLibraryScanSchema())['library_ids']
+            if not self.library_scanner.request_scan(library_ids=library_ids):
                 self.set_status(self.STATUS_ERROR_EXTERNAL, reason="A library scan is already scheduled or running")
                 self.write_error()
                 return
@@ -346,6 +394,9 @@ class ApiPendingHandler(BaseApiHandler):
         except BaseApiError as bae:
             tornado.log.app_log.error("BaseApiError.{}: {}".format(self.route.get('call_method'), str(bae)))
             return
+        except ValueError as e:
+            self.set_status(self.STATUS_ERROR_EXTERNAL, reason=str(e))
+            self.write_error()
         except Exception as e:
             self.set_status(self.STATUS_ERROR_INTERNAL, reason=str(e))
             self.write_error()

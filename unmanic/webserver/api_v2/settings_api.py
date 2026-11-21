@@ -969,6 +969,15 @@ class ApiSettingsHandler(BaseApiHandler):
                     "enable_remote_only": False,
                     "enable_scanner":     False,
                     "enable_inotify":     False,
+                    "enable_web_scanner": False,
+                    "web_url":            '',
+                    "web_username":       '',
+                    "web_password_set":   False,
+                    "web_connection_id":  '',
+                    "web_write_url":      '',
+                    "web_write_username": '',
+                    "web_write_password_set": False,
+                    "web_write_credentials_same_as_read": True,
                     "priority_score":     0,
                 },
                 "plugins":        {
@@ -978,18 +987,9 @@ class ApiSettingsHandler(BaseApiHandler):
             if json_request.get('id'):
                 # Read the library
                 library_config = Library(json_request.get('id'))
+                from unmanic.webserver.helpers import settings
                 library_settings = {
-                    "library_config": {
-                        "id":                 library_config.get_id(),
-                        "name":               library_config.get_name(),
-                        "path":               library_config.get_path(),
-                        "locked":             library_config.get_locked(),
-                        "enable_remote_only": library_config.get_enable_remote_only(),
-                        "enable_scanner":     library_config.get_enable_scanner(),
-                        "enable_inotify":     library_config.get_enable_inotify(),
-                        "priority_score":     library_config.get_priority_score(),
-                        "tags":               library_config.get_tags(),
-                    },
+                    "library_config": settings.serialize_library_settings(library_config),
                     "plugins":        {
                         "enabled_plugins": library_config.get_enabled_plugins(),
                     }

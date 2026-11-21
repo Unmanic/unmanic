@@ -18,7 +18,7 @@ import requests
 from unmanic import config
 from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.singleton import SingletonType
-from unmanic.libs.unmodels import Installation
+from unmanic.libs.unmodels import Installation, Libraries
 
 
 class RemoteApiException(Exception):
@@ -125,6 +125,8 @@ class Session(metaclass=SingletonType):
         self.logger.info("Initialising new session object")
         self.created = None
         self.last_check = None
+        self.web_connections = {}
+        self.web_connections_lock = threading.RLock()
 
     @staticmethod
     def __normalise_token(token: str | None) -> str | None:
@@ -138,6 +140,56 @@ class Session(metaclass=SingletonType):
         if token.lower() in ["", "none", "null"]:
             return None
         return token
+
+    def open_library_web_connections(self, library):
+        """Create or reuse the read and write sessions for one Library."""
+        connection_id = library.get_web_connection_id()
+        return {
+            "connection_id": connection_id,
+            "read": self.get_web_connection(connection_id, "read"),
+            "write": self.get_web_connection(connection_id, "write"),
+        }
+
+    def get_web_connection(self, connection_id, role):
+        """Resolve one Library web connection ID to its role-specific session."""
+        if role not in {"read", "write"}:
+            raise ValueError("Web connection role must be read or write")
+        library = Libraries.get_or_none(web_connection_id=connection_id)
+        if library is None or not connection_id:
+            raise ValueError("Unknown web connection ID")
+
+        if role == "read":
+            url = library.web_url
+            username = library.web_username
+            password = library.web_password
+        else:
+            url = library.web_write_url or library.web_url
+            if library.web_write_credentials_same_as_read:
+                username = library.web_username
+                password = library.web_password
+            else:
+                username = library.web_write_username
+                password = library.web_write_password
+
+        config = (url or "", username or "", password or "")
+        key = (connection_id, role)
+        with self.web_connections_lock:
+            cached = self.web_connections.get(key)
+            if cached and cached[0] == config:
+                client = cached[1]
+            else:
+                if cached:
+                    cached[1].close()
+                client = requests.Session()
+                if config[1] or config[2]:
+                    client.auth = (config[1], config[2])
+                self.web_connections[key] = (config, client)
+        return {
+            "connection_id": connection_id,
+            "role": role,
+            "url": config[0],
+            "session": client,
+        }
 
     def __created_older_than_x_days(self, days: int = 1) -> bool:
         if not self.created:

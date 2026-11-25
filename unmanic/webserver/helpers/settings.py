@@ -31,8 +31,11 @@
 """
 from unmanic import config
 from unmanic.libs.library import Library
+from unmanic.libs.logs import UnmanicLogging
 from unmanic.libs.unplugins import PluginExecutor
 from unmanic.webserver.helpers import plugins
+
+logger = UnmanicLogging.get_logger(name=__name__)
 
 
 def save_library_config(library_id, library_config=None, plugin_config=None):
@@ -96,8 +99,13 @@ def save_library_config(library_id, library_config=None, plugin_config=None):
         # Import settings
         plugin_executor = PluginExecutor()
         for ep in enabled_plugins:
-            if ep.get('has_config'):
-                plugin_executor.save_plugin_settings(ep.get('plugin_id'), ep.get('settings', {}), library_id=library_id)
+            # Save any settings that were given. Do not also require 'has_config' (settings sent without it were dropped).
+            plugin_settings = ep.get('settings')
+            if not plugin_settings:
+                continue
+            if not plugin_executor.save_plugin_settings(ep.get('plugin_id'), plugin_settings, library_id=library_id):
+                logger.warning("Failed to save one or more settings for plugin '%s' on library '%s'",
+                               ep.get('plugin_id'), library_id)
 
     # Update plugin flow (if the data was given)
     plugin_flow = plugin_config.get('plugin_flow')

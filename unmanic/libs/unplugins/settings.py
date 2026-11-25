@@ -118,9 +118,9 @@ class PluginSettings(object):
         for key in self.settings:
             self.settings_configured[key] = self.settings[key]
 
-        # if the file does not yet exist, create it
+        # if the file does not yet exist, use the defaults set above
         if not os.path.exists(plugin_settings_file):
-            self.__export_configured_settings()
+            return
 
         # Read plugin settings from file
         with open(plugin_settings_file) as infile:

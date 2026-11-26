@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Set up sign in - Unmanic</title>
+    <style>
+        /*
+         * Styles are inlined and duplicated across the auth templates on purpose. These
+         * pages are served before authentication, so keeping them self-contained means no
+         * static path has to be opened up in the request guard's allowlist.
+         *
+         * Colours track src/css/quasar.variables.scss in the unmanic-frontend project:
+         *   $primary #002e5c   $secondary #009fdd   $dark #181818
+         *   $negative #C10015  $warning #F2C037     $positive #21BA45
+         */
+        :root {
+            color-scheme: dark;
+            --unmanic-page: #121212;
+            --unmanic-surface: #181818;
+            --unmanic-primary: #002e5c;
+            --unmanic-secondary: #009fdd;
+            --unmanic-secondary-hover: #0089c0;
+            --unmanic-text: #ffffff;
+            --unmanic-text-muted: #bdbdbd;
+            --unmanic-text-faint: #9e9e9e;
+            --unmanic-border: rgba(255, 255, 255, 0.24);
+            /* Lightened from $negative #C10015, which only reaches 2.8:1 on this surface. */
+            --unmanic-negative: #ff5252;
+            --unmanic-warning: #f2c037;
+            --unmanic-positive: #21ba45;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+            background: var(--unmanic-page); color: var(--unmanic-text);
+            font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        }
+        .card {
+            width: 100%; max-width: 22rem; overflow: hidden;
+            background: var(--unmanic-surface); border-radius: 4px;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2), 0 2px 2px rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.12);
+        }
+        .card-head { padding: 1.25rem 2rem; background: var(--unmanic-primary); }
+        .card-body { padding: 1.75rem 2rem 2rem; }
+        h1 { margin: 0; font-size: 1.25rem; font-weight: 500; letter-spacing: 0.01em; }
+        p.sub { margin: 0.2rem 0 0; font-size: 0.8rem; color: rgba(255, 255, 255, 0.7); }
+        label {
+            display: block; margin-bottom: 0.35rem;
+            font-size: 0.75rem; font-weight: 500; letter-spacing: 0.02em; color: var(--unmanic-text-muted);
+        }
+        input {
+            width: 100%; padding: 0.65rem 0.75rem; margin-bottom: 0.35rem; font-size: 1rem;
+            font-family: inherit; color: var(--unmanic-text); background: var(--unmanic-page);
+            border: 1px solid var(--unmanic-border); border-radius: 4px;
+            transition: border-color 0.2s ease;
+        }
+        input:focus { outline: none; border-color: var(--unmanic-secondary); }
+        input.invalid { border-color: var(--unmanic-negative); }
+        .hint {
+            display: block; min-height: 1.1rem; margin-bottom: 0.85rem;
+            font-size: 0.72rem; line-height: 1.45; color: var(--unmanic-text-faint);
+        }
+        .hint.bad { color: var(--unmanic-negative); }
+        .hint.warn { color: var(--unmanic-warning); }
+        .hint.ok { color: var(--unmanic-positive); }
+        button {
+            width: 100%; padding: 0.7rem; margin-top: 0.4rem; cursor: pointer;
+            font-family: inherit; font-size: 0.875rem; font-weight: 500;
+            text-transform: uppercase; letter-spacing: 0.09em;
+            color: #fff; background: var(--unmanic-secondary); border: 0; border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+        button:hover { background: var(--unmanic-secondary-hover); }
+        button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+        .error {
+            padding: 0.65rem 0.75rem; margin-bottom: 1.1rem; font-size: 0.8rem; line-height: 1.4;
+            color: var(--unmanic-negative); background: rgba(193, 0, 21, 0.14);
+            border-left: 3px solid var(--unmanic-negative); border-radius: 2px;
+        }
+        .note {
+            margin: 1.4rem 0 0; padding-top: 1.1rem; font-size: 0.72rem; line-height: 1.55;
+            color: var(--unmanic-text-faint); border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="card-head">
+        <h1>Set up sign in</h1>
+        <p class="sub">Choose the credentials for this installation</p>
+    </div>
+    <div class="card-body">
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% end %}
+        <form id="setup-form" method="POST" action="/unmanic/auth/setup">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username" autofocus required>
+            <span id="username-hint" class="hint" aria-live="polite"></span>
+
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="new-password" required minlength="8">
+            <span id="password-hint" class="hint" aria-live="polite"></span>
+
+            <label for="confirm">Confirm password</label>
+            <input id="confirm" name="confirm" type="password" autocomplete="new-password" required minlength="8">
+            <span id="confirm-hint" class="hint" aria-live="polite"></span>
+
+            <button type="submit">Save and sign in</button>
+        </form>
+        <p class="note">
+            This protects Unmanic from others on your network. It does not make Unmanic safe to
+            expose to the internet - use a VPN or an authenticating reverse proxy for that.
+        </p>
+    </div>
+</div>
+<script>
+    (function () {
+        var MIN_LENGTH = 8;
+        var MAX_LENGTH = 128;
+
+        var form = document.getElementById("setup-form");
+        var username = document.getElementById("username");
+        var password = document.getElementById("password");
+        var confirmField = document.getElementById("confirm");
+        var usernameHint = document.getElementById("username-hint");
+        var passwordHint = document.getElementById("password-hint");
+        var confirmHint = document.getElementById("confirm-hint");
+
+        function setHint(field, hint, text, state) {
+            hint.textContent = text;
+            hint.className = state ? "hint " + state : "hint";
+            if (state === "bad") {
+                field.classList.add("invalid");
+            } else {
+                field.classList.remove("invalid");
+            }
+        }
+
+        // Advisory only. The server enforces length, not composition, following NIST
+        // guidance that length matters more than character-class rules. A weak password is
+        // never blocked here - blocking it would apply a rule the server does not.
+        function describeStrength(value) {
+            var classes = 0;
+            if (/[a-z]/.test(value)) { classes += 1; }
+            if (/[A-Z]/.test(value)) { classes += 1; }
+            if (/[0-9]/.test(value)) { classes += 1; }
+            if (/[^A-Za-z0-9]/.test(value)) { classes += 1; }
+
+            if (value.length >= 16 || (value.length >= 12 && classes >= 3)) {
+                return ["Strong.", "ok"];
+            }
+            if (value.length >= 12 || classes >= 3) {
+                return ["Reasonable. Extra length helps more than extra symbols.", "ok"];
+            }
+            return ["Weak, but allowed. A longer passphrase beats added symbols.", "warn"];
+        }
+
+        function checkUsername(showEmptyError) {
+            if (!username.value.trim()) {
+                setHint(username, usernameHint, showEmptyError ? "A username is required." : "", showEmptyError ? "bad" : "");
+                return false;
+            }
+            setHint(username, usernameHint, "", "");
+            return true;
+        }
+
+        function checkPassword() {
+            var value = password.value;
+            if (!value) {
+                setHint(password, passwordHint, "At least " + MIN_LENGTH + " characters.", "");
+                return false;
+            }
+            if (value.length < MIN_LENGTH) {
+                var missing = MIN_LENGTH - value.length;
+                var noun = missing === 1 ? " more character needed." : " more characters needed.";
+                setHint(password, passwordHint, "Too short - " + missing + noun, "bad");
+                return false;
+            }
+            if (value.length > MAX_LENGTH) {
+                setHint(password, passwordHint, "Too long - maximum " + MAX_LENGTH + " characters.", "bad");
+                return false;
+            }
+            var described = describeStrength(value);
+            setHint(password, passwordHint, described[0], described[1]);
+            return true;
+        }
+
+        function checkConfirm() {
+            if (!confirmField.value) {
+                setHint(confirmField, confirmHint, "", "");
+                return false;
+            }
+            if (confirmField.value !== password.value) {
+                setHint(confirmField, confirmHint, "Passwords do not match.", "bad");
+                return false;
+            }
+            setHint(confirmField, confirmHint, "Passwords match.", "ok");
+            return true;
+        }
+
+        username.addEventListener("input", function () { checkUsername(false); });
+        password.addEventListener("input", function () {
+            checkPassword();
+            if (confirmField.value) {
+                checkConfirm();
+            }
+        });
+        confirmField.addEventListener("input", checkConfirm);
+
+        form.addEventListener("submit", function (event) {
+            var usernameOk = checkUsername(true);
+            var passwordOk = checkPassword();
+            var confirmOk = checkConfirm();
+            if (usernameOk && passwordOk && confirmOk) {
+                return;
+            }
+            event.preventDefault();
+            if (!usernameOk) {
+                username.focus();
+            } else if (!passwordOk) {
+                password.focus();
+            } else {
+                confirmField.focus();
+            }
+        });
+
+        checkPassword();
+    })();
+</script>
+</body>
+</html>

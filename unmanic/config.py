@@ -61,6 +61,13 @@ class Config(object, metaclass=SingletonType):
         self.ssl_certfilepath = None
         self.ssl_keyfilepath = None
 
+        # Web authentication settings
+        self.auth_enabled = False
+        self.auth_allow_basic = True
+        self.auth_session_idle_timeout_days = 7
+        self.auth_session_max_age_days = 30
+        self.auth_trusted_origins = []
+
         # Set default directories
         home_directory = common.get_home_dir()
         self.config_path = os.path.join(home_directory, '.unmanic', 'config')
@@ -116,7 +123,7 @@ class Config(object, metaclass=SingletonType):
             self.set_config_item('userdata_path', os.path.join(kwargs.get('unmanic_path'), 'userdata'), save_settings=False)
 
         # Finally, re-read config from file and override all previous settings.
-        self.__import_settings_from_file(config_path)
+        self.__import_settings_from_file(config_path, first_load=True)
 
         # Overwrite current settings with given args
         if config_path:
@@ -166,10 +173,12 @@ class Config(object, metaclass=SingletonType):
             if setting in os.environ:
                 self.set_config_item(setting, os.environ.get(setting), save_settings=False)
 
-    def __import_settings_from_file(self, config_path=None):
+    def __import_settings_from_file(self, config_path=None, first_load=False):
         """
         Read configuration from the settings JSON file.
 
+        :param config_path:
+        :param first_load:
         :return:
         """
         # If config path was not passed as variable, use the default one
@@ -188,6 +197,15 @@ class Config(object, metaclass=SingletonType):
                 logger.exception("Exception in reading saved settings from file: %s", e)
             # Set data to Config class
             self.set_bulk_config_items(data, save_settings=False)
+        elif first_load and 'auth_enabled' not in os.environ:
+            # No settings file has ever been written, so this is a fresh installation rather
+            # than an upgrade. Require authentication by default so a new install is not left
+            # open on the network, and let the setup page collect the credentials.
+            #
+            # An upgrade takes the 'auth_enabled = False' default set in __init__ instead, so
+            # that an existing installation keeps working exactly as it did. An explicit
+            # 'auth_enabled' environment variable always wins over both.
+            self.auth_enabled = True
 
     def reload(self):
         """
@@ -609,3 +627,79 @@ class Config(object, metaclass=SingletonType):
         :return:
         """
         return self.ssl_keyfilepath
+
+    @staticmethod
+    def __as_bool(value, default):
+        """
+        Coerce a configuration value to a boolean.
+
+        Values arriving from environment variables are always strings.
+
+        :param value:
+        :param default:
+        :return:
+        """
+        if value is None:
+            return default
+        if isinstance(value, str):
+            return value.strip().lower() in ('true', '1', 'yes', 'on')
+        return bool(value)
+
+    @staticmethod
+    def __as_int(value, default):
+        """
+        Coerce a configuration value to an integer, falling back to a default.
+
+        :param value:
+        :param default:
+        :return:
+        """
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    def get_auth_enabled(self):
+        """
+        Get setting - auth_enabled
+
+        :return:
+        """
+        return self.__as_bool(self.auth_enabled, False)
+
+    def get_auth_allow_basic(self):
+        """
+        Get setting - auth_allow_basic
+
+        :return:
+        """
+        return self.__as_bool(self.auth_allow_basic, True)
+
+    def get_auth_session_idle_timeout_days(self):
+        """
+        Get setting - auth_session_idle_timeout_days
+
+        :return:
+        """
+        return self.__as_int(self.auth_session_idle_timeout_days, 7)
+
+    def get_auth_session_max_age_days(self):
+        """
+        Get setting - auth_session_max_age_days
+
+        :return:
+        """
+        return self.__as_int(self.auth_session_max_age_days, 30)
+
+    def get_auth_trusted_origins(self):
+        """
+        Get setting - auth_trusted_origins
+
+        :return:
+        """
+        value = self.auth_trusted_origins
+        if isinstance(value, str):
+            value = value.split(',')
+        if not value:
+            return []
+        return [str(origin).strip() for origin in value if str(origin).strip()]

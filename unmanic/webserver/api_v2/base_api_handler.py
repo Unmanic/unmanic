@@ -93,7 +93,15 @@ class BaseApiHandler(RequestHandler):
         except JSONDecodeError as e:
             self.set_status(self.STATUS_ERROR_EXTERNAL, reason=str(e))
             self.write_error()
-            raise BaseApiError("Expected request body to be JSON. Received '{}'".format(self.request.body))
+            # The body is deliberately not included here. Callers log this message, and some
+            # request bodies carry a password, which would then be written to a log file in
+            # plaintext at ERROR level. Log files end up in bug reports far more often than
+            # settings files do.
+            raise BaseApiError(
+                "Expected request body to be JSON. Received {} bytes that could not be decoded".format(
+                    len(self.request.body or b"")
+                )
+            )
 
         request_validation_errors = schema.validate(json_data)
         if request_validation_errors:
